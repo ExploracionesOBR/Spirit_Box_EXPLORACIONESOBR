@@ -1,7 +1,7 @@
 // CÓDIGO DE JAVASCRIPT (Archivo script.js)
 
 // ----------------------------------------------------
-// PASO 1: Variables de Configuración
+// PASO 1: Variables de Configuración (Sin Cambios)
 // ----------------------------------------------------
 
 const APPS_SCRIPT_URL_GUION = "https://sheetdb.io/api/v1/ej186l5av6pq2"; 
@@ -17,6 +17,7 @@ let statusMessage = document.getElementById('status');
 let isSpeaking = false;
 let intervalId; 
 let randomTimerId; 
+let speakingSafetyTimeout; 
 
 // *** CONTROL DE TIEMPO AUTOMÁTICO (Speed) ***
 const NORMAL_INTERVAL_MS = 8000; 
@@ -27,7 +28,7 @@ let isFastSpeed = false;
 const staticAudio1 = document.getElementById('staticAudio1');
 const staticAudio2 = document.getElementById('staticAudio2'); 
 const sweepAudio = document.getElementById('sweepAudio');
-const voiceEffectAudio = document.getElementById('voiceEffectAudio'); 
+const voiceEffectAudio = document.getElementById('voice_effect.mp3'); // Asegúrate de que esta ruta sea correcta
 
 // Elementos visuales y de control
 const energyBar = document.getElementById('energyBar');
@@ -53,9 +54,18 @@ function setMasterVolume(volume) {
     }
     
     statusMessage.textContent = `FRECUENCIA: ${(currentVolume * 100).toFixed(0)}%`;
+
+    // --- Rotación visual de la perilla de volumen ---
+    const dial = document.getElementById('volumeDial');
+    if (dial) {
+        // Mapear el volumen (0-1) a un rango de rotación (ej: -135 a 135 grados)
+        const rotation = (currentVolume * 270) - 135; // 270 grados de rango, centrado
+        dial.style.transform = `rotate(${rotation}deg)`;
+    }
+    // ------------------------------------------------
 }
 
-// Lógica de control de volumen con el mouse/touch (Sin cambios)
+// Lógica de control de volumen con el mouse/touch (Sin cambios, pero ahora rota la perilla)
 let isDragging = false;
 let startY = 0; 
 
@@ -107,72 +117,89 @@ function detenerControlVolumen() {
 }
 
 
-// Función para encontrar una voz específica por tipo
-function getVoiceByType(type) {
+// Función para encontrar la voz principal (Masculino o la que haya)
+function getMainVoice() {
     const voices = synth.getVoices();
     const esVoices = voices.filter(voice => voice.lang.startsWith('es'));
 
-    switch (type.toUpperCase()) {
-        case 'MASCULINO':
-            // Buscar una voz de tono bajo o genérica que no sea la voz predeterminada
-            return esVoices.find(v => v.name.includes('male') || v.name.includes('Man') || v.name.includes('Jorge')) || esVoices[0]; 
-        case 'DAMA':
-            // Buscar una voz femenina específica
-            return esVoices.find(v => v.name.includes('female') || v.name.includes('Woman') || v.name.includes('Laura')) || esVoices[1] || esVoices[0]; 
-        case 'JUVENIL':
-            // Usar un tono alto (pitch) para simular juventud si no se encuentra voz de niño
-            return esVoices.find(v => v.name.includes('child') || v.name.includes('Kid') || v.name.includes('niño')) || esVoices[2] || esVoices[0];
-        default:
-            return esVoices[0] || null;
-    }
+    // Priorizar voz masculina si está disponible
+    return esVoices.find(v => v.name.includes('male') || v.name.includes('Man') || v.name.includes('Jorge')) || esVoices[0] || null;
 }
 
-// *** FUNCIÓN CORREGIDA: Hablar un fragmento de voz individual (más estable) ***
-function speakIndividualVoice(text, voiceType, volumeMultiplier, delayMs, rate, pitch) {
+// Hablar la frase y su eco de forma secuencial y estable
+async function speakMainPhraseAndEcho(text) {
     return new Promise(resolve => {
-        const utterance = new SpeechSynthesisUtterance(text);
-        const voice = getVoiceByType(voiceType);
-        
-        if (!voice) {
-            console.error(`Voz no encontrada para el tipo: ${voiceType}. Saltando.`);
+        const mainVoice = getMainVoice();
+        if (!mainVoice) {
+            console.error("No se encontró una voz en español.");
             resolve();
             return;
         }
 
-        utterance.voice = voice;
-        utterance.lang = voice.lang;
-        utterance.rate = rate;
-        utterance.pitch = pitch;
-        utterance.volume = currentVolume * volumeMultiplier; 
+        const utteranceMain = new SpeechSynthesisUtterance(text);
+        utteranceMain.voice = mainVoice;
+        utteranceMain.lang = mainVoice.lang;
+        utteranceMain.rate = isFastSpeed ? 1.5 : 1.3;
+        utteranceMain.pitch = 1.0;
+        utteranceMain.volume = currentVolume;
 
-        utterance.onend = () => {
-             // Subir el volumen de la estática momentáneamente justo después de cada voz
-             if (staticAudio1) staticAudio1.volume = currentVolume * 0.6; 
-             if (sweepAudio) sweepAudio.volume = currentVolume * 0.3; 
-             resolve();
-        };
-        utterance.onerror = () => {
-             console.warn(`Error de síntesis de voz para ${voiceType}.`);
-             resolve();
-        };
+        // Bajar el ruido de fondo antes de la voz principal
+        if (staticAudio1) staticAudio1.volume = currentVolume * 0.1;
+        if (sweepAudio) sweepAudio.volume = currentVolume * 0.1;
 
-        setTimeout(() => {
-            // Baja la estática justo antes de hablar
-            if (staticAudio1) staticAudio1.volume = currentVolume * 0.1; 
-            if (sweepAudio) sweepAudio.volume = currentVolume * 0.1; 
+        utteranceMain.onend = () => {
+            // --- INICIO DEL ECO DIGITAL (SECUENCIAL Y ESTABLE) ---
             
-            if (isSpeaking) {
-                synth.speak(utterance);
-            } else {
-                resolve();
-            }
-        }, delayMs);
+            // Pausa y pico de estática antes del eco
+            if (staticAudio1) staticAudio1.volume = currentVolume * 0.6;
+            if (sweepAudio) sweepAudio.volume = currentVolume * 0.3;
+            
+            // Delay para el eco (simulación de la segunda voz)
+            setTimeout(() => {
+                
+                // Segunda versión de la frase (Eco)
+                const utteranceEcho = new SpeechSynthesisUtterance(text);
+                utteranceEcho.voice = mainVoice;
+                utteranceEcho.lang = mainVoice.lang;
+                utteranceEcho.rate = utteranceMain.rate * 1.05; // Ligeramente más rápido
+                utteranceEcho.pitch = 1.2; // Tono más alto (simula otra voz o distorsión digital)
+                utteranceEcho.volume = currentVolume * 0.4; // Volumen mucho más bajo
+
+                // Bajar el ruido de fondo antes del eco
+                if (staticAudio1) staticAudio1.volume = currentVolume * 0.1;
+                if (sweepAudio) sweepAudio.volume = currentVolume * 0.1;
+
+                utteranceEcho.onend = () => {
+                    // Pico de estática final
+                    if (staticAudio1) staticAudio1.volume = currentVolume * 0.6;
+                    resolve();
+                };
+                utteranceEcho.onerror = resolve;
+
+                if (isSpeaking) {
+                    synth.speak(utteranceEcho);
+                } else {
+                    resolve();
+                }
+
+            }, 100); // 100ms de delay para el eco
+            
+            // --- FIN DEL ECO DIGITAL ---
+        };
+        utteranceMain.onerror = resolve;
+
+        if (isSpeaking) {
+            synth.speak(utteranceMain);
+        } else {
+            resolve();
+        }
     });
 }
 
 
-// *** FUNCIÓN PRINCIPAL CORREGIDA: LECTURA CON ECO DE MÚLTIPLES VOCES (SIN DELETREO) ***
+// FUNCIÓN PRINCIPAL REVISADA
 async function hablarComoSpiritBox(texto) {
+    // Si ya está hablando o no hay soporte, salir.
     if (!synth || isSpeaking) {
         display.innerHTML = "[ERROR: Voz no soportada o ya está hablando]";
         return;
@@ -189,10 +216,19 @@ async function hablarComoSpiritBox(texto) {
     currentStatusText.textContent = "TRANSMITIENDO...";
     actualizarEnergyBar(100);
     
-    // Configuración de velocidad estable para la mayoría de los navegadores
-    const baseRate = isFastSpeed ? 1.5 : 1.3;
-    const basePitch = 1.0; 
+    // Calcular la duración máxima de la frase (estimada) para el timeout
+    const estimatedDurationMs = (texto.length / 1.3) * 120 + 3000; 
     
+    // *** INICIO DEL TIMEOUT DE SEGURIDAD ***
+    clearTimeout(speakingSafetyTimeout);
+    speakingSafetyTimeout = setTimeout(() => {
+        if (isSpeaking) {
+            console.warn("TIMEOUT DE SEGURIDAD: La voz tardó demasiado. Forzando el restablecimiento del estado.");
+            limpiarEstadoHablando();
+        }
+    }, estimatedDurationMs); 
+    // ************************************
+
     // 1. Reproducir el efecto de impacto/glitch al inicio
     if (voiceEffectAudio) {
         voiceEffectAudio.currentTime = 0;
@@ -200,51 +236,23 @@ async function hablarComoSpiritBox(texto) {
         await voiceEffectAudio.play().catch(e => console.error("Error al reproducir voiceEffectAudio:", e));
     }
 
-    // 2. Configurar el Eco con las tres voces
-    const echoDelayBase = 70; // Aumentado ligeramente para dar tiempo a los motores de voz
+    // 2. Ejecutar la voz principal y el eco secuencialmente
+    await speakMainPhraseAndEcho(upperText);
     
-    // Voz Principal (MASCULINO)
-    const principalPromise = speakIndividualVoice(
-        upperText, 
-        'MASCULINO', 
-        1.0, // Volumen total
-        0,   // Sin delay
-        baseRate, 
-        basePitch
-    );
+    // 3. Limpieza solo si el timeout de seguridad no se adelantó
+    if (isSpeaking) {
+        limpiarEstadoHablando();
+    }
+}
 
-    // Voz Secundaria (DAMA): Eco 1
-    const secondaryPromise = speakIndividualVoice(
-        upperText, 
-        'DAMA', 
-        0.5, // 50% del volumen base
-        echoDelayBase + Math.random() * 50, // 70ms a 120ms de delay
-        baseRate * 0.95, 
-        1.1 
-    );
-
-    // Voz Terciaria (JUVENIL): Eco 2
-    const tertiaryPromise = speakIndividualVoice(
-        upperText, 
-        'JUVENIL', 
-        0.3, // 30% del volumen base
-        echoDelayBase + 100 + Math.random() * 100, // 170ms a 270ms de delay
-        baseRate * 1.05, 
-        0.9 
-    );
-    
-    // 3. Esperar a que TODAS las voces terminen (usamos catch para manejar las fallas silenciosamente)
-    await Promise.all([
-        principalPromise.catch(e => console.error("Falla en voz principal", e)), 
-        secondaryPromise.catch(e => console.error("Falla en eco 1", e)), 
-        tertiaryPromise.catch(e => console.error("Falla en eco 2", e))
-    ]);
-    
-    // --- LIMPIEZA FINAL ---
-    
+// Lógica de limpieza centralizada
+function limpiarEstadoHablando() {
+    clearTimeout(speakingSafetyTimeout);
     isSpeaking = false;
-    if (voiceEffectAudio) voiceEffectAudio.pause();
     
+    if (voiceEffectAudio) voiceEffectAudio.pause();
+    synth.cancel(); // Asegurar que todo se detiene
+
     // Restablecer volúmenes de fondo al terminar
     setMasterVolume(currentVolume); 
 
@@ -253,25 +261,44 @@ async function hablarComoSpiritBox(texto) {
     actualizarEnergyBar(30); 
     reiniciarTemporizadorAleatorio(); 
 }
+// ******************************************************
 
-function generarRuidoTexto() {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_#@* ";
+
+// *** NUEVA FUNCIÓN PARA GENERAR EL RUIDO DE FRECUENCIAS EN LA PANTALLA ***
+function generarRuidoFrecuencias(numChars = 200) {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_#@*/\\|~^`-+=<>"; // Más caracteres
     let noise = "";
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < numChars; i++) {
         noise += chars.charAt(Math.floor(Math.random() * chars.length));
+        if (Math.random() < 0.02) noise += '\n'; // Pequeña probabilidad de salto de línea
     }
     return noise;
 }
 
+// Modificada para usar generarRuidoFrecuencias
 function iniciarRuidoVisual() {
     if (intervalId) return; 
     intervalId = setInterval(() => {
         if (!isSpeaking) {
-             display.innerHTML = generarRuidoTexto();
+            // Calcula cuántos caracteres se necesitan para llenar la pantalla
+            const displayElement = document.getElementById('display');
+            const container = document.getElementById('display-container');
+            if (displayElement && container) {
+                // Estimación aproximada: ancho del contenedor / ancho de un caracter * (altura del contenedor / altura de línea)
+                const charWidth = 10; //px, estimación
+                const lineHeight = 1.2; // del css
+                const numCols = Math.floor(container.offsetWidth / charWidth);
+                const numRows = Math.floor(container.offsetHeight / (parseFloat(getComputedStyle(displayElement).fontSize) * lineHeight));
+                const totalChars = numCols * numRows * 1.2; // Un poco más para asegurar que se llena
+                displayElement.innerHTML = generarRuidoFrecuencias(totalChars);
+            } else {
+                display.innerHTML = generarRuidoFrecuencias(200); // Fallback
+            }
         }
-    }, 50); 
+    }, 70); // Intervalo ligeramente más lento para un ruido más "estable"
 }
 
+// Detener ruido visual (sin cambios)
 function detenerRuidoVisual() {
     if (intervalId) {
         clearInterval(intervalId);
@@ -309,10 +336,7 @@ function updateStatusMessage() {
 }
 
 
-// ----------------------------------------------------
-// PASO 3: Lógica de Velocidad (Botón SPEED)
-// ----------------------------------------------------
-
+// Lógica de Velocidad (Botón SPEED) (Sin cambios)
 function toggleSpeed() {
     isFastSpeed = !isFastSpeed; 
     reiniciarTemporizadorAleatorio(); 
@@ -326,10 +350,7 @@ function toggleSpeed() {
 }
 
 
-// ----------------------------------------------------
-// PASO 4: Lógica de Respuesta Aleatoria (Automática)
-// ----------------------------------------------------
-
+// Lógica de Respuesta Aleatoria (Automática) (Sin cambios)
 function dispararRespuestaAleatoria() {
     iniciarRuidosDeFondo(); 
     
@@ -366,10 +387,7 @@ function reiniciarTemporizadorAleatorio() {
 }
 
 
-// ----------------------------------------------------
-// PASO 5: Lógica del Guion (Botón EVP MODE)
-// ----------------------------------------------------
-
+// Lógica del Guion (Botón EVP MODE) (Sin cambios)
 function activarTruco() {
     iniciarRuidosDeFondo(); 
     
@@ -403,10 +421,7 @@ function activarTruco() {
 }
 
 
-// ----------------------------------------------------
-// PASO 6: Carga de Datos y Inicialización
-// ----------------------------------------------------
-
+// Carga de Datos y Inicialización (Sin cambios)
 async function cargarGuionPrincipal() {
     statusMessage.textContent = "Conectando a SheetDB (Guion Secuencial)...";
     try {
