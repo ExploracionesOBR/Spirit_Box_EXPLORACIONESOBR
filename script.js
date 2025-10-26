@@ -59,6 +59,12 @@ function iniciarControlVolumen(e) {
     e.preventDefault(); 
     isDragging = true;
     startY = e.clientY || e.touches[0].clientY;
+    
+    // Obtener el dial de volumen del HTML
+    const dial = document.getElementById('volumeDial'); 
+    if (dial) {
+        dial.classList.add('grabbing');
+    }
 
     document.addEventListener('mousemove', ajustarVolumen);
     document.addEventListener('mouseup', detenerControlVolumen);
@@ -87,6 +93,11 @@ function detenerControlVolumen() {
     document.removeEventListener('touchmove', ajustarVolumen);
     document.removeEventListener('touchend', detenerControlVolumen);
     
+    const dial = document.getElementById('volumeDial');
+    if (dial) {
+        dial.classList.remove('grabbing');
+    }
+
     setTimeout(() => {
         updateStatusMessage(); 
     }, 1500); 
@@ -121,9 +132,9 @@ async function hablarComoSpiritBox(texto) {
 
     const voice = getMexicanVoice();
     
-    // Configuración para una voz menos robótica
-    const voiceRateBase = 1.1; 
-    const voicePitchBase = 0.9; 
+    // Configuración para una voz más rápida y menos robótica (más natural)
+    const voiceRateBase = 1.25; // Lectura de texto más rápida
+    const voicePitchBase = 0.95; // Pitch cercano a 1.0 (menos robótico)
 
     const actualVoiceRate = isFastSpeed ? voiceRateBase * 1.3 : voiceRateBase; 
 
@@ -146,7 +157,7 @@ async function hablarComoSpiritBox(texto) {
             return;
         }
 
-        // Fragmentos de 1 a 2 caracteres para máxima distorsión
+        // Fragmentos de 1 a 2 caracteres para máxima distorsión y velocidad de aparición
         const fragmentLength = Math.floor(Math.random() * 2) + 1; 
         const fragment = textoArray.slice(currentIndex, currentIndex + fragmentLength).join('');
         
@@ -169,8 +180,8 @@ async function hablarComoSpiritBox(texto) {
         }
 
         fragmentUtterance.onend = () => {
-             // *** CAMBIO CLAVE: Pausa ultra-rápida de 5ms a 25ms ***
-             const delay = Math.random() * 20 + 5; // Mínimo 5ms, Máximo 25ms
+             // Pausa ultra-rápida (5ms a 20ms) para máximo efecto entrecortado/eco
+             const delay = Math.random() * 15 + 5; 
              speakingTimeout = setTimeout(speakFragment, delay);
         };
         
@@ -199,7 +210,7 @@ function iniciarRuidoVisual() {
         if (!isSpeaking) {
              display.innerHTML = generarRuidoTexto();
         }
-    }, 70); 
+    }, 50); // Ruido visual más rápido aún (antes 70ms)
 }
 
 function detenerRuidoVisual() {
