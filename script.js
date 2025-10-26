@@ -43,21 +43,20 @@ let currentVolume = 0.8;
 function setMasterVolume(volume) {
     currentVolume = Math.max(0, Math.min(1, volume)); 
     
-    // El voiceEffect solo debe sonar cuando se dispara la voz
-    
-    // Establecer un volumen base para la estática cuando no hay habla activa
+    // Establecer volumenes, asegurando que se apliquen siempre.
     if (!isSpeaking) {
         if (staticAudio1) staticAudio1.volume = currentVolume * 0.75; 
         if (staticAudio2) staticAudio2.volume = currentVolume * 0.45;
         if (sweepAudio) sweepAudio.volume = currentVolume * 0.45;
     }
     
+    if (voiceEffectAudio) voiceEffectAudio.volume = currentVolume; // Volumen para el glitch
+
     statusMessage.textContent = `FRECUENCIA: ${(currentVolume * 100).toFixed(0)}%`;
 
     // Rotación visual de la perilla de volumen
     const dial = document.getElementById('volumeDial');
     if (dial) {
-        // Mapear el volumen (0-1) a un rango de rotación (-135 a 135 grados)
         const rotation = (currentVolume * 270) - 135; 
         dial.style.transform = `rotate(${rotation}deg)`;
     }
@@ -121,7 +120,6 @@ function getMainVoice() {
     return esVoices.find(v => v.name.includes('male') || v.name.includes('Man') || v.name.includes('Jorge')) || esVoices[0] || null;
 }
 
-// FUNCIÓN CLAVE: Hablar la frase sin eco de síntesis (SIN CAMBIOS SIGNIFICATIVOS)
 async function speakMainPhrase(text) {
     return new Promise(resolve => {
         const mainVoice = getMainVoice();
@@ -143,7 +141,6 @@ async function speakMainPhrase(text) {
         if (sweepAudio) sweepAudio.volume = currentVolume * 0.1;
 
         utteranceMain.onend = () => {
-            // Sube la estática inmediatamente después de terminar la voz
             if (staticAudio1) staticAudio1.volume = currentVolume * 0.6;
             resolve();
         };
@@ -161,7 +158,6 @@ async function speakMainPhrase(text) {
 }
 
 
-// FUNCIÓN PRINCIPAL REVISADA PARA SINCRONIZACIÓN
 async function hablarComoSpiritBox(texto) {
     if (!synth || isSpeaking) {
         display.innerHTML = "[ERROR: Voz no soportada o ya está hablando]";
@@ -171,6 +167,8 @@ async function hablarComoSpiritBox(texto) {
     detenerRuidoVisual(); 
     synth.cancel(); 
     isSpeaking = true;
+    
+    // Aseguramos que los audios de fondo estén corriendo antes de hablar
     iniciarRuidosDeFondo(); 
 
     const upperText = texto.toUpperCase();
@@ -188,14 +186,13 @@ async function hablarComoSpiritBox(texto) {
         }
     }, estimatedDurationMs); 
     
-    // 1. REPRODUCIR EL GLITCH/IMPACTO CON UN PEQUEÑO RETRASO
+    // 1. REPRODUCIR EL GLITCH/IMPACTO CON SINCRONIZACIÓN
     if (voiceEffectAudio) {
         voiceEffectAudio.currentTime = 0;
         voiceEffectAudio.volume = currentVolume; 
         
-        // Esperamos 50ms (o un valor pequeño) ANTES de hablar.
-        // Esto asegura que el glitch comience a sonar justo antes de la voz, simulando el 'eco'.
         await new Promise(resolve => {
+            // Un pequeño delay para que el glitch no se pise con la estática al bajar
             setTimeout(() => {
                 voiceEffectAudio.play().catch(e => console.error("Error al reproducir voiceEffectAudio:", e));
                 resolve();
@@ -203,7 +200,7 @@ async function hablarComoSpiritBox(texto) {
         });
     }
 
-    // 2. Ejecutar la voz principal (¡Solo una voz!)
+    // 2. Ejecutar la voz principal
     await speakMainPhrase(upperText);
     
     // 3. Limpieza
@@ -212,14 +209,12 @@ async function hablarComoSpiritBox(texto) {
     }
 }
 
-// Lógica de limpieza centralizada (SIN CAMBIOS SIGNIFICATIVOS)
 function limpiarEstadoHablando() {
     clearTimeout(speakingSafetyTimeout);
     isSpeaking = false;
     
     synth.cancel(); 
     
-    // Pausar el efecto de voz (glitch) inmediatamente
     if (voiceEffectAudio) {
         voiceEffectAudio.pause();
         voiceEffectAudio.currentTime = 0;
@@ -233,10 +228,8 @@ function limpiarEstadoHablando() {
     actualizarEnergyBar(30); 
     reiniciarTemporizadorAleatorio(); 
 }
-// ******************************************************
 
-
-// *** FUNCIÓN PARA GENERAR EL RUIDO DE FRECUENCIAS EN LA PANTALLA *** (SIN CAMBIOS)
+// *** LÓGICA DE AUDIO MEJORADA PARA FORZAR REPRODUCCIÓN ***
 function generarRuidoFrecuencias(numChars = 200) {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_#@*/\\|~^`-+=<>"; 
     let noise = "";
@@ -247,7 +240,6 @@ function generarRuidoFrecuencias(numChars = 200) {
     return noise;
 }
 
-// Iniciar Ruido Visual (Llenado de pantalla) (SIN CAMBIOS)
 function iniciarRuidoVisual() {
     if (intervalId) return; 
     intervalId = setInterval(() => {
@@ -268,7 +260,6 @@ function iniciarRuidoVisual() {
     }, 70); 
 }
 
-// Detener ruido visual (SIN CAMBIOS)
 function detenerRuidoVisual() {
     if (intervalId) {
         clearInterval(intervalId);
@@ -276,21 +267,34 @@ function detenerRuidoVisual() {
     }
 }
 
-// ----------------------------------------------------
-// FUNCIÓN CRÍTICA PARA REPRODUCIR AUDIOS DE FONDO
-// ----------------------------------------------------
+/**
+ * Intenta iniciar la reproducción de todos los audios de fondo y los pone en bucle.
+ * Esta es la función que se llama con el primer clic para sortear las restricciones del navegador.
+ */
 async function iniciarRuidosDeFondo() {
-    // Intentar reproducir todos los audios, reajustando el volumen maestro
+    const audios = [staticAudio1, staticAudio2, sweepAudio];
     setMasterVolume(currentVolume); 
-    try {
-        if (staticAudio1 && staticAudio1.paused) await staticAudio1.play().catch(e => console.warn("Error al reproducir staticAudio1:", e));
-        if (staticAudio2 && staticAudio2.paused) await staticAudio2.play().catch(e => console.warn("Error al reproducir staticAudio2:", e));
-        if (sweepAudio && sweepAudio.paused) await sweepAudio.play().catch(e => console.warn("Error al reproducir sweepAudio:", e));
-    } catch (e) {
-        console.warn("Fallo al reproducir audio de fondo. Requiere interacción del usuario.", e);
+    
+    for (const audio of audios) {
+        if (audio) {
+            // Aseguramos que esté en bucle y cargado
+            audio.loop = true;
+            audio.load();
+            
+            // Intentamos reproducir
+            if (audio.paused) {
+                 try {
+                    await audio.play();
+                } catch (e) {
+                    // Si falla, es probable que se deba a la falta de interacción,
+                    // pero el listener del documento debería manejar esto.
+                    console.warn(`Fallo al reproducir ${audio.id}:`, e);
+                }
+            }
+        }
     }
 }
-// ----------------------------------------------------
+// *** FIN LÓGICA DE AUDIO MEJORADA ***
 
 function actualizarEnergyBar(level) {
     energyLevel = Math.max(0, Math.min(100, level)); 
@@ -428,7 +432,6 @@ async function cargarFrasesAleatorias() {
     }
 }
 
-// INICIALIZACIÓN REVISADA
 async function inicializarSpiritBox() {
     display.innerHTML = "[Iniciando Sistema...]";
     
@@ -447,17 +450,20 @@ async function inicializarSpiritBox() {
         updateStatusMessage(); 
     }
     
-    // 3. Cargar (preload) todos los audios para que estén listos
+    // 3. Forzar la carga de todos los audios.
     if (staticAudio1) staticAudio1.load();
     if (staticAudio2) staticAudio2.load();
     if (sweepAudio) sweepAudio.load();
     if (voiceEffectAudio) voiceEffectAudio.load();
+    
+    // 4. Intenta iniciar la reproducción forzada (esto puede fallar aquí, pero prepara el terreno)
+    iniciarRuidosDeFondo();
 }
 
 document.addEventListener('DOMContentLoaded', inicializarSpiritBox);
 
-// Listener para el primer click del usuario (MÁS AGRESIVO para asegurar la reproducción de audio)
+// Listener para el primer click del usuario (¡CRUCIAL!)
 document.addEventListener('click', () => {
-    // Intentar forzar la reproducción de todos los audios de fondo
+    // Si los audios están pausados, el clic del usuario los activará.
     iniciarRuidosDeFondo();
 }, { once: true });
