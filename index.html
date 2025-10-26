@@ -3,80 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EXPLORACIONES OBR - Spirit Box (Truqueada)</title>
+    <title>E.O.B. Spirit Box</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
-        /* Estilos básicos para el ambiente oscuro */
+        /* CSS Avanzado para la Interfaz de Spirit Box */
+        
+        /* GENERAL */
         body {
-            background-color: #0d0d0d;
-            color: #39ff14; /* Verde neón para el texto */
-            font-family: monospace;
+            background-color: #000; 
+            color: #39ff14; /* Verde neón */
+            font-family: 'Share Tech Mono', monospace;
             display: flex;
             flex-direction: column;
             align-items: center;
             padding: 20px;
             margin: 0;
-            height: 100vh;
-        }
-        .spirit-box-display {
-            border: 3px solid #39ff14;
-            padding: 15px;
-            margin-bottom: 20px;
-            min-height: 100px;
-            width: 90%;
-            max-width: 400px;
-            font-size: 1.5em;
-            line-height: 1.2;
-            background-color: #1a1a1a;
-            box-shadow: 0 0 10px #39ff14;
-        }
-        .frase-actual {
-            text-shadow: 0 0 5px #39ff14;
-            animation: glitch 0.1s infinite alternate; /* Efecto glitch */
-        }
-        @keyframes glitch {
-            0% { transform: skewX(0deg); }
-            100% { transform: skewX(0.5deg); }
-        }
-        .controls {
-            display: flex;
-            gap: 20px;
-        }
-        .control-button {
-            padding: 15px 30px;
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #fff;
-            background-color: #c0392b; /* Rojo para el botón principal */
-            border: 3px solid #e74c3c;
-            border-radius: 5px;
-            cursor: pointer;
-            box-shadow: 0 0 10px #e74c3c;
-            transition: transform 0.1s;
-        }
-        .control-button:active {
-            transform: scale(0.95);
+            min-height: 100vh;
+            box-sizing: border-box; 
+            background-image: radial-gradient(circle, #1a1a1a 1px, transparent 1px);
+            background-size: 4px 4px;
         }
         .header {
             font-size: 1.8em;
             margin-bottom: 30px;
-            text-shadow: 0 0 7px #39ff14;
+            text-shadow: 0 0 7px #39ff14, 0 0 10px #39ff14;
+            letter-spacing: 2px;
+        }
+        
+        /* ESTRUCTURA DEL DISPOSITIVO */
+        .device-frame {
+            background-color: #34495e; /* Color base oscuro (cuerpo del aparato) */
+            border: 8px solid #2c3e50;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.7), inset 0 0 5px rgba(0, 0, 0, 0.5);
+            width: 90%;
+            max-width: 500px;
+        }
+
+        /* PANTALLA DIGITAL (DISPLAY) */
+        .spirit-box-display {
+            /* Aspecto de pantalla LCD/LED incrustada */
+            border: 4px solid #1a1a1a;
+            padding: 15px;
+            margin-bottom: 25px;
+            min-height: 80px;
+            width: 100%;
+            font-size: 1.6em;
+            line-height: 1.2;
+            background-color: #0d1a0d; /* Fondo más oscuro para el display */
+            box-shadow: 0 0 12px #39ff14, inset 0 0 10px rgba(57, 255, 20, 0.5);
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .frase-actual {
+            /* Efecto Glitch y brillo al hablar */
+            color: #fff;
+            text-shadow: 0 0 10px #fff, 0 0 20px #39ff14;
+            animation: glitch 0.05s infinite alternate; 
+        }
+        @keyframes glitch {
+            0% { transform: skewX(0deg); opacity: 1; }
+            50% { transform: skewX(-1deg); opacity: 0.95; }
+            100% { transform: skewX(1deg); opacity: 1; }
+        }
+
+        /* CONTROLES (BOTÓN DEL TRUCO) */
+        .controls {
+            text-align: center;
+            margin-top: 15px;
+        }
+        .control-button {
+            padding: 18px 35px;
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #fff;
+            background-color: #e74c3c; /* Rojo intenso para el truco */
+            border: 5px solid #c0392b;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(231, 76, 60, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.3);
+            transition: all 0.1s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .control-button:active {
+            transform: scale(0.95);
+            background-color: #c0392b;
+            box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
+        }
+
+        /* ESTADO/MENSAJES */
+        #status {
+            margin-top: 25px;
+            color: #7f8c8d;
+            font-size: 0.9em;
+            text-align: center;
+            border-top: 1px solid #2c3e50;
+            padding-top: 10px;
         }
     </style>
 </head>
 <body>
     <div class="header">EXPLORACIONES OBR</div>
+    <div class="header">SPIRIT BOX V2.0</div>
 
-    <div class="spirit-box-display" id="display">
-        [Iniciando sistema... Cargando frases...]
-    </div>
-    
-    <div class="controls">
-        <button class="control-button" onclick="activarTruco()">
-            EVP MODE
-        </button>
+    <div class="device-frame">
+        <div class="spirit-box-display" id="display">
+            [Iniciando... Cargando sistema...]
+        </div>
+        
+        <div class="controls">
+            <button class="control-button" onclick="activarTruco()">
+                EVP MODE
+            </button>
+        </div>
     </div>
 
-    <div id="status" style="margin-top: 20px; color: #7f8c8d;"></div>
+    <div id="status">Verificando conexión de guion...</div>
 
     <script src="script.js"></script>
 </body>
