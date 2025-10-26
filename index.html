@@ -205,7 +205,6 @@
             height: 80px;
             background: #333;
             border-radius: 50%;
-            border: 3px solid #0f0;
             position: relative;
             cursor: grab;
             box-shadow: 0 0 10px rgba(0, 255, 0, 0.6), inset 0 0 8px rgba(0, 255, 0, 0.4);
@@ -214,6 +213,17 @@
             align-items: center;
             transform: rotate(-135deg); /* Inicializado a una posición de volumen bajo */
             transition: box-shadow 0.2s ease, transform 0.1s linear;
+        }
+        
+        /* Asegurando que el dial y el marker siempre se vean */
+        .volume-dial::before {
+            content: '';
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            background: #1a1a1a;
+            border-radius: 50%;
+            border: 3px solid #0f0;
         }
 
         .volume-dial.grabbing {
@@ -224,11 +234,12 @@
         .dial-marker {
             width: 8px;
             height: 25px;
-            background: #0f0;
+            background: #f00; /* Color rojo para el indicador de volumen */
             position: absolute;
             top: 5px; 
             border-radius: 2px;
-            box-shadow: 0 0 8px rgba(0, 255, 0, 0.8);
+            box-shadow: 0 0 8px rgba(255, 0, 0, 0.8);
+            z-index: 10;
         }
 
         @keyframes flicker {
@@ -239,9 +250,15 @@
     </style>
     </head>
 <body>
+    
+    <div id="startScreen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: #0f0; display: flex; justify-content: center; align-items: center; z-index: 9999; cursor: pointer; text-align: center; font-family: 'Orbitron', sans-serif;">
+        <h1 style="border: 2px solid #0f0; padding: 20px; box-shadow: 0 0 10px rgba(0, 255, 0, 0.8);">
+            TAP/CLIC PARA INICIAR<br>
+            <span style="font-size: 0.5em; display: block; margin-top: 10px;">(Activa audios de interferencia MP3)</span>
+        </h1>
+    </div>
     <div class="container">
         <div class="header">
-            
             <h1 class="logo-text">EXPLORACIONES OBR</h1>
             <div id="status" class="status-message">Iniciando sistema...</div>
         </div>
@@ -269,10 +286,10 @@
         </div>
     </div>
 
-    <audio id="staticAudio1" src="static1.mp3" loop preload="auto" volume="0.75"></audio>
-    <audio id="staticAudio2" src="static2.mp3" loop preload="auto" volume="0.45"></audio>
-    <audio id="sweepAudio" src="sweep.mp3" loop preload="auto" volume="0.45"></audio>
-    <audio id="voiceEffectAudio" src="voice_effect.mp3" preload="auto" volume="0.8"></audio>
+    <audio id="static1" src="static_loop.mp3" loop preload="auto" volume="0.75"></audio>
+    <audio id="static2" src="static_loop2.mp3" loop preload="auto" volume="0.45"></audio>
+    <audio id="sweep" src="sweep_effect.mp3" loop preload="auto" volume="0.45"></audio>
+    <audio id="voiceEffect" src="tatic_sweep_short.mp3" preload="auto" volume="0.8"></audio>
 
     <script src="script.js"></script>
 </body>
