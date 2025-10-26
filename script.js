@@ -107,48 +107,60 @@ function detenerControlVolumen() {
 }
 
 
-// *** NUEVA FUNCIÓN: Obtener la voz específica por tipo ***
+// Función para encontrar una voz específica por tipo
 function getVoiceByType(type) {
     const voices = synth.getVoices();
     const esVoices = voices.filter(voice => voice.lang.startsWith('es'));
 
-    // Priorizar voces por tono o nombre que sugieran el tipo
     switch (type.toUpperCase()) {
         case 'MASCULINO':
-            // Buscar una voz de tono bajo o genérica
-            return esVoices.find(v => v.name.includes('male') || v.name.includes('Man') || v.name.includes('Jorge') || v.name.includes('Juan')) || esVoices[0]; 
+            // Buscar una voz de tono bajo o genérica que no sea la voz predeterminada
+            return esVoices.find(v => v.name.includes('male') || v.name.includes('Man') || v.name.includes('Jorge')) || esVoices[0]; 
         case 'DAMA':
-            // Buscar una voz femenina (la mayoría de las voces son femeninas por defecto)
-            return esVoices.find(v => v.name.includes('female') || v.name.includes('Woman') || v.name.includes('Laura') || v.name.includes('Beatriz') || v.name.includes('Zira')) || esVoices[1] || esVoices[0]; 
+            // Buscar una voz femenina específica
+            return esVoices.find(v => v.name.includes('female') || v.name.includes('Woman') || v.name.includes('Laura')) || esVoices[1] || esVoices[0]; 
         case 'JUVENIL':
-            // Buscar una voz con un tono ligeramente más alto o infantil (si es posible)
+            // Usar un tono alto (pitch) para simular juventud si no se encuentra voz de niño
             return esVoices.find(v => v.name.includes('child') || v.name.includes('Kid') || v.name.includes('niño')) || esVoices[2] || esVoices[0];
         default:
             return esVoices[0] || null;
     }
 }
 
-// *** NUEVA FUNCIÓN: Hablar un fragmento de voz individual ***
+// *** FUNCIÓN CORREGIDA: Hablar un fragmento de voz individual (más estable) ***
 function speakIndividualVoice(text, voiceType, volumeMultiplier, delayMs, rate, pitch) {
     return new Promise(resolve => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        const voice = getVoiceByType(voiceType);
+        
+        if (!voice) {
+            console.error(`Voz no encontrada para el tipo: ${voiceType}. Saltando.`);
+            resolve();
+            return;
+        }
+
+        utterance.voice = voice;
+        utterance.lang = voice.lang;
+        utterance.rate = rate;
+        utterance.pitch = pitch;
+        utterance.volume = currentVolume * volumeMultiplier; 
+
+        utterance.onend = () => {
+             // Subir el volumen de la estática momentáneamente justo después de cada voz
+             if (staticAudio1) staticAudio1.volume = currentVolume * 0.6; 
+             if (sweepAudio) sweepAudio.volume = currentVolume * 0.3; 
+             resolve();
+        };
+        utterance.onerror = () => {
+             console.warn(`Error de síntesis de voz para ${voiceType}.`);
+             resolve();
+        };
+
         setTimeout(() => {
-            const voice = getVoiceByType(voiceType);
-            if (!voice) {
-                console.error("Voz no encontrada para el tipo:", voiceType);
-                resolve();
-                return;
-            }
-
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.voice = voice;
-            utterance.lang = voice.lang;
-            utterance.rate = rate;
-            utterance.pitch = pitch;
-            utterance.volume = currentVolume * volumeMultiplier; // Aplicar el multiplicador de eco/volumen
-
-            utterance.onend = resolve;
-            utterance.onerror = resolve; // Asegurar que el Promise se resuelva incluso en caso de error
-
+            // Baja la estática justo antes de hablar
+            if (staticAudio1) staticAudio1.volume = currentVolume * 0.1; 
+            if (sweepAudio) sweepAudio.volume = currentVolume * 0.1; 
+            
             if (isSpeaking) {
                 synth.speak(utterance);
             } else {
@@ -159,7 +171,7 @@ function speakIndividualVoice(text, voiceType, volumeMultiplier, delayMs, rate, 
 }
 
 
-// *** FUNCIÓN CRÍTICA: LECTURA CON ECO DE MÚLTIPLES VOCES (SIN DELETREO) ***
+// *** FUNCIÓN PRINCIPAL CORREGIDA: LECTURA CON ECO DE MÚLTIPLES VOCES (SIN DELETREO) ***
 async function hablarComoSpiritBox(texto) {
     if (!synth || isSpeaking) {
         display.innerHTML = "[ERROR: Voz no soportada o ya está hablando]";
@@ -172,31 +184,26 @@ async function hablarComoSpiritBox(texto) {
     
     iniciarRuidosDeFondo(); 
 
-    // Muestra el texto completo al inicio
     const upperText = texto.toUpperCase();
     display.innerHTML = upperText;
     currentStatusText.textContent = "TRANSMITIENDO...";
     actualizarEnergyBar(100);
     
-    // Configuraciones de voz base (alta velocidad, tono neutro)
-    const baseRate = isFastSpeed ? 1.6 : 1.4;
+    // Configuración de velocidad estable para la mayoría de los navegadores
+    const baseRate = isFastSpeed ? 1.5 : 1.3;
     const basePitch = 1.0; 
     
-    // --- LÓGICA DE INTERFERENCIA DE AUDIO Y VOZ PRINCIPAL ---
-
-    // 1. Bajar el volumen de los ruidos de fondo antes de la voz principal
-    if (staticAudio1) staticAudio1.volume = currentVolume * 0.1; 
-    if (staticAudio2) staticAudio2.volume = currentVolume * 0.05; 
-    if (sweepAudio) sweepAudio.volume = currentVolume * 0.1; 
-
-    // 2. Reproducir el efecto de impacto/glitch al inicio
+    // 1. Reproducir el efecto de impacto/glitch al inicio
     if (voiceEffectAudio) {
         voiceEffectAudio.currentTime = 0;
         voiceEffectAudio.volume = currentVolume; 
         await voiceEffectAudio.play().catch(e => console.error("Error al reproducir voiceEffectAudio:", e));
     }
 
-    // 3. Hablar la voz principal (MASCULINO)
+    // 2. Configurar el Eco con las tres voces
+    const echoDelayBase = 70; // Aumentado ligeramente para dar tiempo a los motores de voz
+    
+    // Voz Principal (MASCULINO)
     const principalPromise = speakIndividualVoice(
         upperText, 
         'MASCULINO', 
@@ -206,31 +213,32 @@ async function hablarComoSpiritBox(texto) {
         basePitch
     );
 
-    // 4. Configurar el Eco con las otras dos voces (se lanzan casi simultáneamente)
-    const echoDelayBase = 50; // Milisegundos de delay entre la voz principal y el eco
-    
-    // Voz Secundaria (DAMA): Volumen medio-bajo, ligero delay y tono ligeramente más alto
+    // Voz Secundaria (DAMA): Eco 1
     const secondaryPromise = speakIndividualVoice(
         upperText, 
         'DAMA', 
         0.5, // 50% del volumen base
-        echoDelayBase + Math.random() * 50, // 50ms a 100ms de delay
-        baseRate * 0.95, // Ligeramente más lenta
-        1.1 // Tono ligeramente más alto
+        echoDelayBase + Math.random() * 50, // 70ms a 120ms de delay
+        baseRate * 0.95, 
+        1.1 
     );
 
-    // Voz Terciaria (JUVENIL): Volumen bajo, mayor delay y tono más bajo/alto (aleatorio)
+    // Voz Terciaria (JUVENIL): Eco 2
     const tertiaryPromise = speakIndividualVoice(
         upperText, 
         'JUVENIL', 
         0.3, // 30% del volumen base
-        echoDelayBase + 100 + Math.random() * 100, // 150ms a 250ms de delay
-        baseRate * 1.05, // Ligeramente más rápida
-        0.9 // Tono ligeramente más bajo
+        echoDelayBase + 100 + Math.random() * 100, // 170ms a 270ms de delay
+        baseRate * 1.05, 
+        0.9 
     );
     
-    // 5. Esperar a que TODAS las voces terminen
-    await Promise.all([principalPromise, secondaryPromise, tertiaryPromise]);
+    // 3. Esperar a que TODAS las voces terminen (usamos catch para manejar las fallas silenciosamente)
+    await Promise.all([
+        principalPromise.catch(e => console.error("Falla en voz principal", e)), 
+        secondaryPromise.catch(e => console.error("Falla en eco 1", e)), 
+        tertiaryPromise.catch(e => console.error("Falla en eco 2", e))
+    ]);
     
     // --- LIMPIEZA FINAL ---
     
