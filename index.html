@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EXPLORACIONES OBR - Spirit Box (Truqueada)</title>
+    <style>
+        /* Estilos básicos para el ambiente oscuro */
+        body {
+            background-color: #0d0d0d;
+            color: #39ff14; /* Verde neón para el texto */
+            font-family: monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            height: 100vh;
+        }
+        .spirit-box-display {
+            border: 3px solid #39ff14;
+            padding: 15px;
+            margin-bottom: 20px;
+            min-height: 100px;
+            width: 90%;
+            max-width: 400px;
+            font-size: 1.5em;
+            line-height: 1.2;
+            background-color: #1a1a1a;
+            box-shadow: 0 0 10px #39ff14;
+        }
+        .frase-actual {
+            text-shadow: 0 0 5px #39ff14;
+            animation: glitch 0.1s infinite alternate; /* Efecto glitch */
+        }
+        @keyframes glitch {
+            0% { transform: skewX(0deg); }
+            100% { transform: skewX(0.5deg); }
+        }
+        .controls {
+            display: flex;
+            gap: 20px;
+        }
+        .control-button {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #fff;
+            background-color: #c0392b; /* Rojo para el botón principal */
+            border: 3px solid #e74c3c;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 0 10px #e74c3c;
+            transition: transform 0.1s;
+        }
+        .control-button:active {
+            transform: scale(0.95);
+        }
+        .header {
+            font-size: 1.8em;
+            margin-bottom: 30px;
+            text-shadow: 0 0 7px #39ff14;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">EXPLORACIONES OBR</div>
+
+    <div class="spirit-box-display" id="display">
+        [Iniciando sistema... Cargando frases...]
+    </div>
+    
+    <div class="controls">
+        <button class="control-button" onclick="activarTruco()">
+            EVP MODE
+        </button>
+    </div>
+
+    <div id="status" style="margin-top: 20px; color: #7f8c8d;"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
