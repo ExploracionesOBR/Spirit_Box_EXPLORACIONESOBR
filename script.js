@@ -117,7 +117,7 @@ function activarTruco() {
 
 
 // ----------------------------------------------------
-// PASO 4: Carga de Datos desde SheetDB.io
+// PASO 4: Carga de Datos desde SheetDB.io (¡CORREGIDO!)
 // ----------------------------------------------------
 
 async function cargarGuionDesdeSheets() {
@@ -131,14 +131,16 @@ async function cargarGuionDesdeSheets() {
         const data = await response.json(); 
         
         if (Array.isArray(data) && data.length > 0) {
-            // *** CLAVE CORREGIDA: Ahora buscamos la clave "A" en el JSON ***
-            // La clave 'A' contiene la frase de respuesta
-            frasesGuion = data.map(row => row.A || ''); 
+            
+            // *** CORRECCIÓN CLAVE: Usamos .slice(1) para ignorar la fila de guía/encabezado duplicado.
+            // Además, usamos la clave 'A' que nos da el JSON.
+            frasesGuion = data.slice(1).map(row => row.A || ''); 
 
             // Filtramos cualquier posible fila vacía que haya generado SheetDB
             frasesGuion = frasesGuion.filter(f => f.length > 0);
 
             statusMessage.textContent = `Guion cargado con ${frasesGuion.length} respuestas. ¡Listo!`;
+            
         } else {
             frasesGuion = ["Error de datos", "Revisa tu Sheet DB", "No hay frases"];
             statusMessage.textContent = "Advertencia: Guion vacío o con formato incorrecto. Usando respaldo.";
