@@ -25,11 +25,11 @@ const NORMAL_INTERVAL_MS = 8000;
 const FAST_INTERVAL_MS = 4000; 
 let isFastSpeed = false; 
 
-// Elementos de audio (Variables que buscan los IDs del HTML)
-const staticAudio1 = document.getElementById('staticAudio1'); // static_loop.mp3
-const staticAudio2 = document.getElementById('staticAudio2'); // static_loop2.mp3
-const sweepAudio = document.getElementById('sweepAudio');     // sweep_effect.mp3
-const voiceEffectAudio = document.getElementById('voiceEffectAudio'); // tatic_sweep_short.mp3
+// Elementos de audio (Variables que buscan los IDs SIMPLIFICADOS del HTML)
+const staticAudio1 = document.getElementById('static1');     // static_loop.mp3
+const staticAudio2 = document.getElementById('static2');     // static_loop2.mp3
+const sweepAudio = document.getElementById('sweep');         // sweep_effect.mp3
+const voiceEffectAudio = document.getElementById('voiceEffect'); // tatic_sweep_short.mp3
 const startScreen = document.getElementById('startScreen'); // Elemento de inicio
 
 // Elementos visuales y de control
@@ -115,11 +115,23 @@ function detenerControlVolumen() {
     }, 1500); 
 }
 
-
+/**
+ * Función MEJORADA para seleccionar la voz TTS más adecuada.
+ */
 function getMainVoice() {
     const voices = synth.getVoices();
     const esVoices = voices.filter(voice => voice.lang.startsWith('es'));
-    return esVoices.find(v => v.name.includes('male') || v.name.includes('Man') || v.name.includes('Jorge')) || esVoices[0] || null;
+    
+    // 1. Buscar voces de "hombre" o "masculino" (predefinidas)
+    let bestVoice = esVoices.find(v => v.name.includes('male') || v.name.includes('Man') || v.name.includes('Jorge') || v.name.includes('Felipe'));
+    
+    // 2. Si no se encuentra, usar cualquier voz que suene "robótica" o de "alta calidad"
+    if (!bestVoice) {
+        bestVoice = esVoices.find(v => v.name.includes('Google') || v.name.includes('Microsoft') || v.default);
+    }
+    
+    // 3. Si todo falla, usar la primera voz en español
+    return bestVoice || esVoices[0] || null;
 }
 
 // Hablar la frase sin eco de síntesis (FUNCIÓN ESTABLE)
@@ -139,11 +151,12 @@ async function speakMainPhrase(text) {
         utteranceMain.pitch = 1.0;
         utteranceMain.volume = currentVolume;
 
-        // Bajar el ruido de fondo
+        // Bajar el ruido de fondo para que se escuche la voz
         if (staticAudio1) staticAudio1.volume = currentVolume * 0.1;
         if (sweepAudio) sweepAudio.volume = currentVolume * 0.1;
 
         utteranceMain.onend = () => {
+            // Restaurar volumen del ruido de fondo al finalizar
             if (staticAudio1) staticAudio1.volume = currentVolume * 0.6;
             resolve();
         };
@@ -171,6 +184,7 @@ async function hablarComoSpiritBox(texto) {
     synth.cancel(); 
     isSpeaking = true;
     
+    // Asegurar que los audios de fondo estén corriendo
     iniciarRuidosDeFondo(); 
 
     const upperText = texto.toUpperCase();
@@ -280,9 +294,11 @@ async function iniciarRuidosDeFondo() {
             
             if (audio.paused) {
                  try {
+                    // Esta es la llamada crítica que necesita el click del usuario
                     await audio.play();
                 } catch (e) {
-                    // Ignoramos el error, confiamos en el listener de inicio forzado
+                    // Si el error persiste, significa que el navegador está bloqueando
+                    console.error("Error al intentar reproducir audio MP3. Asegúrate de hacer clic en la pantalla de inicio.", e);
                 }
             }
         }
@@ -419,7 +435,7 @@ async function cargarFrasesAleatorias() {
         }
     } catch (error) {
         console.error("Error al cargar frases aleatorias:", error);
-        display.innerHTML = `[ERROR CRÍTICO] FALLO AL CARGAR ALEATORIAS. Verifica la URL de SheetDB.io y la conexión.`;
+        display.innerHTML = `[ERROR CRÍTICO] FALLO AL cargar ALEATORIAS. Verifica la URL de SheetDB.io y la conexión.`;
         statusMessage.textContent = "ERROR: No se pudo conectar a la base de datos (SheetDB).";
     }
 }
@@ -427,6 +443,9 @@ async function cargarFrasesAleatorias() {
 async function inicializarSpiritBox() {
     display.innerHTML = "[Iniciando Sistema...]";
     
+    // Forzar la carga de las voces antes de continuar
+    synth.getVoices(); 
+
     setMasterVolume(currentVolume); 
 
     await cargarGuionPrincipal(); 
