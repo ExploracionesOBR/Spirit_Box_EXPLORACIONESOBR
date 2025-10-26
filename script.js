@@ -31,6 +31,7 @@ const voiceEffectAudio = document.getElementById('voiceEffectAudio');
 
 // Elementos visuales y de control
 const energyBar = document.getElementById('energyBar');
+const currentStatusText = document.getElementById('currentStatusText');
 let energyLevel = 0; 
 let speakingTimeout; 
 let currentVolume = 0.8; 
@@ -43,15 +44,21 @@ let currentVolume = 0.8;
 function setMasterVolume(volume) {
     currentVolume = Math.max(0, Math.min(1, volume)); 
     
-    if (staticAudio1) staticAudio1.volume = currentVolume * 0.75; 
-    if (staticAudio2) staticAudio2.volume = currentVolume * 0.45;
-    if (sweepAudio) sweepAudio.volume = currentVolume * 0.45;
+    // El volumen de los ruidos de fondo ahora se maneja dinámicamente en 'speakFragment'
+    // Aquí solo ajustamos el volumen máximo de la voz y el audio de efecto principal
     if (voiceEffectAudio) voiceEffectAudio.volume = currentVolume;
     
-    statusMessage.textContent = `VOLUMEN: ${(currentVolume * 100).toFixed(0)}%`;
+    // Establecer un volumen base para la estática cuando no hay habla activa
+    if (!isSpeaking) {
+        if (staticAudio1) staticAudio1.volume = currentVolume * 0.75; 
+        if (staticAudio2) staticAudio2.volume = currentVolume * 0.45;
+        if (sweepAudio) sweepAudio.volume = currentVolume * 0.45;
+    }
+    
+    statusMessage.textContent = `FRECUENCIA: ${(currentVolume * 100).toFixed(0)}%`;
 }
 
-// Lógica de control de volumen con el mouse/touch
+// Lógica de control de volumen con el mouse/touch (sin cambios, usa el nuevo HTML/CSS)
 let isDragging = false;
 let startY = 0; 
 
@@ -59,8 +66,7 @@ function iniciarControlVolumen(e) {
     e.preventDefault(); 
     isDragging = true;
     startY = e.clientY || e.touches[0].clientY;
-    
-    // Obtener el dial de volumen del HTML
+
     const dial = document.getElementById('volumeDial'); 
     if (dial) {
         dial.classList.add('grabbing');
@@ -112,7 +118,7 @@ function getMexicanVoice() {
            voices.find(voice => voice.lang.startsWith('es'));
 }
 
-// *** FUNCIÓN CRÍTICA: HABLAR CON EFECTO ENTRECORTADO/ECO SIMULADO (ULTRA RÁPIDO) ***
+// *** FUNCIÓN CRÍTICA: LECTURA INSTANTÁNEA Y ECO/GLITCH AGRESIVO CON INTERFERENCIA DE AUDIO ***
 async function hablarComoSpiritBox(texto) {
     if (!synth) {
         display.innerHTML = "[ERROR: Voz no soportada]";
@@ -122,8 +128,9 @@ async function hablarComoSpiritBox(texto) {
     detenerRuidoVisual(); 
     synth.cancel(); 
     isSpeaking = true;
-    detenerRuidosDeFondo();
     
+    // *** CAMBIO: Ya no se detienen, solo se ajustan los volúmenes iniciales ***
+    iniciarRuidosDeFondo(); 
     if (voiceEffectAudio) {
         voiceEffectAudio.currentTime = 0;
         voiceEffectAudio.volume = currentVolume; 
@@ -132,17 +139,19 @@ async function hablarComoSpiritBox(texto) {
 
     const voice = getMexicanVoice();
     
-    // Configuración para una voz más rápida y menos robótica (más natural)
-    const voiceRateBase = 1.25; // Lectura de texto más rápida
-    const voicePitchBase = 0.95; // Pitch cercano a 1.0 (menos robótico)
+    // Configuraciones de voz para velocidad y tono
+    const voiceRateBase = 1.4; 
+    const voicePitchBase = 1.0; 
 
-    const actualVoiceRate = isFastSpeed ? voiceRateBase * 1.3 : voiceRateBase; 
+    const actualVoiceRate = isFastSpeed ? 1.6 : voiceRateBase; 
 
 
     const textoArray = texto.toUpperCase().split('');
     let currentIndex = 0;
     
-    display.innerHTML = "";
+    // Muestra el texto completo al inicio
+    display.innerHTML = texto.toUpperCase();
+    currentStatusText.textContent = "TRANSMITIENDO...";
     actualizarEnergyBar(100);
 
     function speakFragment() {
@@ -150,18 +159,28 @@ async function hablarComoSpiritBox(texto) {
             // FIN DE LA FRASE
             isSpeaking = false;
             if (voiceEffectAudio) voiceEffectAudio.pause();
-            iniciarRuidosDeFondo(); 
+            
+            // Restablecer volúmenes de fondo al terminar
+            setMasterVolume(currentVolume); 
+
             iniciarRuidoVisual(); 
+            currentStatusText.textContent = "SCANNING";
             actualizarEnergyBar(30); 
             reiniciarTemporizadorAleatorio(); 
             return;
         }
 
-        // Fragmentos de 1 a 2 caracteres para máxima distorsión y velocidad de aparición
+        // --- LÓGICA DE INTERFERENCIA DE AUDIO (ANTES DEL FRAGMENTO DE VOZ) ---
+        
+        // 1. Bajar el volumen de los ruidos de fondo (simula que la voz domina)
+        if (staticAudio1) staticAudio1.volume = currentVolume * 0.1; // Muy bajo
+        if (staticAudio2) staticAudio2.volume = currentVolume * 0.05; // Casi inaudible
+        if (sweepAudio) sweepAudio.volume = currentVolume * 0.1; // Muy bajo
+
+        // Fragmentos de 1 a 2 caracteres para máxima agresión en el sonido
         const fragmentLength = Math.floor(Math.random() * 2) + 1; 
         const fragment = textoArray.slice(currentIndex, currentIndex + fragmentLength).join('');
         
-        display.innerHTML += fragment; 
         currentIndex += fragmentLength;
 
         const fragmentUtterance = new SpeechSynthesisUtterance(fragment);
@@ -171,18 +190,29 @@ async function hablarComoSpiritBox(texto) {
         fragmentUtterance.rate = actualVoiceRate;     
         fragmentUtterance.pitch = voicePitchBase; 
 
-        if (staticAudio1) {
-             staticAudio1.volume = currentVolume * 0.8;
-             staticAudio1.play().catch(e => console.warn("Error al iniciar estática.", e));
-             setTimeout(() => {
-                 staticAudio1.volume = currentVolume * 0.6; 
-             }, 50);
+        // Reproducir un pico de estática audible (como un latigazo) junto con la voz
+        if (voiceEffectAudio) {
+             voiceEffectAudio.currentTime = 0;
+             voiceEffectAudio.play().catch(e => console.warn("Error al iniciar voiceEffectAudio.", e));
         }
 
+
         fragmentUtterance.onend = () => {
-             // Pausa ultra-rápida (5ms a 20ms) para máximo efecto entrecortado/eco
-             const delay = Math.random() * 15 + 5; 
-             speakingTimeout = setTimeout(speakFragment, delay);
+             
+             // --- LÓGICA DE INTERFERENCIA DE AUDIO (DURANTE LA MICRO-PAUSA) ---
+             // 2. Subir el volumen de la estática momentáneamente para simular interferencia/falla
+             if (staticAudio1) staticAudio1.volume = currentVolume * 0.6; 
+             if (sweepAudio) sweepAudio.volume = currentVolume * 0.3; 
+             
+             // Pausa MÍNIMA (1ms a 10ms) para un efecto de eco instantáneo y agresivo
+             const delay = Math.random() * 9 + 1; 
+             
+             speakingTimeout = setTimeout(() => {
+                // 3. Volver a bajar el volumen antes de la siguiente palabra
+                if (staticAudio1) staticAudio1.volume = currentVolume * 0.1; 
+                if (sweepAudio) sweepAudio.volume = currentVolume * 0.1; 
+                speakFragment();
+             }, delay);
         };
         
         if (isSpeaking) {
@@ -210,7 +240,7 @@ function iniciarRuidoVisual() {
         if (!isSpeaking) {
              display.innerHTML = generarRuidoTexto();
         }
-    }, 50); // Ruido visual más rápido aún (antes 70ms)
+    }, 50); 
 }
 
 function detenerRuidoVisual() {
@@ -221,7 +251,7 @@ function detenerRuidoVisual() {
 }
 
 async function iniciarRuidosDeFondo() {
-    setMasterVolume(currentVolume); 
+    // Solo aseguramos que los audios estén reproduciéndose, el volumen se maneja en setMasterVolume y speakFragment
     try {
         if (staticAudio1 && staticAudio1.paused) await staticAudio1.play();
         if (staticAudio2 && staticAudio2.paused) await staticAudio2.play();
@@ -231,10 +261,10 @@ async function iniciarRuidosDeFondo() {
     }
 }
 
+// Función para restablecer los ruidos (AHORA ES setMasterVolume(currentVolume) )
 function detenerRuidosDeFondo() {
-    if (staticAudio1) staticAudio1.pause();
-    if (staticAudio2) staticAudio2.pause();
-    if (sweepAudio) sweepAudio.pause();
+    // Esta función ya no detiene los audios, solo asegura que están al volumen base
+    setMasterVolume(currentVolume);
 }
 
 function actualizarEnergyBar(level) {
@@ -300,6 +330,7 @@ function iniciarTemporizadorAleatorio() {
     if (!isSpeaking) {
         updateStatusMessage();
     }
+    currentStatusText.textContent = "SCANNING";
     actualizarEnergyBar(20 + Math.random() * 20); 
 }
 
@@ -399,6 +430,7 @@ async function inicializarSpiritBox() {
     if (!display.innerHTML.includes("ERROR CRÍTICO")) {
         iniciarRuidoVisual(); 
         reiniciarTemporizadorAleatorio();
+        currentStatusText.textContent = "IDLE";
         actualizarEnergyBar(20);
         updateStatusMessage(); 
     }
@@ -407,6 +439,7 @@ async function inicializarSpiritBox() {
 document.addEventListener('DOMContentLoaded', inicializarSpiritBox);
 
 document.addEventListener('click', () => {
+    // El primer click intenta iniciar los audios
     if ((staticAudio1 && staticAudio1.paused) && !isSpeaking) {
         iniciarRuidosDeFondo();
         setTimeout(updateStatusMessage, 500); 
