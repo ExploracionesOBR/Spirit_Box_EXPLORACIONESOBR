@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E.O.B. Spirit Box V3.1</title>
+    <title>E.O.B. Spirit Box V3.2</title>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
-        /* CSS Avanzado para la Interfaz de Spirit Box */
+        /* CSS Integrado para replicar el diseño del dispositivo */
         
         /* GENERAL */
         body {
-            background-color: #0d0d0d; /* Fondo casi negro */
-            color: #39ff14; /* Verde neón */
+            background-color: #0d0d0d;
+            color: #39ff14; 
             font-family: 'Share Tech Mono', monospace;
             display: flex;
             flex-direction: column;
@@ -22,31 +22,25 @@
             box-sizing: border-box; 
             background-image: radial-gradient(circle, #1a1a1a 1px, transparent 1px);
             background-size: 4px 4px;
-            overflow-x: hidden; /* Evita scroll horizontal en móviles */
-        }
-        .header {
-            font-size: 1.8em;
-            margin-bottom: 20px;
-            text-shadow: 0 0 7px #39ff14, 0 0 10px #39ff14;
-            letter-spacing: 2px;
+            overflow-x: hidden;
         }
         
         /* ESTRUCTURA DEL DISPOSITIVO */
         .device-frame {
-            background-color: #2e2e2e; /* Cuerpo principal del aparato */
+            background-color: #2e2e2e;
             border: 5px solid #1a1a1a;
             border-radius: 20px;
-            padding: 25px 20px; /* Ajuste de padding */
+            padding: 25px 20px;
             box-shadow: 0 0 30px rgba(0, 0, 0, 0.9), inset 0 0 10px rgba(0, 0, 0, 0.6);
             width: 95%;
-            max-width: 420px; /* Tamaño más compacto */
+            max-width: 420px;
             display: flex;
             flex-direction: column;
-            gap: 20px; /* Espacio entre secciones */
+            gap: 20px;
             position: relative;
         }
 
-        /* LOGO SUPERIOR */
+        /* LOGO SUPERIOR (EXPLORACIONES OBR) */
         .logo-display {
             background-color: #1a1a1a;
             border: 2px solid #39ff14;
@@ -61,13 +55,13 @@
 
         /* PANTALLA PRINCIPAL (DISPLAY DE TEXTO) */
         .main-screen {
-            background-color: #0a140a; /* Fondo más oscuro para el display */
+            background-color: #0a140a; 
             border: 3px solid #39ff14;
             padding: 15px;
             min-height: 120px;
-            width: calc(100% - 30px); /* Ajuste de ancho */
+            width: calc(100% - 30px);
             box-shadow: 0 0 15px #39ff14, inset 0 0 10px rgba(57, 255, 20, 0.5);
-            text-align: left; /* Puede ser útil para mostrar varias líneas de ruido */
+            text-align: left; 
             overflow: hidden;
             position: relative;
             font-size: 1.3em;
@@ -77,8 +71,8 @@
             color: #fff;
             text-shadow: 0 0 10px #fff, 0 0 20px #39ff14;
             animation: glitch 0.05s infinite alternate; 
-            display: block; /* Asegura que tome todo el espacio */
-            text-align: center; /* Centra el texto de la frase cuando aparece */
+            display: block; 
+            text-align: center; 
         }
         @keyframes glitch {
             0% { transform: skewX(0deg); opacity: 1; }
@@ -92,7 +86,7 @@
             border-radius: 8px;
             padding: 15px;
             display: grid;
-            grid-template-columns: 1fr 2fr; /* Columna para el medidor y otra para el dial */
+            grid-template-columns: 1fr 2fr; 
             gap: 15px;
             box-shadow: inset 0 0 8px rgba(0,0,0,0.7);
             align-items: center;
@@ -102,6 +96,8 @@
             font-size: 0.9em;
             color: #aaa;
         }
+        
+        /* BARRAS DE SONIDO / ENERGÍA */
         .energy-meter {
             background-color: #0d1a0d;
             border: 2px solid #39ff14;
@@ -113,12 +109,14 @@
             margin-top: 5px;
         }
         .energy-bar {
-            background-color: #39ff14;
+            background-color: #f39c12; /* Color amarillo/naranja como en la imagen */
             height: 100%;
-            width: 0%; /* Controlado por JS */
-            box-shadow: 0 0 5px #39ff14;
+            width: 0%; 
+            box-shadow: 0 0 5px #f39c12;
             transition: width 0.1s ease-out;
         }
+        
+        /* DIAL DE FRECUENCIA */
         .frequency-sweep {
             display: flex;
             flex-direction: column;
@@ -128,7 +126,7 @@
             color: #aaa;
         }
         .frequency-dial {
-            width: 60px; /* Tamaño del dial */
+            width: 60px;
             height: 60px;
             background-color: #444;
             border-radius: 50%;
@@ -150,7 +148,7 @@
         }
         .dial-marker {
             position: absolute;
-            top: 5px; /* Posición del marcador */
+            top: 5px; 
             left: 50%;
             transform: translateX(-50%);
             width: 4px;
@@ -170,35 +168,55 @@
             padding: 15px 25px;
             font-size: 1.1em;
             font-weight: bold;
-            color: #fff;
+            color: #000; /* Texto oscuro */
             border-radius: 8px;
             cursor: pointer;
             text-transform: uppercase;
             letter-spacing: 1px;
             transition: all 0.1s;
-            flex-grow: 1; /* Para que los botones se estiren */
+            flex-grow: 1;
             text-align: center;
+            /* Estilo base */
+            border: none;
+            box-shadow: 0 5px #1a1a1a; 
+            position: relative;
         }
+        .action-button::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 8px;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        .action-button:active {
+            transform: translateY(2px);
+            box-shadow: 0 3px #1a1a1a;
+        }
+
+        /* EVP MODE (VERDE) */
         .evp-mode-button {
-            background-color: #27ae60; /* Verde para EVP Mode */
-            border: 4px solid #2ecc71;
-            box-shadow: 0 0 15px rgba(46, 204, 113, 0.8), inset 0 0 8px rgba(255, 255, 255, 0.3);
+            background-color: #2ecc71; 
+            border: 3px solid #27ae60;
+            box-shadow: 0 0 15px rgba(46, 204, 113, 0.8);
         }
-        .evp-mode-button:active {
-            transform: scale(0.97);
-            background-color: #2ecc71;
-            box-shadow: 0 0 8px rgba(46, 204, 113, 0.5);
+        .evp-mode-button::after {
+            background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%);
         }
+
+        /* RECORD SESSION (ROJO) */
         .record-session-button {
-            background-color: #c0392b; /* Rojo para Record Session */
-            border: 4px solid #e74c3c;
-            box-shadow: 0 0 15px rgba(231, 76, 60, 0.8), inset 0 0 8px rgba(255, 255, 255, 0.3);
+            background-color: #e74c3c; 
+            border: 3px solid #c0392b;
+            box-shadow: 0 0 15px rgba(231, 76, 60, 0.8);
         }
-        .record-session-button:active {
-            transform: scale(0.97);
-            background-color: #e74c3c;
-            box-shadow: 0 0 8px rgba(231, 76, 60, 0.5);
+        .record-session-button::after {
+            background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%);
         }
+
 
         /* ESTADO/MENSAJES */
         #status {
@@ -214,8 +232,7 @@
     </style>
 </head>
 <body>
-    <div class="header">EXPLORACIONES OBR</div>
-    <div class="header">SPIRIT BOX V3.1</div>
+    <div class="header">E.O.B. SPIRIT BOX V3.2</div>
 
     <div class="device-frame">
         <div class="logo-display">
@@ -241,7 +258,7 @@
                 <div class="energy-meter">
                     <div class="energy-bar" id="energyBar"></div>
                 </div>
-                <div style="text-align: center; font-size: 0.8em; color: #aaa; margin-top: 5px;">PARANORMAL ENERGY</div>
+                <div style="text-align: center; font-size: 0.8em; color: #aaa; margin-top: 5px;">PARANROMAL ENERGY</div>
             </div>
         </div>
 
@@ -258,10 +275,11 @@
     <div id="status">Verificando conexión de guion...</div>
 
     
-    <audio id="staticAudio1" src="audio/static_loop.mp3" loop preload="auto"></audio>
-    <audio id="staticAudio2" src="audio/static_loop2.mp3" loop preload="auto"></audio> 
-    <audio id="sweepAudio" src="audio/sweep_effect.mp3" preload="auto"></audio>
-    <audio id="voiceEffectAudio" src="audio/static_sweep_short.mp3" preload="auto"></audio> 
-<script src="script.js"></script>
+    <audio id="staticAudio1" src="static_loop.mp3" loop preload="auto"></audio>
+    <audio id="staticAudio2" src="static_loop2.mp3" loop preload="auto"></audio> 
+    <audio id="sweepAudio" src="sweep_effect.mp3" loop preload="auto"></audio>
+    <audio id="voiceEffectAudio" src="static_sweep_short.mp3" preload="auto"></audio> 
+    
+    <script src="script.js"></script>
 </body>
 </html>
