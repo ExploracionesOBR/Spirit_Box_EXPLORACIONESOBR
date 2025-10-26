@@ -4,18 +4,17 @@
 // PASO 1: Variables de Configuración
 // ----------------------------------------------------
 
-// *** REEMPLAZA ESTA URL con la URL de Despliegue que obtuviste en el Paso 3 ***
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbztaRku_s5CgBsgidkNvf3PQnc-UIHg6V6B0VIPfVRKcn-jMho8yorBS6Y3XQiXg9zF/exec"; 
+// *** URL DE TU API DE SHEETDB.IO ***
+const APPS_SCRIPT_URL = "https://sheetdb.io/api/v1/ej186l5av6pq2"; 
 
-let frasesGuion = [];       // Almacena las frases cargadas del Sheet
-let fraseActualIndex = 0;   // Contador para saber qué frase del guion sigue
+let frasesGuion = [];       // Almacena las frases cargadas
+let fraseActualIndex = 0;   // Contador secuencial para el guion
 
 const synth = window.speechSynthesis;
 let display = document.getElementById('display');
 let statusMessage = document.getElementById('status');
 let isSpeaking = false;
-let intervalId; // Para controlar el ruido aleatorio
-
+let intervalId; 
 
 // ----------------------------------------------------
 // PASO 2: Lógica de Voz y Ruido
@@ -50,7 +49,6 @@ function hablarComoSpiritBox(texto) {
     };
 
     synth.speak(utterance);
-    
     console.log(`[TRUCO] Diciendo: ${texto}`);
 }
 
@@ -58,6 +56,7 @@ function hablarComoSpiritBox(texto) {
 function generarRuidoTexto() {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_#@* ";
     let noise = "";
+    // Genera una secuencia aleatoria de 30 caracteres
     for (let i = 0; i < 30; i++) {
         noise += chars.charAt(Math.floor(Math.random() * chars.length));
     }
@@ -73,8 +72,6 @@ function iniciarRuidoAleatorio() {
              display.innerHTML = generarRuidoTexto();
         }
     }, 100); 
-
-    // Opcional: añade el sonido de estática de radio de fondo aquí.
 }
 
 function detenerRuido() {
@@ -100,46 +97,51 @@ function activarTruco() {
         return;
     }
     
+    // Si llegamos al final del guion, reiniciamos la secuencia
     if (fraseActualIndex >= frasesGuion.length) {
         statusMessage.textContent = "FIN DEL GUION. Reiniciando la secuencia.";
-        fraseActualIndex = 0; // Reinicia para demostraciones continuas
+        fraseActualIndex = 0; 
     }
 
-    // Obtiene la frase secuencial del guion
+    // Obtiene la frase secuencial del guion y la reproduce
     const fraseSecreta = frasesGuion[fraseActualIndex];
-    
-    // Ejecuta la función de voz y avanza el índice
     hablarComoSpiritBox(fraseSecreta);
     fraseActualIndex++;
 
-    statusMessage.textContent = `Pregunta ${fraseActualIndex} activada.`;
+    statusMessage.textContent = `Respuesta ${fraseActualIndex} activada.`;
 }
 
 
 // ----------------------------------------------------
-// PASO 4: Carga de Datos desde Google Sheets
+// PASO 4: Carga de Datos desde SheetDB.io
 // ----------------------------------------------------
 
 async function cargarGuionDesdeSheets() {
-    statusMessage.textContent = "Conectando a Google Sheets...";
+    statusMessage.textContent = "Conectando a SheetDB.io...";
     try {
         const response = await fetch(APPS_SCRIPT_URL);
         if (!response.ok) {
-            throw new Error(`Error HTTP: ${response.status}`);
+            throw new Error(`Error HTTP: ${response.status}. Revisa la URL de SheetDB.`);
         }
-        const data = await response.json();
         
-        if (data.frases && data.frases.length > 0) {
-            frasesGuion = data.frases;
+        const data = await response.json(); 
+        
+        if (Array.isArray(data) && data.length > 0) {
+            // Extrae los valores de la columna 'Respuesta' (o 'respuesta' si hay minúsculas)
+            frasesGuion = data.map(row => row.Respuesta || row.respuesta || ''); 
+
+            // Filtramos cualquier posible fila vacía 
+            frasesGuion = frasesGuion.filter(f => f.length > 0);
+
             statusMessage.textContent = `Guion cargado con ${frasesGuion.length} respuestas. ¡Listo!`;
         } else {
-            frasesGuion = ["Hola", "No hay frases", "Cargadas"];
-            statusMessage.textContent = "Advertencia: Guion cargado sin frases. Usando respaldo.";
+            frasesGuion = ["Error de datos", "Revisa tu Sheet DB", "No hay frases"];
+            statusMessage.textContent = "Advertencia: Guion vacío o con formato incorrecto. Usando respaldo.";
         }
     } catch (error) {
         console.error("Error al cargar el guion:", error);
         frasesGuion = ["Error de conexión", "Inténtalo de nuevo"];
-        statusMessage.textContent = "Error al conectar con Sheets. Usando respaldo de emergencia.";
+        statusMessage.textContent = "Error al conectar con SheetDB. Usando respaldo de emergencia.";
     }
     
     // Inicia la simulación de ruido una vez que los datos están cargados
