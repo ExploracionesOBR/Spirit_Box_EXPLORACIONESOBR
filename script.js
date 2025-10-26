@@ -33,7 +33,6 @@ const voiceEffectAudio = document.getElementById('voiceEffectAudio');
 const energyBar = document.getElementById('energyBar');
 const currentStatusText = document.getElementById('currentStatusText');
 let energyLevel = 0; 
-let speakingTimeout; 
 let currentVolume = 0.8; 
 
 // ----------------------------------------------------
@@ -108,18 +107,62 @@ function detenerControlVolumen() {
 }
 
 
-// Función para encontrar una voz en español de México (o similar)
-function getMexicanVoice() {
+// *** NUEVA FUNCIÓN: Obtener la voz específica por tipo ***
+function getVoiceByType(type) {
     const voices = synth.getVoices();
-    return voices.find(voice => voice.lang.includes('es-MX')) ||
-           voices.find(voice => voice.lang.includes('es-ES')) ||
-           voices.find(voice => voice.lang.startsWith('es'));
+    const esVoices = voices.filter(voice => voice.lang.startsWith('es'));
+
+    // Priorizar voces por tono o nombre que sugieran el tipo
+    switch (type.toUpperCase()) {
+        case 'MASCULINO':
+            // Buscar una voz de tono bajo o genérica
+            return esVoices.find(v => v.name.includes('male') || v.name.includes('Man') || v.name.includes('Jorge') || v.name.includes('Juan')) || esVoices[0]; 
+        case 'DAMA':
+            // Buscar una voz femenina (la mayoría de las voces son femeninas por defecto)
+            return esVoices.find(v => v.name.includes('female') || v.name.includes('Woman') || v.name.includes('Laura') || v.name.includes('Beatriz') || v.name.includes('Zira')) || esVoices[1] || esVoices[0]; 
+        case 'JUVENIL':
+            // Buscar una voz con un tono ligeramente más alto o infantil (si es posible)
+            return esVoices.find(v => v.name.includes('child') || v.name.includes('Kid') || v.name.includes('niño')) || esVoices[2] || esVoices[0];
+        default:
+            return esVoices[0] || null;
+    }
 }
 
-// *** FUNCIÓN CRÍTICA: LECTURA CON FRAGMENTOS DE PALABRAS (VOZ FLUIDA) ***
+// *** NUEVA FUNCIÓN: Hablar un fragmento de voz individual ***
+function speakIndividualVoice(text, voiceType, volumeMultiplier, delayMs, rate, pitch) {
+    return new Promise(resolve => {
+        setTimeout(() => {
+            const voice = getVoiceByType(voiceType);
+            if (!voice) {
+                console.error("Voz no encontrada para el tipo:", voiceType);
+                resolve();
+                return;
+            }
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.voice = voice;
+            utterance.lang = voice.lang;
+            utterance.rate = rate;
+            utterance.pitch = pitch;
+            utterance.volume = currentVolume * volumeMultiplier; // Aplicar el multiplicador de eco/volumen
+
+            utterance.onend = resolve;
+            utterance.onerror = resolve; // Asegurar que el Promise se resuelva incluso en caso de error
+
+            if (isSpeaking) {
+                synth.speak(utterance);
+            } else {
+                resolve();
+            }
+        }, delayMs);
+    });
+}
+
+
+// *** FUNCIÓN CRÍTICA: LECTURA CON ECO DE MÚLTIPLES VOCES (SIN DELETREO) ***
 async function hablarComoSpiritBox(texto) {
-    if (!synth) {
-        display.innerHTML = "[ERROR: Voz no soportada]";
+    if (!synth || isSpeaking) {
+        display.innerHTML = "[ERROR: Voz no soportada o ya está hablando]";
         return;
     }
 
@@ -128,99 +171,79 @@ async function hablarComoSpiritBox(texto) {
     isSpeaking = true;
     
     iniciarRuidosDeFondo(); 
+
+    // Muestra el texto completo al inicio
+    const upperText = texto.toUpperCase();
+    display.innerHTML = upperText;
+    currentStatusText.textContent = "TRANSMITIENDO...";
+    actualizarEnergyBar(100);
+    
+    // Configuraciones de voz base (alta velocidad, tono neutro)
+    const baseRate = isFastSpeed ? 1.6 : 1.4;
+    const basePitch = 1.0; 
+    
+    // --- LÓGICA DE INTERFERENCIA DE AUDIO Y VOZ PRINCIPAL ---
+
+    // 1. Bajar el volumen de los ruidos de fondo antes de la voz principal
+    if (staticAudio1) staticAudio1.volume = currentVolume * 0.1; 
+    if (staticAudio2) staticAudio2.volume = currentVolume * 0.05; 
+    if (sweepAudio) sweepAudio.volume = currentVolume * 0.1; 
+
+    // 2. Reproducir el efecto de impacto/glitch al inicio
     if (voiceEffectAudio) {
         voiceEffectAudio.currentTime = 0;
         voiceEffectAudio.volume = currentVolume; 
         await voiceEffectAudio.play().catch(e => console.error("Error al reproducir voiceEffectAudio:", e));
     }
 
-    const voice = getMexicanVoice();
+    // 3. Hablar la voz principal (MASCULINO)
+    const principalPromise = speakIndividualVoice(
+        upperText, 
+        'MASCULINO', 
+        1.0, // Volumen total
+        0,   // Sin delay
+        baseRate, 
+        basePitch
+    );
+
+    // 4. Configurar el Eco con las otras dos voces (se lanzan casi simultáneamente)
+    const echoDelayBase = 50; // Milisegundos de delay entre la voz principal y el eco
     
-    // Configuraciones de voz para velocidad y tono
-    const voiceRateBase = 1.4; // Voz muy rápida
-    const voicePitchBase = 1.0; 
+    // Voz Secundaria (DAMA): Volumen medio-bajo, ligero delay y tono ligeramente más alto
+    const secondaryPromise = speakIndividualVoice(
+        upperText, 
+        'DAMA', 
+        0.5, // 50% del volumen base
+        echoDelayBase + Math.random() * 50, // 50ms a 100ms de delay
+        baseRate * 0.95, // Ligeramente más lenta
+        1.1 // Tono ligeramente más alto
+    );
 
-    const actualVoiceRate = isFastSpeed ? 1.6 : voiceRateBase; 
-
-
-    // *** CAMBIO CLAVE: Dividir por palabras y eliminar espacios vacíos ***
-    const textoArray = texto.toUpperCase().split(' ').filter(word => word.length > 0);
-    let currentIndex = 0;
+    // Voz Terciaria (JUVENIL): Volumen bajo, mayor delay y tono más bajo/alto (aleatorio)
+    const tertiaryPromise = speakIndividualVoice(
+        upperText, 
+        'JUVENIL', 
+        0.3, // 30% del volumen base
+        echoDelayBase + 100 + Math.random() * 100, // 150ms a 250ms de delay
+        baseRate * 1.05, // Ligeramente más rápida
+        0.9 // Tono ligeramente más bajo
+    );
     
-    // Muestra el texto completo al inicio
-    display.innerHTML = texto.toUpperCase();
-    currentStatusText.textContent = "TRANSMITIENDO...";
-    actualizarEnergyBar(100);
+    // 5. Esperar a que TODAS las voces terminen
+    await Promise.all([principalPromise, secondaryPromise, tertiaryPromise]);
+    
+    // --- LIMPIEZA FINAL ---
+    
+    isSpeaking = false;
+    if (voiceEffectAudio) voiceEffectAudio.pause();
+    
+    // Restablecer volúmenes de fondo al terminar
+    setMasterVolume(currentVolume); 
 
-    function speakFragment() {
-        if (!isSpeaking || currentIndex >= textoArray.length) {
-            // FIN DE LA FRASE
-            isSpeaking = false;
-            if (voiceEffectAudio) voiceEffectAudio.pause();
-            
-            // Restablecer volúmenes de fondo al terminar
-            setMasterVolume(currentVolume); 
-
-            iniciarRuidoVisual(); 
-            currentStatusText.textContent = "SCANNING";
-            actualizarEnergyBar(30); 
-            reiniciarTemporizadorAleatorio(); 
-            return;
-        }
-
-        // --- LÓGICA DE INTERFERENCIA DE AUDIO (ANTES DEL FRAGMENTO DE VOZ) ---
-        
-        // Bajar el volumen de los ruidos de fondo
-        if (staticAudio1) staticAudio1.volume = currentVolume * 0.1; 
-        if (staticAudio2) staticAudio2.volume = currentVolume * 0.05; 
-        if (sweepAudio) sweepAudio.volume = currentVolume * 0.1; 
-
-        // Fragmentos de 1 a 2 PALABRAS
-        const fragmentLength = Math.floor(Math.random() * 2) + 1; 
-        const fragment = textoArray.slice(currentIndex, currentIndex + fragmentLength).join(' ');
-        
-        currentIndex += fragmentLength;
-
-        const fragmentUtterance = new SpeechSynthesisUtterance(fragment);
-        
-        if (voice) fragmentUtterance.voice = voice;
-        fragmentUtterance.lang = 'es-MX'; 
-        fragmentUtterance.rate = actualVoiceRate;     
-        fragmentUtterance.pitch = voicePitchBase; 
-
-        // Reproducir un pico de estática audible (el golpe de interferencia)
-        if (voiceEffectAudio) {
-             voiceEffectAudio.currentTime = 0;
-             voiceEffectAudio.play().catch(e => console.warn("Error al iniciar voiceEffectAudio.", e));
-        }
-
-
-        fragmentUtterance.onend = () => {
-             
-             // --- LÓGICA DE INTERFERENCIA DE AUDIO (DURANTE LA MICRO-PAUSA) ---
-             // Subir el volumen de la estática momentáneamente para simular el fallo/eco
-             if (staticAudio1) staticAudio1.volume = currentVolume * 0.6; 
-             if (sweepAudio) sweepAudio.volume = currentVolume * 0.3; 
-             
-             // Pausa MÍNIMA (1ms a 10ms) para un efecto de eco instantáneo y agresivo
-             const delay = Math.random() * 9 + 1; 
-             
-             speakingTimeout = setTimeout(() => {
-                // Volver a bajar el volumen antes de la siguiente palabra
-                if (staticAudio1) staticAudio1.volume = currentVolume * 0.1; 
-                if (sweepAudio) sweepAudio.volume = currentVolume * 0.1; 
-                speakFragment();
-             }, delay);
-        };
-        
-        if (isSpeaking) {
-             synth.speak(fragmentUtterance);
-        } else {
-             synth.cancel();
-        }
-    }
-
-    speakFragment();
+    iniciarRuidoVisual(); 
+    currentStatusText.textContent = "SCANNING";
+    actualizarEnergyBar(30); 
+    reiniciarTemporizadorAleatorio(); 
 }
 
 function generarRuidoTexto() {
