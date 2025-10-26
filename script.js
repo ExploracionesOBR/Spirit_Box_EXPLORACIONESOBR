@@ -1,9 +1,10 @@
 // CÓDIGO DE JAVASCRIPT (Archivo script.js)
 
 // ----------------------------------------------------
-// PASO 1: Variables de Configuración (Sin Cambios)
+// PASO 1: Variables de Configuración
 // ----------------------------------------------------
 
+// URL de la base de datos (SheetDB.io) - Reemplaza si usas otra
 const APPS_SCRIPT_URL_GUION = "https://sheetdb.io/api/v1/ej186l5av6pq2"; 
 const APPS_SCRIPT_URL_ALEATORIAS = APPS_SCRIPT_URL_GUION + "?sheet=Aleatorias"; 
 
@@ -28,7 +29,8 @@ let isFastSpeed = false;
 const staticAudio1 = document.getElementById('staticAudio1');
 const staticAudio2 = document.getElementById('staticAudio2'); 
 const sweepAudio = document.getElementById('sweepAudio');
-const voiceEffectAudio = document.getElementById('voice_effect.mp3'); // Asegúrate de que esta ruta sea correcta
+// Asegúrate que el ID del audio en HTML sea 'voiceEffectAudio'
+const voiceEffectAudio = document.getElementById('voiceEffectAudio'); 
 
 // Elementos visuales y de control
 const energyBar = document.getElementById('energyBar');
@@ -40,7 +42,7 @@ let currentVolume = 0.8;
 // PASO 2: Lógica de Voz, Ruido y Volumen (Perilla)
 // ----------------------------------------------------
 
-// Función para ajustar el volumen de todos los audios
+// Función para ajustar el volumen de todos los audios y la rotación de la perilla
 function setMasterVolume(volume) {
     currentVolume = Math.max(0, Math.min(1, volume)); 
     
@@ -55,17 +57,16 @@ function setMasterVolume(volume) {
     
     statusMessage.textContent = `FRECUENCIA: ${(currentVolume * 100).toFixed(0)}%`;
 
-    // --- Rotación visual de la perilla de volumen ---
+    // Rotación visual de la perilla de volumen
     const dial = document.getElementById('volumeDial');
     if (dial) {
-        // Mapear el volumen (0-1) a un rango de rotación (ej: -135 a 135 grados)
-        const rotation = (currentVolume * 270) - 135; // 270 grados de rango, centrado
+        // Mapear el volumen (0-1) a un rango de rotación (-135 a 135 grados)
+        const rotation = (currentVolume * 270) - 135; 
         dial.style.transform = `rotate(${rotation}deg)`;
     }
-    // ------------------------------------------------
 }
 
-// Lógica de control de volumen con el mouse/touch (Sin cambios, pero ahora rota la perilla)
+// Lógica de control de volumen con el mouse/touch
 let isDragging = false;
 let startY = 0; 
 
@@ -126,7 +127,7 @@ function getMainVoice() {
     return esVoices.find(v => v.name.includes('male') || v.name.includes('Man') || v.name.includes('Jorge')) || esVoices[0] || null;
 }
 
-// Hablar la frase y su eco de forma secuencial y estable
+// *** FUNCIÓN CLAVE: Hablar la frase y su eco de forma secuencial y estable ***
 async function speakMainPhraseAndEcho(text) {
     return new Promise(resolve => {
         const mainVoice = getMainVoice();
@@ -150,7 +151,7 @@ async function speakMainPhraseAndEcho(text) {
         utteranceMain.onend = () => {
             // --- INICIO DEL ECO DIGITAL (SECUENCIAL Y ESTABLE) ---
             
-            // Pausa y pico de estática antes del eco
+            // Pico de estática antes del eco
             if (staticAudio1) staticAudio1.volume = currentVolume * 0.6;
             if (sweepAudio) sweepAudio.volume = currentVolume * 0.3;
             
@@ -264,7 +265,7 @@ function limpiarEstadoHablando() {
 // ******************************************************
 
 
-// *** NUEVA FUNCIÓN PARA GENERAR EL RUIDO DE FRECUENCIAS EN LA PANTALLA ***
+// *** FUNCIÓN PARA GENERAR EL RUIDO DE FRECUENCIAS EN LA PANTALLA ***
 function generarRuidoFrecuencias(numChars = 200) {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_#@*/\\|~^`-+=<>"; // Más caracteres
     let noise = "";
@@ -280,25 +281,25 @@ function iniciarRuidoVisual() {
     if (intervalId) return; 
     intervalId = setInterval(() => {
         if (!isSpeaking) {
-            // Calcula cuántos caracteres se necesitan para llenar la pantalla
+            // Estima cuántos caracteres se necesitan para llenar la pantalla
             const displayElement = document.getElementById('display');
             const container = document.getElementById('display-container');
             if (displayElement && container) {
-                // Estimación aproximada: ancho del contenedor / ancho de un caracter * (altura del contenedor / altura de línea)
-                const charWidth = 10; //px, estimación
+                // Estimación aproximada para llenar el área (depende del CSS)
+                const charWidth = 10; // Estimación en px
                 const lineHeight = 1.2; // del css
                 const numCols = Math.floor(container.offsetWidth / charWidth);
                 const numRows = Math.floor(container.offsetHeight / (parseFloat(getComputedStyle(displayElement).fontSize) * lineHeight));
-                const totalChars = numCols * numRows * 1.2; // Un poco más para asegurar que se llena
+                const totalChars = numCols * numRows * 1.2; 
                 displayElement.innerHTML = generarRuidoFrecuencias(totalChars);
             } else {
                 display.innerHTML = generarRuidoFrecuencias(200); // Fallback
             }
         }
-    }, 70); // Intervalo ligeramente más lento para un ruido más "estable"
+    }, 70); // Intervalo para el parpadeo del ruido
 }
 
-// Detener ruido visual (sin cambios)
+// Detener ruido visual
 function detenerRuidoVisual() {
     if (intervalId) {
         clearInterval(intervalId);
@@ -336,7 +337,10 @@ function updateStatusMessage() {
 }
 
 
-// Lógica de Velocidad (Botón SPEED) (Sin cambios)
+// ----------------------------------------------------
+// PASO 3: Lógica de Velocidad (Botón SPEED)
+// ----------------------------------------------------
+
 function toggleSpeed() {
     isFastSpeed = !isFastSpeed; 
     reiniciarTemporizadorAleatorio(); 
@@ -350,7 +354,10 @@ function toggleSpeed() {
 }
 
 
-// Lógica de Respuesta Aleatoria (Automática) (Sin cambios)
+// ----------------------------------------------------
+// PASO 4: Lógica de Respuesta Aleatoria (Automática)
+// ----------------------------------------------------
+
 function dispararRespuestaAleatoria() {
     iniciarRuidosDeFondo(); 
     
@@ -387,7 +394,10 @@ function reiniciarTemporizadorAleatorio() {
 }
 
 
-// Lógica del Guion (Botón EVP MODE) (Sin cambios)
+// ----------------------------------------------------
+// PASO 5: Lógica del Guion (Botón EVP MODE)
+// ----------------------------------------------------
+
 function activarTruco() {
     iniciarRuidosDeFondo(); 
     
@@ -421,7 +431,10 @@ function activarTruco() {
 }
 
 
-// Carga de Datos y Inicialización (Sin cambios)
+// ----------------------------------------------------
+// PASO 6: Carga de Datos y Inicialización
+// ----------------------------------------------------
+
 async function cargarGuionPrincipal() {
     statusMessage.textContent = "Conectando a SheetDB (Guion Secuencial)...";
     try {
@@ -479,6 +492,7 @@ async function inicializarSpiritBox() {
 
 document.addEventListener('DOMContentLoaded', inicializarSpiritBox);
 
+// Listener para el primer click del usuario (permite la reproducción de audio)
 document.addEventListener('click', () => {
     if ((staticAudio1 && staticAudio1.paused) && !isSpeaking) {
         iniciarRuidosDeFondo();
