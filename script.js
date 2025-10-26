@@ -25,7 +25,7 @@ const NORMAL_INTERVAL_MS = 8000;
 const FAST_INTERVAL_MS = 4000; 
 let isFastSpeed = false; 
 
-// Elementos de audio
+// Elementos de audio (Variables que buscan los IDs del HTML)
 const staticAudio1 = document.getElementById('staticAudio1'); // static_loop.mp3
 const staticAudio2 = document.getElementById('staticAudio2'); // static_loop2.mp3
 const sweepAudio = document.getElementById('sweepAudio');     // sweep_effect.mp3
