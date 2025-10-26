@@ -29,7 +29,6 @@ let isFastSpeed = false;
 const staticAudio1 = document.getElementById('staticAudio1');
 const staticAudio2 = document.getElementById('staticAudio2'); 
 const sweepAudio = document.getElementById('sweepAudio');
-// Asegúrate que el ID del audio en HTML sea 'voiceEffectAudio'
 const voiceEffectAudio = document.getElementById('voiceEffectAudio'); 
 
 // Elementos visuales y de control
@@ -127,8 +126,8 @@ function getMainVoice() {
     return esVoices.find(v => v.name.includes('male') || v.name.includes('Man') || v.name.includes('Jorge')) || esVoices[0] || null;
 }
 
-// *** FUNCIÓN CLAVE: Hablar la frase y su eco de forma secuencial y estable ***
-async function speakMainPhraseAndEcho(text) {
+// *** FUNCIÓN CLAVE SIMPLIFICADA: Hablar la frase sin eco de síntesis ***
+async function speakMainPhrase(text) {
     return new Promise(resolve => {
         const mainVoice = getMainVoice();
         if (!mainVoice) {
@@ -149,45 +148,14 @@ async function speakMainPhraseAndEcho(text) {
         if (sweepAudio) sweepAudio.volume = currentVolume * 0.1;
 
         utteranceMain.onend = () => {
-            // --- INICIO DEL ECO DIGITAL (SECUENCIAL Y ESTABLE) ---
-            
-            // Pico de estática antes del eco
+            // Sube la estática inmediatamente después de terminar la voz
             if (staticAudio1) staticAudio1.volume = currentVolume * 0.6;
-            if (sweepAudio) sweepAudio.volume = currentVolume * 0.3;
-            
-            // Delay para el eco (simulación de la segunda voz)
-            setTimeout(() => {
-                
-                // Segunda versión de la frase (Eco)
-                const utteranceEcho = new SpeechSynthesisUtterance(text);
-                utteranceEcho.voice = mainVoice;
-                utteranceEcho.lang = mainVoice.lang;
-                utteranceEcho.rate = utteranceMain.rate * 1.05; // Ligeramente más rápido
-                utteranceEcho.pitch = 1.2; // Tono más alto (simula otra voz o distorsión digital)
-                utteranceEcho.volume = currentVolume * 0.4; // Volumen mucho más bajo
-
-                // Bajar el ruido de fondo antes del eco
-                if (staticAudio1) staticAudio1.volume = currentVolume * 0.1;
-                if (sweepAudio) sweepAudio.volume = currentVolume * 0.1;
-
-                utteranceEcho.onend = () => {
-                    // Pico de estática final
-                    if (staticAudio1) staticAudio1.volume = currentVolume * 0.6;
-                    resolve();
-                };
-                utteranceEcho.onerror = resolve;
-
-                if (isSpeaking) {
-                    synth.speak(utteranceEcho);
-                } else {
-                    resolve();
-                }
-
-            }, 100); // 100ms de delay para el eco
-            
-            // --- FIN DEL ECO DIGITAL ---
+            resolve();
         };
-        utteranceMain.onerror = resolve;
+        utteranceMain.onerror = () => {
+             console.warn(`Error de síntesis de voz para ${text}.`);
+             resolve();
+        };
 
         if (isSpeaking) {
             synth.speak(utteranceMain);
@@ -198,7 +166,7 @@ async function speakMainPhraseAndEcho(text) {
 }
 
 
-// FUNCIÓN PRINCIPAL REVISADA
+// FUNCIÓN PRINCIPAL REVISADA PARA MÁXIMA ESTABILIDAD
 async function hablarComoSpiritBox(texto) {
     // Si ya está hablando o no hay soporte, salir.
     if (!synth || isSpeaking) {
@@ -230,15 +198,16 @@ async function hablarComoSpiritBox(texto) {
     }, estimatedDurationMs); 
     // ************************************
 
-    // 1. Reproducir el efecto de impacto/glitch al inicio
+    // 1. Reproducir el efecto de impacto/glitch al inicio (Esto simula el eco y distorsión)
     if (voiceEffectAudio) {
         voiceEffectAudio.currentTime = 0;
         voiceEffectAudio.volume = currentVolume; 
-        await voiceEffectAudio.play().catch(e => console.error("Error al reproducir voiceEffectAudio:", e));
+        // No esperamos aquí. Dejamos que el glitch suene mientras la voz habla
+        voiceEffectAudio.play().catch(e => console.error("Error al reproducir voiceEffectAudio:", e));
     }
 
-    // 2. Ejecutar la voz principal y el eco secuencialmente
-    await speakMainPhraseAndEcho(upperText);
+    // 2. Ejecutar la voz principal (¡Solo una voz!)
+    await speakMainPhrase(upperText);
     
     // 3. Limpieza solo si el timeout de seguridad no se adelantó
     if (isSpeaking) {
@@ -251,8 +220,10 @@ function limpiarEstadoHablando() {
     clearTimeout(speakingSafetyTimeout);
     isSpeaking = false;
     
+    // Es crucial cancelar la síntesis si se bloqueó por alguna razón
+    synth.cancel(); 
+    
     if (voiceEffectAudio) voiceEffectAudio.pause();
-    synth.cancel(); // Asegurar que todo se detiene
 
     // Restablecer volúmenes de fondo al terminar
     setMasterVolume(currentVolume); 
@@ -276,27 +247,26 @@ function generarRuidoFrecuencias(numChars = 200) {
     return noise;
 }
 
-// Modificada para usar generarRuidoFrecuencias
+// Iniciar Ruido Visual (Llenado de pantalla)
 function iniciarRuidoVisual() {
     if (intervalId) return; 
     intervalId = setInterval(() => {
         if (!isSpeaking) {
-            // Estima cuántos caracteres se necesitan para llenar la pantalla
             const displayElement = document.getElementById('display');
             const container = document.getElementById('display-container');
             if (displayElement && container) {
-                // Estimación aproximada para llenar el área (depende del CSS)
-                const charWidth = 10; // Estimación en px
-                const lineHeight = 1.2; // del css
+                // Estimación para llenar el área
+                const charWidth = 10; 
+                const lineHeight = 1.2; 
                 const numCols = Math.floor(container.offsetWidth / charWidth);
                 const numRows = Math.floor(container.offsetHeight / (parseFloat(getComputedStyle(displayElement).fontSize) * lineHeight));
                 const totalChars = numCols * numRows * 1.2; 
                 displayElement.innerHTML = generarRuidoFrecuencias(totalChars);
             } else {
-                display.innerHTML = generarRuidoFrecuencias(200); // Fallback
+                display.innerHTML = generarRuidoFrecuencias(200); 
             }
         }
-    }, 70); // Intervalo para el parpadeo del ruido
+    }, 70); 
 }
 
 // Detener ruido visual
@@ -315,10 +285,6 @@ async function iniciarRuidosDeFondo() {
     } catch (e) {
         console.warn("Fallo al reproducir audio. Esto es normal antes del primer toque del usuario.", e);
     }
-}
-
-function detenerRuidosDeFondo() {
-    setMasterVolume(currentVolume);
 }
 
 function actualizarEnergyBar(level) {
