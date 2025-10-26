@@ -26,42 +26,38 @@
             overflow-x: hidden;
         }
 
+        /* *** ENCABEZADO ELIMINADO del DOM visible *** */
         .header {
-            font-size: 1.8em;
-            margin-bottom: 20px;
-            text-shadow: 0 0 7px #39ff14, 0 0 10px #39ff14;
-            letter-spacing: 2px;
-            text-align: center;
+            display: none; 
         }
         
         /* ESTRUCTURA DEL DISPOSITIVO CON IMAGEN DE FONDO */
         .device-container {
             position: relative;
-            width: 420px; /* Ancho fijo para la imagen base */
-            height: 700px; /* Alto fijo para la imagen base */
-            /* *** AQUI DEBE IR EL NOMBRE DE TU IMAGEN FINAL *** */
-            background-image: url('spiritbox_on.png'); 
+            width: 420px; 
+            height: 700px; 
+            /* *** RUTA DE IMAGEN FINAL (Ajusta la extensión si usas PNG) *** */
+            background-image: url('spiritbox_on.jpg'); 
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
             box-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
             border-radius: 20px; 
-            /* Para que la imagen sea totalmente responsiva: */
             max-width: 100%;
-            height: auto; /* Permite que el alto se ajuste proporcionalmente */
-            aspect-ratio: 420 / 700; /* Proporción ancho/alto de la imagen */
+            height: auto; 
+            aspect-ratio: 420 / 700; 
         }
 
         /* PANTALLA PRINCIPAL (DISPLAY DE TEXTO) */
         .main-screen {
             position: absolute;
-            top: 108px; /* Ajustado para la nueva imagen */
+            top: 108px; 
             left: 50%;
             transform: translateX(-50%);
-            width: 325px; /* Ajustado para la nueva imagen */
-            height: 250px; /* Ajustado para la nueva imagen */
-            background-color: rgba(10, 20, 10, 0.85); /* Fondo ligeramente más opaco */
-            border: 1px solid rgba(57, 255, 20, 0.5); /* Borde sutil */
+            width: 325px; 
+            height: 250px; 
+            background-color: rgba(10, 20, 10, 0.85); 
+            border: 1px solid rgba(57, 255, 20, 0.5); 
             box-shadow: inset 0 0 10px rgba(57, 255, 20, 0.5);
             text-align: left; 
             overflow: hidden;
@@ -74,11 +70,11 @@
             flex-wrap: wrap; 
             word-break: break-all; 
             box-sizing: border-box; 
-            color: #39ff14; /* Color de texto del display */
+            color: #39ff14; 
             text-shadow: 0 0 5px #39ff14, 0 0 10px #39ff14;
         }
         .frase-actual {
-            color: #fff; /* Frases con un poco más de blanco */
+            color: #fff; 
             text-shadow: 0 0 10px #fff, 0 0 20px #39ff14;
             animation: glitch 0.05s infinite alternate; 
             display: block; 
@@ -93,11 +89,11 @@
         /* BARRAS DE SONIDO / ENERGÍA */
         .energy-meter-overlay {
             position: absolute;
-            top: 485px; /* Ajustado para la nueva imagen */
+            top: 485px; 
             left: 50%;
             transform: translateX(-50%);
-            width: 250px; /* Ancho del medidor en la imagen */
-            height: 20px; /* Alto del medidor en la imagen */
+            width: 250px; 
+            height: 20px; 
             background-color: rgba(13, 26, 13, 0.8); 
             border: 1px solid rgba(57, 255, 20, 0.5);
             padding: 2px;
@@ -105,7 +101,7 @@
             overflow: hidden;
         }
         .energy-bar {
-            background-color: #f39c12; /* Color amarillo/naranja como en la imagen */
+            background-color: #f39c12; 
             height: 100%;
             width: 0%; 
             box-shadow: 0 0 5px #f39c12;
@@ -115,12 +111,12 @@
         /* DIAL DE FRECUENCIA (USADO PARA CONTROL DE VOLUMEN) */
         .frequency-dial-overlay {
             position: absolute;
-            top: 412px; /* Ajustado para la nueva imagen */
-            left: 280px; /* Ajustado para la nueva imagen */
+            top: 412px; 
+            left: 280px; 
             width: 60px; 
             height: 60px;
             cursor: grab; 
-            z-index: 101; /* Asegurar que esté por encima de la imagen */
+            z-index: 101; 
         }
         .frequency-dial-overlay:active {
             cursor: grabbing;
@@ -131,21 +127,20 @@
             position: absolute;
             cursor: pointer;
             z-index: 100; 
-            /* Fondo transparente para no ocultar la imagen del botón */
             background-color: transparent; 
             border: none;
         }
         /* Botón EVP MODE */
         .evp-mode-button-overlay {
-            top: 520px; /* Ajustado para la nueva imagen */
-            left: 55px; /* Ajustado para la nueva imagen */
+            top: 520px; 
+            left: 55px; 
             width: 140px; 
             height: 70px; 
         }
-        /* Botón SPEED (antes Record Session) */
+        /* Botón SPEED */
         .speed-button-overlay {
-            top: 520px; /* Ajustado para la nueva imagen */
-            left: 230px; /* Ajustado para la nueva imagen */
+            top: 520px; 
+            left: 230px; 
             width: 140px; 
             height: 70px; 
         }
@@ -164,22 +159,18 @@
 
         /* Responsive adjustments */
         @media (max-width: 480px) {
-            .header {
-                font-size: 1.5em;
-                margin-bottom: 15px;
-            }
             .device-container {
-                width: 100%; /* Ajustar al 100% del ancho disponible en pantallas pequeñas */
+                width: 100%; 
                 height: auto;
             }
             .main-screen {
-                font-size: 1em; /* Reducir tamaño de fuente en pantallas pequeñas */
+                font-size: 1em; 
             }
         }
     </style>
 </head>
 <body>
-    <div class="header">E.O.B. SPIRIT BOX V5.0</div>
+    <div class="header"></div> 
 
     <div class="device-container">
         
@@ -191,6 +182,7 @@
             <div class="energy-bar" id="energyBar"></div>
         </div>
 
+        
         <div 
             class="frequency-dial-overlay" 
             id="volumeDial"
