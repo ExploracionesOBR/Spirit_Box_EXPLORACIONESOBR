@@ -5,7 +5,7 @@
 // ----------------------------------------------------
 
 // *** REEMPLAZA ESTA URL con la URL de Despliegue que obtuviste en el Paso 3 ***
-const APPS_SCRIPT_URL = "TU_URL_DE_APPS_SCRIPT_AQUI"; 
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbztaRku_s5CgBsgidkNvf3PQnc-UIHg6V6B0VIPfVRKcn-jMho8yorBS6Y3XQiXg9zF/exec"; 
 
 let frasesGuion = [];       // Almacena las frases cargadas del Sheet
 let fraseActualIndex = 0;   // Contador para saber qué frase del guion sigue
