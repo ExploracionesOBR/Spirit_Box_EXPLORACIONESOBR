@@ -18,7 +18,7 @@ let isSpeaking = false;
 let intervalId; 
 let randomTimerId; 
 
-// *** CONTROL DE TIEMPO AUTOMÁTICO ***
+// *** CONTROL DE TIEMPO AUTOMÁTICO (Speed) ***
 const NORMAL_INTERVAL_MS = 8000; 
 const FAST_INTERVAL_MS = 4000; 
 let isFastSpeed = false; 
@@ -101,7 +101,7 @@ function getMexicanVoice() {
            voices.find(voice => voice.lang.startsWith('es'));
 }
 
-// *** FUNCIÓN CRÍTICA: HABLAR CON EFECTO ENTRECORTADO/ECO SIMULADO (AJUSTADA Y AGRESIVA) ***
+// *** FUNCIÓN CRÍTICA: HABLAR CON EFECTO ENTRECORTADO/ECO SIMULADO (ULTRA RÁPIDO) ***
 async function hablarComoSpiritBox(texto) {
     if (!synth) {
         display.innerHTML = "[ERROR: Voz no soportada]";
@@ -120,7 +120,13 @@ async function hablarComoSpiritBox(texto) {
     }
 
     const voice = getMexicanVoice();
-    const voiceRate = isFastSpeed ? 1.4 : 1.0; 
+    
+    // Configuración para una voz menos robótica
+    const voiceRateBase = 1.1; 
+    const voicePitchBase = 0.9; 
+
+    const actualVoiceRate = isFastSpeed ? voiceRateBase * 1.3 : voiceRateBase; 
+
 
     const textoArray = texto.toUpperCase().split('');
     let currentIndex = 0;
@@ -140,19 +146,19 @@ async function hablarComoSpiritBox(texto) {
             return;
         }
 
-        // Fragmentos de 1 a 2 caracteres para mayor agresividad
+        // Fragmentos de 1 a 2 caracteres para máxima distorsión
         const fragmentLength = Math.floor(Math.random() * 2) + 1; 
         const fragment = textoArray.slice(currentIndex, currentIndex + fragmentLength).join('');
         
-        display.innerHTML += fragment;
+        display.innerHTML += fragment; 
         currentIndex += fragmentLength;
 
         const fragmentUtterance = new SpeechSynthesisUtterance(fragment);
         
         if (voice) fragmentUtterance.voice = voice;
         fragmentUtterance.lang = 'es-MX'; 
-        fragmentUtterance.rate = voiceRate;     
-        fragmentUtterance.pitch = 1.0; 
+        fragmentUtterance.rate = actualVoiceRate;     
+        fragmentUtterance.pitch = voicePitchBase; 
 
         if (staticAudio1) {
              staticAudio1.volume = currentVolume * 0.8;
@@ -163,8 +169,8 @@ async function hablarComoSpiritBox(texto) {
         }
 
         fragmentUtterance.onend = () => {
-             // Pausa muy corta de 10ms a 50ms para un efecto rápido
-             const delay = Math.random() * 40 + 10; 
+             // *** CAMBIO CLAVE: Pausa ultra-rápida de 5ms a 25ms ***
+             const delay = Math.random() * 20 + 5; // Mínimo 5ms, Máximo 25ms
              speakingTimeout = setTimeout(speakFragment, delay);
         };
         
@@ -193,7 +199,7 @@ function iniciarRuidoVisual() {
         if (!isSpeaking) {
              display.innerHTML = generarRuidoTexto();
         }
-    }, 100); 
+    }, 70); 
 }
 
 function detenerRuidoVisual() {
