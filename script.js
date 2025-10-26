@@ -4,9 +4,8 @@
 // PASO 1: Variables de Configuración
 // ----------------------------------------------------
 
-// *** ¡VERIFICA ESTA URL! ***
+// *** URL DE TU API DE SHEETDB.IO (MANTÉN TU URL CORRECTA AQUÍ) ***
 const APPS_SCRIPT_URL_GUION = "https://sheetdb.io/api/v1/ej186l5av6pq2"; 
-// La URL para las frases aleatorias es la MISMA, pero debe apuntar a la hoja "Aleatorias"
 const APPS_SCRIPT_URL_ALEATORIAS = APPS_SCRIPT_URL_GUION + "?sheet=Aleatorias"; 
 
 let frasesGuion = [];       
@@ -19,7 +18,9 @@ let statusMessage = document.getElementById('status');
 let isSpeaking = false;
 let intervalId; 
 let randomTimerId; 
-const RANDOM_INTERVAL_MS = 15000; 
+
+// *** AJUSTE DE TIEMPO: REDUCIDO A 8 SEGUNDOS ***
+const RANDOM_INTERVAL_MS = 8000; 
 
 // Elementos de audio (se buscarán en la raíz del repositorio)
 const staticAudio1 = document.getElementById('staticAudio1');
@@ -29,40 +30,113 @@ const voiceEffectAudio = document.getElementById('voiceEffectAudio');
 
 const energyBar = document.getElementById('energyBar');
 let energyLevel = 0; 
+let speakingTimeout; // Para el efecto entrecortado
 
-// [ ... Las funciones hablarComoSpiritBox(), generarRuidoTexto(), iniciarRuidoVisual(), etc. son las mismas ... ]
+// ----------------------------------------------------
+// PASO 2: Lógica de Voz y Ruido
+// ----------------------------------------------------
 
-// Función para simular el efecto de voz
+// Función para encontrar una voz en español de México (o similar)
+function getMexicanVoice() {
+    const voices = synth.getVoices();
+    // Priorizamos voces de México, luego de España, luego cualquier español.
+    return voices.find(voice => voice.lang.includes('es-MX')) ||
+           voices.find(voice => voice.lang.includes('es-ES')) ||
+           voices.find(voice => voice.lang.startsWith('es'));
+}
+
+// *** FUNCIÓN CRÍTICA: HABLAR CON EFECTO ENTRECORTADO/ECO SIMULADO ***
 async function hablarComoSpiritBox(texto) {
     if (!synth) {
         display.innerHTML = "[ERROR: Voz no soportada]";
         return;
     }
+
     detenerRuidoVisual(); 
     synth.cancel(); 
     isSpeaking = true;
     detenerRuidosDeFondo();
+    
+    // Reproducir efecto inicial de ruido/barrido
     if (voiceEffectAudio) {
         voiceEffectAudio.currentTime = 0;
         await voiceEffectAudio.play().catch(e => console.error("Error al reproducir voiceEffectAudio:", e));
     }
-    display.innerHTML = `<span class="frase-actual">${texto}</span>`;
-    actualizarEnergyBar(100); 
+
+    const voice = getMexicanVoice();
     let utterance = new SpeechSynthesisUtterance(texto);
-    utterance.lang = 'es-MX'; 
+    
+    // AJUSTES DE VOZ PARA SER MÁS NORMALES Y CREÍBLES (MEXICANO/ESPAÑOL)
+    if (voice) {
+        utterance.voice = voice;
+    } else {
+        utterance.lang = 'es-MX'; 
+    }
     utterance.rate = 1.0;     
-    utterance.pitch = 0.9;    
-    utterance.onend = () => {
-        isSpeaking = false;
-        if (voiceEffectAudio) voiceEffectAudio.pause();
-        iniciarRuidosDeFondo(); 
-        iniciarRuidoVisual(); 
-        actualizarEnergyBar(30); 
-        reiniciarTemporizadorAleatorio(); 
-    };
-    synth.speak(utterance);
+    utterance.pitch = 1.0; // Tono neutro
+
+    const textoArray = texto.toUpperCase().split('');
+    let currentIndex = 0;
+    const totalDuration = texto.length * 150; // Estimación de duración total (150ms por caracter)
+
+    display.innerHTML = "";
+    actualizarEnergyBar(100);
+
+    // Función que simula el entrecortado
+    function speakFragment() {
+        if (!isSpeaking || currentIndex >= textoArray.length) {
+            // FIN DE LA FRASE
+            isSpeaking = false;
+            if (voiceEffectAudio) voiceEffectAudio.pause();
+            iniciarRuidosDeFondo(); 
+            iniciarRuidoVisual(); 
+            actualizarEnergyBar(30); 
+            reiniciarTemporizadorAleatorio(); // Reinicia el temporizador de aleatorias
+            return;
+        }
+
+        const fragmentLength = Math.floor(Math.random() * 3) + 1; // 1 a 3 caracteres por fragmento
+        const fragment = textoArray.slice(currentIndex, currentIndex + fragmentLength).join('');
+        
+        display.innerHTML += fragment;
+        currentIndex += fragmentLength;
+
+        // Reproducir fragmento de voz
+        const fragmentUtterance = new SpeechSynthesisUtterance(fragment);
+        fragmentUtterance.lang = utterance.lang;
+        fragmentUtterance.rate = utterance.rate;
+        fragmentUtterance.pitch = utterance.pitch;
+        if (voice) fragmentUtterance.voice = voice;
+
+        // Pequeño ruido de estática al inicio del fragmento (efecto entrecortado)
+        if (staticAudio1) {
+             staticAudio1.volume = 0.8;
+             staticAudio1.play().catch(e => console.warn("Error al iniciar estática.", e));
+             setTimeout(() => {
+                 staticAudio1.volume = 0.6; // Bajar volumen al hablar
+             }, 50);
+        }
+
+
+        fragmentUtterance.onend = () => {
+             // Pequeño delay de 50ms a 200ms para el "glitch"
+             const delay = Math.random() * 150 + 50; 
+             speakingTimeout = setTimeout(speakFragment, delay);
+        };
+        
+        // Manejo de interrupción si el usuario presiona otro botón
+        if (isSpeaking) {
+             synth.speak(fragmentUtterance);
+        } else {
+             synth.cancel();
+        }
+    }
+
+    speakFragment();
 }
 
+
+// Genera un fragmento de texto de ruido (sin cambios)
 function generarRuidoTexto() {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_#@* ";
     let noise = "";
@@ -88,6 +162,7 @@ function detenerRuidoVisual() {
     }
 }
 
+// Lógica de Audio de Fondo (Estática y Barrido) - CRUCIAL PARA MÓVIL
 async function iniciarRuidosDeFondo() {
     try {
         if (staticAudio1) {
@@ -121,21 +196,33 @@ function actualizarEnergyBar(level) {
     }
 }
 
+
+// ----------------------------------------------------
+// PASO 3: Lógica de Respuesta Aleatoria (Automática)
+// ----------------------------------------------------
+
 function dispararRespuestaAleatoria() {
     iniciarRuidosDeFondo(); 
+    
+    // *** CAMBIO: Si no hay frases aleatorias, reiniciamos el temporizador para verificar de nuevo. ***
     if (isSpeaking || frasesAleatorias.length === 0) {
         reiniciarTemporizadorAleatorio();
         return;
     }
+    
     actualizarEnergyBar(energyLevel + 40); 
+    
     const randomIndex = Math.floor(Math.random() * frasesAleatorias.length);
     const fraseAleatoria = frasesAleatorias[randomIndex];
+
     hablarComoSpiritBox(fraseAleatoria);
     statusMessage.textContent = `¡Detección de voz! Respuesta aleatoria activada.`;
+    // El temporizador se reinicia dentro de hablarComoSpiritBox
 }
 
 function iniciarTemporizadorAleatorio() {
     if (frasesAleatorias.length === 0) return;
+    
     randomTimerId = setTimeout(dispararRespuestaAleatoria, RANDOM_INTERVAL_MS);
     if (!isSpeaking) {
         statusMessage.textContent = `Sistema listo. Guion: ${frasesGuion.length} | Aleatorias: ${frasesAleatorias.length}. (Modo AUTO activo, siguiente en ${RANDOM_INTERVAL_MS/1000}s)`;
@@ -148,34 +235,54 @@ function reiniciarTemporizadorAleatorio() {
     iniciarTemporizadorAleatorio();
 }
 
+
+// ----------------------------------------------------
+// PASO 4: Lógica del Guion (Activado por el botón)
+// ----------------------------------------------------
+
 function activarTruco() {
     iniciarRuidosDeFondo(); 
+    
     if (isSpeaking) {
         statusMessage.textContent = "¡Esperando a que el espíritu termine de hablar!";
         return;
     }
+    
     reiniciarTemporizadorAleatorio();
+
     if (frasesGuion.length === 0) {
         statusMessage.textContent = "Error: Guion secuencial no cargado. Revisa la hoja 'Guion'.";
         return;
     }
+    
+    // *** CAMBIO: El guion no se repite si termina, se queda en la última frase. ***
     if (fraseActualIndex >= frasesGuion.length) {
-        statusMessage.textContent = "FIN DEL GUION. Reiniciando la secuencia.";
-        fraseActualIndex = 0; 
+        statusMessage.textContent = "FIN DEL GUION. Pulsa para la última frase.";
+        fraseActualIndex = frasesGuion.length - 1; 
     }
+
     const fraseSecreta = frasesGuion[fraseActualIndex];
+    
     statusMessage.textContent = `Reproduciendo Frase Guion #${fraseActualIndex + 1}`; 
+    
     hablarComoSpiritBox(fraseSecreta);
-    fraseActualIndex++;
+    
+    // Solo avanza si no es la última frase
+    if (fraseActualIndex < frasesGuion.length - 1) {
+        fraseActualIndex++;
+    }
 }
 
+
+// ----------------------------------------------------
+// PASO 5: Carga de Datos desde SheetDB.io (Doble Carga)
+// ----------------------------------------------------
 
 // Carga el guion principal
 async function cargarGuionPrincipal() {
     statusMessage.textContent = "Conectando a SheetDB (Guion Secuencial)...";
     try {
         const response = await fetch(APPS_SCRIPT_URL_GUION);
-        // *** CRÍTICO: Comprobamos si la respuesta es OK antes de intentar leer JSON ***
         if (!response.ok) {
             throw new Error(`Error de red o API. Código: ${response.status}`);
         }
@@ -189,8 +296,7 @@ async function cargarGuionPrincipal() {
         }
     } catch (error) {
         console.error("Error al cargar guion principal:", error);
-        // *** MENSAJE DE ERROR MÁS CLARO PARA EL USUARIO ***
-        display.innerHTML = `[ERROR CRÍTICO] FALLO AL CARGAR GUION: ${error.message}. Verifica la URL de SheetDB.io y la conexión.`;
+        display.innerHTML = `[ERROR CRÍTICO] FALLO AL CARGAR GUION: ${error.message}. Verifica la URL de SheetDB.io.`;
         statusMessage.textContent = "ERROR: No se pudo conectar a la base de datos (SheetDB).";
     }
 }
@@ -213,7 +319,7 @@ async function cargarFrasesAleatorias() {
         }
     } catch (error) {
         console.error("Error al cargar frases aleatorias:", error);
-        display.innerHTML = `[ERROR CRÍTICO] FALLO AL CARGAR ALEATORIAS: ${error.message}. Verifica la URL de SheetDB.io y la conexión.`;
+        display.innerHTML = `[ERROR CRÍTICO] FALLO AL CARGAR ALEATORIAS: ${error.message}. Verifica la URL de SheetDB.io.`;
         statusMessage.textContent = "ERROR: No se pudo conectar a la base de datos (SheetDB).";
     }
 }
@@ -221,11 +327,9 @@ async function cargarFrasesAleatorias() {
 // Función principal de inicialización (doble carga)
 async function inicializarSpiritBox() {
     display.innerHTML = "[Iniciando Sistema...]";
-    // Si la carga de GUION PRINCIPAL falla, el código se detendrá allí y mostrará el error.
     await cargarGuionPrincipal(); 
     await cargarFrasesAleatorias();
 
-    // Solo continuamos si no hay un error crítico visible en la pantalla
     if (!display.innerHTML.includes("ERROR CRÍTICO")) {
         iniciarRuidoVisual(); 
         reiniciarTemporizadorAleatorio();
