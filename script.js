@@ -4,7 +4,6 @@
 // PASO 1: Variables de Configuración
 // ----------------------------------------------------
 
-// *** URL DE TU API DE SHEETDB.IO (MANTÉN TU URL CORRECTA AQUÍ) ***
 const APPS_SCRIPT_URL_GUION = "https://sheetdb.io/api/v1/ej186l5av6pq2"; 
 const APPS_SCRIPT_URL_ALEATORIAS = APPS_SCRIPT_URL_GUION + "?sheet=Aleatorias"; 
 
@@ -16,30 +15,87 @@ const synth = window.speechSynthesis;
 let display = document.getElementById('display');
 let statusMessage = document.getElementById('status');
 let isSpeaking = false;
-let intervalId; 
-let randomTimerId; 
+let intervalId; // Para el ruido visual
+let randomTimerId; // Para el temporizador de respuestas aleatorias
 
-// *** AJUSTE DE TIEMPO: REDUCIDO A 8 SEGUNDOS ***
-const RANDOM_INTERVAL_MS = 8000; 
+// *** CONTROL DE VELOCIDAD ***
+const NORMAL_INTERVAL_MS = 8000; 
+const FAST_INTERVAL_MS = 4000; 
+let isFastSpeed = false; // Estado inicial: velocidad normal
 
-// Elementos de audio (se buscarán en la raíz del repositorio)
+// Elementos de audio
 const staticAudio1 = document.getElementById('staticAudio1');
 const staticAudio2 = document.getElementById('staticAudio2'); 
 const sweepAudio = document.getElementById('sweepAudio');
 const voiceEffectAudio = document.getElementById('voiceEffectAudio'); 
 
+// Elementos visuales y de control
 const energyBar = document.getElementById('energyBar');
 let energyLevel = 0; 
-let speakingTimeout; // Para el efecto entrecortado
+let speakingTimeout; 
+let currentVolume = 0.8; // Volumen inicial (80%)
 
 // ----------------------------------------------------
-// PASO 2: Lógica de Voz y Ruido
+// PASO 2: Lógica de Voz, Ruido y Volumen (Perilla)
 // ----------------------------------------------------
+
+// Función para ajustar el volumen de todos los audios
+function setMasterVolume(volume) {
+    currentVolume = Math.max(0, Math.min(1, volume)); // Limitar entre 0 y 1
+    
+    if (staticAudio1) staticAudio1.volume = currentVolume * 0.75; 
+    if (staticAudio2) staticAudio2.volume = currentVolume * 0.45;
+    if (sweepAudio) sweepAudio.volume = currentVolume * 0.45;
+    if (voiceEffectAudio) voiceEffectAudio.volume = currentVolume;
+    
+    statusMessage.textContent = `VOLUMEN: ${(currentVolume * 100).toFixed(0)}%`;
+}
+
+// Lógica de control de volumen con el mouse/touch
+let isDragging = false;
+let startY = 0; 
+
+function iniciarControlVolumen(e) {
+    e.preventDefault(); 
+    isDragging = true;
+    startY = e.clientY || e.touches[0].clientY;
+
+    document.addEventListener('mousemove', ajustarVolumen);
+    document.addEventListener('mouseup', detenerControlVolumen);
+    document.addEventListener('touchmove', ajustarVolumen);
+    document.addEventListener('touchend', detenerControlVolumen);
+}
+
+function ajustarVolumen(e) {
+    if (!isDragging) return;
+
+    const currentY = e.clientY || e.touches[0].clientY;
+    const deltaY = startY - currentY; // Mover ARRIBA (Y menor) aumenta volumen
+    
+    const sensitivity = 0.005; 
+    let newVolume = currentVolume + deltaY * sensitivity;
+
+    setMasterVolume(newVolume);
+    
+    startY = currentY; 
+}
+
+function detenerControlVolumen() {
+    isDragging = false;
+    document.removeEventListener('mousemove', ajustarVolumen);
+    document.removeEventListener('mouseup', detenerControlVolumen);
+    document.removeEventListener('touchmove', ajustarVolumen);
+    document.removeEventListener('touchend', detenerControlVolumen);
+    
+    setTimeout(() => {
+        updateStatusMessage(); // Actualiza el mensaje de estado normal
+    }, 1500); 
+}
+
 
 // Función para encontrar una voz en español de México (o similar)
 function getMexicanVoice() {
     const voices = synth.getVoices();
-    // Priorizamos voces de México, luego de España, luego cualquier español.
     return voices.find(voice => voice.lang.includes('es-MX')) ||
            voices.find(voice => voice.lang.includes('es-ES')) ||
            voices.find(voice => voice.lang.startsWith('es'));
@@ -57,32 +113,22 @@ async function hablarComoSpiritBox(texto) {
     isSpeaking = true;
     detenerRuidosDeFondo();
     
-    // Reproducir efecto inicial de ruido/barrido
     if (voiceEffectAudio) {
         voiceEffectAudio.currentTime = 0;
+        // Reproducir con el volumen maestro
+        voiceEffectAudio.volume = currentVolume; 
         await voiceEffectAudio.play().catch(e => console.error("Error al reproducir voiceEffectAudio:", e));
     }
 
     const voice = getMexicanVoice();
-    let utterance = new SpeechSynthesisUtterance(texto);
-    
-    // AJUSTES DE VOZ PARA SER MÁS NORMALES Y CREÍBLES (MEXICANO/ESPAÑOL)
-    if (voice) {
-        utterance.voice = voice;
-    } else {
-        utterance.lang = 'es-MX'; 
-    }
-    utterance.rate = 1.0;     
-    utterance.pitch = 1.0; // Tono neutro
+    const voiceRate = isFastSpeed ? 1.4 : 1.0; 
 
     const textoArray = texto.toUpperCase().split('');
     let currentIndex = 0;
-    const totalDuration = texto.length * 150; // Estimación de duración total (150ms por caracter)
-
+    
     display.innerHTML = "";
     actualizarEnergyBar(100);
 
-    // Función que simula el entrecortado
     function speakFragment() {
         if (!isSpeaking || currentIndex >= textoArray.length) {
             // FIN DE LA FRASE
@@ -91,40 +137,37 @@ async function hablarComoSpiritBox(texto) {
             iniciarRuidosDeFondo(); 
             iniciarRuidoVisual(); 
             actualizarEnergyBar(30); 
-            reiniciarTemporizadorAleatorio(); // Reinicia el temporizador de aleatorias
+            reiniciarTemporizadorAleatorio(); 
             return;
         }
 
-        const fragmentLength = Math.floor(Math.random() * 3) + 1; // 1 a 3 caracteres por fragmento
+        const fragmentLength = Math.floor(Math.random() * 3) + 1; 
         const fragment = textoArray.slice(currentIndex, currentIndex + fragmentLength).join('');
         
         display.innerHTML += fragment;
         currentIndex += fragmentLength;
 
-        // Reproducir fragmento de voz
         const fragmentUtterance = new SpeechSynthesisUtterance(fragment);
-        fragmentUtterance.lang = utterance.lang;
-        fragmentUtterance.rate = utterance.rate;
-        fragmentUtterance.pitch = utterance.pitch;
+        
         if (voice) fragmentUtterance.voice = voice;
+        fragmentUtterance.lang = 'es-MX'; 
+        fragmentUtterance.rate = voiceRate;     
+        fragmentUtterance.pitch = 1.0; 
 
         // Pequeño ruido de estática al inicio del fragmento (efecto entrecortado)
         if (staticAudio1) {
-             staticAudio1.volume = 0.8;
+             staticAudio1.volume = currentVolume * 0.8;
              staticAudio1.play().catch(e => console.warn("Error al iniciar estática.", e));
              setTimeout(() => {
-                 staticAudio1.volume = 0.6; // Bajar volumen al hablar
+                 staticAudio1.volume = currentVolume * 0.6; 
              }, 50);
         }
 
-
         fragmentUtterance.onend = () => {
-             // Pequeño delay de 50ms a 200ms para el "glitch"
              const delay = Math.random() * 150 + 50; 
              speakingTimeout = setTimeout(speakFragment, delay);
         };
         
-        // Manejo de interrupción si el usuario presiona otro botón
         if (isSpeaking) {
              synth.speak(fragmentUtterance);
         } else {
@@ -135,8 +178,6 @@ async function hablarComoSpiritBox(texto) {
     speakFragment();
 }
 
-
-// Genera un fragmento de texto de ruido (sin cambios)
 function generarRuidoTexto() {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_#@* ";
     let noise = "";
@@ -162,24 +203,16 @@ function detenerRuidoVisual() {
     }
 }
 
-// Lógica de Audio de Fondo (Estática y Barrido) - CRUCIAL PARA MÓVIL
+// Lógica de Audio de Fondo (Estática y Barrido)
 async function iniciarRuidosDeFondo() {
+    // Asegurarse de que el volumen maestro esté aplicado
+    setMasterVolume(currentVolume); 
     try {
-        if (staticAudio1) {
-            staticAudio1.volume = 0.6;
-            await staticAudio1.play();
-        }
-        if (staticAudio2) {
-            staticAudio2.volume = 0.3;
-            await staticAudio2.play();
-        }
-        if (sweepAudio) {
-            sweepAudio.volume = 0.3; 
-            sweepAudio.loop = true; 
-            await sweepAudio.play();
-        }
+        if (staticAudio1 && staticAudio1.paused) await staticAudio1.play();
+        if (staticAudio2 && staticAudio2.paused) await staticAudio2.play();
+        if (sweepAudio && sweepAudio.paused) await sweepAudio.play();
     } catch (e) {
-        console.warn("Fallo al reproducir audio. Intenta tocar la pantalla.", e);
+        console.warn("Fallo al reproducir audio. Esto es normal antes del primer toque del usuario.", e);
     }
 }
 
@@ -196,15 +229,40 @@ function actualizarEnergyBar(level) {
     }
 }
 
+// Actualiza el mensaje de estado general
+function updateStatusMessage() {
+    statusMessage.textContent = `Sistema listo. Guion: ${frasesGuion.length} | Aleatorias: ${frasesAleatorias.length}. (Modo ${isFastSpeed ? 'FAST' : 'NORMAL'} activo, siguiente en ${getCurrentInterval()/1000}s)`;
+}
+
 
 // ----------------------------------------------------
-// PASO 3: Lógica de Respuesta Aleatoria (Automática)
+// PASO 3: Lógica de Velocidad (Botón SPEED)
+// ----------------------------------------------------
+
+function getCurrentInterval() {
+    return isFastSpeed ? FAST_INTERVAL_MS : NORMAL_INTERVAL_MS;
+}
+
+function toggleSpeed() {
+    isFastSpeed = !isFastSpeed; // Cambiar estado
+    reiniciarTemporizadorAleatorio(); // Reiniciar el temporizador con el nuevo valor
+    
+    if (isFastSpeed) {
+        statusMessage.textContent = "MODO VELOCIDAD (FAST): Respuestas más rápidas.";
+    } else {
+        statusMessage.textContent = "MODO VELOCIDAD (NORMAL): Respuestas normales.";
+    }
+    setTimeout(updateStatusMessage, 2000); // Volver al mensaje normal después de 2 segundos
+}
+
+
+// ----------------------------------------------------
+// PASO 4: Lógica de Respuesta Aleatoria (Automática)
 // ----------------------------------------------------
 
 function dispararRespuestaAleatoria() {
     iniciarRuidosDeFondo(); 
     
-    // *** CAMBIO: Si no hay frases aleatorias, reiniciamos el temporizador para verificar de nuevo. ***
     if (isSpeaking || frasesAleatorias.length === 0) {
         reiniciarTemporizadorAleatorio();
         return;
@@ -223,9 +281,11 @@ function dispararRespuestaAleatoria() {
 function iniciarTemporizadorAleatorio() {
     if (frasesAleatorias.length === 0) return;
     
-    randomTimerId = setTimeout(dispararRespuestaAleatoria, RANDOM_INTERVAL_MS);
+    const interval = getCurrentInterval();
+    
+    randomTimerId = setTimeout(dispararRespuestaAleatoria, interval);
     if (!isSpeaking) {
-        statusMessage.textContent = `Sistema listo. Guion: ${frasesGuion.length} | Aleatorias: ${frasesAleatorias.length}. (Modo AUTO activo, siguiente en ${RANDOM_INTERVAL_MS/1000}s)`;
+        updateStatusMessage();
     }
     actualizarEnergyBar(20 + Math.random() * 20); 
 }
@@ -237,7 +297,7 @@ function reiniciarTemporizadorAleatorio() {
 
 
 // ----------------------------------------------------
-// PASO 4: Lógica del Guion (Activado por el botón)
+// PASO 5: Lógica del Guion (Botón EVP MODE)
 // ----------------------------------------------------
 
 function activarTruco() {
@@ -248,14 +308,13 @@ function activarTruco() {
         return;
     }
     
-    reiniciarTemporizadorAleatorio();
+    reiniciarTemporizadorAleatorio(); // Reinicia el temporizador aleatorio
 
     if (frasesGuion.length === 0) {
         statusMessage.textContent = "Error: Guion secuencial no cargado. Revisa la hoja 'Guion'.";
         return;
     }
     
-    // *** CAMBIO: El guion no se repite si termina, se queda en la última frase. ***
     if (fraseActualIndex >= frasesGuion.length) {
         statusMessage.textContent = "FIN DEL GUION. Pulsa para la última frase.";
         fraseActualIndex = frasesGuion.length - 1; 
@@ -267,18 +326,17 @@ function activarTruco() {
     
     hablarComoSpiritBox(fraseSecreta);
     
-    // Solo avanza si no es la última frase
     if (fraseActualIndex < frasesGuion.length - 1) {
         fraseActualIndex++;
     }
+    setTimeout(updateStatusMessage, 2000); // Volver al mensaje normal
 }
 
 
 // ----------------------------------------------------
-// PASO 5: Carga de Datos desde SheetDB.io (Doble Carga)
+// PASO 6: Carga de Datos y Inicialización
 // ----------------------------------------------------
 
-// Carga el guion principal
 async function cargarGuionPrincipal() {
     statusMessage.textContent = "Conectando a SheetDB (Guion Secuencial)...";
     try {
@@ -290,18 +348,14 @@ async function cargarGuionPrincipal() {
         
         if (Array.isArray(data) && data.length > 0) {
             frasesGuion = data.slice(2).map(row => row.B || '').filter(f => f.length > 0);
-            statusMessage.textContent = `Guion Secuencial cargado con ${frasesGuion.length} respuestas.`;
-        } else {
-             statusMessage.textContent = "Advertencia: Hoja 'Guion' vacía o mal formato.";
         }
     } catch (error) {
         console.error("Error al cargar guion principal:", error);
-        display.innerHTML = `[ERROR CRÍTICO] FALLO AL CARGAR GUION: ${error.message}. Verifica la URL de SheetDB.io.`;
+        display.innerHTML = `[ERROR CRÍTICO] FALLO AL CARGAR GUION. Verifica la URL de SheetDB.io y la conexión.`;
         statusMessage.textContent = "ERROR: No se pudo conectar a la base de datos (SheetDB).";
     }
 }
 
-// Carga las frases aleatorias
 async function cargarFrasesAleatorias() {
     statusMessage.textContent = "Conectando a SheetDB (Frases Aleatorias)...";
     try {
@@ -313,35 +367,37 @@ async function cargarFrasesAleatorias() {
         
         if (Array.isArray(data) && data.length > 0) {
             frasesAleatorias = data.slice(2).map(row => row.B || '').filter(f => f.length > 0);
-            statusMessage.textContent = `Guion Aleatorio cargado con ${frasesAleatorias.length} respuestas. ¡Listo!`;
-        } else {
-            statusMessage.textContent = "Advertencia: Hoja 'Aleatorias' vacía.";
         }
     } catch (error) {
         console.error("Error al cargar frases aleatorias:", error);
-        display.innerHTML = `[ERROR CRÍTICO] FALLO AL CARGAR ALEATORIAS: ${error.message}. Verifica la URL de SheetDB.io.`;
+        display.innerHTML = `[ERROR CRÍTICO] FALLO AL CARGAR ALEATORIAS. Verifica la URL de SheetDB.io y la conexión.`;
         statusMessage.textContent = "ERROR: No se pudo conectar a la base de datos (SheetDB).";
     }
 }
 
-// Función principal de inicialización (doble carga)
 async function inicializarSpiritBox() {
     display.innerHTML = "[Iniciando Sistema...]";
+    
+    setMasterVolume(currentVolume); // Establecer el volumen inicial
+
     await cargarGuionPrincipal(); 
     await cargarFrasesAleatorias();
 
     if (!display.innerHTML.includes("ERROR CRÍTICO")) {
         iniciarRuidoVisual(); 
         reiniciarTemporizadorAleatorio();
-        statusMessage.textContent = `Sistema cargado. Guion: ${frasesGuion.length} | Aleatorias: ${frasesAleatorias.length}.`;
         actualizarEnergyBar(20);
+        updateStatusMessage(); // Mostrar el estado inicial
     }
 }
 
 document.addEventListener('DOMContentLoaded', inicializarSpiritBox);
 
+// CRÍTICO PARA MÓVIL: Inicia el audio de fondo al primer toque
 document.addEventListener('click', () => {
     if ((staticAudio1 && staticAudio1.paused) && !isSpeaking) {
         iniciarRuidosDeFondo();
+        // Después del primer clic, removemos el listener 'once' y el mensaje de estado vuelve a la normalidad
+        setTimeout(updateStatusMessage, 500); 
     }
 }, { once: true });
