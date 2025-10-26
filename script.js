@@ -32,7 +32,7 @@ function hablarComoSpiritBox(texto) {
     synth.cancel(); 
     isSpeaking = true;
 
-    // Muestra la frase en la pantalla con efecto
+    // Muestra la frase en la pantalla con efecto glitch
     display.innerHTML = `<span class="frase-actual">${texto}</span>`;
 
     let utterance = new SpeechSynthesisUtterance(texto);
@@ -105,10 +105,14 @@ function activarTruco() {
 
     // Obtiene la frase secuencial del guion y la reproduce
     const fraseSecreta = frasesGuion[fraseActualIndex];
+    
+    // Mostramos el número de respuesta antes de aumentar el contador
+    statusMessage.textContent = `Reproduciendo Frase #${fraseActualIndex + 1}`; 
+    
     hablarComoSpiritBox(fraseSecreta);
     fraseActualIndex++;
 
-    statusMessage.textContent = `Respuesta ${fraseActualIndex} activada.`;
+    
 }
 
 
@@ -127,10 +131,11 @@ async function cargarGuionDesdeSheets() {
         const data = await response.json(); 
         
         if (Array.isArray(data) && data.length > 0) {
-            // Extrae los valores de la columna 'Respuesta' (o 'respuesta' si hay minúsculas)
-            frasesGuion = data.map(row => row.Respuesta || row.respuesta || ''); 
+            // *** CLAVE CORREGIDA: Ahora buscamos la clave "A" en el JSON ***
+            // La clave 'A' contiene la frase de respuesta
+            frasesGuion = data.map(row => row.A || ''); 
 
-            // Filtramos cualquier posible fila vacía 
+            // Filtramos cualquier posible fila vacía que haya generado SheetDB
             frasesGuion = frasesGuion.filter(f => f.length > 0);
 
             statusMessage.textContent = `Guion cargado con ${frasesGuion.length} respuestas. ¡Listo!`;
