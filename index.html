@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E.O.B. Spirit Box V5.0</title>
+    <title>Spirit Box</title> 
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         /* CSS Integrado para replicar el diseño del dispositivo */
@@ -26,7 +26,7 @@
             overflow-x: hidden;
         }
 
-        /* *** ENCABEZADO ELIMINADO del DOM visible *** */
+        /* *** ENCABEZADO ELIMINADO completamente *** */
         .header {
             display: none; 
         }
@@ -36,8 +36,8 @@
             position: relative;
             width: 420px; 
             height: 700px; 
-            /* *** RUTA DE IMAGEN FINAL (Ajusta la extensión si usas PNG) *** */
-            background-image: url('spiritbox_on.jpg'); 
+            /* *** RUTA CORREGIDA A spiritbox_base.png *** */
+            background-image: url('spiritbox_base.png'); 
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
@@ -170,9 +170,8 @@
     </style>
 </head>
 <body>
-    <div class="header"></div> 
-
-    <div class="device-container">
+    
+<div class="device-container">
         
         <div class="main-screen" id="display">
             [Iniciando sistema... Cargando módulos...]
