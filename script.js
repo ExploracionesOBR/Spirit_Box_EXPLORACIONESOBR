@@ -21,9 +21,9 @@ let intervalId;
 let randomTimerId; // ID del temporizador para respuestas automáticas
 const RANDOM_INTERVAL_MS = 15000; // 15 segundos (Tiempo de espera antes de respuesta aleatoria)
 
-// Elementos de audio
+// Elementos de audio (se buscarán en la raíz del repositorio)
 const staticAudio1 = document.getElementById('staticAudio1');
-const staticAudio2 = document.getElementById('staticAudio2'); // NUEVO AUDIO
+const staticAudio2 = document.getElementById('staticAudio2'); 
 const sweepAudio = document.getElementById('sweepAudio');
 const voiceEffectAudio = document.getElementById('voiceEffectAudio'); 
 
@@ -47,10 +47,10 @@ async function hablarComoSpiritBox(texto) {
     synth.cancel(); 
     isSpeaking = true;
 
-    // Detener audio de estática y barrido
+    // 1. Detener audio de estática y barrido
     detenerRuidosDeFondo();
     
-    // Reproducir efecto de voz (solo si existe)
+    // 2. Reproducir efecto de voz (corte brusco)
     if (voiceEffectAudio) {
         voiceEffectAudio.currentTime = 0;
         await voiceEffectAudio.play().catch(e => console.error("Error al reproducir voiceEffectAudio:", e));
@@ -70,7 +70,7 @@ async function hablarComoSpiritBox(texto) {
         isSpeaking = false;
         // Volvemos a los ruidos de fondo y visuales
         if (voiceEffectAudio) voiceEffectAudio.pause();
-        iniciarRuidosDeFondo(); 
+        iniciarRuidosDeFondo(); // Reinicia el audio de fondo
         iniciarRuidoVisual(); 
         actualizarEnergyBar(30); 
         reiniciarTemporizadorAleatorio(); 
@@ -106,22 +106,26 @@ function detenerRuidoVisual() {
     }
 }
 
-// Lógica de Audio de Fondo (Estática y Barrido)
+// Lógica de Audio de Fondo (Estática y Barrido) - CRUCIAL PARA MÓVIL
 async function iniciarRuidosDeFondo() {
-    // Intentamos reproducir staticAudio1 y staticAudio2
-    if (staticAudio1) {
-        staticAudio1.volume = 0.6;
-        await staticAudio1.play().catch(e => console.warn("No se pudo reproducir staticAudio1:", e));
-    }
-    if (staticAudio2) {
-        staticAudio2.volume = 0.3; // Volumen más bajo para el segundo loop
-        await staticAudio2.play().catch(e => console.warn("No se pudo reproducir staticAudio2:", e));
-    }
-    
-    if (sweepAudio) {
-        sweepAudio.volume = 0.3; 
-        sweepAudio.loop = true; 
-        await sweepAudio.play().catch(e => console.warn("No se pudo reproducir sweepAudio:", e));
+    // Intentamos reproducir todos los audios de estática
+    try {
+        if (staticAudio1) {
+            staticAudio1.volume = 0.6;
+            await staticAudio1.play();
+        }
+        if (staticAudio2) {
+            staticAudio2.volume = 0.3;
+            await staticAudio2.play();
+        }
+        if (sweepAudio) {
+            sweepAudio.volume = 0.3; 
+            sweepAudio.loop = true; 
+            await sweepAudio.play();
+        }
+    } catch (e) {
+        // Fallo al reproducir. Es normal antes del primer toque, no afecta el resto del código.
+        console.warn("Fallo al reproducir audio. Esto es común en navegadores móviles antes del primer toque.", e);
     }
 }
 
@@ -145,6 +149,9 @@ function actualizarEnergyBar(level) {
 // ----------------------------------------------------
 
 function dispararRespuestaAleatoria() {
+    // Aseguramos que el audio de fondo se inicie si el temporizador dispara primero
+    iniciarRuidosDeFondo(); 
+    
     if (isSpeaking || frasesAleatorias.length === 0) {
         reiniciarTemporizadorAleatorio();
         return;
@@ -155,4 +162,129 @@ function dispararRespuestaAleatoria() {
     const randomIndex = Math.floor(Math.random() * frasesAleatorias.length);
     const fraseAleatoria = frasesAleatorias[randomIndex];
 
-    hablarComoSpiritBox(fraseAle
+    hablarComoSpiritBox(fraseAleatoria);
+    statusMessage.textContent = `¡Detección de voz! Respuesta aleatoria (${frasesAleatorias.length} opciones) activada.`;
+}
+
+function iniciarTemporizadorAleatorio() {
+    if (frasesAleatorias.length === 0) return;
+    
+    randomTimerId = setTimeout(dispararRespuestaAleatoria, RANDOM_INTERVAL_MS);
+    if (!isSpeaking) {
+        statusMessage.textContent = `Sistema listo. Guion: ${frasesGuion.length} | Aleatorias: ${frasesAleatorias.length}. (Modo AUTO activo, siguiente en ${RANDOM_INTERVAL_MS/1000}s)`;
+    }
+    actualizarEnergyBar(20 + Math.random() * 20); 
+}
+
+function reiniciarTemporizadorAleatorio() {
+    clearTimeout(randomTimerId);
+    iniciarTemporizadorAleatorio();
+}
+
+
+// ----------------------------------------------------
+// PASO 4: Lógica del Guion (Activado por el botón)
+// ----------------------------------------------------
+
+function activarTruco() {
+    // CRÍTICO: Aseguramos que los audios se inicien al presionar el botón (si no se iniciaron antes)
+    iniciarRuidosDeFondo(); 
+    
+    if (isSpeaking) {
+        statusMessage.textContent = "¡Esperando a que el espíritu termine de hablar!";
+        return;
+    }
+    
+    reiniciarTemporizadorAleatorio();
+
+    if (frasesGuion.length === 0) {
+        statusMessage.textContent = "Error: Guion secuencial no cargado. Revisa la hoja 'Guion'.";
+        return;
+    }
+    
+    if (fraseActualIndex >= frasesGuion.length) {
+        statusMessage.textContent = "FIN DEL GUION. Reiniciando la secuencia.";
+        fraseActualIndex = 0; 
+    }
+
+    const fraseSecreta = frasesGuion[fraseActualIndex];
+    
+    statusMessage.textContent = `Reproduciendo Frase Guion #${fraseActualIndex + 1}`; 
+    
+    hablarComoSpiritBox(fraseSecreta);
+    fraseActualIndex++;
+}
+
+
+// ----------------------------------------------------
+// PASO 5: Carga de Datos desde SheetDB.io (Doble Carga)
+// ----------------------------------------------------
+
+// Carga el guion principal
+async function cargarGuionPrincipal() {
+    statusMessage.textContent = "Conectando a SheetDB (Guion Secuencial)...";
+    try {
+        const response = await fetch(APPS_SCRIPT_URL_GUION);
+        const data = await response.json(); 
+        
+        if (Array.isArray(data) && data.length > 0) {
+            // *** CLAVE CORREGIDA: Usamos la clave 'B' para la Respuesta hablada (Columna B) ***
+            // Usamos slice(2) para saltar las dos primeras filas de encabezado/ejemplo
+            frasesGuion = data.slice(2).map(row => row.B || '').filter(f => f.length > 0);
+            
+            statusMessage.textContent = `Guion Secuencial cargado con ${frasesGuion.length} respuestas.`;
+        } else {
+             statusMessage.textContent = "Advertencia: Hoja 'Guion' vacía o mal formato. Guion Secuencial desactivado.";
+        }
+    } catch (error) {
+        console.error("Error al cargar guion principal:", error);
+        statusMessage.textContent = "Error al conectar con Guion Secuencial. Usando respaldo de emergencia.";
+    }
+}
+
+// Carga las frases aleatorias
+async function cargarFrasesAleatorias() {
+    statusMessage.textContent = "Conectando a SheetDB (Frases Aleatorias)...";
+    try {
+        const response = await fetch(APPS_SCRIPT_URL_ALEATORIAS);
+        const data = await response.json(); 
+        
+        if (Array.isArray(data) && data.length > 0) {
+            // *** CLAVE CORREGIDA: Usamos la clave 'B' para la Respuesta hablada (Columna B) ***
+            // Usamos slice(2) para saltar las dos primeras filas de encabezado/ejemplo
+            frasesAleatorias = data.slice(2).map(row => row.B || '').filter(f => f.length > 0);
+
+            statusMessage.textContent = `Guion Aleatorio cargado con ${frasesAleatorias.length} respuestas. ¡Listo!`;
+        } else {
+            statusMessage.textContent = "Advertencia: Hoja 'Aleatorias' vacía. Desactivando modo automático.";
+        }
+    } catch (error) {
+        console.error("Error al cargar frases aleatorias:", error);
+        statusMessage.textContent = "Error al conectar con Frases Aleatorias. Modo automático desactivado.";
+    }
+}
+
+// Función principal de inicialización (doble carga)
+async function inicializarSpiritBox() {
+    display.innerHTML = "[Iniciando Sistema...]";
+    await cargarGuionPrincipal();
+    await cargarFrasesAleatorias();
+
+    // SOLO INICIAMOS EL RUIDO VISUAL Y EL TEMPORIZADOR. EL AUDIO INICIA CON EL PRIMER CLIC.
+    iniciarRuidoVisual(); 
+    reiniciarTemporizadorAleatorio();
+    
+    statusMessage.textContent = `Sistema cargado. Guion: ${frasesGuion.length} | Aleatorias: ${frasesAleatorias.length}.`;
+    actualizarEnergyBar(20);
+}
+
+// Llama a la función de inicialización al cargar la página
+document.addEventListener('DOMContentLoaded', inicializarSpiritBox);
+
+// CRÍTICO PARA MÓVIL: Inicia el audio de fondo al primer toque
+document.addEventListener('click', () => {
+    // Si la estática está detenida y el sistema no está hablando, intenta iniciarla
+    if ((staticAudio1 && staticAudio1.paused) && !isSpeaking) {
+        iniciarRuidosDeFondo();
+    }
+}, { once: true });
