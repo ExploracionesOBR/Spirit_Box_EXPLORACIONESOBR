@@ -22,6 +22,7 @@
             align-items: center;
             min-height: 100vh;
             color: #3A3A3A;
+            overflow: hidden; /* Evitar scroll */
         }
         .spirit-box {
             width: 95%;
@@ -245,7 +246,7 @@
         let whiteNoiseNode;
         let blipOscillator, blipGain;
         let lfo, lfoGain;
-        let delayNode, delayFeedback, delayWet; // <-- AÑADIDO: Nodos de Eco (Reverb)
+        let delayNode, delayFeedback, delayWet; // Nodos de Eco (Reverb)
 
         // --- Módulos de Voz ---
         let voices = [];
@@ -255,7 +256,6 @@
         
         // --- Estado de los Ciclos ---
         let autoTimeout, freqTimeout;
-        let crackleInterval = null; 
         let isProgrammedResponse = false; 
         let isRecognizing = false; 
         let recognitionWatchdog; 
@@ -346,13 +346,13 @@
                 lfoGain = audioContext.createGain();
                 lfoGain.gain.setValueAtTime(0.03, audioContext.currentTime); 
 
-                // --- AÑADIDO: Nodos de Eco (Reverb) ---
+                // --- Nodos de Eco (Reverb) ---
                 delayNode = audioContext.createDelay(1.0); // 1 seg max delay
                 delayFeedback = audioContext.createGain(); // Feedback gain
                 delayWet = audioContext.createGain(); // Wet/Dry mix
                 
                 delayNode.delayTime.setValueAtTime(0.3, audioContext.currentTime); // 0.3s delay
-                delayFeedback.gain.setValueAtTime(0.4, audioContext.currentTime); // 40% feedback
+                delayFeedback.gain.setValueAtTime(0.5, audioContext.currentTime); // 50% feedback
                 delayWet.gain.setValueAtTime(0, audioContext.currentTime); // Apagado por defecto
                 
                 // Conectar el "Chop"
@@ -421,7 +421,7 @@
                     clearTimeout(recognitionWatchdog); 
                     isRecognizing = false;
                     if (isRunning && !isProgrammedResponse) {
-                        setTimeout(startProgramadoMode, 4500);
+                        setTimeout(startProgramadoMode, 500); // Reinicio rápido
                     }
                 };
 
@@ -429,7 +429,7 @@
                     clearTimeout(recognitionWatchdog); 
                     isRecognizing = false;
                     if (isRunning && !isProgrammedResponse) {
-                        setTimeout(startProgramadoMode, 4500); 
+                        setTimeout(startProgramadoMode, 500); // Reinicio rápido
                     }
                 };
 
@@ -473,11 +473,14 @@
                 synthesis.cancel();
             }
             if (audioContext) audioContext.resume();
-            if (crackleInterval) clearInterval(crackleInterval);
 
             // --- DETENER EL "CHOP" DEL LFO ---
-            if (lfoGain) {
-                lfoGain.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.1); // Detener modulación
+            if (lfoGain) lRamp(lfoGain.gain, 0, 0.1);
+            if (gainNode) lRamp(gainNode.gain, 0, 0.1);
+
+            // --- ¡ENCENDER EL ECO! (Para AMBAS voces) ---
+            if (delayWet) {
+                lRamp(delayWet.gain, 0.3, 0.1); // Eco de estática
             }
 
             const utterance = new SpeechSynthesisUtterance(text);
@@ -487,30 +490,13 @@
             utterance.volume = 1; 
 
             if (isDistorted) {
-                // --- VOZ AUTOMÁTICA (CRACKLE) ---
+                // --- VOZ AUTOMÁTICA (Variación de tono) ---
                 utterance.pitch = Math.random() * 0.5 + 0.8; 
                 utterance.rate = Math.random() * 0.5 + 0.9;  
-
-                // Efecto "crackle" (interferencia) mientras habla
-                if (gainNode) {
-                    crackleInterval = setInterval(() => {
-                        const crackleGain = Math.random() * 0.15 + 0.05; 
-                        gainNode.gain.setValueAtTime(crackleGain, audioContext.currentTime);
-                    }, 100);
-                }
             } else {
-                // --- VOZ PROGRAMADA (ECO / REVERB) ---
+                // --- VOZ PROGRAMADA (Clara) ---
                 utterance.pitch = 1;
                 utterance.rate = 1.0;
-                
-                // Apagar el ruido "seco" (crackle)
-                if (gainNode) {
-                    gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime); 
-                }
-                // ¡ENCENDER EL ECO!
-                if (delayWet) {
-                    delayWet.gain.linearRampToValueAtTime(0.08, audioContext.currentTime + 0.1); // Sutil eco de estática
-                }
             }
 
             utterance.onstart = () => {
@@ -519,20 +505,16 @@
 
             utterance.onend = () => {
                 textDisplay.textContent = ''; // Limpiar display
-                if (crackleInterval) clearInterval(crackleInterval);
                 
                 // --- APAGAR EL ECO ---
                 if (delayWet) {
-                    delayWet.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.1);
+                    lRamp(delayWet.gain, 0, 0.1);
                 }
                 
                 // --- REINICIAR EL "CHOP" DEL LFO ---
-                if (lfoGain) {
-                    lfoGain.gain.linearRampToValueAtTime(0.03, audioContext.currentTime + 0.1); // Reiniciar modulación
-                }
-                if (gainNode) {
-                    gainNode.gain.linearRampToValueAtTime(0.04, audioContext.currentTime + 0.1);
-                }
+                if (lfoGain) lRamp(lfoGain.gain, 0.03, 0.1);
+                if (gainNode) lRamp(gainNode.gain, 0.04, 0.1);
+
 
                 // Si era una respuesta programada, reiniciar todo
                 if (isProgrammedResponse) {
@@ -542,6 +524,13 @@
             };
             
             synthesis.speak(utterance);
+        }
+
+        // Helper para rampas de audio seguras
+        function lRamp(param, value, time) {
+            if (param) {
+                param.linearRampToValueAtTime(value, audioContext.currentTime + time);
+            }
         }
         
         // --- 5. Lógica de Modos ---
@@ -604,7 +593,7 @@
             } catch (e) {
                 isRecognizing = false;
                 if (isRunning) {
-                    setTimeout(startProgramadoMode, 4500); 
+                    setTimeout(startProgramadoMode, 500); 
                 }
             }
         }
@@ -625,6 +614,7 @@
                 
             } else {
                 // --- NO MATCH ---
+                // No hacer nada, dejar que el micrófono se reinicie solo
             }
         }
 
@@ -633,7 +623,6 @@
             clearTimeout(autoTimeout);
             clearTimeout(freqTimeout);
             clearTimeout(recognitionWatchdog);
-            if (crackleInterval) clearInterval(crackleInterval);
         }
 
         // Función central para (re)iniciar los modos
