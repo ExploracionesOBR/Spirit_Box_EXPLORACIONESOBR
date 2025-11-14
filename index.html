@@ -2,162 +2,127 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Spirit Box Full Spectrum</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Share Tech Mono', monospace;
-            background-color: #000; /* Fondo oscuro */
-            color: #E0E0E0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            background-color: #000;
+            color: #F5E5C0;
             overflow: hidden;
-            flex-direction: column;
-            gap: 15px;
-            padding: 10px;
+            width: 100vw;
+            height: 100vh;
         }
-        .main-container {
-            width: 100%;
-            max-width: 600px; /* Ancho máximo para la interfaz */
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            position: relative;
-        }
-
-        /* --- CÁMARA PRINCIPAL --- */
-        .camera-main-container {
-            width: 100%;
-            aspect-ratio: 16/9; /* Proporción de video común */
-            background-color: #1a1a1a;
-            border: 2px solid #555;
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        #camera-main {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transform: scaleX(-1); /* Reflejar para selfie */
-            position: absolute;
+        
+        /* --- Cámara de Fondo --- */
+        #main-camera-feed {
+            position: fixed;
             top: 0;
             left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Llena la pantalla sin distorsión */
+            z-index: 1;
         }
-        .overlay-numbers {
+
+        /* --- Superposición de UI --- */
+        #ui-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            pointer-events: none;
-            overflow: hidden;
-        }
-        .overlay-number {
-            position: absolute;
-            font-family: 'Orbitron', sans-serif;
-            color: #FF0000; /* Rojo */
-            font-size: 1.5rem;
-            text-shadow: 0 0 5px #FF0000;
-            opacity: 0.7;
-            animation: floatAndFade 5s linear forwards;
-        }
-        @keyframes floatAndFade {
-            0% { transform: translateY(0) scale(1); opacity: 0.7; }
-            100% { transform: translateY(-50px) scale(0.8); opacity: 0; }
-        }
-
-        /* --- PANELES INFERIORES --- */
-        .bottom-panels {
-            display: grid;
-            grid-template-columns: 1fr 0.8fr 0.7fr; /* Ghosttube, Detector, Spirit Box */
-            gap: 10px;
-            width: 100%;
-        }
-
-        /* Panel Izquierdo (Ghosttube) */
-        .panel-ghosttube {
-            width: 100%;
-            aspect-ratio: 3/4; /* Proporción vertical */
-            background-color: #1a1a1a;
-            border: 2px solid #555;
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end; /* Controles abajo */
-            align-items: center;
-        }
-        #camera-ghosttube {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transform: scaleX(-1); /* Reflejar para selfie */
-            position: absolute;
-            top: 0;
-            left: 0;
-            filter: grayscale(100%) brightness(0.5) sepia(100%) hue-rotate(100deg) saturate(300%) contrast(150%); /* Efecto GhostTube */
-            transition: filter 0.1s ease-out; /* Para los fallos */
-        }
-        .ghosttube-filters {
-            position: relative;
             z-index: 10;
             display: flex;
-            gap: 5px;
-            padding: 5px;
-            background: rgba(0,0,0,0.6);
-            border-top: 1px solid #444;
-            width: 100%;
-            justify-content: center;
-        }
-        .filter-btn {
-            background: #333;
-            color: #eee;
-            border: 1px solid #666;
-            padding: 3px 8px;
-            font-size: 0.7rem;
-            cursor: pointer;
-            border-radius: 3px;
-        }
-        .filter-btn.active {
-            background: #007bff;
-            border-color: #007bff;
+            flex-direction: column;
+            justify-content: flex-end; /* Paneles en la parte inferior */
+            padding: 10px;
+            background: linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.4) 100%);
         }
 
-        /* Panel Central (Detector de Energía - Voltímetro) */
+        /* --- Contenedor de Paneles --- */
+        .bottom-panels {
+            display: grid;
+            /* Layout optimizado para horizontal */
+            grid-template-columns: 1fr 0.8fr 0.7fr;
+            gap: 10px;
+            width: 100%;
+        }
+
+        /* Estilo base del panel "Glassmorphism" */
+        .panel {
+            background: rgba(26, 26, 26, 0.7);
+            border: 2px solid #555;
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- Panel Izquierdo (Ghosttube) --- */
+        .panel-ghosttube {
+            width: 100%;
+            aspect-ratio: 3/4; /* Ratio vertical */
+        }
+        #ghosttube-canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 6px 6px 0 0;
+            flex-grow: 1; /* Ocupa el espacio */
+        }
+        .filter-buttons {
+            display: flex;
+            justify-content: space-around;
+            padding: 8px;
+            background-color: #111;
+        }
+        .filter-btn {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            color: #ccc;
+            background: #333;
+            border: 1px solid #555;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .filter-btn.active {
+            background: #00AADD;
+            color: white;
+            box-shadow: 0 0 10px #00AADD;
+        }
+
+        /* --- Panel Central (Detector de Energía - Voltímetro) --- */
         .panel-detector {
             width: 100%;
             aspect-ratio: 1/1; /* Cuadrado */
             background-color: #1a1a1a;
             border: 2px solid #555;
-            position: relative;
+            border-radius: 8px;
+            padding: 15px;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 10px;
+            justify-content: space-between;
         }
-        .meter-face {
+        /* Estilos del Voltímetro (Copiados y adaptados) */
+        .panel-detector .meter-face {
             width: 100%;
-            max-width: 120px; /* Tamaño fijo para el medidor */
-            aspect-ratio: 1/1;
+            height: 60%; /* Ajustado al panel */
             background: linear-gradient(180deg, #F5E5C0 70%, #D4C0A0 100%);
             border-radius: 5px;
             border: 2px solid #444;
-            box-shadow: 0 0 10px rgba(245, 229, 192, 0.2);
             position: relative;
             overflow: hidden;
-            margin-bottom: 10px;
         }
-        #meter-needle {
+        .panel-detector #meter-needle {
             width: 3px;
-            height: 90px;
+            height: 90%; /* Ajustado */
             background-color: #FF4136;
             box-shadow: 0 0 5px #FF4136;
             border-radius: 2px 2px 0 0;
@@ -168,186 +133,157 @@
             transform: rotate(-30deg);
             transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .meter-face::after {
+        .panel-detector .meter-face::after {
             content: '';
             position: absolute;
             width: 15px;
             height: 15px;
             background: #4A3C23;
             border-radius: 50%;
-            bottom: -5px;
+            bottom: -8px;
             left: calc(50% - 7.5px);
             z-index: 2;
-            border: 1px solid #1A1510;
         }
-        .detector-label {
-            font-family: 'Orbitron', sans-serif;
-            color: #FF4136;
-            font-size: 0.8rem;
-            text-shadow: 0 0 5px #FF4136;
-        }
-
-
-        /* Panel Derecho (Spirit Box) */
-        .panel-spiritbox {
-            width: 100%;
-            aspect-ratio: 3/4; /* Proporción vertical */
-            background-color: #1a1a1a;
-            border: 2px solid #555;
-            position: relative;
+        .panel-detector .controls {
             display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
+            justify-content: space-around;
             align-items: center;
-            padding: 10px;
+            margin-top: 10px;
         }
-        .spiritbox-label {
-            font-family: 'Orbitron', sans-serif;
-            color: #00ff00; /* Verde brillante */
-            font-size: 0.9rem;
-            text-shadow: 0 0 5px #00ff00;
-            margin-bottom: 10px;
-        }
-        .text-display-sb {
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 1.1rem;
-            color: #F0F0F0;
-            background-color: #222;
-            border: 1px solid #444;
-            border-radius: 3px;
-            text-align: center;
-            padding: 5px;
-            height: 30px;
-            line-height: 1.5;
-            overflow: hidden;
-            white-space: nowrap;
-            width: 100%;
-            box-sizing: border-box;
-            opacity: 0; /* Oculto por defecto */
-            transition: opacity 0.1s ease-out;
-        }
-        .knob-container { /* Reutiliza estilos de perilla */
-            margin-top: auto; /* Empuja los controles hacia abajo */
+        .panel-detector .knob-container {
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-bottom: 10px;
-            width: 100%;
         }
-        .knob-label {
+        .panel-detector .knob-label {
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             margin-bottom: 5px;
             color: #B89B6C;
-            text-shadow: 1px 1px 2px #000;
         }
-        .knob {
-            width: 60px;
-            height: 60px;
+        .panel-detector .knob {
+            width: 45px;
+            height: 45px;
             background: linear-gradient(145deg, #444, #222);
             border-radius: 50%;
-            border: 3px solid #111;
-            box-shadow: 0 5px 10px rgba(0,0,0,0.5), inset 0 0 5px rgba(0,0,0,0.5);
+            border: 2px solid #111;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.5);
             position: relative;
             cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-        .knob::before { /* Indicador de la perilla */
+        .panel-detector .knob::before {
             content: '';
             position: absolute;
             width: 3px;
-            height: 15px;
+            height: 12px;
             background: #F5E5C0;
             border-radius: 2px;
-            top: 5px;
+            top: 4px;
             left: calc(50% - 1.5px);
-            box-shadow: 0 0 3px #F5E5C0;
         }
-        #power-knob { transform: rotate(-45deg); }
-        #speed-knob { transform: rotate(-60deg); }
-        .knob:active {
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5), inset 0 0 8px rgba(0,0,0,0.7);
-            transform: scale(0.95);
-        }
+        .panel-detector #power-knob { transform: rotate(-45deg); }
+        .panel-detector #speed-knob { transform: rotate(-60deg); }
 
-        /* --- MENSAJE DE PERMISO (para cámara/sensores) --- */
-        #permission-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0, 0, 0, 0.95);
-            color: white;
+        /* --- Panel Derecho (Spirit Box) --- */
+        .panel-spiritbox {
+            width: 100%;
+            aspect-ratio: 3/4; /* Ratio vertical */
+            padding: 15px;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.2rem;
-            text-align: center;
-            z-index: 1000;
-            display: none; /* Oculto por defecto */
+            justify-content: space-around;
         }
-        #permission-overlay button {
-            background: #007bff;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            margin-top: 20px;
-            cursor: pointer;
+        .panel-spiritbox .title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            color: #B89B6C;
+            border-bottom: 1px solid #555;
+            padding-bottom: 5px;
+            text-align: center;
+            width: 100%;
+        }
+        /* Sensor de Temperatura */
+        #temp-display {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            color: #00AADD;
+            text-shadow: 0 0 10px #00AADD, 0 0 20px #00AADD;
+        }
+        #temp-label {
+            font-size: 0.8rem;
+            color: #ccc;
+        }
+        /* Placa "OBR" */
+        .placa-spiritbox {
+            background: linear-gradient(145deg, #E0C08D, #B89B6C);
+            border: 2px solid #7C684A;
+            color: #4A3C23;
+            border-radius: 4px;
+            padding: 8px;
+            text-align: center;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        .placa-spiritbox h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            text-shadow: 1px 1px 0px #F5E5C0;
+            margin: 0;
         }
     </style>
 </head>
 <body class="antialiased">
 
-    <div id="permission-overlay">
-        <p>Esta aplicación necesita acceso a la cámara y a los sensores (EMF).</p>
-        <p>Haz clic para iniciar y conceder permisos.</p>
-        <button id="start-app-button">INICIAR</button>
-    </div>
-
-    <div class="main-container">
+    <!-- 1. Cámara de Fondo -->
+    <video id="main-camera-feed" playsinline autoplay muted></video>
+    
+    <!-- 2. Superposición de UI -->
+    <div id="ui-overlay">
         
-        <!-- CÁMARA PRINCIPAL --><div class="camera-main-container">
-            <video id="camera-main" autoplay playsinline></video>
-            <div class="overlay-numbers" id="overlay-numbers"></div>
-            <h2 class="absolute top-2 left-1/2 -translate-x-1/2 text-white text-lg font-orbitron">CÁMARA NORMAL</h2>
-        </div>
+        <!-- Paneles Inferiores -->
+        <div class="bottom-panels">
 
-        <!-- PANELES INFERIORES --><div class="bottom-panels">
-            
-            <!-- CAMARA TIPO GHOSTTUBE --><div class="panel-ghosttube">
-                <video id="camera-ghosttube" autoplay playsinline></video>
-                <div class="ghosttube-filters">
-                    <button class="filter-btn active" data-filter="ghosttube">GHOSTTUBE</button>
+            <!-- Panel 1: GhostTube (Filtros) -->
+            <div class="panel panel-ghosttube">
+                <canvas id="ghosttube-canvas"></canvas>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-filter="normal">NORMAL</button>
                     <button class="filter-btn" data-filter="thermal">THERMAL</button>
-                    <button class="filter-btn" data-filter="nightvision">NIGHT VIS</button>
+                    <button class="filter-btn" data-filter="nightvis">NIGHTVIS</button>
                 </div>
-                <h2 class="absolute top-2 left-1/2 -translate-x-1/2 text-white text-sm font-orbitron">CÁMARA IR</h2>
             </div>
-            
-            <!-- DETECTOR DE ENERGÍA --><div class="panel-detector">
+
+            <!-- Panel 2: Detector EMF (Voltímetro + Spirit Box Audio) -->
+            <div class="panel panel-detector">
                 <div class="meter-face">
                     <div id="meter-needle"></div>
                 </div>
-                <p class="detector-label">DETECTOR EMF</p>
-            </div>
-            
-            <!-- SPIRIT BOX --><div class="panel-spiritbox">
-                <p class="spiritbox-label">SPIRIT BOX</p>
-                <div id="text-display-sb" class="text-display-sb">&nbsp;</div>
-                <div class="knob-container">
-                    <div class="knob-label">POWER</div>
-                    <div id="power-knob" class="knob"></div>
-                </div>
-                <div class="knob-container">
-                    <div class="knob-label">SCAN SPEED</div>
-                    <div id="speed-knob" class="knob"></div>
+                <!-- NOTA: El Text-Display del Spirit Box fue ELIMINADO a propósito -->
+                <div class="controls">
+                    <div class="knob-container">
+                        <div class="knob-label">POWER</div>
+                        <div id="power-knob" class="knob"></div>
+                    </div>
+                    <div class="knob-container">
+                        <div class="knob-label">SCAN</div>
+                        <div id="speed-knob" class="knob"></div>
+                    </div>
                 </div>
             </div>
-        </div>
 
+            <!-- Panel 3: Sensores (Temperatura Sim) -->
+            <div class="panel panel-spiritbox">
+                <div class="title">ENVIRONMENT</div>
+                <div id="temp-display">20.1°C</div>
+                <div id="temp-label">Ambient Temp (Sim)</div>
+                
+                <div class="placa-spiritbox">
+                    <h1>OBR-SIM</h1>
+                </div>
+            </div>
+
+        </div>
     </div>
 
     <script>
@@ -355,40 +291,35 @@
         const SHEETDB_BASE_URL = "https://sheetdb.io/api/v1/9xzfnke69kkej";
 
         // --- Elementos del DOM ---
-        const startAppButton = document.getElementById('start-app-button');
-        const permissionOverlay = document.getElementById('permission-overlay');
-
-        const cameraMainVideo = document.getElementById('camera-main');
-        const cameraGhosttubeVideo = document.getElementById('camera-ghosttube');
-        const overlayNumbers = document.getElementById('overlay-numbers');
-
-        const meterNeedle = document.getElementById('meter-needle');
-        const textDisplaySB = document.getElementById('text-display-sb');
+        const mainCamera = document.getElementById('main-camera-feed');
+        const ghostCanvas = document.getElementById('ghosttube-canvas');
+        const filterButtons = document.querySelectorAll('.filter-btn');
         const powerKnob = document.getElementById('power-knob');
         const speedKnob = document.getElementById('speed-knob');
-        const filterButtons = document.querySelectorAll('.filter-btn');
+        const meterNeedle = document.getElementById('meter-needle');
+        const tempDisplay = document.getElementById('temp-display');
+        
+        let ghostCanvasCtx;
+        let currentFilter = 'normal';
+        let animationFrameId;
 
-        // --- Estado de la App ---
+        // --- Estado de la App (Spirit Box) ---
         let isRunning = false;
         let isLoaded = false;
         let programadoData = new Map();
         let automaticoData = [];
-        
-        let speedLevel = 1; // 0=Lento, 1=Medio, 2=Rápido
+        let speedLevel = 1; 
         const speedSettings = [
-            { delay: 900, angle: -60, chopFreq: 10 },    // Lento
-            { delay: 500, angle: 0, chopFreq: 20 },     // Medio
-            { delay: 200, angle: 60, chopFreq: 40 }     // Rápido
+            { delay: 900, angle: 0 },    // Lento
+            { delay: 500, angle: -60 }, // Medio
+            { delay: 200, angle: 60 }    // Rápido
         ];
         let baseDelay = speedSettings[speedLevel].delay;
 
         // --- Módulos de Audio ---
         let audioContext;
-        let gainNode;
-        let whiteNoiseNode;
-        let blipOscillator, blipGain;
-        let lfo, lfoGain; // Para el efecto "chop"
-        let delayNode, delayFeedback, delayWet; // Para el eco
+        let gainNode, whiteNoiseNode, blipOscillator, blipGain, lfo, lfoGain;
+        let delayNode, delayFeedback, delayWet;
 
         // --- Módulos de Voz ---
         let voices = [];
@@ -399,48 +330,33 @@
         // --- Módulos de Sensores ---
         let magnetometer;
         let lastMagReading = 0;
-        const MAG_THRESHOLD = 8.0; // Sensibilidad del pico magnético (ajustado)
-
-        // --- Módulos de Cámara ---
-        let mainStream;
-        let ghosttubeStream;
-        let currentFilter = 'ghosttube';
-        const numOverlayNumbers = 8; // Cuántos números flotantes en la cámara principal
+        const MAG_THRESHOLD = 15.0; 
+        let tempInterval;
 
         // --- Estado de los Ciclos ---
-        let autoTimeout, needleScanTimeout, numberOverlayTimeout;
+        let autoTimeout, freqTimeout;
         let isProgrammedResponse = false; 
         let isRecognizing = false; 
         let recognitionWatchdog; 
 
         // --- 0. Función de Utilidad (Normalizar Texto) ---
         function normalizeText(text) {
-            return text
-                .toLowerCase()
-                .normalize("NFD") 
-                .replace(/[\u0300-\u036f]/g, "") 
-                .replace(/[¿¡,.?]/g, ""); 
+            return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[¿¡,.?]/g, ""); 
         }
 
         // --- 1. Carga de Datos (Automática) ---
         async function loadSheetData() {
             const urlProgramado = `${SHEETDB_BASE_URL}?sheet=PROGRAMADO`;
             const urlAutomatico = `${SHEETDB_BASE_URL}?sheet=AUTOMATICO`;
-            
             console.log("Cargando datos...");
             try {
                 const [resProgramado, resAutomatico] = await Promise.all([
                     fetch(urlProgramado),
                     fetch(urlAutomatico)
                 ]);
-
-                if (!resProgramado.ok || !resAutomatico.ok) {
-                    throw new Error('No se pudo acceder a SheetDB. Revisa la URL o los nombres de las hojas (PROGRAMADO, AUTOMATICO).');
-                }
-
+                if (!resProgramado.ok || !resAutomatico.ok) throw new Error('No se pudo acceder a SheetDB.');
                 const jsonProgramado = await resProgramado.json();
                 const jsonAutomatico = await resAutomatico.json();
-
                 programadoData.clear();
                 jsonProgramado.forEach(row => {
                     const pregunta = row.PREGUNTA || row.pregunta;
@@ -449,20 +365,13 @@
                         programadoData.set(normalizeText(pregunta), respuesta.trim());
                     }
                 });
-
                 automaticoData = jsonAutomatico
-                    .map(row => {
-                        const texto = row.TEXTO || row.texto;
-                        return texto ? texto.trim() : null;
-                    })
+                    .map(row => (row.TEXTO || row.texto)?.trim())
                     .filter(text => text && text.length > 0);
-
                 isLoaded = true;
                 console.log(`Datos cargados: ${programadoData.size} respuestas, ${automaticoData.length} palabras.`);
-                
             } catch (error) {
                 console.error("Error al cargar datos de SheetDB:", error);
-                textDisplaySB.textContent = "Error de datos";
             }
         }
 
@@ -471,53 +380,36 @@
             if (audioContext) return;
             try {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                
-                // Ruido Blanco (Base)
                 whiteNoiseNode = audioContext.createBufferSource();
-                const bufferSize = audioContext.sampleRate * 2; // 2 segundos
+                const bufferSize = audioContext.sampleRate * 2;
                 const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
                 const output = buffer.getChannelData(0);
-                for (let i = 0; i < bufferSize; i++) {
-                    output[i] = Math.random() * 2 - 1;
-                }
+                for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
                 whiteNoiseNode.buffer = buffer;
                 whiteNoiseNode.loop = true;
-                
-                // Nodo de Ganancia (Volumen general "chop")
                 gainNode = audioContext.createGain();
                 gainNode.gain.setValueAtTime(0.04, audioContext.currentTime); 
-                
-                // Efecto "Chop" (LFO)
                 lfo = audioContext.createOscillator();
                 lfo.type = 'square'; 
-                lfo.frequency.setValueAtTime(speedSettings[speedLevel].chopFreq, audioContext.currentTime); // Frecuencia inicial
+                const initialFreq = 5 + ((1000 - (1100 - baseDelay)) / 900) * 20;
+                lfo.frequency.setValueAtTime(initialFreq, audioContext.currentTime);
                 lfoGain = audioContext.createGain();
                 lfoGain.gain.setValueAtTime(0.03, audioContext.currentTime); 
-
-                // --- Nodos de Eco (Reverb) ---
-                delayNode = audioContext.createDelay(1.0); // 1 seg max delay
-                delayFeedback = audioContext.createGain(); // Feedback gain
-                delayWet = audioContext.createGain(); // Wet/Dry mix
-                
-                delayNode.delayTime.setValueAtTime(0.4, audioContext.currentTime); // Más delay
-                delayFeedback.gain.setValueAtTime(0.6, audioContext.currentTime); // Más feedback
-                delayWet.gain.setValueAtTime(0, audioContext.currentTime); // Apagado por defecto
-                
-                // Conectar el "Chop"
+                delayNode = audioContext.createDelay(1.0);
+                delayFeedback = audioContext.createGain();
+                delayWet = audioContext.createGain();
+                delayNode.delayTime.setValueAtTime(0.3, audioContext.currentTime);
+                delayFeedback.gain.setValueAtTime(0.5, audioContext.currentTime);
+                delayWet.gain.setValueAtTime(0, audioContext.currentTime);
                 lfo.connect(lfoGain).connect(gainNode.gain); 
                 whiteNoiseNode.connect(gainNode).connect(audioContext.destination);
-                
-                // Conectar el "Eco" (ahora la voz y el ruido pasan por aquí)
-                whiteNoiseNode.connect(delayWet); // Ruido blanco es la fuente del eco
+                whiteNoiseNode.connect(delayWet);
                 delayWet.connect(delayNode);
                 delayNode.connect(delayFeedback);
-                delayFeedback.connect(delayNode); // Loop de feedback
-                delayNode.connect(audioContext.destination); // Eco a los altavoces
-                
+                delayFeedback.connect(delayNode);
+                delayNode.connect(audioContext.destination);
                 whiteNoiseNode.start();
                 lfo.start();
-
-                // "Blip" del escáner
                 blipOscillator = audioContext.createOscillator();
                 blipGain = audioContext.createGain();
                 blipOscillator.type = 'sine'; 
@@ -525,94 +417,79 @@
                 blipGain.gain.setValueAtTime(0, audioContext.currentTime);
                 blipOscillator.connect(blipGain).connect(audioContext.destination);
                 blipOscillator.start();
-
-            } catch (e) {
-                console.error("Error al iniciar AudioContext:", e);
-            }
+            } catch (e) { console.error("Error al iniciar AudioContext:", e); }
         }
 
-        // --- 3. Inicialización de Voz y Sensores ---
+        // --- 3. Inicialización de Voz y SENSORES ---
         function initSpeechModules() {
             voices = synthesis.getVoices().filter(v => v.lang === 'es-MX');
-            if (voices.length === 0) {
-                voices = synthesis.getVoices().filter(v => v.lang.startsWith('es-'));
-            }
+            if (voices.length === 0) voices = synthesis.getVoices().filter(v => v.lang.startsWith('es-'));
             if (synthesis.onvoiceschanged !== undefined) {
                 synthesis.onvoiceschanged = () => {
                     voices = synthesis.getVoices().filter(v => v.lang === 'es-MX');
-                     if (voices.length === 0) {
-                        voices = synthesis.getVoices().filter(v => v.lang.startsWith('es-'));
-                    }
+                     if (voices.length === 0) voices = synthesis.getVoices().filter(v => v.lang.startsWith('es-'));
                 };
             }
-
-            if (!SpeechRecognition) {
-                console.error("SpeechRecognition no es soportado en este navegador.");
-                return;
-            }
+            if (!SpeechRecognition) return console.error("SpeechRecognition no es soportado.");
             try {
                 recognition = new SpeechRecognition();
                 recognition.lang = 'es-ES'; 
                 recognition.interimResults = false;
                 recognition.continuous = false; 
-
                 recognition.onresult = (event) => {
                     clearTimeout(recognitionWatchdog); 
                     const transcript = event.results[0][0].transcript.trim();
                     isRecognizing = false; 
                     handleRecognitionResult(transcript);
                 };
-
                 recognition.onerror = (event) => {
                     clearTimeout(recognitionWatchdog); 
                     isRecognizing = false;
-                    // Reiniciar rápidamente si no hay respuesta programada
-                    if (isRunning && !isProgrammedResponse) {
-                        setTimeout(startProgramadoMode, 500); 
-                    }
+                    if (isRunning && !isProgrammedResponse) setTimeout(startProgramadoMode, 500);
                 };
-
                 recognition.onend = () => {
                     clearTimeout(recognitionWatchdog); 
                     isRecognizing = false;
-                    // Reiniciar rápidamente si no hay respuesta programada
-                    if (isRunning && !isProgrammedResponse) {
-                        setTimeout(startProgramadoMode, 500); 
-                    }
+                    if (isRunning && !isProgrammedResponse) setTimeout(startProgramadoMode, 500);
                 };
-
-            } catch (e) {
-                console.error("Error al iniciar SpeechRecognition:", e);
-                textDisplaySB.textContent = "Error de Mic";
-            }
+            } catch (e) { console.error("Error al iniciar SpeechRecognition:", e); }
         }
 
         function initSensor() {
             if ('Magnetometer' in window) {
                 navigator.permissions.query({ name: 'magnetometer' }).then(result => {
-                    if (result.state === 'denied') {
-                        console.warn("Permiso de magnetómetro denegado.");
-                        return;
-                    }
+                    if (result.state === 'denied') return console.warn("Permiso de magnetómetro denegado.");
                     if (result.state === 'granted' || result.state === 'prompt') {
                         try {
-                            magnetometer = new Magnetometer({ frequency: 2 }); // Leer 2 veces por segundo
+                            magnetometer = new Magnetometer({ frequency: 2 }); 
                             magnetometer.onreading = handleMagnetometerReading;
                             magnetometer.onerror = (event) => console.error("Error de magnetómetro:", event.error.name, event.error.message);
                             magnetometer.start();
                             console.log("Magnetómetro activado.");
-                        } catch(e) {
-                            console.error("No se pudo iniciar el magnetómetro:", e);
-                        }
+                        } catch(e) { console.error("No se pudo iniciar el magnetómetro:", e); }
                     }
                 });
             } else {
-                console.warn("Magnetómetro no soportado en este navegador o entorno (se requiere HTTPS).");
+                console.warn("Magnetómetro no soportado (requiere HTTPS).");
             }
         }
-
-        // --- 4. Funciones de Sonido ---
         
+        function initTempSensor() {
+            let baseTemp = 19.0;
+            tempInterval = setInterval(() => {
+                // Simular fluctuaciones
+                baseTemp += (Math.random() - 0.48) * 0.2;
+                if (baseTemp < 15) baseTemp = 15;
+                if (baseTemp > 25) baseTemp = 25;
+                tempDisplay.textContent = `${baseTemp.toFixed(1)}°C`;
+            }, 2000); // Actualizar cada 2 segundos
+        }
+        function stopTempSensor() {
+            clearInterval(tempInterval);
+            tempDisplay.textContent = "--.-°C";
+        }
+
+        // --- 4. Funciones de Sonido (Spirit Box) ---
         function startNoise() {
             if (!audioContext) initAudioContext();
             audioContext.resume();
@@ -631,25 +508,16 @@
             blipGain.gain.linearRampToValueAtTime(0.2, now + 0.01); 
             blipGain.gain.linearRampToValueAtTime(0, now + 0.05); 
         }
-
-        // Hablar (con eco para TODAS las voces)
         function speak(text, isDistorted) {
-            if (synthesis.speaking) {
-                synthesis.cancel();
-            }
+            if (synthesis.speaking) synthesis.cancel();
             if (audioContext) audioContext.resume();
-
-            // --- DETENER EL "CHOP" Y ACTIVAR EL ECO ---
             lRamp(lfoGain.gain, 0, 0.1);
             lRamp(gainNode.gain, 0, 0.1);
-            lRamp(delayWet.gain, 0.5, 0.1); // Más volumen al eco
-
+            lRamp(delayWet.gain, 0.3, 0.1);
             const utterance = new SpeechSynthesisUtterance(text);
-            
             utterance.voice = voices[0] || synthesis.getVoices().find(v => v.lang.startsWith('es-'));
             utterance.lang = utterance.voice ? utterance.voice.lang : 'es-ES';
             utterance.volume = 1; 
-
             if (isDistorted) {
                 utterance.pitch = Math.random() * 0.5 + 0.8; 
                 utterance.rate = Math.random() * 0.5 + 0.9;  
@@ -657,126 +525,79 @@
                 utterance.pitch = 1;
                 utterance.rate = 1.0;
             }
-
-            utterance.onstart = () => {
-                textDisplaySB.textContent = text;
-                textDisplaySB.style.opacity = 1; // Mostrar el texto
-                if (isDistorted) {
-                    // Trigger GhostTube glitch effect
-                    cameraGhosttubeVideo.style.filter = currentFilterEffect + ' contrast(200%) brightness(200%)';
-                }
-            };
-
+            
+            // ELIMINADO: Actualización del textDisplay
+            // utterance.onstart = () => textDisplay.textContent = text;
+            
             utterance.onend = () => {
-                textDisplaySB.style.opacity = 0; // Ocultar el texto
-                textDisplaySB.textContent = ''; 
+                // ELIMINADO: Limpieza del textDisplay
+                // textDisplay.textContent = '';
                 
-                // --- APAGAR EL ECO Y REINICIAR EL "CHOP" ---
                 lRamp(delayWet.gain, 0, 0.1);
                 lRamp(lfoGain.gain, 0.03, 0.1);
                 lRamp(gainNode.gain, 0.04, 0.1);
-
-                if (isDistorted) {
-                    // Reset GhostTube filter
-                    cameraGhosttubeVideo.style.filter = currentFilterEffect;
-                }
-
-                // Si era una respuesta programada, reiniciar todo
                 if (isProgrammedResponse) {
                     isProgrammedResponse = false;
-                    startAllModes(); // Reiniciar ciclos
+                    startAllModes();
                 }
             };
-            
             synthesis.speak(utterance);
         }
-
-        // Helper para rampas de audio seguras
         function lRamp(param, value, time) {
-            if (param) {
-                param.linearRampToValueAtTime(value, audioContext.currentTime + time);
-            }
+            if (param) param.linearRampToValueAtTime(value, audioContext.currentTime + time);
         }
         
-        // --- 5. Lógica de Modos y SENSORES ---
-
-        // Escaneo de Aguja (reemplaza FreqScan)
+        // --- 5. Lógica de Modos y SENSORES (Spirit Box) ---
         function startNeedleScan() {
             if (!isRunning) return;
-            
             const randomScan = Math.random() * 60 - 30; // -30deg a +30deg
             updateNeedle(randomScan);
-            playBlip();
-
+            playBlip(); 
             const scanSpeed = 1100 - baseDelay; 
-            needleScanTimeout = setTimeout(startNeedleScan, scanSpeed);
+            freqTimeout = setTimeout(startNeedleScan, scanSpeed);
         }
-
         function updateNeedle(degrees) {
             meterNeedle.style.transform = `rotate(${degrees}deg)`;
         }
-        
-        // Manejador del Magnetómetro
         function handleMagnetometerReading() {
             if (!isRunning || synthesis.speaking || isRecognizing || isProgrammedResponse) return;
-
             const strength = Math.sqrt(magnetometer.x**2 + magnetometer.y**2 + magnetometer.z**2);
             const delta = Math.abs(strength - lastMagReading);
-
             if (delta > MAG_THRESHOLD) {
                 console.log(`¡PICO MAGNÉTICO DETECTADO! Delta: ${delta.toFixed(2)}`);
-                
-                updateNeedle(90); // Mover al máximo
-                
+                updateNeedle(90); // Aguja salta
                 if (automaticoData.length > 0) {
                     const randomIndex = Math.floor(Math.random() * automaticoData.length);
                     const word = automaticoData[randomIndex];
                     speak(word, true);
                 }
-                
-                // Resetear el último valor para evitar picos continuos
                 lastMagReading = strength + MAG_THRESHOLD; 
-                // Añadir un breve fallo visual a la cámara GhostTube
-                cameraGhosttubeVideo.style.filter = currentFilterEffect + ' invert(100%)';
-                setTimeout(() => cameraGhosttubeVideo.style.filter = currentFilterEffect, 200);
-
             } else {
                 lastMagReading = strength;
             }
         }
-
-        // Modo Automático (Habla al azar)
         function startAutoMode() {
             if (!isRunning) return;
-            
             const randomDelay = Math.random() * (baseDelay * 5) + (baseDelay * 2); 
-            
             autoTimeout = setTimeout(() => {
                 if (automaticoData.length > 0 && !synthesis.speaking && !isProgrammedResponse && !isRecognizing) {
                     const randomIndex = Math.floor(Math.random() * automaticoData.length);
                     const word = automaticoData[randomIndex];
                     speak(word, true); 
                 }
-                startAutoMode(); // Reiniciar ciclo
+                startAutoMode(); 
             }, randomDelay);
         }
-        
-        // Modo Programado (Escucha)
         function startProgramadoMode() {
-            if (!isRunning || !recognition || isRecognizing || isProgrammedResponse) {
-                return;
-            }
+            if (!isRunning || !recognition || isRecognizing || isProgrammedResponse) return;
             if (synthesis.speaking) {
                 setTimeout(startProgramadoMode, 1000); 
                 return;
             }
-
             clearTimeout(recognitionWatchdog);
-
             try {
                 isRecognizing = true;
                 recognition.start();
-
                 recognitionWatchdog = setTimeout(() => {
                     if (isRecognizing) { 
                         console.error("Speech recognition watchdog triggered: Forcing restart.");
@@ -784,240 +605,191 @@
                         recognition.stop(); 
                     }
                 }, 8000); 
-
             } catch (e) {
                 isRecognizing = false;
-                if (isRunning) {
-                    setTimeout(startProgramadoMode, 500); 
-                }
+                if (isRunning) setTimeout(startProgramadoMode, 500); 
             }
         }
-        
-        // Manejar resultado del micrófono
         function handleRecognitionResult(transcript) {
             const normalizedTranscript = normalizeText(transcript);
-            
             if (programadoData.has(normalizedTranscript)) {
                 isProgrammedResponse = true; 
                 synthesis.cancel(); 
                 clearTimeout(autoTimeout); 
-                clearTimeout(needleScanTimeout); 
-                
+                clearTimeout(freqTimeout); 
                 const response = programadoData.get(normalizedTranscript);
                 speak(response, false); 
-                
-            } else {
-                // Si no hay match, disparar una palabra automática
-                if (automaticoData.length > 0) {
-                    const randomIndex = Math.floor(Math.random() * automaticoData.length);
-                    const word = automaticoData[randomIndex];
-                    speak(word, true);
-                }
             }
         }
-
-        // Limpiar todos los ciclos
         function clearAllTimeouts() {
             clearTimeout(autoTimeout);
-            clearTimeout(needleScanTimeout);
+            clearTimeout(freqTimeout);
             clearTimeout(recognitionWatchdog);
-            clearTimeout(numberOverlayTimeout);
         }
-
-        // Función central para (re)iniciar los modos
         function startAllModes() {
             clearAllTimeouts();
             if (!isRunning) return;
             startNeedleScan(); 
             startAutoMode();
             startProgramadoMode();
-            startNumberOverlay(); // Iniciar números flotantes
         }
 
-        // --- CÁMARAS ---
-        async function initCameras() {
+        // --- 6. Lógica de la Cámara Principal y Filtros ---
+        async function startMainCamera() {
             try {
-                // Intentar acceder a la cámara trasera primero
-                mainStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'environment' } 
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' } // Preferir cámara trasera
                 });
-                // Si la trasera falla o no existe, intenta con la frontal
-                if (!mainStream.getVideoTracks().length) {
-                     mainStream = await navigator.mediaDevices.getUserMedia({ 
-                        video: { facingMode: 'user' } 
-                    });
-                }
+                mainCamera.srcObject = stream;
+                mainCamera.play();
                 
-                cameraMainVideo.srcObject = mainStream;
-                cameraGhosttubeVideo.srcObject = mainStream; // Ambos usan el mismo stream
-                cameraMainVideo.play();
-                cameraGhosttubeVideo.play();
+                // Iniciar el canvas de GhostTube
+                ghostCanvasCtx = ghostCanvas.getContext('2d', { willReadFrequently: true });
+                ghostCanvas.width = 300; // Ancho fijo para rendimiento
+                ghostCanvas.height = 400; // Alto fijo
+                
+                drawGhostTube(); // Iniciar el loop de dibujo
 
-                console.log("Cámaras activadas.");
             } catch (err) {
                 console.error("Error al acceder a la cámara:", err);
-                alert("No se pudo acceder a la cámara. Por favor, concede los permisos.");
-            }
-        }
-
-        function stopCameras() {
-            if (mainStream) {
-                mainStream.getTracks().forEach(track => track.stop());
+                alert("No se pudo acceder a la cámara. Revisa los permisos.");
             }
         }
         
-        // --- NÚMEROS FLOTANTES ---
-        function generateRandomNumberOverlay() {
-            if (!isRunning) return;
+        function stopMainCamera() {
+            if (mainCamera.srcObject) {
+                mainCamera.srcObject.getTracks().forEach(track => track.stop());
+            }
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+        }
 
-            const num = Math.floor(Math.random() * 999) + 1;
-            const size = Math.random() * 1.5 + 1; // 1rem a 2.5rem
-            const x = Math.random() * 90; // 0-90%
-            const y = Math.random() * 80 + 10; // 10-90%
-
-            const numDiv = document.createElement('div');
-            numDiv.classList.add('overlay-number');
-            numDiv.style.left = `${x}%`;
-            numDiv.style.top = `${y}%`;
-            numDiv.style.fontSize = `${size}rem`;
-            numDiv.textContent = num;
-
-            overlayNumbers.appendChild(numDiv);
-
-            numDiv.addEventListener('animationend', () => {
-                numDiv.remove();
-            });
-
-            numberOverlayTimeout = setTimeout(generateRandomNumberOverlay, Math.random() * 2000 + 500); // 0.5 a 2.5 segundos
+        // Loop de dibujo para el canvas de filtros
+        function drawGhostTube() {
+            if (!ghostCanvasCtx || mainCamera.paused || mainCamera.ended) {
+                return;
+            }
+            // Dibujar la imagen de la cámara en el canvas
+            ghostCanvasCtx.drawImage(mainCamera, 0, 0, ghostCanvas.width, ghostCanvas.height);
+            
+            // Aplicar filtros si no es 'normal'
+            if (currentFilter !== 'normal') {
+                const imageData = ghostCanvasCtx.getImageData(0, 0, ghostCanvas.width, ghostCanvas.height);
+                const data = imageData.data;
+                
+                if (currentFilter === 'nightvis') {
+                    applyNightvisFilter(data);
+                } else if (currentFilter === 'thermal') {
+                    applyThermalFilter(data);
+                }
+                
+                ghostCanvasCtx.putImageData(imageData, 0, 0);
+            }
+            
+            animationFrameId = requestAnimationFrame(drawGhostTube);
         }
         
-        function startNumberOverlay() {
-            clearTimeout(numberOverlayTimeout); // Limpiar cualquier anterior
-            generateRandomNumberOverlay(); // Iniciar el ciclo
-        }
-
-        // --- MANEJO DE FILTROS GHOSTTUBE ---
-        let currentFilterEffect = 'grayscale(100%) brightness(0.5) sepia(100%) hue-rotate(100deg) saturate(300%) contrast(150%)'; // GhostTube por defecto
-
-        function applyFilter(filterName) {
-            filterButtons.forEach(btn => btn.classList.remove('active'));
-            const selectedBtn = document.querySelector(`.filter-btn[data-filter="${filterName}"]`);
-            if (selectedBtn) selectedBtn.classList.add('active');
-
-            switch (filterName) {
-                case 'ghosttube':
-                    currentFilterEffect = 'grayscale(100%) brightness(0.5) sepia(100%) hue-rotate(100deg) saturate(300%) contrast(150%)';
-                    break;
-                case 'thermal':
-                    currentFilterEffect = 'brightness(200%) contrast(200%) hue-rotate(270deg) saturate(300%)';
-                    break;
-                case 'nightvision':
-                    currentFilterEffect = 'grayscale(100%) brightness(300%) sepia(100%) hue-rotate(90deg) saturate(300%)';
-                    break;
-                default:
-                    currentFilterEffect = ''; // Sin filtro
+        // Filtro de Visión Nocturna
+        function applyNightvisFilter(data) {
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                const avg = (r + g + b) / 3;
+                data[i] = 0;     // Red
+                data[i + 1] = avg + 60; // Green
+                data[i + 2] = 0;     // Blue
             }
-            cameraGhosttubeVideo.style.filter = currentFilterEffect;
-            currentFilter = filterName; // Actualizar el filtro activo
         }
-
-        filterButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                applyFilter(button.dataset.filter);
+        
+        // Filtro "Térmico" (Simulado)
+        function applyThermalFilter(data) {
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                const v = (0.2126 * r + 0.7152 * g + 0.0722 * b); // Luminosidad
+                
+                // Mapeo de color simple (Azul -> Rojo)
+                if (v < 85) { // Frío (Azul/Morado)
+                    data[i] = v;
+                    data[i + 1] = 0;
+                    data[i + 2] = 100 + v;
+                } else if (v < 170) { // Medio (Verde/Amarillo)
+                    data[i] = 100 + v;
+                    data[i + 1] = v + 50;
+                    data[i + 2] = 0;
+                } else { // Caliente (Rojo/Blanco)
+                    data[i] = 255;
+                    data[i + 1] = v;
+                    data[i + 2] = v;
+                }
+            }
+        }
+        
+        // Listeners de Filtros
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
             });
         });
 
 
-        // --- 6. Event Listeners (Perillas) ---
-        
-        // Perilla de Encendido/Apagado
+        // --- 7. Event Listeners (Perillas) ---
         powerKnob.addEventListener('click', () => {
             isRunning = !isRunning;
             
             if (isRunning) {
-                // --- ENCENDER ---
-                powerKnob.style.transform = 'rotate(45deg)'; // Posición de encendido
-                
+                // --- ENCENDER TODO ---
+                powerKnob.style.transform = 'rotate(45deg)';
                 if (!isLoaded) {
-                    textDisplaySB.textContent = "Error de datos";
+                    alert("Datos de SheetDB no cargados. Revisa la conexión.");
+                    isRunning = false;
+                    powerKnob.style.transform = 'rotate(-45deg)';
                     return;
                 }
                 
+                startMainCamera();  // <-- ENCENDER CÁMARA
                 initAudioContext();
                 initSpeechModules();
                 initSensor(); 
+                initTempSensor();   // <-- ENCENDER TEMP
                 startNoise(); 
                 startAllModes(); 
-                startNumberOverlay(); // Iniciar números flotantes
-
             } else {
-                // --- APAGAR ---
-                powerKnob.style.transform = 'rotate(-45deg)'; // Posición de apagado
+                // --- APAGAR TODO ---
+                powerKnob.style.transform = 'rotate(-45deg)';
                 
+                stopMainCamera(); // <-- APAGAR CÁMARA
                 stopNoise(); 
+                stopTempSensor(); // <-- APAGAR TEMP
                 synthesis.cancel();
                 if (recognition) recognition.stop();
                 if (magnetometer) magnetometer.stop();
                 clearAllTimeouts();
                 
-                textDisplaySB.textContent = '';
-                textDisplaySB.style.opacity = 0; // Ocultar el texto
-                updateNeedle(-30); // Aguja a posición de apagado
-                
-                // Detener y limpiar números flotantes
-                clearTimeout(numberOverlayTimeout);
-                overlayNumbers.innerHTML = ''; 
+                updateNeedle(-30); 
             }
         });
         
-        // Perilla de Velocidad de Escaneo
         speedKnob.addEventListener('click', () => {
-            speedLevel = (speedLevel + 1) % speedSettings.length; // Ciclo 0, 1, 2
+            speedLevel = (speedLevel + 1) % 3; 
             const newSetting = speedSettings[speedLevel];
-            
             baseDelay = 1100 - newSetting.delay;
             speedKnob.style.transform = `rotate(${newSetting.angle}deg)`;
-
-            // Actualizar LFO (sonido "chop")
             if (lfo) {
-                lfo.frequency.linearRampToValueAtTime(newSetting.chopFreq, audioContext.currentTime + 0.1);
-            }
-
-            // Reiniciar el escaneo de aguja y el modo automático con la nueva velocidad
-            if (isRunning) {
-                clearTimeout(needleScanTimeout);
-                clearTimeout(autoTimeout);
-                startNeedleScan();
-                startAutoMode();
+                const freq = 5 + ((1000 - (1100 - baseDelay)) / 900) * 20; 
+                lfo.frequency.linearRampToValueAtTime(freq, audioContext.currentTime + 0.1);
             }
         });
-
-        // --- Función para iniciar toda la app (después de pedir permisos) ---
-        startAppButton.addEventListener('click', async () => {
-            permissionOverlay.style.display = 'none';
-            await loadSheetData(); // Cargar datos
-            await initCameras(); // Iniciar cámaras
-            // El resto de la inicialización (audio, voz, sensores) se hará al ENCEDNER la caja.
-            // Asegúrate de que el estado inicial de los knobs sea el correcto
-            powerKnob.style.transform = 'rotate(-45deg)';
-            speedKnob.style.transform = `rotate(${speedSettings[speedLevel].angle}deg)`;
-            applyFilter(currentFilter); // Aplicar filtro por defecto
-        });
-
 
         // Carga inicial
         window.onload = () => {
-            permissionOverlay.style.display = 'flex'; // Mostrar la pantalla de permiso al inicio
+            loadSheetData();
         };
-
-        // Asegurarse de liberar recursos al salir
-        window.addEventListener('beforeunload', () => {
-            stopCameras();
-            if (magnetometer) magnetometer.stop();
-            if (audioContext) audioContext.close();
-            synthesis.cancel();
-            if (recognition) recognition.stop();
-        });
 
     </script>
 </body>
