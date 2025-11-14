@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-Tf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador Spirit Box (Retro)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Estilos Retro para el Spirit Box */
+        html {
+            background-color: #3A2F2F; /* Marrón oscuro */
+            /* Textura de grano sutil */
+            background-image: url("data:image/svg+xml,%3Csvg width='6' height='6' viewBox='0 0 6 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23F5E8C7' fill-opacity='0.04' fill-rule='evenodd'%3E%3Cpath d='M5 0h1L0 6V5zM6 5v1H0L6 0z'/%3E%3C/g%3E%3C/svg%3E");
+        }
+        body {
+            font-family: 'Orbitron', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: #3A2F2F; /* Texto marrón oscuro */
+        }
+        
+        /* Cuerpo principal - Plástico Beige */
+        .spirit-box {
+            background-color: #F5E8C7; /* Beige */
+            border: 2px solid #D4C0A0; /* Beige oscuro */
+            border-radius: 16px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5), inset 0 4px 8px rgba(0,0,0,0.4);
+            max-width: 400px;
+            width: 100%;
+            border-top: 4px solid #FfF3D7;
+            border-bottom: 4px solid #C4B090;
+        }
+        
+        /* Placa de Metal (Laminado) */
+        .badge {
+            background: linear-gradient(145deg, #c0c0c0, #a0a0a0); /* Metalizado */
+            border: 2px solid #505050;
+            margin: 1.5rem;
+            padding: 0.75rem;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.2);
+            position: relative;
+        }
+        /* "Tornillos" de la placa */
+        .badge::before, .badge::after {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #707070;
+            border-radius: 50%;
+            border: 1px solid #404040;
+            top: 6px;
+            box-shadow: inset 0 1px 1px rgba(0,0,0,0.5);
+        }
+        .badge::before { left: 6px; }
+        .badge::after { right: 6px; }
+        
+        /* Estilo del "display" principal (Pantalla CRT) */
+        #display-container {
+            background: #202020; /* Negro CRT */
+            border: 4px solid #303030;
+            border-radius: 8px;
+            box-shadow: inset 0 4px 8px rgba(0,0,0,0.6);
+            margin: 0 1.5rem 1.5rem 1.5rem;
+        }
+
+        /* Estilo para los LEDs de audio */
+        .led-off {
+            width: 20px;
+            height: 20px;
+            background-color: #404040;
+            border-radius: 50%;
+            border: 2px solid #101010;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+            transition: all 0.1s ease;
+        }
+        .led-on {
+            width: 20px;
+            height: 20px;
+            background-color: #EF4444; /* red-500 */
+            border-radius: 50%;
+            border: 2px solid #F87171; /* red-400 */
+            box-shadow: 0 0 10px #EF4444, inset 0 2px 4px rgba(0,0,0,0.5);
+            transition: all 0.1s ease;
+        }
+        
+        /* Estilo del botón de encendido (Retro Joya) */
+        #power-button {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: 4px solid #5A0000; /* Borde rojo oscuro */
+            box-shadow: 0 5px 10px rgba(0,0,0,0.4), inset 0 4px 8px rgba(0,0,0,0.3);
+            transition: all 0.1s ease;
+        }
+        #power-button.on {
+            background: linear-gradient(145deg, #ff4040, #e00000); /* Rojo brillante */
+            color: white;
+            text-shadow: 0 0 5px #fff;
+            box-shadow: 0 0 25px #DC2626, 0 0 15px #F87171, 
+                        inset 0 2px 6px rgba(255, 200, 200, 0.5), 
+                        inset 0 -4px 8px rgba(100,0,0,0.5);
+            border-color: #F87171;
+            transform: translateY(2px); /* Efecto de presionado */
+        }
+        #power-button.off {
+            background: linear-gradient(145deg, #c00000, #a00000); /* Rojo oscuro */
+            color: #F5E8C7; /* Beige */
+            text-shadow: 0 1px 2px #000;
+        }
+        
+        /* Estilo para la fuente del scanner (VT323) */
+        #frequency-display {
+            font-family: 'VT323', monospace;
+            font-size: 2.75rem;
+            line-height: 1;
+            color: #34D399; /* Verde fósforo */
+            text-shadow: 0 0 5px #34D399, 0 0 10px #34D399, 0 0 15px #34D399;
+            background-color: #101010;
+        }
+
+        /* Estilo para el display de estado/palabra (VT323) */
+        #status-display {
+            font-family: 'VT323', monospace;
+            font-size: 1.75rem;
+            color: #FBBF24; /* Ámbar */
+            text-shadow: 0 0 5px #FBBF24, 0 0 8px #FBBF24;
+            height: 36px;
+            background-color: #101010;
+        }
+        
+        /* Slider de Velocidad */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 10px;
+            background: #3A2F2F; /* Marrón oscuro */
+            border-radius: 5px;
+            border: 1px solid #1a1a1a;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            background: #D97706; /* Naranja */
+            border: 2px solid #3A2F2F;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            background: #D97706;
+            border: 2px solid #3A2F2F;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+    </style>
+</head>
+<body class="bg-gray-900 flex items-center justify-center min-h-screen p-4">
+
+    <!-- Contenedor principal del Spirit Box -->
+    <div class="spirit-box p-6 rounded-lg w-full max-w-sm">
+        
+        <!-- Placa Laminada -->
+        <div class="badge text-center">
+            <h1 class="text-xl font-bold text-gray-800 tracking-wider">SPIRIT BOX</h1>
+            <h2 class="text-sm font-semibold text-gray-700">EXPLORACIONES OBR</h2>
+        </div>
+
+        <!-- Display de Frecuencia y LEDs -->
+        <div id="display-container" class="p-4 rounded-lg mb-4">
+            
+            <!-- Frecuencia y LEDs -->
+            <div class="flex items-center justify-center space-x-4 mb-3">
+                <div id="led-l" class="led-off"></div> <!-- LED Izquierdo -->
+                <div id="frequency-display" class="p-2 rounded w-40 text-center shadow-inner">
+                    --.--
+                </div>
+                <div id="led-r" class="led-off"></div> <!-- LED Derecho -->
+            </div>
+
+            <!-- Display de Estado/Palabra (Oculto por defecto) -->
+            <div id="status-display" class="h-10 rounded p-2 text-center shadow-inner overflow-hidden whitespace-nowrap overflow-ellipsis">
+                <!-- Este display se llena solo al hablar -->
+            </div>
+        </div>
+
+        <!-- Botón de Encendido y Slider de Velocidad -->
+        <div class="flex items-center justify-between px-4 mb-4">
+            
+            <!-- Botón de Encendido -->
+            <button id="power-button" class="off">
+                POWER
+            </button>
+
+            <!-- Slider -->
+            <div class="flex-1 ml-6">
+                <label for="speed-slider" class="block text-center text-xs font-bold mb-2">SCAN SPEED</label>
+                <input type="range" id="speed-slider" min="100" max="1000" value="500" step="100">
+                <div class="flex justify-between text-xs font-bold mt-1">
+                    <span>SLOW</span>
+                    <span>FAST</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sección de Configuración (Oculta) -->
+        <details id="config-details" class="mb-4 bg-gray-900 rounded-lg p-3" style="display: none;">
+            <summary>Configuración</summary>
+            <div class="mt-4">
+                <input type="text" id="sheetdb-base-url" value="https://sheetdb.io/api/v1/9xzfnke69kkej">
+                <button id="load-data">Cargar Datos</button>
+                <p id="load-status"></p>
+            </div>
+        </details>
+    </div>
+
+    <script>
+        // DOM Elements
+        const btnLoad = document.getElementById('load-data');
+        const btnPower = document.getElementById('power-button');
+        const inputBaseUrl = document.getElementById('sheetdb-base-url');
+        const freqDisplay = document.getElementById('frequency-display');
+        const statusDisplay = document.getElementById('status-display');
+        const loadStatus = document.getElementById('load-status');
+        const ledL = document.getElementById('led-l');
+        const ledR = document.getElementById('led-r');
+        const speedSlider = document.getElementById('speed-slider');
+
+        // Estado de la App
+        let isLoaded = false;
+        let isRunning = false;
+        let programadoData = new Map();
+        let automaticoData = [];
+        let baseDelay = 600; // Invertido: 1100 - 500 (valor inicial)
+
+        // Contexto de Audio
+        let audioContext;
+        let gainNode;
+        let whiteNoiseNode;
+        let blipOscillator;
+        let blipGain;
+
+        // API de Voz y Reconocimiento
+        let voices = [];
+        const synthesis = window.speechSynthesis;
+        let recognition;
+        let autoTimeout, freqTimeout;
+        let crackleInterval = null; 
+        let isProgrammedResponse = false; // Flag para controlar reinicio
+        let isRecognizing = false; // Flag para prevenir 'start' duplicado
+        let recognitionWatchdog; // <-- VIGILANCIA PARA EL MICRÓFONO
+
+        // --- 0. Función de Utilidad (Normalizar Texto) ---
+        function normalizeText(text) {
+            if (!text) return "";
+            return text
+                .toLowerCase()
+                .normalize("NFD") 
+                .replace(/[\u0300-\u036f]/g, "") 
+                .replace(/[¿¡,.?]/g, "");
+        }
+
+        // --- 1. Inicialización de Voz y Audio ---
+        function loadVoices() {
+            voices = synthesis.getVoices().filter(v => v.lang === 'es-MX');
+            if (voices.length === 0) {
+                voices = synthesis.getVoices().filter(v => v.lang.startsWith('es-'));
+            }
+            if (voices.length === 0) {
+                voices = synthesis.getVoices();
+            }
+        }
+
+        window.onload = () => {
+            loadVoices();
+            if (synthesis.onvoiceschanged !== undefined) {
+                synthesis.onvoiceschanged = loadVoices;
+            }
+
+            // Inicializar API de Reconocimiento de Voz
+            try {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.lang = 'es-ES';
+                recognition.interimResults = false;
+                recognition.continuous = false; // Escuchar de una en una
+
+                recognition.onresult = (event) => {
+                    clearTimeout(recognitionWatchdog); // <-- LIMPIAR VIGILANCIA
+                    const transcript = event.results[0][0].transcript.trim();
+                    isRecognizing = false; // Se detiene al obtener resultado
+                    handleVoiceCommand(transcript);
+                };
+
+                recognition.onerror = (event) => {
+                    clearTimeout(recognitionWatchdog); // <-- LIMPIAR VIGILANCIA
+                    isRecognizing = false;
+                    if (isRunning && !isProgrammedResponse) {
+                        // Re-intento suave
+                        setTimeout(startProgramadoMode, 100); 
+                    }
+                };
+
+                recognition.onend = () => {
+                    clearTimeout(recognitionWatchdog); // <-- LIMPIAR VIGILANCIA
+                    isRecognizing = false;
+                    // Reiniciar automáticamente si estamos encendidos
+                    if (isRunning && !isProgrammedResponse && !synthesis.speaking) {
+                        // FIX: El delay anterior (500ms) era muy corto.
+                        // El modo automático necesita al menos (baseDelay * 2) para activarse
+                        // (ej: 600ms * 2 = 1.2s). Damos una ventana de 1.5s.
+                        setTimeout(startProgramadoMode, 1500); // 1.5s de pausa
+                    }
+                };
+
+            } catch (e) {
+                console.error("API de Reconocimiento de Voz no soportada.", e);
+            }
+            
+            // Cargar datos automáticamente al iniciar
+            btnLoad.click();
+            
+            // Listener del Slider de Velocidad
+            // Invertimos el valor: 100 (slow) = 1000ms, 1000 (fast) = 100ms
+            speedSlider.addEventListener('input', (e) => {
+                baseDelay = 1100 - parseInt(e.target.value);
+            });
+        };
+
+        // --- 2. Carga de Datos (Google Sheets) ---
+        btnLoad.addEventListener('click', async () => {
+            let baseUrl = inputBaseUrl.value;
+            baseUrl = baseUrl.replace(/\/$/, '');
+            const urlProgramado = `${baseUrl}?sheet=PROGRAMADO`;
+            const urlAutomatico = `${baseUrl}?sheet=AUTOMATICO`;
+
+            try {
+                const [resProgramado, resAutomatico] = await Promise.all([
+                    fetch(urlProgramado),
+                    fetch(urlAutomatico)
+                ]);
+                if (!resProgramado.ok || !resAutomatico.ok) throw new Error('Error en URL o nombres de hojas');
+
+                const jsonProgramado = await resProgramado.json();
+                const jsonAutomatico = await resAutomatico.json();
+
+                programadoData.clear();
+                jsonProgramado.forEach(row => {
+                    const pregunta = row.PREGUNTA || row.pregunta;
+                    const respuesta = row.RESPUESTA || row.respuesta;
+                    if (pregunta && respuesta) {
+                        programadoData.set(normalizeText(pregunta.trim()), respuesta.trim());
+                    }
+                });
+
+                automaticoData = jsonAutomatico
+                    .map(row => (row.TEXTO || row.texto)?.trim())
+                    .filter(text => text && text.length > 0);
+
+                isLoaded = true;
+                console.log(`Datos cargados: ${programadoData.size} respuestas, ${automaticoData.length} palabras.`);
+                
+            } catch (error) {
+                console.error("Error al cargar datos:", error);
+                isLoaded = false;
+            }
+        });
+
+        // --- 3. Controles de Audio (Efectos) ---
+        function createWhiteNoise() {
+            if (audioContext) return;
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            const bufferSize = 4096;
+            whiteNoiseNode = audioContext.createScriptProcessor(bufferSize, 1, 1);
+            whiteNoiseNode.onaudioprocess = (e) => {
+                const output = e.outputBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+            };
+            
+            gainNode = audioContext.createGain();
+            gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+            whiteNoiseNode.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            blipOscillator = audioContext.createOscillator();
+            blipGain = audioContext.createGain();
+            blipOscillator.type = 'sine';
+            blipOscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            blipGain.gain.setValueAtTime(0, audioContext.currentTime);
+            blipOscillator.connect(blipGain);
+            blipGain.connect(audioContext.destination);
+            blipOscillator.start();
+        }
+
+        function playBlip() {
+            if (!audioContext) return;
+            if (audioContext.state === 'suspended') audioContext.resume();
+            blipGain.gain.setValueAtTime(0.2, audioContext.currentTime);
+            blipGain.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.05);
+        }
+
+        function startNoise() {
+            if (!audioContext) createWhiteNoise();
+            if (audioContext.state === 'suspended') audioContext.resume();
+            gainNode.gain.linearRampToValueAtTime(0.07, audioContext.currentTime + 0.1);
+        }
+
+        function stopNoise() {
+            if (!gainNode) return;
+            gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.5);
+            if (crackleInterval) clearInterval(crackleInterval);
+        }
+
+        // --- 4. Lógica Principal del Spirit Box ---
+        btnPower.addEventListener('click', () => {
+            if (!isLoaded) {
+                console.warn("Datos no cargados. Inténtelo de nuevo.");
+                return;
+            }
+            
+            isRunning = !isRunning;
+            if (isRunning) {
+                // ENCENDER
+                btnPower.className = "on";
+                startNoise();
+                startAllModes();
+            } else {
+                // APAGAR
+                btnPower.className = "off";
+                stopAllProcesses();
+                freqDisplay.textContent = "--.--";
+                statusDisplay.textContent = ""; // Limpiar al apagar
+            }
+        });
+
+        // Iniciar todos los modos (Nuevo)
+        function startAllModes() {
+            if (!isRunning) return;
+            statusDisplay.textContent = "";
+            scanFrequencies();
+            startAutoMode();
+            startProgramadoMode();
+        }
+
+        // Detener todos los procesos
+        function stopAllProcesses(isChangingMode = false) {
+            synthesis.cancel();
+            if (recognition) {
+                isRecognizing = false; // Marcar como detenido
+                recognition.stop();
+            }
+            clearTimeout(autoTimeout);
+            clearTimeout(freqTimeout);
+            if (crackleInterval) clearInterval(crackleInterval);
+            
+            ledL.className = 'led-off';
+            ledR.className = 'led-off';
+
+            if (!isChangingMode) stopNoise();
+            return true;
+        }
+
+        // --- 5. Lógica de Modos (Ahora unificados) ---
+
+        // Modo Automático (Habla al azar)
+        function startAutoMode() {
+            if (!isRunning) return;
+            
+            // Delay basado en el slider (FIX: Aumentado el delay para que sea mucho más lento)
+            const randomDelay = Math.random() * (baseDelay * 5) + (baseDelay * 2); // Ej: 600ms (default) -> 1.2s a 4.2s
+            
+            autoTimeout = setTimeout(() => {
+                // FIX: Añadido !isRecognizing. El modo automático se callará mientras el micrófono escucha.
+                if (automaticoData.length > 0 && !synthesis.speaking && !isProgrammedResponse && !isRecognizing) {
+                    const randomIndex = Math.floor(Math.random() * automaticoData.length);
+                    const word = automaticoData[randomIndex];
+                    speak(word, true); // Hablar con distorsión
+                }
+                startAutoMode(); // Llamada recursiva
+            }, randomDelay);
+        }
+
+        // Escaneo de frecuencias (Visual)
+        function scanFrequencies() {
+            if (!isRunning) return;
+            
+            const randomFreq = (Math.random() * (108.0 - 87.5) + 87.5).toFixed(1);
+            freqDisplay.textContent = randomFreq;
+            playBlip();
+            
+            // Delay basado en el slider
+            const randomDelay = Math.random() * (baseDelay / 2) + (baseDelay / 5); // Ej: 500ms -> 100-250ms
+            freqTimeout = setTimeout(scanFrequencies, randomDelay);
+        }
+
+        function stopScanFrequencies() {
+            clearTimeout(freqTimeout);
+        }
+
+        // Modo Programado (Escucha)
+        function startProgramadoMode() {
+            // No iniciar si ya está escuchando, hablando, o en medio de una respuesta
+            if (!isRunning || !recognition || isRecognizing || synthesis.speaking || isProgrammedResponse) {
+                return;
+            }
+
+            // Limpiar cualquier temporizador de vigilancia anterior
+            clearTimeout(recognitionWatchdog);
+
+            try {
+                isRecognizing = true;
+                recognition.start();
+
+                // *** INICIAR VIGILANCIA (Watchdog) ***
+                // Si el reconocimiento se "congela" por más de 8 seg, forzar reinicio.
+                recognitionWatchdog = setTimeout(() => {
+                    if (isRecognizing) { // Doble chequeo
+                        console.error("Speech recognition watchdog triggered: Forcing restart.");
+                        isRecognizing = false; // Forzar reseteo
+                        recognition.stop();    // Esto disparará 'onend', que reiniciará el ciclo.
+                    }
+                }, 8000); // 8 segundos de tiempo límite
+
+            } catch (e) {
+                console.error("Error al iniciar reconocimiento:", e);
+                isRecognizing = false; // Resetear
+                if (isRunning) setTimeout(() => startProgramadoMode(), 100);
+            }
+        }
+
+        // Manejar comando de voz
+        function handleVoiceCommand(transcript) {
+            const normalizedTranscript = normalizeText(transcript);
+            const response = programadoData.get(normalizedTranscript);
+
+            if (response) {
+                // Encontró respuesta
+                console.log("Respuesta encontrada:", response);
+                isProgrammedResponse = true; // Marcar que estamos dando una respuesta
+                
+                // Detener todo lo automático
+                synthesis.cancel();
+                clearTimeout(autoTimeout);
+                stopScanFrequencies();
+                
+                freqDisplay.textContent = "MATCH"; // Indicar visualmente
+                
+                setTimeout(() => {
+                    speak(response, false); // Hablar claro
+                }, 300);
+            }
+            // Si no hay respuesta, no hacer nada. El 'onend' reiniciará el reconocimiento.
+        }
+
+        // Función para "hablar" con efectos
+        function speak(text, isDistorted) {
+            if (audioContext && audioContext.state === 'suspended') audioContext.resume();
+            if (synthesis.paused) synthesis.resume();
+
+            synthesis.cancel(); 
+            if (crackleInterval) clearInterval(crackleInterval);
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.voice = voices[0] || synthesis.getVoices()[0];
+            utterance.lang = utterance.voice ? utterance.voice.lang : 'es-ES';
+            utterance.volume = 1; // Subir volumen al máximo
+
+            if (isDistorted) {
+                // Efecto "fantasma" más sutil y natural (antes era MUY agresivo)
+                utterance.pitch = Math.random() * 0.5 + 0.8; // Tono 0.8 a 1.3 (Más centrado)
+                utterance.rate = Math.random() * 0.5 + 0.9;  // Velocidad 0.9 a 1.4 (Más natural)
+
+                if (gainNode) {
+                    crackleInterval = setInterval(() => {
+                        const crackleGain = Math.random() * 0.2 + 0.07; // Picos de 0.07 a 0.27
+                        gainNode.gain.setValueAtTime(crackleGain, audioContext.currentTime);
+                    }, 80); // Parpadeo muy rápido
+                }
+            } else {
+                // Voz clara para respuestas programadas
+                utterance.pitch = 1;
+                utterance.rate = 0.9;
+                if (gainNode) {
+                    gainNode.gain.setValueAtTime(0.07, audioContext.currentTime);
+                }
+            }
+
+            utterance.onstart = () => {
+                statusDisplay.textContent = text; // Mostrar palabra
+                ledL.className = 'led-on';
+                ledR.className = 'led-on';
+            };
+
+            utterance.onend = () => {
+                if (crackleInterval) clearInterval(crackleInterval);
+                if (gainNode) gainNode.gain.linearRampToValueAtTime(0.07, audioContext.currentTime + 0.1);
+                
+                ledL.className = 'led-off';
+                ledR.className = 'led-off';
+                
+                statusDisplay.textContent = ""; // Limpiar display
+
+                if (isProgrammedResponse) {
+                    // Si fue una respuesta programada, reiniciar todo
+                    isProgrammedResponse = false;
+                    startAllModes(); // Reiniciar escaneo, auto y reconocimiento
+                }
+                // El 'onend' del reconocimiento (si no estaba en modo respuesta) se encargará de reiniciar 'startProgramadoMode'
+            };
+
+            synthesis.speak(utterance);
+        }
+
+    </script>
+</body>
+</html>
