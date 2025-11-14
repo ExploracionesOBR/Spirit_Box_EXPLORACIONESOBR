@@ -23,7 +23,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover; /* Llena la pantalla sin distorsión */
+            object-fit: cover;
             z-index: 1;
         }
 
@@ -37,13 +37,13 @@
             z-index: 10;
             display: flex;
             flex-direction: column;
-            /* Justificado para poner título arriba y paneles abajo */
             justify-content: space-between; 
             padding: 10px;
-            background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.4) 100%);
+            background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, transparent 20%, transparent 70%, rgba(0,0,0,0.4) 100%);
+            pointer-events: none; /* Permite clics a través de la superposición */
         }
 
-        /* --- Título Superior OBR --- */
+        /* --- Título Profesional Superior --- */
         .header-title {
             width: 100%;
             text-align: center;
@@ -55,6 +55,8 @@
             padding: 5px;
             background: rgba(0,0,0,0.3);
             border-radius: 5px;
+            z-index: 20;
+            pointer-events: auto;
         }
 
         /* --- Contenedor de Paneles (Fijado al 30% inferior) --- */
@@ -63,7 +65,9 @@
             grid-template-columns: 1fr 0.8fr 0.7fr;
             gap: 10px;
             width: 100%;
-            height: 30vh; /* <-- ALTURA FIJA Y PEQUEÑA */
+            height: 30vh; /* ALTURA FIJA Y PEQUEÑA */
+            z-index: 10;
+            pointer-events: auto; /* Los paneles SÍ reciben clics */
         }
 
         /* Estilo base del panel "Glassmorphism" */
@@ -79,33 +83,36 @@
             overflow: hidden;
             height: 100%; /* Paneles llenan el contenedor inferior */
         }
+        
+        .hidden {
+            display: none;
+        }
 
         /* --- Panel Izquierdo (Ghosttube) --- */
-        .panel-ghosttube {
-            width: 100%;
-        }
+        .panel-ghosttube { width: 100%; }
         #ghosttube-canvas {
             width: 100%;
             height: 100%;
             object-fit: cover;
             border-radius: 6px 6px 0 0;
-            flex-grow: 1; /* Ocupa el espacio */
-            min-height: 0; /* Necesario para flexbox en overflow */
+            flex-grow: 1;
+            min-height: 0;
+            background: #000; /* Fondo negro por si falla la cámara */
         }
         .filter-buttons {
             display: flex;
             justify-content: space-around;
-            padding: 8px 4px; /* Más pequeño */
+            padding: 8px 4px;
             background-color: #111;
-            flex-shrink: 0; /* No encoger */
+            flex-shrink: 0;
         }
         .filter-btn {
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.6rem; /* Texto más pequeño */
+            font-size: 0.6rem;
             color: #ccc;
             background: #333;
             border: 1px solid #555;
-            padding: 4px; /* Más pequeño */
+            padding: 4px;
             border-radius: 4px;
             cursor: pointer;
         }
@@ -115,27 +122,52 @@
             box-shadow: 0 0 10px #00AADD;
         }
 
-        /* --- Panel Central (Detector de Energía - Voltímetro) --- */
+        /* --- Panel Central (Detector de Energía) --- */
         .panel-detector {
             width: 100%;
-            padding: 10px; /* Padding reducido */
+            padding: 8px;
             justify-content: space-between;
         }
+        /* VU Meters (NUEVO) */
+        .vu-meters {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            height: 15%; /* Espacio para los VU */
+            padding: 2px 5px;
+            background: #111;
+            border-radius: 3px;
+            border: 1px solid #444;
+            margin-bottom: 5px;
+        }
+        .vu-meter {
+            width: 40%;
+            height: 100%;
+            display: flex;
+            align-items: flex-end;
+        }
+        .vu-bar {
+            width: 100%;
+            background-color: #00AADD;
+            height: 0%; /* Inicia en 0 */
+            box-shadow: 0 0 5px #00AADD;
+            transition: height 0.05s linear;
+        }
+
         .panel-detector .meter-face {
             width: 100%;
-            height: 50%; /* Reducido */
+            height: 35%; /* Reducido para VU meters */
             background: linear-gradient(180deg, #F5E5C0 70%, #D4C0A0 100%);
             border-radius: 5px;
             border: 2px solid #444;
             position: relative;
             overflow: hidden;
         }
-        .panel-detector #meter-needle {
+        #meter-needle {
             width: 3px;
             height: 90%; 
             background-color: #FF4136;
             box-shadow: 0 0 5px #FF4136;
-            border-radius: 2px 2px 0 0;
             position: absolute;
             bottom: -5px;
             left: calc(50% - 1.5px);
@@ -144,21 +176,15 @@
             transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .panel-detector .meter-face::after {
-            content: '';
-            position: absolute;
-            width: 15px;
-            height: 15px;
-            background: #4A3C23;
-            border-radius: 50%;
-            bottom: -8px;
-            left: calc(50% - 7.5px);
-            z-index: 2;
+            content: ''; position: absolute; width: 15px; height: 15px;
+            background: #4A3C23; border-radius: 50%; bottom: -8px;
+            left: calc(50% - 7.5px); z-index: 2;
         }
         .panel-detector .controls {
             display: flex;
             justify-content: space-around;
             align-items: center;
-            margin-top: 10px;
+            margin-top: 5px;
         }
         .panel-detector .knob-container {
             display: flex;
@@ -167,13 +193,13 @@
         }
         .panel-detector .knob-label {
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.6rem; /* Reducido */
+            font-size: 0.6rem;
             margin-bottom: 5px;
             color: #B89B6C;
         }
         .panel-detector .knob {
-            width: 40px; /* Reducido */
-            height: 40px; /* Reducido */
+            width: 35px; /* Reducido */
+            height: 35px; /* Reducido */
             background: linear-gradient(145deg, #444, #222);
             border-radius: 50%;
             border: 2px solid #111;
@@ -182,85 +208,143 @@
             cursor: pointer;
         }
         .panel-detector .knob::before {
-            content: '';
-            position: absolute;
-            width: 3px;
-            height: 10px; /* Reducido */
-            background: #F5E5C0;
-            border-radius: 2px;
-            top: 4px;
+            content: ''; position: absolute; width: 3px; height: 10px;
+            background: #F5E5C0; border-radius: 2px; top: 4px;
             left: calc(50% - 1.5px);
         }
-        .panel-detector #power-knob { transform: rotate(-45deg); }
-        .panel-detector #speed-knob { transform: rotate(-60deg); }
+        #power-knob { transform: rotate(-45deg); }
+        #speed-knob { transform: rotate(-60deg); }
+        /* Slider de Volumen (NUEVO) */
+        #volume-slider {
+            width: 90%;
+            margin: 5px auto 0 auto;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 5px;
+            background: #555;
+            border-radius: 5px;
+            outline: none;
+            opacity: 0.7;
+            transition: opacity .2s;
+        }
+        #volume-slider:hover { opacity: 1; }
+        #volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 15px; height: 15px;
+            background: #F5E5C0; border-radius: 50%; cursor: pointer;
+        }
+        #volume-slider::-moz-range-thumb {
+            width: 15px; height: 15px;
+            background: #F5E5C0; border-radius: 50%; cursor: pointer;
+        }
 
         /* --- Panel Derecho (Sensores) --- */
         .panel-spiritbox {
             width: 100%;
-            padding: 10px; /* Reducido */
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            padding: 10px;
             justify-content: space-around;
         }
         .panel-spiritbox .title {
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.8rem; /* Reducido */
+            font-size: 0.8rem;
             color: #B89B6C;
             border-bottom: 1px solid #555;
             padding-bottom: 5px;
             text-align: center;
             width: 100%;
-            flex-shrink: 0;
         }
-        /* Sensor de Temperatura */
         #temp-display {
             font-family: 'Orbitron', sans-serif;
-            font-size: 1.8rem; /* Reducido */
+            font-size: 1.8rem;
             color: #00AADD;
             text-shadow: 0 0 10px #00AADD, 0 0 20px #00AADD;
             margin: 10px 0;
         }
-        #temp-label {
-            font-size: 0.6rem; /* Reducido */
-            color: #ccc;
-        }
-        /* Placa "OBR" */
+        #temp-label { font-size: 0.6rem; color: #ccc; }
         .placa-spiritbox {
             background: linear-gradient(145deg, #E0C08D, #B89B6C);
             border: 2px solid #7C684A;
             color: #4A3C23;
             border-radius: 4px;
-            padding: 5px; /* Reducido */
+            padding: 5px;
             text-align: center;
-            box-shadow: 0 0 5px rgba(0,0,0,0.5);
             margin-top: 10px;
         }
         .placa-spiritbox h1 {
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.7rem; /* Reducido */
+            font-size: 0.7rem;
             font-weight: 700;
             text-shadow: 1px 1px 0px #F5E5C0;
             margin: 0;
         }
 
+        /* --- Botón Flotante y Menú (NUEVO) --- */
+        #fab-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+            pointer-events: auto;
+        }
+        #fab-menu {
+            position: absolute;
+            bottom: 65px; /* Encima del botón FAB */
+            right: 0;
+            width: 180px;
+            background: rgba(10, 10, 10, 0.9);
+            border-radius: 8px;
+            padding: 10px;
+            border: 1px solid #555;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        .menu-btn {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            color: #ccc;
+            background: #333;
+            border: 1px solid #555;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        .menu-btn:last-child { margin-bottom: 0; }
+        .menu-btn.active {
+            background: #00AADD;
+            color: white;
+            box-shadow: 0 0 10px #00AADD;
+        }
+        #fab-btn {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #fff;
+            background: #00AADD;
+            border: 2px solid #fff;
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            text-shadow: 0 0 5px #000;
+            box-shadow: 0 4px 15px rgba(0, 170, 221, 0.7);
+        }
+
         /* --- Media Query para pantallas verticales (móvil) --- */
         @media (orientation: portrait) {
-            .header-title {
-                font-size: 0.8rem; /* Más pequeño en vertical */
-            }
+            .header-title { font-size: 0.8rem; }
             .bottom-panels {
                 grid-template-columns: 1fr; /* Apilado vertical */
-                height: 45vh; /* Un poco más de espacio en vertical */
+                height: 50vh; /* Un poco más de espacio */
                 gap: 5px;
             }
-            .panel-detector {
-                /* Asegurar que el voltímetro tenga espacio */
-                min-height: 150px; 
-            }
+            .panel-detector { min-height: 150px; }
             .filter-btn { font-size: 0.7rem; }
             .panel-detector .knob-label { font-size: 0.7rem; }
-            .panel-detector .knob { width: 45px; height: 45px; }
+            .panel-detector .knob { width: 40px; height: 40px; }
             .panel-spiritbox .title { font-size: 0.9rem; }
             #temp-display { font-size: 2rem; }
             #temp-label { font-size: 0.7rem; }
@@ -283,23 +367,28 @@
 
         <!-- Paneles Inferiores -->
         <div class="bottom-panels">
-
-            <!-- Panel 1: GhostTube (Filtros) -->
-            <div class="panel panel-ghosttube">
+            <!-- Panel 1: GhostTube (Filtros) - Oculto por defecto -->
+            <div id="panel-ghosttube" class="panel panel-ghosttube hidden">
                 <canvas id="ghosttube-canvas"></canvas>
                 <div class="filter-buttons">
                     <button class="filter-btn active" data-filter="normal">NORMAL</button>
-                    <button class="filter-btn" data-filter="thermal">TERMICO</button>
+                    <!-- TÉRMICO ahora es SLS (Líneas de Audio) -->
+                    <button class="filter-btn" data-filter="sls">SLS</button>
                     <button class="filter-btn" data-filter="nightvis">NOCTURNA</button>
                 </div>
             </div>
 
-            <!-- Panel 2: Detector EMF (Voltímetro + Spirit Box Audio) -->
-            <div class="panel panel-detector">
+            <!-- Panel 2: Detector EMF (Voltímetro) - Oculto por defecto -->
+            <div id="panel-detector" class="panel panel-detector hidden">
+                <!-- VU METERS (NUEVO) -->
+                <div class="vu-meters">
+                    <div class="vu-meter"><div id="vu-l" class="vu-bar"></div></div>
+                    <div class="vu-meter"><div id="vu-r" class="vu-bar"></div></div>
+                </div>
+                <!-- Medidor Analógico -->
                 <div class="meter-face">
                     <div id="meter-needle"></div>
                 </div>
-                <!-- NOTA: El Text-Display del Spirit Box fue ELIMINADO a propósito -->
                 <div class="controls">
                     <div class="knob-container">
                         <div class="knob-label">ENCENDIDO</div>
@@ -310,21 +399,34 @@
                         <div id="speed-knob" class="knob"></div>
                     </div>
                 </div>
+                <!-- Slider de Volumen (NUEVO) -->
+                <input type="range" min="0" max="1" value="0.5" step="0.01" id="volume-slider">
             </div>
 
-            <!-- Panel 3: Sensores (Temperatura Sim) -->
-            <div class="panel panel-spiritbox">
+            <!-- Panel 3: Sensores (Temperatura Sim) - Oculto por defecto -->
+            <div id="panel-ambiente" class="panel panel-spiritbox hidden">
                 <div class="title">AMBIENTE</div>
                 <div id="temp-display">20.1°C</div>
                 <div id="temp-label">Temp. Ambiente (Sim)</div>
-                
                 <div class="placa-spiritbox">
                     <h1>OBR-SIM</h1>
                 </div>
             </div>
-
         </div>
     </div>
+    
+    <!-- 3. Botón Flotante y Menú (NUEVO) -->
+    <div id="fab-container">
+        <!-- Menú (Oculto por defecto) -->
+        <div id="tool-menu" class="hidden">
+            <button id="btn-toggle-filtros" class="menu-btn">FILTROS CÁMARA</button>
+            <button id="btn-toggle-detector" class="menu-btn">DETECTOR EMF (ESPÍRITUS)</button>
+            <button id="btn-toggle-ambiente" class="menu-btn">SENSOR AMBIENTE</button>
+        </div>
+        <!-- Botón Flotante -->
+        <div id="fab-btn">VER</div>
+    </div>
+
 
     <script>
         // --- URLs y Configuración ---
@@ -339,20 +441,36 @@
         const meterNeedle = document.getElementById('meter-needle');
         const tempDisplay = document.getElementById('temp-display');
         
+        // --- NUEVO: Elementos del Menú FAB ---
+        const fabBtn = document.getElementById('fab-btn');
+        const toolMenu = document.getElementById('tool-menu');
+        const btnToggleFiltros = document.getElementById('btn-toggle-filtros');
+        const btnToggleDetector = document.getElementById('btn-toggle-detector');
+        const btnToggleAmbiente = document.getElementById('btn-toggle-ambiente');
+        
+        const panelFiltros = document.getElementById('panel-ghosttube');
+        const panelDetector = document.getElementById('panel-detector');
+        const panelAmbiente = document.getElementById('panel-ambiente');
+        
+        // --- NUEVO: VU Meters y Volumen ---
+        const vuL = document.getElementById('vu-l');
+        const vuR = document.getElementById('vu-r');
+        const volumeSlider = document.getElementById('volume-slider');
+
         let ghostCanvasCtx;
         let currentFilter = 'normal';
         let animationFrameId;
 
         // --- Estado de la App (Spirit Box) ---
-        let isRunning = false;
+        let isRunning = false; 
         let isLoaded = false;
         let programadoData = new Map();
         let automaticoData = [];
         let speedLevel = 1; 
         const speedSettings = [
-            { delay: 900, angle: 0 },    // Lento
-            { delay: 500, angle: -60 }, // Medio
-            { delay: 200, angle: 60 }    // Rápido
+            { delay: 900, angle: 0 },    
+            { delay: 500, angle: -60 }, 
+            { delay: 200, angle: 60 }    
         ];
         let baseDelay = speedSettings[speedLevel].delay;
 
@@ -360,6 +478,9 @@
         let audioContext;
         let gainNode, whiteNoiseNode, blipOscillator, blipGain, lfo, lfoGain;
         let delayNode, delayFeedback, delayWet;
+        let masterVolumeNode; // <-- NUEVO para control de volumen
+        let analyserNode; // <-- NUEVO para VU Meters y Filtro SLS
+        let analyserData; // <-- NUEVO
 
         // --- Módulos de Voz ---
         let voices = [];
@@ -386,6 +507,7 @@
 
         // --- 1. Carga de Datos (Automática) ---
         async function loadSheetData() {
+            // (Idéntico al anterior)
             const urlProgramado = `${SHEETDB_BASE_URL}?sheet=PROGRAMADO`;
             const urlAutomatico = `${SHEETDB_BASE_URL}?sheet=AUTOMATICO`;
             console.log("Cargando datos...");
@@ -415,11 +537,23 @@
             }
         }
 
-        // --- 2. Inicialización de Audio (Ruido, Blips, Eco) ---
+        // --- 2. Inicialización de Audio (Actualizado con Volumen y Analizador) ---
         function initAudioContext() {
             if (audioContext) return;
             try {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // NODO DE VOLUMEN PRINCIPAL
+                masterVolumeNode = audioContext.createGain();
+                masterVolumeNode.gain.setValueAtTime(volumeSlider.value, audioContext.currentTime);
+                masterVolumeNode.connect(audioContext.destination);
+
+                // NODO ANALIZADOR (para VU y SLS)
+                analyserNode = audioContext.createAnalyser();
+                analyserNode.fftSize = 256; // 128 bins de frecuencia
+                analyserData = new Uint8Array(analyserNode.frequencyBinCount); // Para SLS (onda)
+                
+                // Ruido Blanco
                 whiteNoiseNode = audioContext.createBufferSource();
                 const bufferSize = audioContext.sampleRate * 2;
                 const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
@@ -429,38 +563,62 @@
                 whiteNoiseNode.loop = true;
                 gainNode = audioContext.createGain();
                 gainNode.gain.setValueAtTime(0.04, audioContext.currentTime); 
+                
+                // LFO (Efecto "Chop")
                 lfo = audioContext.createOscillator();
                 lfo.type = 'square'; 
                 const initialFreq = 5 + ((1000 - (1100 - baseDelay)) / 900) * 20;
                 lfo.frequency.setValueAtTime(initialFreq, audioContext.currentTime);
                 lfoGain = audioContext.createGain();
                 lfoGain.gain.setValueAtTime(0.03, audioContext.currentTime); 
+                
+                // Eco (Reverb)
                 delayNode = audioContext.createDelay(1.0);
                 delayFeedback = audioContext.createGain();
                 delayWet = audioContext.createGain();
                 delayNode.delayTime.setValueAtTime(0.3, audioContext.currentTime);
                 delayFeedback.gain.setValueAtTime(0.5, audioContext.currentTime);
                 delayWet.gain.setValueAtTime(0, audioContext.currentTime);
-                lfo.connect(lfoGain).connect(gainNode.gain); 
-                whiteNoiseNode.connect(gainNode).connect(audioContext.destination);
-                whiteNoiseNode.connect(delayWet);
-                delayWet.connect(delayNode);
-                delayNode.connect(delayFeedback);
-                delayFeedback.connect(delayNode);
-                delayNode.connect(audioContext.destination);
-                whiteNoiseNode.start();
-                lfo.start();
+                
+                // Blip (Sonido de escaneo)
                 blipOscillator = audioContext.createOscillator();
                 blipGain = audioContext.createGain();
                 blipOscillator.type = 'sine'; 
                 blipOscillator.frequency.setValueAtTime(1200, audioContext.currentTime); 
                 blipGain.gain.setValueAtTime(0, audioContext.currentTime);
-                blipOscillator.connect(blipGain).connect(audioContext.destination);
+                blipOscillator.connect(blipGain);
+                
+                // --- RUTEO DE AUDIO ---
+                lfo.connect(lfoGain).connect(gainNode.gain); 
+                whiteNoiseNode.connect(gainNode);
+                
+                // Ruido y Blips van al Analizador y al Eco
+                gainNode.connect(analyserNode);
+                blipGain.connect(analyserNode);
+                whiteNoiseNode.connect(delayWet);
+
+                // El Eco también va al Analizador
+                delayWet.connect(delayNode);
+                delayNode.connect(delayFeedback);
+                delayFeedback.connect(delayNode);
+                delayNode.connect(analyserNode); // Eco -> Analizador
+
+                // Analizador -> Volumen Master -> Salida
+                analyserNode.connect(masterVolumeNode);
+                
+                // Iniciar fuentes
+                whiteNoiseNode.start();
+                lfo.start();
                 blipOscillator.start();
+                
+                // Iniciar loop de VU Meter
+                updateVUMeters();
+
             } catch (e) { console.error("Error al iniciar AudioContext:", e); }
         }
 
         // --- 3. Inicialización de Voz y SENSORES ---
+        // (Idéntico al anterior, no es necesario re-escribir)
         function initSpeechModules() {
             voices = synthesis.getVoices().filter(v => v.lang === 'es-MX');
             if (voices.length === 0) voices = synthesis.getVoices().filter(v => v.lang.startsWith('es-'));
@@ -494,7 +652,6 @@
                 };
             } catch (e) { console.error("Error al iniciar SpeechRecognition:", e); }
         }
-
         function initSensor() {
             if ('Magnetometer' in window) {
                 navigator.permissions.query({ name: 'magnetometer' }).then(result => {
@@ -513,26 +670,24 @@
                 console.warn("Magnetómetro no soportado (requiere HTTPS).");
             }
         }
-        
         function initTempSensor() {
             let baseTemp = 19.0;
             tempDisplay.textContent = `${baseTemp.toFixed(1)}°C`; // Mostrar valor inicial
             tempInterval = setInterval(() => {
-                // Simular fluctuaciones
                 baseTemp += (Math.random() - 0.48) * 0.2;
                 if (baseTemp < 15) baseTemp = 15;
                 if (baseTemp > 25) baseTemp = 25;
-                if (isRunning) { // Solo actualizar si está encendido
+                if (!panelAmbiente.classList.contains('hidden')) { 
                     tempDisplay.textContent = `${baseTemp.toFixed(1)}°C`;
                 }
-            }, 2000); // Actualizar cada 2 segundos
+            }, 2000);
         }
         function stopTempSensor() {
-            clearInterval(tempInterval);
             tempDisplay.textContent = "--.-°C";
         }
 
         // --- 4. Funciones de Sonido (Spirit Box) ---
+        // (Idéntico al anterior)
         function startNoise() {
             if (!audioContext) initAudioContext();
             audioContext.resume();
@@ -560,7 +715,7 @@
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.voice = voices[0] || synthesis.getVoices().find(v => v.lang.startsWith('es-'));
             utterance.lang = utterance.voice ? utterance.voice.lang : 'es-ES';
-            utterance.volume = 1; 
+            utterance.volume = 1; // La voz SIEMPRE al máximo, controlada por el masterVolume
             if (isDistorted) {
                 utterance.pitch = Math.random() * 0.5 + 0.8; 
                 utterance.rate = Math.random() * 0.5 + 0.9;  
@@ -568,12 +723,7 @@
                 utterance.pitch = 1;
                 utterance.rate = 1.0;
             }
-            
-            // ELIMINADO: Actualización del textDisplay
-            
             utterance.onend = () => {
-                // ELIMINADO: Limpieza del textDisplay
-                
                 lRamp(delayWet.gain, 0, 0.1);
                 lRamp(lfoGain.gain, 0.03, 0.1);
                 lRamp(gainNode.gain, 0.04, 0.1);
@@ -589,6 +739,7 @@
         }
         
         // --- 5. Lógica de Modos y SENSORES (Spirit Box) ---
+        // (Idéntico al anterior)
         function startNeedleScan() {
             if (!isRunning) return;
             const randomScan = Math.random() * 60 - 30; // -30deg a +30deg
@@ -675,34 +826,40 @@
             startProgramadoMode();
         }
 
-        // --- 6. Lógica de la Cámara Principal y Filtros ---
+        // --- 6. Lógica de la Cámara Principal y Filtros (Actualizado para SLS) ---
         async function startMainCamera() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'environment' } // Preferir cámara trasera
-                });
+                const constraints = { 
+                    video: { 
+                        facingMode: 'environment',
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    } 
+                };
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 mainCamera.srcObject = stream;
                 mainCamera.play();
                 
-                // Iniciar el canvas de GhostTube
                 ghostCanvasCtx = ghostCanvas.getContext('2d', { willReadFrequently: true });
-                ghostCanvas.width = 300; // Ancho fijo para rendimiento
-                ghostCanvas.height = 400; // Alto fijo
+                ghostCanvas.width = 300;
+                ghostCanvas.height = 400;
                 
                 drawGhostTube(); // Iniciar el loop de dibujo
 
             } catch (err) {
                 console.error("Error al acceder a la cámara:", err);
-                alert("No se pudo acceder a la cámara. Revisa los permisos.");
-            }
-        }
-        
-        function stopMainCamera() {
-            if (mainCamera.srcObject) {
-                mainCamera.srcObject.getTracks().forEach(track => track.stop());
-            }
-            if (animationFrameId) {
-                cancelAnimationFrame(animationFrameId);
+                if (err.name === "OverconstrainedError") {
+                    console.warn("No se pudo obtener 1080p, intentando con default.");
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                    mainCamera.srcObject = stream;
+                    mainCamera.play();
+                    ghostCanvasCtx = ghostCanvas.getContext('2d', { willReadFrequently: true });
+                    ghostCanvas.width = 300;
+                    ghostCanvas.height = 400;
+                    drawGhostTube();
+                } else {
+                    alert("No se pudo acceder a la cámara. Revisa los permisos.");
+                }
             }
         }
 
@@ -713,62 +870,88 @@
                 return;
             }
             
-            // Dibujar la imagen de la cámara en el canvas
-            ghostCanvasCtx.drawImage(mainCamera, 0, 0, ghostCanvas.width, ghostCanvas.height);
-            
-            // Aplicar filtros si no es 'normal'
-            if (currentFilter !== 'normal') {
+            if (!panelFiltros.classList.contains('hidden')) {
+                ghostCanvasCtx.drawImage(mainCamera, 0, 0, ghostCanvas.width, ghostCanvas.height);
                 const imageData = ghostCanvasCtx.getImageData(0, 0, ghostCanvas.width, ghostCanvas.height);
                 const data = imageData.data;
                 
                 if (currentFilter === 'nightvis') {
                     applyNightvisFilter(data);
-                } else if (currentFilter === 'thermal') {
-                    applyThermalFilter(data);
+                    ghostCanvasCtx.putImageData(imageData, 0, 0);
+                } else if (currentFilter === 'sls') {
+                    // APLICA EL NUEVO FILTRO SLS (Líneas de Audio)
+                    applySLSFilter(data, ghostCanvasCtx, imageData);
                 }
-                
-                ghostCanvasCtx.putImageData(imageData, 0, 0);
+                // 'normal' no hace nada, solo muestra la imagen dibujada
             }
             
             animationFrameId = requestAnimationFrame(drawGhostTube);
         }
         
-        // Filtro de Visión Nocturna
         function applyNightvisFilter(data) {
             for (let i = 0; i < data.length; i += 4) {
-                const r = data[i];
-                const g = data[i + 1];
-                const b = data[i + 2];
+                const r = data[i], g = data[i + 1], b = data[i + 2];
                 const avg = (r + g + b) / 3;
-                data[i] = 0;     // Red
-                data[i + 1] = avg + 60; // Green
-                data[i + 2] = 0;     // Blue
+                data[i] = 0; data[i + 1] = avg + 60; data[i + 2] = 0;
             }
         }
         
-        // Filtro "Térmico" (Simulado)
-        function applyThermalFilter(data) {
-            for (let i = 0; i < data.length; i += 4) {
-                const r = data[i];
-                const g = data[i + 1];
-                const b = data[i + 2];
-                const v = (0.2126 * r + 0.7152 * g + 0.0722 * b); // Luminosidad
+        // --- NUEVO: Filtro SLS (Líneas de Audio) ---
+        function applySLSFilter(data, ctx, imageData) {
+            // 1. Aplicar visión nocturna de base
+            applyNightvisFilter(data);
+            ctx.putImageData(imageData, 0, 0); // Dibujar la imagen filtrada
+            
+            // 2. Dibujar la Onda de Audio (si el Spirit Box está encendido)
+            if (analyserNode && isRunning) {
+                analyserNode.getByteTimeDomainData(analyserData); // Obtener datos de onda
                 
-                // Mapeo de color simple (Azul -> Rojo)
-                if (v < 85) { // Frío (Azul/Morado)
-                    data[i] = v;
-                    data[i + 1] = 0;
-                    data[i + 2] = 100 + v;
-                } else if (v < 170) { // Medio (Verde/Amarillo)
-                    data[i] = 100 + v;
-                    data[i + 1] = v + 50;
-                    data[i + 2] = 0;
-                } else { // Caliente (Rojo/Blanco)
-                    data[i] = 255;
-                    data[i + 1] = v;
-                    data[i + 2] = v;
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)'; // Línea blanca
+                ctx.beginPath();
+                
+                const sliceWidth = ghostCanvas.width / analyserData.length;
+                let x = 0;
+                
+                for (let i = 0; i < analyserData.length; i++) {
+                    const v = analyserData[i] / 128.0; // Valor entre 0.0 y 2.0
+                    const y = v * (ghostCanvas.height / 2); // Posición Y
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                    x += sliceWidth;
                 }
+                
+                ctx.lineTo(ghostCanvas.width, ghostCanvas.height / 2);
+                ctx.stroke(); // Dibujar la línea
             }
+        }
+        
+        // --- NUEVO: Loop de VU Meters ---
+        function updateVUMeters() {
+            if (!analyserNode) {
+                requestAnimationFrame(updateVUMeters);
+                return;
+            }
+            
+            analyserNode.getByteFrequencyData(analyserData); // Usar datos de frecuencia
+            
+            let sum = 0;
+            for (let i = 0; i < analyserData.length; i++) {
+                sum += analyserData[i];
+            }
+            const average = sum / analyserData.length;
+            const volumePercent = (average / 128) * 100; // 128 es el max
+            
+            if (vuL && vuR) {
+                vuL.style.height = `${volumePercent}%`;
+                vuR.style.height = `${volumePercent}%`;
+            }
+            
+            requestAnimationFrame(updateVUMeters);
         }
         
         // Listeners de Filtros
@@ -781,43 +964,31 @@
         });
 
 
-        // --- 7. Event Listeners (Perillas) ---
+        // --- 7. Event Listeners (Perillas, Volumen y MENÚ FAB) ---
+        
+        // Perilla de Encendido (Spirit Box)
         powerKnob.addEventListener('click', () => {
             isRunning = !isRunning;
-            
             if (isRunning) {
-                // --- ENCENDER TODO ---
                 powerKnob.style.transform = 'rotate(45deg)';
-                if (!isLoaded) {
-                    alert("Datos de SheetDB no cargados. Revisa la conexión.");
-                    isRunning = false;
-                    powerKnob.style.transform = 'rotate(-45deg)';
-                    return;
-                }
-                
-                startMainCamera();  // <-- ENCENDER CÁMARA
+                if (!isLoaded) { isRunning = false; powerKnob.style.transform = 'rotate(-45deg)'; return; }
                 initAudioContext();
                 initSpeechModules();
                 initSensor(); 
-                initTempSensor();   // <-- ENCENDER TEMP
                 startNoise(); 
                 startAllModes(); 
             } else {
-                // --- APAGAR TODO ---
                 powerKnob.style.transform = 'rotate(-45deg)';
-                
-                stopMainCamera(); // <-- APAGAR CÁMARA
                 stopNoise(); 
-                stopTempSensor(); // <-- APAGAR TEMP
                 synthesis.cancel();
                 if (recognition) recognition.stop();
                 if (magnetometer) magnetometer.stop();
                 clearAllTimeouts();
-                
                 updateNeedle(-30); 
             }
         });
         
+        // Perilla de Velocidad
         speedKnob.addEventListener('click', () => {
             speedLevel = (speedLevel + 1) % 3; 
             const newSetting = speedSettings[speedLevel];
@@ -828,11 +999,39 @@
                 lfo.frequency.linearRampToValueAtTime(freq, audioContext.currentTime + 0.1);
             }
         });
+        
+        // Slider de Volumen
+        volumeSlider.addEventListener('input', (e) => {
+            if (masterVolumeNode) {
+                masterVolumeNode.gain.setValueAtTime(e.target.value, audioContext.currentTime);
+            }
+        });
+        
+        // --- Listeners del Menú FAB ---
+        fabBtn.addEventListener('click', () => {
+            toolMenu.classList.toggle('hidden');
+        });
+        btnToggleFiltros.addEventListener('click', () => {
+            panelFiltros.classList.toggle('hidden');
+            btnToggleFiltros.classList.toggle('active');
+        });
+        btnToggleDetector.addEventListener('click', () => {
+            panelDetector.classList.toggle('hidden');
+            btnToggleDetector.classList.toggle('active');
+        });
+        btnToggleAmbiente.addEventListener('click', () => {
+            panelAmbiente.classList.toggle('hidden');
+            btnToggleAmbiente.classList.toggle('active');
+            if (panelAmbiente.classList.contains('hidden')) {
+                stopTempSensor();
+            }
+        });
 
         // Carga inicial
         window.onload = () => {
             loadSheetData();
-            initTempSensor(); // Iniciar el sensor de temp (simulado) para que muestre el valor inicial
+            startMainCamera();
+            initTempSensor();
         };
 
     </script>
