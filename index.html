@@ -37,18 +37,33 @@
             z-index: 10;
             display: flex;
             flex-direction: column;
-            justify-content: flex-end; /* Paneles en la parte inferior */
+            /* Justificado para poner título arriba y paneles abajo */
+            justify-content: space-between; 
             padding: 10px;
-            background: linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.4) 100%);
+            background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.4) 100%);
         }
 
-        /* --- Contenedor de Paneles --- */
+        /* --- Título Superior OBR --- */
+        .header-title {
+            width: 100%;
+            text-align: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 0 5px #fff, 0 0 10px #00AADD, 0 0 15px #00AADD;
+            padding: 5px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 5px;
+        }
+
+        /* --- Contenedor de Paneles (Fijado al 30% inferior) --- */
         .bottom-panels {
             display: grid;
-            /* Layout optimizado para horizontal */
             grid-template-columns: 1fr 0.8fr 0.7fr;
             gap: 10px;
             width: 100%;
+            height: 30vh; /* <-- ALTURA FIJA Y PEQUEÑA */
         }
 
         /* Estilo base del panel "Glassmorphism" */
@@ -62,12 +77,12 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            height: 100%; /* Paneles llenan el contenedor inferior */
         }
 
         /* --- Panel Izquierdo (Ghosttube) --- */
         .panel-ghosttube {
             width: 100%;
-            aspect-ratio: 3/4; /* Ratio vertical */
         }
         #ghosttube-canvas {
             width: 100%;
@@ -75,20 +90,22 @@
             object-fit: cover;
             border-radius: 6px 6px 0 0;
             flex-grow: 1; /* Ocupa el espacio */
+            min-height: 0; /* Necesario para flexbox en overflow */
         }
         .filter-buttons {
             display: flex;
             justify-content: space-around;
-            padding: 8px;
+            padding: 8px 4px; /* Más pequeño */
             background-color: #111;
+            flex-shrink: 0; /* No encoger */
         }
         .filter-btn {
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.7rem;
+            font-size: 0.6rem; /* Texto más pequeño */
             color: #ccc;
             background: #333;
             border: 1px solid #555;
-            padding: 4px 8px;
+            padding: 4px; /* Más pequeño */
             border-radius: 4px;
             cursor: pointer;
         }
@@ -101,19 +118,12 @@
         /* --- Panel Central (Detector de Energía - Voltímetro) --- */
         .panel-detector {
             width: 100%;
-            aspect-ratio: 1/1; /* Cuadrado */
-            background-color: #1a1a1a;
-            border: 2px solid #555;
-            border-radius: 8px;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
+            padding: 10px; /* Padding reducido */
             justify-content: space-between;
         }
-        /* Estilos del Voltímetro (Copiados y adaptados) */
         .panel-detector .meter-face {
             width: 100%;
-            height: 60%; /* Ajustado al panel */
+            height: 50%; /* Reducido */
             background: linear-gradient(180deg, #F5E5C0 70%, #D4C0A0 100%);
             border-radius: 5px;
             border: 2px solid #444;
@@ -122,7 +132,7 @@
         }
         .panel-detector #meter-needle {
             width: 3px;
-            height: 90%; /* Ajustado */
+            height: 90%; 
             background-color: #FF4136;
             box-shadow: 0 0 5px #FF4136;
             border-radius: 2px 2px 0 0;
@@ -157,13 +167,13 @@
         }
         .panel-detector .knob-label {
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.7rem;
+            font-size: 0.6rem; /* Reducido */
             margin-bottom: 5px;
             color: #B89B6C;
         }
         .panel-detector .knob {
-            width: 45px;
-            height: 45px;
+            width: 40px; /* Reducido */
+            height: 40px; /* Reducido */
             background: linear-gradient(145deg, #444, #222);
             border-radius: 50%;
             border: 2px solid #111;
@@ -175,7 +185,7 @@
             content: '';
             position: absolute;
             width: 3px;
-            height: 12px;
+            height: 10px; /* Reducido */
             background: #F5E5C0;
             border-radius: 2px;
             top: 4px;
@@ -184,11 +194,10 @@
         .panel-detector #power-knob { transform: rotate(-45deg); }
         .panel-detector #speed-knob { transform: rotate(-60deg); }
 
-        /* --- Panel Derecho (Spirit Box) --- */
+        /* --- Panel Derecho (Sensores) --- */
         .panel-spiritbox {
             width: 100%;
-            aspect-ratio: 3/4; /* Ratio vertical */
-            padding: 15px;
+            padding: 10px; /* Reducido */
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -196,22 +205,24 @@
         }
         .panel-spiritbox .title {
             font-family: 'Orbitron', sans-serif;
-            font-size: 1rem;
+            font-size: 0.8rem; /* Reducido */
             color: #B89B6C;
             border-bottom: 1px solid #555;
             padding-bottom: 5px;
             text-align: center;
             width: 100%;
+            flex-shrink: 0;
         }
         /* Sensor de Temperatura */
         #temp-display {
             font-family: 'Orbitron', sans-serif;
-            font-size: 2.5rem;
+            font-size: 1.8rem; /* Reducido */
             color: #00AADD;
             text-shadow: 0 0 10px #00AADD, 0 0 20px #00AADD;
+            margin: 10px 0;
         }
         #temp-label {
-            font-size: 0.8rem;
+            font-size: 0.6rem; /* Reducido */
             color: #ccc;
         }
         /* Placa "OBR" */
@@ -220,16 +231,40 @@
             border: 2px solid #7C684A;
             color: #4A3C23;
             border-radius: 4px;
-            padding: 8px;
+            padding: 5px; /* Reducido */
             text-align: center;
             box-shadow: 0 0 5px rgba(0,0,0,0.5);
+            margin-top: 10px;
         }
         .placa-spiritbox h1 {
             font-family: 'Orbitron', sans-serif;
-            font-size: 1rem;
+            font-size: 0.7rem; /* Reducido */
             font-weight: 700;
             text-shadow: 1px 1px 0px #F5E5C0;
             margin: 0;
+        }
+
+        /* --- Media Query para pantallas verticales (móvil) --- */
+        @media (orientation: portrait) {
+            .header-title {
+                font-size: 0.8rem; /* Más pequeño en vertical */
+            }
+            .bottom-panels {
+                grid-template-columns: 1fr; /* Apilado vertical */
+                height: 45vh; /* Un poco más de espacio en vertical */
+                gap: 5px;
+            }
+            .panel-detector {
+                /* Asegurar que el voltímetro tenga espacio */
+                min-height: 150px; 
+            }
+            .filter-btn { font-size: 0.7rem; }
+            .panel-detector .knob-label { font-size: 0.7rem; }
+            .panel-detector .knob { width: 45px; height: 45px; }
+            .panel-spiritbox .title { font-size: 0.9rem; }
+            #temp-display { font-size: 2rem; }
+            #temp-label { font-size: 0.7rem; }
+            .placa-spiritbox h1 { font-size: 0.8rem; }
         }
     </style>
 </head>
@@ -241,6 +276,11 @@
     <!-- 2. Superposición de UI -->
     <div id="ui-overlay">
         
+        <!-- Título Superior -->
+        <div class="header-title">
+            EQUIPO PROFESIONAL DE EXPLORACIONES OBR
+        </div>
+
         <!-- Paneles Inferiores -->
         <div class="bottom-panels">
 
@@ -249,8 +289,8 @@
                 <canvas id="ghosttube-canvas"></canvas>
                 <div class="filter-buttons">
                     <button class="filter-btn active" data-filter="normal">NORMAL</button>
-                    <button class="filter-btn" data-filter="thermal">THERMAL</button>
-                    <button class="filter-btn" data-filter="nightvis">NIGHTVIS</button>
+                    <button class="filter-btn" data-filter="thermal">TERMICO</button>
+                    <button class="filter-btn" data-filter="nightvis">NOCTURNA</button>
                 </div>
             </div>
 
@@ -262,11 +302,11 @@
                 <!-- NOTA: El Text-Display del Spirit Box fue ELIMINADO a propósito -->
                 <div class="controls">
                     <div class="knob-container">
-                        <div class="knob-label">POWER</div>
+                        <div class="knob-label">ENCENDIDO</div>
                         <div id="power-knob" class="knob"></div>
                     </div>
                     <div class="knob-container">
-                        <div class="knob-label">SCAN</div>
+                        <div class="knob-label">ESCANEAR</div>
                         <div id="speed-knob" class="knob"></div>
                     </div>
                 </div>
@@ -274,9 +314,9 @@
 
             <!-- Panel 3: Sensores (Temperatura Sim) -->
             <div class="panel panel-spiritbox">
-                <div class="title">ENVIRONMENT</div>
+                <div class="title">AMBIENTE</div>
                 <div id="temp-display">20.1°C</div>
-                <div id="temp-label">Ambient Temp (Sim)</div>
+                <div id="temp-label">Temp. Ambiente (Sim)</div>
                 
                 <div class="placa-spiritbox">
                     <h1>OBR-SIM</h1>
@@ -476,12 +516,15 @@
         
         function initTempSensor() {
             let baseTemp = 19.0;
+            tempDisplay.textContent = `${baseTemp.toFixed(1)}°C`; // Mostrar valor inicial
             tempInterval = setInterval(() => {
                 // Simular fluctuaciones
                 baseTemp += (Math.random() - 0.48) * 0.2;
                 if (baseTemp < 15) baseTemp = 15;
                 if (baseTemp > 25) baseTemp = 25;
-                tempDisplay.textContent = `${baseTemp.toFixed(1)}°C`;
+                if (isRunning) { // Solo actualizar si está encendido
+                    tempDisplay.textContent = `${baseTemp.toFixed(1)}°C`;
+                }
             }, 2000); // Actualizar cada 2 segundos
         }
         function stopTempSensor() {
@@ -527,11 +570,9 @@
             }
             
             // ELIMINADO: Actualización del textDisplay
-            // utterance.onstart = () => textDisplay.textContent = text;
             
             utterance.onend = () => {
                 // ELIMINADO: Limpieza del textDisplay
-                // textDisplay.textContent = '';
                 
                 lRamp(delayWet.gain, 0, 0.1);
                 lRamp(lfoGain.gain, 0.03, 0.1);
@@ -600,7 +641,7 @@
                 recognition.start();
                 recognitionWatchdog = setTimeout(() => {
                     if (isRecognizing) { 
-                        console.error("Speech recognition watchdog triggered: Forcing restart.");
+                        console.error("Vigilante de reconocimiento de voz activado: Forzando reinicio.");
                         isRecognizing = false;
                         recognition.stop(); 
                     }
@@ -668,8 +709,10 @@
         // Loop de dibujo para el canvas de filtros
         function drawGhostTube() {
             if (!ghostCanvasCtx || mainCamera.paused || mainCamera.ended) {
+                animationFrameId = requestAnimationFrame(drawGhostTube);
                 return;
             }
+            
             // Dibujar la imagen de la cámara en el canvas
             ghostCanvasCtx.drawImage(mainCamera, 0, 0, ghostCanvas.width, ghostCanvas.height);
             
@@ -789,6 +832,7 @@
         // Carga inicial
         window.onload = () => {
             loadSheetData();
+            initTempSensor(); // Iniciar el sensor de temp (simulado) para que muestre el valor inicial
         };
 
     </script>
