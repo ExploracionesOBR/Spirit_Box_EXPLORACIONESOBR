@@ -374,9 +374,9 @@
         <canvas id="main-filter-canvas"></canvas>
         
         </div>
-    <canvas id="temp-canvas" class="hidden-canvas"></canvas>
+    <canvas id="temp-canvas" class.hidden-canvas"></canvas>
 
-    <div class="header-title">EQUIPO PROFESIONAL DE EXPLORACIONES OBR</div>
+    <div class.header-title">EQUIPO PROFESIONAL DE EXPLORACIONES OBR</div>
 
     <div id="side-panel-container">
         
@@ -401,8 +401,8 @@
                         <div class="led-segment" id="seg-6"></div>
                         <div class="led-segment" id="seg-7"></div>
                         <div class="led-segment" id="seg-8"></div>
-                        <div class="led-segment" id="seg-9"></div>
-                        <div class="led-segment" id="seg-10"></div>
+                        <div class...led-segment" id="seg-9"></div>
+                        <div class...led-segment" id="seg-10"></div>
                     </div>
                     <div class="energy-graph-box">
                         <canvas id="energy-canvas"></canvas>
@@ -464,6 +464,7 @@
 </div> 
 
     <script>
+        // SOLUCIÓN 2: URL de SheetDB Corregida
         const SHEETDB_URL = "https://sheetdb.io/api/v1/9xzfnke69kkej"; 
         let isRunning = false;
         let currentFilter = 'none'; 
@@ -477,8 +478,6 @@
         const tempCanvas = document.getElementById('temp-canvas');
         const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
         
-        // SOLUCIÓN 1: Referencias de simulación SLS eliminadas
-
         const envContent = document.getElementById('env-content-box');
         const detectorPanel = document.getElementById('p-detector');
         const sensorPanel = document.getElementById('p-env'); 
@@ -550,7 +549,8 @@
                 // SOLUCIÓN 1: Cargar modelo MULTIPOSE
                 const model = poseDetection.SupportedModels.MoveNet;
                 const detectorConfig = {
-                    modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING
+                    modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING,
+                    maxPoses: 6 // Especificar 6 poses
                 };
                 poseDetector = await poseDetection.createDetector(model, detectorConfig);
                 console.log("MoveNet (IA Multi-Pose) cargado.");
@@ -965,6 +965,8 @@
                 console.log("Datos cargados:", automaticoData.length, programadoData.size);
             } catch(e){ console.error("Error datos", e); }
         }
+        
+        // SOLUCIÓN 2: Cargar datos al INICIO
         loadSheetData();
 
         function speak(text) {
@@ -1033,7 +1035,8 @@
         }
         
         function persistentMicCheck(){ 
-            if(isRunning && !isSpeaking) {
+            // SOLUCIÓN 2: Asegurarse de que 'recognition' exista antes de llamar a 'start'
+            if(recognition && isRunning && !isRecognizing && !isSpeaking) {
                 try { 
                     recognition.start(); 
                 } catch(e) { 
