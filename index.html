@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBR-FIELD-UNIT V5.25</title> <script src="https://cdn.tailwindcss.com"></script>
+    <title>OBR-FIELD-UNIT V5.26</title> <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
@@ -71,8 +71,6 @@
             z-index: 2; 
             pointer-events: none; 
         }
-        
-        /* SOLUCIÓN 1: SVG Overlay eliminado */
         
         .hidden-canvas { display: none; }
 
@@ -374,8 +372,7 @@
     <div id="main-view-area">
         <video id="bg-camera-feed" playsinline autoplay muted></video>
         <canvas id="main-filter-canvas"></canvas>
-        
-        </div>
+    </div>
     <canvas id="temp-canvas" class="hidden-canvas"></canvas>
 
     <div class="header-title">EQUIPO PROFESIONAL DE EXPLORACIONES OBR</div>
@@ -479,8 +476,6 @@
         const tempCanvas = document.getElementById('temp-canvas');
         const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
         
-        // SOLUCIÓN 1: Referencias de simulación SLS eliminadas
-
         const envContent = document.getElementById('env-content-box');
         const detectorPanel = document.getElementById('p-detector');
         const sensorPanel = document.getElementById('p-env'); 
@@ -507,14 +502,14 @@
         let emfSimInterval = null;
         let visualLoopInterval; 
 
-        // SOLUCIÓN 1: Variables de IA re-agregadas
+        // SOLUCIÓN 1: Variables de IA (V5.23) restauradas
         let poseDetector; 
         let latestPoses = [];
         let isDetectingPose = false;
 
         let autoModeDelay = 5000; 
 
-        let sweepY = 0; // Barrido SCN
+        let sweepY = 0; 
 
         async function startCamera() {
             try {
@@ -546,7 +541,7 @@
             sweepY = 0; 
         }
 
-        // SOLUCIÓN 1: Función de IA re-agregada
+        // SOLUCIÓN 1: Función de IA (V5.23) restaurada
         async function initMLModel() {
             try {
                 const model = poseDetection.SupportedModels.MoveNet;
@@ -598,14 +593,13 @@
                     // SOLUCIÓN 1: Lógica de IA (V5.23) restaurada
                     if (!isDetectingPose && poseDetector) {
                         isDetectingPose = true;
-                        // Analizar el canvas (que es costoso)
-                        drawVideoWithCover(tempCtx, videoBg); // Dibujar en el temporal para analizar
+                        drawVideoWithCover(tempCtx, videoBg); // Dibujar en temporal para analizar
                         const poses = await poseDetector.estimatePoses(tempCtx);
                         latestPoses = poses; // Guardar resultado
                         isDetectingPose = false;
                     }
                     
-                    // 1. Dibujar video (rápido)
+                    // 1. Dibujar video
                     drawVideoWithCover(mainFilterCtx, videoBg);
                     
                     // 2. Tinte verde Kinect
@@ -614,7 +608,7 @@
                     mainFilterCtx.fillRect(0, 0, w, h);
                     mainFilterCtx.globalAlpha = 1.0;
                     
-                    // 3. Dibujar esqueletos (rápido)
+                    // 3. Dibujar esqueletos
                     if (latestPoses) {
                         drawAllSkeletons(latestPoses); 
                     }
@@ -634,9 +628,8 @@
                             let vpx = -copy[((y-1)*w+(x-1))*4] - 2*copy[((y-1)*w+x)*4] - copy[((y-1)*w+(x+1))*4]
                                   +copy[((y+1)*w+(x-1))*4] + 2*copy[((y+1)*w+x)*4] + copy[((y+1)*w+(x+1))*4];
                             
-                            // SOLUCIÓN 3: Umbral de Relieve más bajo
                             let diff = Math.sqrt(hpx*hpx + vpx*vpx);
-                            if (diff > 30) { // Era 40
+                            if (diff > 30) { 
                                 data[i] = diff; data[i+1] = 255; data[i+2] = 255; 
                             } else {
                                 data[i] = 10; data[i+1] = 10; data[i+2] = 10; 
@@ -646,7 +639,6 @@
                     mainFilterCtx.putImageData(frame, 0, 0);
 
                 } else if (currentFilter === 'scanner-topo') {
-                    // SOLUCIÓN 2: Lógica Topo (V5.24) mantenida
                     drawVideoWithCover(tempCtx, videoBg);
                     let frame = tempCtx.getImageData(0, 0, w, h);
                     let data = frame.data;
@@ -657,7 +649,7 @@
                     for (let i = 0; i < data.length; i += 4) {
                         let l = (data[i] + data[i+1] + data[i+2]) / 3; 
                         
-                        if (Math.floor(l) % 25 < 4) { // Banda ancha para menos "grano"
+                        if (Math.floor(l) % 25 < 4) { 
                             topoData[i] = 0;      
                             topoData[i+1] = 136;  
                             topoData[i+2] = 255;  // Azul Neón
@@ -668,7 +660,6 @@
                     }
                     tempCtx.putImageData(topoMapData, 0, 0); 
 
-                    // Barrido de Arriba a Abajo
                     sweepY = (sweepY + 8) % h; 
                     
                     mainFilterCtx.drawImage(
@@ -702,7 +693,6 @@
         ];
         
         function drawAllSkeletons(poses) {
-            // SOLUCIÓN 1: Dibujar en el canvas principal
             const ctx = mainFilterCtx; 
             
             // SOLUCIÓN 1: Líneas Verdes, Puntos Rojos
@@ -711,7 +701,6 @@
             ctx.lineWidth = 2.5;
             ctx.filter = 'drop-shadow(0 0 4px #39FF14)';
 
-            // Mapear coordenadas del canvas temporal (análisis) al canvas principal (dibujo)
             const scaleX = mainFilterCanvas.width / tempCanvas.width;
             const scaleY = mainFilterCanvas.height / tempCanvas.height;
 
@@ -756,8 +745,6 @@
             });
         }
         
-        // SOLUCIÓN 1: Simulación SLS eliminada
-
         function setFilter(f) {
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             
@@ -974,14 +961,16 @@
         function speak(text) {
             isSpeaking = true;
             
-            lfoGain.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime+0.1);
+            // SOLUCIÓN 1 (Voz): Bajar más el fondo
+            lfoGain.gain.linearRampToValueAtTime(0.03, audioCtx.currentTime+0.1); 
             lfo.frequency.linearRampToValueAtTime(15, audioCtx.currentTime + 0.1);
-            radioGain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime+0.1);
+            radioGain.gain.linearRampToValueAtTime(0.005, audioCtx.currentTime+0.1);
             
             const u = new SpeechSynthesisUtterance(text);
             u.lang = 'es-MX'; 
             u.volume = 1.0; 
-            u.pitch = 1.0; 
+            // SOLUCIÓN 1 (Tono): Tono más neutro/grave
+            u.pitch = 0.9; 
             u.rate = 1.1; 
             
             u.onend = () => {
@@ -1037,7 +1026,7 @@
         }
         
         function persistentMicCheck(){ 
-            if(isRunning && !isRecognizing && !isSpeaking) {
+            if(isRunning && !isSpeaking) {
                 try { 
                     recognition.start(); 
                 } catch(e) { 
