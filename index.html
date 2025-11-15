@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBR-FIELD-UNIT V5.19</title> <script src="https://cdn.tailwindcss.com"></script>
+    <title>OBR-FIELD-UNIT V5.21</title> <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
@@ -20,6 +20,9 @@
             --amber-light: rgba(255, 176, 0, 0.1);
             --led-blue: #0055FF;
             --led-yellow: #FFCC00;
+            
+            /* SOLUCIÓN 3: Ancho del panel lateral */
+            --panel-width: 280px; 
         }
         
         body {
@@ -29,86 +32,77 @@
             overflow: hidden;
             width: 100vw;
             height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
         }
 
-        /* SOLUCIÓN 3 y 5: Cámara siempre fullscreen y sin atenuar */
-        #bg-camera-feed {
+        /* Contenedor principal de la UI */
+        #app-ui {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        /* SOLUCIÓN 3: Contenedor para la cámara y el canvas de filtros */
+        #main-view-area {
             position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            /* Transición para cuando se activan los paneles */
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        #bg-camera-feed {
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             object-fit: cover; 
-            z-index: 0;
-            filter: brightness(1.0); /* Era 0.8 */
+            z-index: 1;
+            filter: brightness(1.0);
             transform: scaleX(1); 
-            transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
         
-        /* SOLUCIÓN 2: Canvas de filtro principal (pantalla completa) */
         #main-filter-canvas {
-            position: fixed;
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 1; /* Encima del video, debajo del UI */
-            pointer-events: none; /* Permite clics a través de él */
-        }
-
-        #ui-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end; 
-            padding: 10px;
-            box-sizing: border-box;
+            z-index: 2; 
             pointer-events: none; 
         }
-
-        .header-title {
-            position: absolute;
-            top: 0; 
-            left: 0; 
-            width: 100%;
-            text-align: center;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.9rem;
-            font-weight: 700;
-            color: rgba(0, 255, 255, 0.8);
-            text-shadow: 0 0 5px var(--glow-color);
-            letter-spacing: 3px;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
-            padding: 15px 0;
-            pointer-events: auto;
-            animation: breatheSlow 20s infinite ease-in-out; 
-            z-index: 20;
-            opacity: 0; 
-        }
         
-        @keyframes breatheSlow {
-            0%, 80% { opacity: 0; } 
-            90% { opacity: 0.7; text-shadow: 0 0 10px var(--glow-color); }
-            100% { opacity: 0; }
+        .hidden-canvas { display: none; }
+
+        /* SOLUCIÓN 1 & 2: Contenedor de Paneles Laterales (Naranja) */
+        #side-panel-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--panel-width);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            z-index: 20;
+            pointer-events: none; /* Solo los paneles internos son clickeables */
+            
+            /* Oculto por defecto */
+            transform: translateX(calc(var(--panel-width) * -1));
+            transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
-        /* SOLUCIÓN 4: Layout de 2 columnas */
-        .panels-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr; /* Era 1fr 1fr 1fr */
-            gap: 8px;
-            width: 100%;
-            max-height: 35vh; 
-            pointer-events: auto;
-            transition: opacity 0.3s;
-            padding-bottom: 5px;
+        /* SOLUCIÓN 3: Lógica de "encoger" la cámara */
+        body.panels-active #side-panel-container {
+            transform: translateX(0);
         }
+        body.panels-active #main-view-area {
+            left: var(--panel-width);
+            width: calc(100% - var(--panel-width));
+        }
+
 
         .panel {
             background: repeating-linear-gradient(135deg, #1a1a1a, #1a1a1a 10px, #222 10px, #222 12px);
@@ -123,8 +117,22 @@
             position: relative;
             overflow: hidden;
             transition: box-shadow 0.3s ease;
+            pointer-events: auto;
+            margin: 5px; /* Pequeño margen */
         }
         
+        /* SOLUCIÓN 1: Panel Sensores (Naranja Superior) */
+        #p-env {
+            flex-basis: 40%; /* 40% de la altura */
+            max-height: 40vh;
+        }
+        
+        /* SOLUCIÓN 2: Panel Spirit Box (Naranja Inferior) */
+        #p-detector {
+            flex-grow: 1; /* Ocupa el resto */
+            max-height: 58vh;
+        }
+
         .panel.alert {
             box-shadow: inset 0 0 20px #000, 0 5px 15px rgba(0,0,0,0.8), 0 0 20px var(--alert-red);
             border-color: var(--alert-red);
@@ -154,170 +162,67 @@
             border-radius: 4px; z-index: 1;
         }
 
-        /* --- PANEL 1: CÁMARA --- */
-        /* SOLUCIÓN 1: Panel de cámara eliminado */
+        .header-title {
+            position: fixed;
+            top: 0; 
+            left: 50%;
+            transform: translateX(-50%);
+            width: auto;
+            text-align: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: rgba(0, 255, 255, 0.8);
+            text-shadow: 0 0 5px var(--glow-color);
+            letter-spacing: 3px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
+            padding: 15px 30px;
+            pointer-events: auto;
+            animation: breatheSlow 20s infinite ease-in-out; 
+            z-index: 100; /* Encima de todo */
+            opacity: 0; 
+        }
+        
+        @keyframes breatheSlow {
+            0%, 80% { opacity: 0; } 
+            90% { opacity: 0.7; text-shadow: 0 0 10px var(--glow-color); }
+            100% { opacity: 0; }
+        }
 
-        /* --- PANEL 2: DETECTOR --- */
-        .emf-container {
+        /* --- Estilos Paneles --- */
+        .emf-container, .env-content {
             display: flex; flex-direction: column; height: 100%; justify-content: space-between; z-index: 1;
         }
-        
-        .vu-section {
-            display: flex; justify-content: space-between; margin-bottom: 5px; gap: 5px; height: 15px;
-        }
-        .vu-box {
-            flex: 1; background: #111; border: 1px inset #444; position: relative; overflow: hidden;
-        }
-        .vu-bar-fill {
-            height: 100%; width: 0%; opacity: 0.9; transition: width 0.05s linear;
-            box-shadow: 0 0 5px #0f0, 0 0 10px #ff0;
-        }
-        #vu-l {
-            background: linear-gradient(to right, #00ff00, #ffff00, #ff0000);
-            float: left;
-        }
-        #vu-r {
-            background: linear-gradient(to left, #00ff00, #ffff00, #ff0000);
-            float: right;
-        }
-
-        .meter-section {
-            flex-grow: 1; position: relative;
-            background: 
-                linear-gradient(90deg, transparent 49%, rgba(0,255,255,0.1) 50%, transparent 51%),
-                repeating-linear-gradient(90deg, transparent, transparent 19px, rgba(255,255,255,0.05) 20px),
-                radial-gradient(circle at 50% 100%, #222, #000);
-            border: 1px solid #333; border-radius: 4px; margin-bottom: 5px;
-            box-shadow: inset 0 0 10px #000;
-        }
-        .meter-freqs {
-            position: absolute; top: 5px; left: 0; width: 100%; text-align: center;
-            font-size: 0.45rem; color: #555; z-index: 1; display: flex; justify-content: space-between; padding: 0 10px;
-        }
-        
-        #main-needle {
-            width: 2px; height: 85%; background: #ff5500; position: absolute;
-            bottom: 0; left: 50%; transform-origin: bottom center; transform: rotate(-45deg);
-            transition: transform 0.1s cubic-bezier(0.2, 1.5, 0.5, 1);
-            box-shadow: 0 0 5px #ff5500; z-index: 2;
-        }
-
+        .vu-section { display: flex; justify-content: space-between; margin-bottom: 5px; gap: 5px; height: 15px; }
+        .vu-box { flex: 1; background: #111; border: 1px inset #444; position: relative; overflow: hidden; }
+        .vu-bar-fill { height: 100%; width: 0%; opacity: 0.9; transition: width 0.05s linear; }
+        #vu-l { background: linear-gradient(to right, #00ff00, #ffff00, #ff0000); float: left; }
+        #vu-r { background: linear-gradient(to left, #00ff00, #ffff00, #ff0000); float: right; }
+        .meter-section { flex-grow: 1; position: relative; background: radial-gradient(circle at 50% 100%, #222, #000); border: 1px solid #333; border-radius: 4px; margin-bottom: 5px; box-shadow: inset 0 0 10px #000; }
+        .meter-freqs { position: absolute; top: 5px; left: 0; width: 100%; text-align: center; font-size: 0.45rem; color: #555; z-index: 1; display: flex; justify-content: space-between; padding: 0 10px; }
+        #main-needle { width: 2px; height: 85%; background: #ff5500; position: absolute; bottom: 0; left: 50%; transform-origin: bottom center; transform: rotate(-45deg); transition: transform 0.1s cubic-bezier(0.2, 1.5, 0.5, 1); box-shadow: 0 0 5px #ff5500; z-index: 2; }
         .knobs-section { display: flex; justify-content: space-around; margin-bottom: 5px; }
+        .knob-circle { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #555; position: relative; margin: 0 auto 2px auto; cursor: pointer; background: conic-gradient(#222, #000, #222); box-shadow: 0 3px 5px #000; }
+        .knob-circle::after { content:''; position:absolute; top:0; left:0; width:100%; height:100%; border-radius:50%; background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent); }
+        .knob-indicator { position: absolute; top: 4px; left: 50%; width: 2px; height: 15px; background: #ff5500; transform: translateX(-50%); }
+        .knob-label { font-size: 0.6rem; color: #aaa; text-align: center; text-shadow: 0 1px 0 #000; }
+        .volume-slider-container { width: 100%; display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+        input[type=range] { flex-grow: 1; -webkit-appearance: none; height: 25px; background: #111; border: 1px solid #333; border-radius: 10px; overflow: hidden; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 35px; height: 35px; background: #444; border: 1px solid #666; border-radius: 50%; box-shadow: -100vw 0 0 100vw var(--glow-color); cursor: pointer; }
         
-        .knob-circle {
-            width: 45px; 
-            height: 45px; 
-            border-radius: 50%; border: 2px solid #555;
-            position: relative; margin: 0 auto 2px auto; cursor: pointer;
-            background: conic-gradient(#222, #000, #222); box-shadow: 0 3px 5px #000;
-        }
-        .knob-circle::after {
-            content:''; position:absolute; top:0; left:0; width:100%; height:100%;
-            border-radius:50%; background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
-        }
-        .knob-indicator {
-            position: absolute; 
-            top: 4px; 
-            left: 50%; 
-            width: 2px; 
-            height: 15px; 
-            background: #ff5500; transform: translateX(-50%);
-        }
-        .knob-label { 
-            font-size: 0.6rem; 
-            color: #aaa; text-align: center; text-shadow: 0 1px 0 #000; 
-        }
-
-        .volume-slider-container {
-            width: 100%; display: flex; align-items: center; gap: 8px; padding: 5px 0;
-        }
-        
-        input[type=range] {
-            flex-grow: 1; -webkit-appearance: none; 
-            height: 25px; 
-            background: #111;
-            border: 1px solid #333; border-radius: 10px; overflow: hidden;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none; 
-            width: 35px; 
-            height: 35px; 
-            background: #444;
-            border: 1px solid #666; 
-            border-radius: 50%; 
-            box-shadow: -100vw 0 0 100vw var(--glow-color);
-            cursor: pointer;
-        }
-
-        /* --- PANEL 3: AMBIENTE --- */
-        .env-content {
-            display: flex; flex-direction: column; height: 100%; justify-content: center; 
-            align-items: center; padding: 5px 0; z-index: 1; transition: all 0.5s ease;
-        }
-        
-        .temp-readout {
-            font-size: 2.5rem; font-weight: bold; color: var(--glow-color);
-            text-shadow: 0 0 15px rgba(0,255,255,0.3);
-            background: rgba(0,0,0,0.5);
-            padding: 15px 25px;
-            border: 2px solid #333;
-            border-left: 4px solid var(--glow-color); 
-            border-radius: 0 10px 10px 0;
-            font-family: 'Share Tech Mono', monospace;
-            transition: all 0.5s ease;
-        }
-        .temp-label-small { font-size: 0.6rem; color: #666; margin-top: 5px; }
-        
-        .energy-container {
-            width: 100%; display: flex; flex-direction: column; align-items: center;
-            height: 0; opacity: 0; overflow: hidden; transition: all 0.5s ease;
-            transform: scaleY(0.5); 
-        }
-        
-        .env-content.active { justify-content: space-between; }
+        .temp-readout { font-size: 2.5rem; font-weight: bold; color: var(--glow-color); text-shadow: 0 0 15px rgba(0,255,255,0.3); background: rgba(0,0,0,0.5); padding: 10px 15px; border: 2px solid #333; border-left: 4px solid var(--glow-color); border-radius: 0 10px 10px 0; font-family: 'Share Tech Mono', monospace; transition: all 0.5s ease; text-align: center; }
+        .temp-label-small { font-size: 0.6rem; color: #666; margin-top: 5px; text-align: center; }
+        .energy-container { width: 100%; display: flex; flex-direction: column; align-items: center; height: auto; opacity: 1; flex-grow: 1; margin-top: 5px; transform: scaleY(1); }
         .env-content.active .temp-readout { font-size: 1.5rem; padding: 5px 15px; border-width: 1px; }
-        .env-content.active .energy-container { height: auto; opacity: 1; flex-grow: 1; margin-top: 5px; transform: scaleY(1); }
-
-        .led-bar {
-            display: flex; gap: 3px; margin-bottom: 5px;
-            background: #000; padding: 4px; border-radius: 4px; border: 1px solid #333;
-        }
-        .led-segment {
-            width: 8px; 
-            height: 15px;
-            background-color: #111;
-            border: 1px solid #222;
-            transition: background-color 0.1s;
-        }
+        .led-bar { display: flex; gap: 3px; margin-bottom: 5px; background: #000; padding: 4px; border-radius: 4px; border: 1px solid #333; }
+        .led-segment { width: 8px; height: 15px; background-color: #111; border: 1px solid #222; transition: background-color 0.1s; }
         .led-segment.active-blue { background-color: var(--led-blue); box-shadow: 0 0 10px var(--led-blue); }
         .led-segment.active-yellow { background-color: var(--led-yellow); box-shadow: 0 0 10px var(--led-yellow); }
         .led-segment.active-red { background-color: var(--alert-red); box-shadow: 0 0 15px var(--alert-red); }
-
-
         .energy-label { font-size: 0.6rem; color: #aaa; margin-bottom: 5px; letter-spacing: 1px; }
-        
-        .energy-graph-box {
-            width: 100%;
-            height: 100%;
-            flex-grow: 1; 
-            background: #000;
-            border: 1px inset #333;
-            border-radius: 5px;
-            overflow: hidden;
-            margin-top: 5px;
-        }
-        #energy-canvas {
-            width: 100%;
-            height: 100%;
-        }
-
-        .plate-obr {
-            background: linear-gradient(to right, #222, #444, #222); border: 1px solid #000;
-            color: #aaa; font-size: 0.6rem; padding: 4px 10px;
-            box-shadow: 0 1px 0 rgba(255,255,255,0.1); text-shadow: 0 -1px 0 #000;
-            border-radius: 2px; font-weight: bold;
-            margin-top: 5px; 
-        }
+        .energy-graph-box { width: 100%; height: 100%; flex-grow: 1; background: #000; border: 1px inset #333; border-radius: 5px; overflow: hidden; margin-top: 5px; min-height: 50px; }
+        #energy-canvas { width: 100%; height: 100%; }
+        .plate-obr { background: linear-gradient(to right, #222, #444, #222); border: 1px solid #000; color: #aaa; font-size: 0.6rem; padding: 4px 10px; box-shadow: 0 1px 0 rgba(255,255,255,0.1); text-shadow: 0 -1px 0 #000; border-radius: 2px; font-weight: bold; margin-top: 5px; }
 
         .status-led {
             width: 10px; height: 10px; 
@@ -329,7 +234,11 @@
             transition: all 0.2s;
             box-shadow: inset 0 0 3px #000;
         }
-        #p-env .status-led { background-color: #220000; } 
+        /* SOLUCIÓN 1: Mover LED de mic a su propio contenedor */
+        #mic-led-container {
+            position: absolute;
+            top: 10px; left: 10px;
+        }
         
         .status-led.active-mic {
             background-color: var(--alert-red);
@@ -342,35 +251,46 @@
         }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
+        /* SOLUCIÓN 4: Posición del Menú (Rosa) */
+        #menu-container {
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 101;
+            pointer-events: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
 
-        /* --- Botón VER --- */
         #btn-ver {
-            position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px;
+            width: 55px; height: 55px;
             border-radius: 50%; border: 2px solid #00aaaa;
             background: radial-gradient(#004444, #002222); color: #00ffff;
             font-weight: bold; font-size: 0.8rem; display: flex; justify-content: center;
             align-items: center; cursor: pointer; box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
-            z-index: 100;
-            pointer-events: auto; /* Asegurarse de que sea clickeable */
         }
         #menu-tools {
-            position: fixed; bottom: 85px; right: 20px; background: rgba(10,15,20,0.95);
+            background: rgba(10,15,20,0.95);
             border: 1px solid #00aaaa; border-radius: 8px; padding: 5px;
-            display: none; z-index: 99;
-            pointer-events: auto; /* Asegurarse de que sea clickeable */
+            display: none;
+            position: absolute;
+            bottom: 65px; /* Arriba del botón */
         }
         #menu-tools.visible { display: block; }
         .menu-item {
             padding: 10px 20px; color: #aaa; border-bottom: 1px solid #333;
             cursor: pointer; font-size: 0.7rem;
         }
+        /* SOLUCIÓN 4: Efecto Neón */
         .menu-item.active { 
             color: #00ffff; 
             text-shadow: 0 0 5px #00ffff; 
             background: rgba(0, 255, 255, 0.1);
         }
 
-        /* SOLUCIÓN 6: Nuevos botones de filtro */
+        /* SOLUCIÓN 5: Botones de Filtro (Negros) */
         #filter-controls-container {
             position: fixed;
             top: 50%;
@@ -406,105 +326,127 @@
         }
 
 
+        /* Modo Móvil Vertical (revierte al layout de paneles inferiores) */
         @media (max-width: 768px) and (orientation: portrait) {
-            .panels-grid { 
-                grid-template-columns: 1fr; /* Paneles se apilan en vertical */
-                gap: 10px; 
-                padding-bottom: 80px; 
-                max-height: 50vh; /* Reducido un poco */
-                overflow-y: auto; 
+            #side-panel-container {
+                flex-direction: row; /* Paneles uno al lado del otro */
+                bottom: 0;
+                top: auto;
+                left: 0;
+                width: 100vw;
+                height: auto;
+                max-height: 50vh;
+                transform: translateY(100%); /* Oculto abajo */
+                overflow-x: auto;
             }
-            .panel { 
-                height: auto; /* Altura automática */
-                min-height: 280px; /* Pero con un mínimo */
-                flex-shrink: 0; 
-            } 
+            .panel {
+                width: 280px; /* Ancho fijo para scroll horizontal */
+                flex-shrink: 0;
+                height: 280px;
+            }
+            #p-env { max-height: 100%; flex-basis: auto; }
+            #p-detector { max-height: 100%; flex-basis: auto; }
+
+            body.panels-active #side-panel-container {
+                transform: translateY(0);
+            }
+            /* La cámara no se encoge, solo se oscurece */
+            body.panels-active #main-view-area {
+                left: 0;
+                width: 100%;
+                filter: brightness(0.4);
+            }
             
-            #filter-controls-container {
-                right: 10px;
-            }
-            .filter-btn {
-                width: 45px;
-                height: 45px;
+            #filter-controls-container { right: 10px; }
+            .filter-btn { width: 45px; height: 45px; }
+            
+            #menu-container { left: 50%; transform: translateX(-50%); }
+            
+            /* Ajustar ancho del panel lateral en landscape de móvil */
+            @media (max-width: 768px) and (orientation: landscape) {
+                :root { --panel-width: 240px; }
             }
         }
     </style>
 </head>
 <body>
 
-    <video id="bg-camera-feed" playsinline autoplay muted></video>
+<div id="app-ui">
 
-    <canvas id="main-filter-canvas"></canvas>
+    <div id="main-view-area">
+        <video id="bg-camera-feed" playsinline autoplay muted></video>
+        <canvas id="main-filter-canvas"></canvas>
+    </div>
+    <canvas id="temp-canvas" class="hidden-canvas"></canvas>
 
-    <div id="ui-container">
-        <div class="header-title">EQUIPO PROFESIONAL DE EXPLORACIONES OBR</div>
+    <div class="header-title">EQUIPO PROFESIONAL DE EXPLORACIONES OBR</div>
 
-        <div class="panels-grid" id="panels-container">
-
-            <div class="panel" id="p-detector">
-                <div class="panel-header">RADIO-FRECUENCIA</div>
-                <div class="status-led" id="mic-led" title="Micrófono Escuchando"></div>
+    <div id="side-panel-container">
+        
+        <div class="panel" id="p-env">
+            <div class="panel-header">SENSORES</div>
+            
+            <div id="mic-led-container">
+                 <div class="status-led" id="mic-led" title="Micrófono Escuchando"></div>
+            </div>
+            <div class="status-led" id="sensor-led" title="Sensor EMF Real Activo"></div>
+            
+            <div class="env-content">
+                <div class="temp-readout" id="temp-val">19.8°C</div>
+                <div class="temp-label-small">TEMP AMBIENTE</div>
                 
-                <div class="emf-container">
-                    <div class="vu-section">
-                        <div class="vu-box"><div id="vu-l" class="vu-bar-fill"></div></div>
-                        <div class="vu-box"><div id="vu-r" class="vu-bar-fill"></div></div>
+                <div class="energy-container">
+                    <div class="energy-label" style="margin-top:10px;">INTENSIDAD DE CAMPO</div>
+                    <div class="led-bar">
+                        <div class="led-segment" id="seg-1"></div>
+                        <div class="led-segment" id="seg-2"></div>
+                        <div class="led-segment" id="seg-3"></div>
+                        <div class="led-segment" id="seg-4"></div>
+                        <div class="led-segment" id="seg-5"></div>
+                        <div class="led-segment" id="seg-6"></div>
+                        <div class="led-segment" id="seg-7"></div>
+                        <div class="led-segment" id="seg-8"></div>
+                        <div class="led-segment" id="seg-9"></div>
+                        <div class="led-segment" id="seg-10"></div>
                     </div>
-                    <div class="meter-section">
-                        <div class="meter-freqs">
-                            <span>| 50</span><span>| 100</span><span>| 500</span><span>| 1k</span><span>| 10k |</span>
-                        </div>
-                        <div id="main-needle"></div>
-                    </div>
-                    <div class="knobs-section">
-                        <div style="text-align:center">
-                            <div class="knob-circle" id="knob-power" style="transform: rotate(-135deg);"><div class="knob-indicator"></div></div>
-                            <div class="knob-label">POWER</div>
-                        </div>
-                        <div style="text-align:center">
-                            <div class="knob-circle" id="knob-scan" style="transform: rotate(-135deg);"><div class="knob-indicator"></div></div>
-                            <div class="knob-label">SCAN</div>
-                        </div>
-                    </div>
-                    <div class="volume-slider-container">
-                        <div class="knob-label">VOL</div>
-                        <input type="range" min="0" max="100" value="80" id="vol-slider">
+                    <div class="energy-graph-box">
+                        <canvas id="energy-canvas"></canvas>
                     </div>
                 </div>
             </div>
-
-            <div class="panel" id="p-env">
-                <div class="panel-header">SENSORES</div>
-                <div class="status-led" id="sensor-led" title="Sensor EMF Real Activo"></div>
-                
-                <div class="env-content" id="env-content-box">
-                    <div class="temp-readout" id="temp-val">19.8°C</div>
-                    <div class="temp-label-small">TEMP AMBIENTE</div>
-                    
-                    <div class="energy-container">
-                        <div class="energy-label" style="margin-top:10px;">INTENSIDAD DE CAMPO</div>
-                        <div class="led-bar">
-                            <div class="led-segment" id="seg-1"></div>
-                            <div class="led-segment" id="seg-2"></div>
-                            <div class="led-segment" id="seg-3"></div>
-                            <div class="led-segment" id="seg-4"></div>
-                            <div class="led-segment" id="seg-5"></div>
-                            <div class="led-segment" id="seg-6"></div>
-                            <div class="led-segment" id="seg-7"></div>
-                            <div class="led-segment" id="seg-8"></div>
-                            <div class="led-segment" id="seg-9"></div>
-                            <div class="led-segment" id="seg-10"></div>
-                        </div>
-                        <div class="energy-graph-box">
-                            <canvas id="energy-canvas"></canvas>
-                        </div>
-                    </div>
-                    
-                    <div class="plate-obr">OBR-FIELD-UNIT</div> 
-                </div>
-            </div>
-
         </div>
+        
+        <div class="panel" id="p-detector">
+            <div class="panel-header">RADIO-FRECUENCIA</div>
+            
+            <div class="emf-container">
+                <div class="vu-section">
+                    <div class="vu-box"><div id="vu-l" class="vu-bar-fill"></div></div>
+                    <div class="vu-box"><div id="vu-r" class="vu-bar-fill"></div></div>
+                </div>
+                <div class="meter-section">
+                    <div class="meter-freqs">
+                        <span>| 50</span><span>| 100</span><span>| 500</span><span>| 1k</span><span>| 10k |</span>
+                    </div>
+                    <div id="main-needle"></div>
+                </div>
+                <div class="knobs-section">
+                    <div style="text-align:center">
+                        <div class="knob-circle" id="knob-power" style="transform: rotate(-135deg);"><div class="knob-indicator"></div></div>
+                        <div class="knob-label">POWER</div>
+                    </div>
+                    <div style="text-align:center">
+                        <div class="knob-circle" id="knob-scan" style="transform: rotate(-135deg);"><div class="knob-indicator"></div></div>
+                        <div class="knob-label">SCAN</div>
+                    </div>
+                </div>
+                <div class="volume-slider-container">
+                    <div class="knob-label">VOL</div>
+                    <input type="range" min="0" max="100" value="80" id="vol-slider">
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <div id="filter-controls-container">
@@ -514,29 +456,27 @@
         <button class="filter-btn" onclick="setFilter('relief')">RLV</button>
     </div>
 
-
-    <div id="btn-ver">VER</div>
-    <div id="menu-tools">
-        <div class="menu-item active" id="m-detector" onclick="togglePanel('p-detector')">DETECTOR</div>
-        <div class="menu-item active" id="m-env" onclick="togglePanel('p-env')">SENSOR</div>
+    <div id="menu-container">
+        <div id="menu-tools">
+            <div class="menu-item active" id="m-detector" onclick="togglePanel('p-detector')">SPIRIT BOX</div>
+            <div class="menu-item active" id="m-env" onclick="togglePanel('p-env')">SENSORES</div>
+        </div>
+        <div id="btn-ver">VER</div>
     </div>
 
-    <script>
+</div> <script>
         const SHEETDB_URL = "https.sheetdb.io/api/v1/9xzfnke69kkej"; 
         let isRunning = false;
-        
-        // SOLUCIÓN 2: Filtro por defecto es 'none'
         let currentFilter = 'none'; 
-        
         let scanSpeed = 0; 
         
         const videoBg = document.getElementById('bg-camera-feed');
         
-        // SOLUCIÓN 2: Referencia al nuevo canvas principal
         const mainFilterCanvas = document.getElementById('main-filter-canvas');
         const mainFilterCtx = mainFilterCanvas.getContext('2d', { willReadFrequently: true });
 
-        // SOLUCIÓN 1: Referencias al canvas pequeño eliminadas
+        const tempCanvas = document.getElementById('temp-canvas');
+        const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
         
         const envContent = document.getElementById('env-content-box');
         const detectorPanel = document.getElementById('p-detector');
@@ -574,19 +514,25 @@
                 });
                 videoBg.srcObject = stream;
                 videoBg.onloadedmetadata = () => {
-                    // SOLUCIÓN 2: Redimensionar el canvas principal
-                    mainFilterCanvas.width = window.innerWidth;
-                    mainFilterCanvas.height = window.innerHeight;
+                    resizeAllCanvas(); 
 
-                    // Referencias al canvas de energía (sigue igual)
                     energyCanvas = document.getElementById('energy-canvas');
                     if (energyCanvas) { 
                         energyCtx = energyCanvas.getContext('2d');
                         resizeEnergyCanvas();
                     }
-                    drawLoop(); // Inicia el bucle de dibujo
+                    drawLoop(); 
                 };
             } catch (e) { console.log("Error camara", e); }
+        }
+        
+        function resizeAllCanvas() {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            mainFilterCanvas.width = w;
+            mainFilterCanvas.height = h;
+            tempCanvas.width = w;
+            tempCanvas.height = h;
         }
 
         async function initMLModel() {
@@ -603,97 +549,95 @@
         let sweepDiagonal = 0; 
 
         
-        // Bucle de dibujo principal (ahora dibuja en mainFilterCanvas)
         async function drawLoop() {
             if (videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
                 
-                // 1. Limpiar el canvas principal
-                mainFilterCtx.clearRect(0, 0, mainFilterCanvas.width, mainFilterCanvas.height);
-                
-                // 2. Dibujar video en el canvas (necesario para filtros de píxeles y SLS)
-                if (currentFilter !== 'none') {
-                     mainFilterCtx.drawImage(videoBg, 0, 0, mainFilterCanvas.width, mainFilterCanvas.height);
-                }
+                const w = mainFilterCanvas.width;
+                const h = mainFilterCanvas.height;
 
-                // 3. Aplicar el filtro seleccionado
+                mainFilterCtx.clearRect(0, 0, w, h);
+                
                 if (currentFilter === 'sls') {
-                    // MODO IA: Analizar el canvas y dibujar esqueletos encima
+                    mainFilterCtx.drawImage(videoBg, 0, 0, w, h);
                     if (poseDetector) {
                         const poses = await poseDetector.estimatePoses(mainFilterCanvas); 
-                        drawAllSkeletons(poses); // Dibuja líneas y puntos sobre el video
+                        drawAllSkeletons(poses); 
                     }
                 
-                } else if (currentFilter === 'relief' || currentFilter === 'scanner-diag') {
-                    // MODO PROCESAMIENTO: Tomar la imagen, procesar píxeles y reemplazarla
-                    let frame = mainFilterCtx.getImageData(0, 0, mainFilterCanvas.width, mainFilterCanvas.height);
+                } else if (currentFilter === 'relief') {
+                    mainFilterCtx.drawImage(videoBg, 0, 0, w, h);
+                    let frame = mainFilterCtx.getImageData(0, 0, w, h);
                     let data = frame.data;
-                    let width = mainFilterCanvas.width;
-                    let height = mainFilterCanvas.height;
 
-                    if (currentFilter === 'relief') {
-                        let copy = new Uint8ClampedArray(data);
-                        for (let y = 1; y < height - 1; y++) {
-                            for (let x = 1; x < width - 1; x++) {
-                                let i = (y * width + x) * 4;
-                                let h = -copy[((y-1)*width+(x-1))*4] + copy[((y-1)*width+(x+1))*4]
-                                      -2*copy[(y*width+(x-1))*4] + 2*copy[(y*width+(x+1))*4]
-                                      -copy[((y+1)*width+(x-1))*4] + copy[((y+1)*width+(x+1))*4];
-                                let v = -copy[((y-1)*width+(x-1))*4] - 2*copy[((y-1)*width+x)*4] - copy[((y-1)*width+(x+1))*4]
-                                      +copy[((y+1)*width+(x-1))*4] + 2*copy[((y+1)*width+x)*4] + copy[((y+1)*width+(x+1))*4];
-                                let diff = Math.sqrt(h*h + v*v);
-                                
-                                if (diff > 40) {
-                                    data[i] = diff; data[i+1] = 255; data[i+2] = 255; 
-                                } else {
-                                    data[i] = 10; data[i+1] = 10; data[i+2] = 10; 
-                                }
-                            }
-                        }
-                    } 
-                    else if (currentFilter === 'scanner-diag') {
-                        edgeMap = new Uint8ClampedArray(data.length); 
-                        let copy = new Uint8ClampedArray(data);
-                        for (let y = 1; y < height - 1; y++) {
-                            for (let x = 1; x < width - 1; x++) {
-                                let i = (y * width + x) * 4;
-                                let h = -copy[((y-1)*width+(x-1))*4] + copy[((y-1)*width+(x+1))*4]
-                                      -2*copy[(y*width+(x-1))*4] + 2*copy[(y*width+(x+1))*4]
-                                      -copy[((y+1)*width+(x-1))*4] + copy[((y+1)*width+(x+1))*4];
-                                let v = -copy[((y-1)*width+(x-1))*4] - 2*copy[((y-1)*width+x)*4] - copy[((y-1)*width+(x+1))*4]
-                                      +copy[((y+1)*width+(x-1))*4] + 2*copy[((y+1)*width+x)*4] + copy[((y+1)*width+(x+1))*4];
-                                
-                                if (Math.sqrt(h*h + v*v) > 35) { 
-                                    edgeMap[i+3] = 255; 
-                                }
-                            }
-                        }
-
-                        sweepDiagonal = (sweepDiagonal + 3) % (width + height); 
-                        
-                        for(let lineOffset = 0; lineOffset < 30; lineOffset += 5) { 
-                            let linePos = sweepDiagonal - lineOffset;
+                    let copy = new Uint8ClampedArray(data);
+                    for (let y = 1; y < h - 1; y++) {
+                        for (let x = 1; x < w - 1; x++) {
+                            let i = (y * w + x) * 4;
+                            let hpx = -copy[((y-1)*w+(x-1))*4] + copy[((y-1)*w+(x+1))*4]
+                                  -2*copy[(y*w+(x-1))*4] + 2*copy[(y*w+(x+1))*4]
+                                  -copy[((y+1)*w+(x-1))*4] + copy[((y+1)*w+(x+1))*4];
+                            let vpx = -copy[((y-1)*w+(x-1))*4] - 2*copy[((y-1)*w+x)*4] - copy[((y-1)*w+(x+1))*4]
+                                  +copy[((y+1)*w+(x-1))*4] + 2*copy[((y+1)*w+x)*4] + copy[((y+1)*w+(x+1))*4];
+                            let diff = Math.sqrt(hpx*hpx + vpx*vpx);
                             
-                            for (let y = 0; y < height; y++) {
-                                let x = linePos - y;
-                                if (x >= 0 && x < width) {
-                                    let i = (y * width + x) * 4;
-                                    if (edgeMap[i+3] > 0) {
-                                        data[i] = 0; data[i+1] = 255; data[i+2] = 255; data[i+3] = 255; 
-                                    }
+                            if (diff > 40) {
+                                data[i] = diff; data[i+1] = 255; data[i+2] = 255; 
+                            } else {
+                                data[i] = 10; data[i+1] = 10; data[i+2] = 10; 
+                            }
+                        }
+                    }
+                    mainFilterCtx.putImageData(frame, 0, 0);
+
+                } else if (currentFilter === 'scanner-diag') {
+                    tempCtx.drawImage(videoBg, 0, 0, w, h);
+                    let frame = tempCtx.getImageData(0, 0, w, h);
+                    let data = frame.data;
+                    
+                    edgeMap = new Uint8ClampedArray(data.length); 
+                    let copy = new Uint8ClampedArray(data);
+                    for (let y = 1; y < h - 1; y++) {
+                        for (let x = 1; x < w - 1; x++) {
+                            let i = (y * w + x) * 4;
+                            let hpx = -copy[((y-1)*w+(x-1))*4] + copy[((y-1)*w+(x+1))*4]
+                                  -2*copy[(y*w+(x-1))*4] + 2*copy[(y*w+(x+1))*4]
+                                  -copy[((y+1)*w+(x-1))*4] + copy[((y+1)*w+(x+1))*4];
+                            let vpx = -copy[((y-1)*w+(x-1))*4] - 2*copy[((y-1)*w+x)*4] - copy[((y-1)*w+(x+1))*4]
+                                  +copy[((y+1)*w+(x-1))*4] + 2*copy[((y+1)*w+x)*4] + copy[((y+1)*w+(x+1))*4];
+                            
+                            if (Math.sqrt(hpx*hpx + vpx*vpx) > 35) { 
+                                edgeMap[i+3] = 255; 
+                            }
+                        }
+                    }
+
+                    sweepDiagonal = (sweepDiagonal + 5) % (w + h); 
+                    
+                    mainFilterCtx.fillStyle = 'var(--neon-green)';
+                    mainFilterCtx.shadowColor = 'var(--neon-green)';
+                    mainFilterCtx.shadowBlur = 10;
+                    
+                    for(let lineOffset = 0; lineOffset < 30; lineOffset += 5) { 
+                        let linePos = sweepDiagonal - lineOffset;
+                        
+                        for (let y = 0; y < h; y+=2) { 
+                            let x = linePos - y;
+                            if (x >= 0 && x < w) {
+                                let i = (y * w + x) * 4;
+                                if (edgeMap[i+3] > 0) {
+                                    mainFilterCtx.fillRect(x, y, 2, 2);
                                 }
                             }
                         }
                     }
-                    
-                    // 4. Reemplazar el canvas con la data procesada
-                    mainFilterCtx.putImageData(frame, 0, 0);
+                    mainFilterCtx.shadowBlur = 0;
+                
+                } else if (currentFilter === 'none') {
+                    // El canvas se queda transparente
                 }
             }
-            // 5. Pedir el siguiente frame
             requestAnimationFrame(drawLoop);
         }
-        
-        // --- Funciones de dibujo de IA (ahora usan mainFilterCtx) ---
         
         const confidenceThreshold = 0.3; 
         const skeletonMap = [
@@ -706,11 +650,11 @@
         ];
         
         function drawAllSkeletons(poses) {
-            // SOLUCIÓN 7: Color de esqueleto verde neón
+            // SOLUCIÓN 2 (de V5.20): Líneas Verdes, Puntos Rojos
             mainFilterCtx.strokeStyle = 'var(--neon-green)';
-            mainFilterCtx.fillStyle = '#fff';
-            mainFilterCtx.lineWidth = 2;
-            mainFilterCtx.globalAlpha = 0.8; 
+            mainFilterCtx.fillStyle = 'var(--alert-red)'; 
+            mainFilterCtx.lineWidth = 2.5;
+            mainFilterCtx.filter = 'drop-shadow(0 0 4px var(--neon-green))';
 
             poses.forEach(pose => {
                 if (pose.score > confidenceThreshold) {
@@ -718,7 +662,7 @@
                     drawConnections(pose.keypoints);
                 }
             });
-            mainFilterCtx.globalAlpha = 1.0; 
+            mainFilterCtx.filter = 'none';
         }
 
         function drawKeypoints(keypoints) {
@@ -751,11 +695,19 @@
             });
         }
 
-        // SOLUCIÓN 6: Nueva función setFilter
+        // SOLUCIÓN 5: Lógica de filtros actualizada
         function setFilter(f) {
-            currentFilter = f;
+            // Si presionamos el mismo botón (y no es NRM)
+            if (currentFilter === f && f !== 'none') {
+                currentFilter = 'none';
+            } else {
+                currentFilter = f;
+            }
+            
+            // Actualizar el estado visual
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
+            const targetBtn = document.querySelector(`.filter-btn[onclick="setFilter('${currentFilter}')"]`);
+            if (targetBtn) targetBtn.classList.add('active');
         }
 
         // --- Resto del código (Audio, Sensores, UI) sin cambios ---
@@ -1106,7 +1058,7 @@
         }
         setInterval(updateSensorReadings, 2000);
 
-        // UI
+        // --- UI Lógica Actualizada ---
         const menu = document.getElementById('menu-tools');
         let mT;
         document.getElementById('btn-ver').addEventListener('click', () => {
@@ -1115,7 +1067,17 @@
             if(menu.classList.contains('visible')) mT = setTimeout(()=>menu.classList.remove('visible'), 5000);
         });
         
-        // SOLUCIÓN 3: checkPanelState eliminado
+        // SOLUCIÓN 3: Lógica para mostrar/ocultar paneles laterales
+        function checkPanelState() {
+            const p1 = document.getElementById('p-detector').classList.contains('hidden');
+            const p2 = document.getElementById('p-env').classList.contains('hidden');
+            
+            if (!p1 || !p2) { // Si CUALQUIER panel no está oculto
+                document.body.classList.add('panels-active');
+            } else {
+                document.body.classList.remove('panels-active');
+            }
+        }
 
         function togglePanel(id) {
             const p = document.getElementById(id);
@@ -1123,7 +1085,7 @@
             p.classList.toggle('hidden');
             if(btn) btn.classList.toggle('active');
             
-            // SOLUCIÓN 3: Llamada a checkPanelState eliminada
+            checkPanelState(); // Comprobar estado
             
             menu.classList.remove('visible');
             
@@ -1139,13 +1101,16 @@
             setInterval(updateSensorReadings, 2000); 
             setInterval(persistentMicCheck, 1000); 
             
-            // SOLUCIÓN 3: Llamada a checkPanelState eliminada
+            // Iniciar con paneles ocultos y cámara llena
+            document.getElementById('p-detector').classList.add('hidden');
+            document.getElementById('p-env').classList.add('hidden');
+            document.querySelector('#m-detector').classList.remove('active');
+            document.querySelector('#m-env').classList.remove('active');
+            checkPanelState();
         };
         
         window.onresize = () => {
-            // SOLUCIÓN 2: Redimensionar canvas principal
-            mainFilterCanvas.width = window.innerWidth;
-            mainFilterCanvas.height = window.innerHeight;
+            resizeAllCanvas(); 
             
             if(energyCanvas && !document.getElementById('p-env').classList.contains('hidden')) {
                 resizeEnergyCanvas();
