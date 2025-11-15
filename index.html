@@ -2,14 +2,8 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-
-    <link rel="apple-touch-icon" href="obr-logo.png">
-
-    <title>OBR-FIELD-UNIT V5.31</title> <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OBR-FIELD-UNIT V5.30</title> <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
@@ -1064,7 +1058,7 @@
                 if (i < intensity) {
                     if (i < 3) seg.classList.add('active-blue');
                     else if (i < 7) seg.classList.add('active-yellow');
-                    else if (i < 8) seg.classList.add('active-red');
+                    else seg.classList.add('active-red');
                 }
             });
         }
@@ -1168,6 +1162,7 @@
         // SOLUCIÓN 1: Bucle de detección de IA re-agregado
         async function detectPoseLoop() {
             while (true) {
+                // Solo detectar si el filtro está activo, el detector está cargado y el video está listo
                 if (currentFilter === 'sls' && poseDetector && videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
                     
                     drawVideoWithCover(tempCtx, videoBg);
