@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBR-FIELD-UNIT V5.13</title> <!-- V5.13 -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>OBR-FIELD-UNIT V5.15</title> <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -42,7 +41,6 @@
             transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
         
-        /* 5. Zoom de Cámara (Arreglado) */
         body.panels-active #bg-camera-feed {
             object-fit: contain; 
             transform: scale(0.7); /* Zoom out */
@@ -94,13 +92,12 @@
             grid-template-columns: 1fr 1fr 1fr;
             gap: 8px;
             width: 100%;
-            max-height: 35vh; /* 5. Paneles más pequeños */
+            max-height: 35vh; 
             pointer-events: auto;
             transition: opacity 0.3s;
             padding-bottom: 5px;
         }
 
-        /* Estética V5.0 (Metal Viejo) */
         .panel {
             background: repeating-linear-gradient(135deg, #1a1a1a, #1a1a1a 10px, #222 10px, #222 12px);
             border: 1px solid #444;
@@ -116,7 +113,6 @@
             transition: box-shadow 0.3s ease;
         }
         
-        /* 4. Efecto de Alerta de Energía */
         .panel.alert {
             box-shadow: inset 0 0 20px #000, 0 5px 15px rgba(0,0,0,0.8), 0 0 20px var(--alert-red);
             border-color: var(--alert-red);
@@ -157,13 +153,18 @@
         }
         
         .camera-controls {
-            display: flex; justify-content: space-between; gap: 4px; height: 25px; z-index: 1;
+            display: flex; justify-content: space-between; gap: 4px; z-index: 1;
         }
+        
         .cam-btn {
             background: linear-gradient(to bottom, #333, #1a1a1a); border: 1px solid #444;
-            color: #00aaaa; font-size: 0.5rem; border-radius: 2px; cursor: pointer;
+            color: #00aaaa; 
+            font-size: 0.65rem; 
+            border-radius: 2px; cursor: pointer;
             flex: 1; display: flex; align-items: center; justify-content: center;
             box-shadow: 0 2px 0 #000;
+            height: 40px; 
+            padding: 5px 2px; 
         }
         .cam-btn:active { transform: translateY(2px); box-shadow: none; }
         .cam-btn.active {
@@ -217,8 +218,11 @@
         }
 
         .knobs-section { display: flex; justify-content: space-around; margin-bottom: 5px; }
+        
         .knob-circle {
-            width: 35px; height: 35px; border-radius: 50%; border: 2px solid #555;
+            width: 45px; 
+            height: 45px; 
+            border-radius: 50%; border: 2px solid #555;
             position: relative; margin: 0 auto 2px auto; cursor: pointer;
             background: conic-gradient(#222, #000, #222); box-shadow: 0 3px 5px #000;
         }
@@ -227,31 +231,42 @@
             border-radius:50%; background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
         }
         .knob-indicator {
-            position: absolute; top: 2px; left: 50%; width: 2px; height: 10px;
+            position: absolute; 
+            top: 4px; 
+            left: 50%; 
+            width: 2px; 
+            height: 15px; 
             background: #ff5500; transform: translateX(-50%);
         }
-        .knob-label { font-size: 0.5rem; color: #aaa; text-align: center; text-shadow: 0 1px 0 #000; }
+        .knob-label { 
+            font-size: 0.6rem; 
+            color: #aaa; text-align: center; text-shadow: 0 1px 0 #000; 
+        }
 
         .volume-slider-container {
             width: 100%; display: flex; align-items: center; gap: 8px; padding: 5px 0;
         }
+        
         input[type=range] {
-            flex-grow: 1; -webkit-appearance: none; height: 20px; background: #111;
+            flex-grow: 1; -webkit-appearance: none; 
+            height: 25px; 
+            background: #111;
             border: 1px solid #333; border-radius: 10px; overflow: hidden;
         }
-        /* 5. Slider de Volumen (Móvil) */
         input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 30px; height: 30px; /* Más grande */
+            -webkit-appearance: none; 
+            width: 35px; 
+            height: 35px; 
             background: #444;
             border: 1px solid #666; 
-            border-radius: 50%; /* Redondo */
+            border-radius: 50%; 
             box-shadow: -100vw 0 0 100vw var(--glow-color);
             cursor: pointer;
         }
 
         /* --- PANEL 3: AMBIENTE --- */
         .env-content {
-            display: flex; flex-direction: column; height: 100%; justify-content: center; /* Centro por defecto */
+            display: flex; flex-direction: column; height: 100%; justify-content: center; 
             align-items: center; padding: 5px 0; z-index: 1; transition: all 0.5s ease;
         }
         
@@ -283,7 +298,7 @@
             background: #000; padding: 4px; border-radius: 4px; border: 1px solid #333;
         }
         .led-segment {
-            width: 8px; /* Más delgados */
+            width: 8px; 
             height: 15px;
             background-color: #111;
             border: 1px solid #222;
@@ -319,9 +334,8 @@
             margin-top: 5px; 
         }
 
-        /* 3. LEDs de Estado */
         .status-led {
-            width: 10px; height: 10px; /* 2. Más visibles */
+            width: 10px; height: 10px; 
             background-color: #333;
             border: 1px solid #000;
             border-radius: 50%;
@@ -330,7 +344,7 @@
             transition: all 0.2s;
             box-shadow: inset 0 0 3px #000;
         }
-        #p-env .status-led { background-color: #220000; } /* 3. LED de sensor apagado */
+        #p-env .status-led { background-color: #220000; } 
         
         .status-led.active-mic {
             background-color: var(--alert-red);
@@ -363,7 +377,6 @@
             padding: 10px 20px; color: #aaa; border-bottom: 1px solid #333;
             cursor: pointer; font-size: 0.7rem;
         }
-        /* 7. Neón del Menú */
         .menu-item.active { 
             color: #00ffff; 
             text-shadow: 0 0 5px #00ffff; 
@@ -372,13 +385,12 @@
 
         #sls-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
 
-        /* 6. Responsive (Móvil Vertical) */
         @media (max-width: 768px) and (orientation: portrait) {
             .panels-grid { 
                 grid-template-columns: 1fr; 
                 gap: 10px; 
                 padding-bottom: 80px; 
-                max-height: 70vh; /* Más altura en vertical */
+                max-height: 70vh; 
                 overflow-y: auto; 
             }
             .panel { height: 280px; flex-shrink: 0; }
@@ -395,7 +407,6 @@
 
         <div class="panels-grid" id="panels-container">
 
-            <!-- PANEL 1: CÁMARA -->
             <div class="panel" id="p-camera">
                 <div class="panel-header">FILTROS ESPECTRALES</div>
                 <div class="camera-view-box">
@@ -428,13 +439,12 @@
                     </svg>
                 </div>
                 <div class="camera-controls">
-                    <button class="cam-btn active" onclick="setFilter('scanner-diag-sticky')">SCANNER-DIAG</button>
+                    <button class="cam-btn active" onclick="setFilter('scanner-diag')">SCANNER-DIAG</button>
                     <button class="cam-btn" onclick="setFilter('sls')">SLS KINECT</button>
                     <button class="cam-btn" onclick="setFilter('relief')">RELIEVE</button>
                 </div>
             </div>
 
-            <!-- PANEL 2: DETECTOR (V5.0 Visuals) -->
             <div class="panel" id="p-detector">
                 <div class="panel-header">RADIO-FRECUENCIA</div>
                 <div class="status-led" id="mic-led" title="Micrófono Escuchando"></div>
@@ -467,7 +477,6 @@
                 </div>
             </div>
 
-            <!-- PANEL 3: AMBIENTE (Híbrido) -->
             <div class="panel" id="p-env">
                 <div class="panel-header">SENSORES</div>
                 <div class="status-led" id="sensor-led" title="Sensor EMF Real Activo"></div>
@@ -512,8 +521,11 @@
     <script>
         const SHEETDB_URL = "https://sheetdb.io/api/v1/9xzfnke69kkej"; 
         let isRunning = false;
-        let currentFilter = 'scanner-diag-sticky'; // 1. Filtro Diagonal por defecto
-        let scanSpeed = 0; // 0=Lento, 1=Medio, 2=Rápido
+        
+        // **** CAMBIO AQUÍ ****
+        let currentFilter = 'scanner-diag'; // Filtro por defecto ahora sin "sticky"
+        
+        let scanSpeed = 0; 
         let slsPos = { x: 160, y: 100 };
         let jitter = 0; 
         
@@ -529,7 +541,6 @@
         const vuL = document.getElementById('vu-l');
         const vuR = document.getElementById('vu-r');
         
-        // 3. LEDs de Estado
         const micLed = document.getElementById('mic-led');
         const sensorLed = document.getElementById('sensor-led');
         
@@ -544,11 +555,10 @@
         let automaticoData = [];
         let currentTemp = 19.8;
         
-        // 3. Sensor EMF
         let magnetometer; 
         let emfValue = 0; // Valor 0-100
         let emfSimInterval = null;
-        let visualLoopInterval; // Para los visuales del detector
+        let visualLoopInterval; 
 
         async function startCamera() {
             try {
@@ -571,8 +581,11 @@
 
         let lastData = null;
         let edgeMap = null; 
-        let edgeData = null; // 1. Para el "sticky" scanner
-        let sweepDiagonal = 0; // 1. Para el scanner diagonal
+        
+        // **** CAMBIO AQUÍ ****
+        // Eliminada la variable 'edgeData' (ya no hay rastro)
+        
+        let sweepDiagonal = 0; 
 
         
         function drawLoop() {
@@ -584,12 +597,10 @@
                 let height = canvas.height;
 
                 if (currentFilter === 'relief') {
-                    // 4. Filtro Relieve (Neón)
                     let copy = new Uint8ClampedArray(data);
                     for (let y = 1; y < height - 1; y++) {
                         for (let x = 1; x < width - 1; x++) {
                             let i = (y * width + x) * 4;
-                            // Kernel Sobel simple
                             let h = -copy[((y-1)*width+(x-1))*4] + copy[((y-1)*width+(x+1))*4]
                                   -2*copy[(y*width+(x-1))*4] + 2*copy[(y*width+(x+1))*4]
                                   -copy[((y+1)*width+(x-1))*4] + copy[((y+1)*width+(x+1))*4];
@@ -598,11 +609,9 @@
                             let diff = Math.sqrt(h*h + v*v);
                             
                             if (diff > 40) {
-                                data[i] = diff; // R (cian)
-                                data[i+1] = 255;  // G (cian)
-                                data[i+2] = 255;  // B (cian)
+                                data[i] = diff; data[i+1] = 255; data[i+2] = 255; 
                             } else {
-                                data[i] = 10; data[i+1] = 10; data[i+2] = 10; // Fondo oscuro
+                                data[i] = 10; data[i+1] = 10; data[i+2] = 10; 
                             }
                         }
                     }
@@ -641,8 +650,7 @@
                             slsPos.x += (cx - slsPos.x) * 0.2 + jitter;
                             slsPos.y += (cy - slsPos.y) * 0.2 + jitter;
                             
-                            // 2. Lógica de Torso/Brazos (V5.7)
-                            let isTorsoOnly = (maxY < height * 0.7); // Si el movimiento está en la mitad superior
+                            let isTorsoOnly = (maxY < height * 0.7); 
                             let leftSideActive = (quadrantMove.tl > 5 && w > width * 0.3); 
                             let rightSideActive = (quadrantMove.tr > 5 && w > width * 0.3);
                             
@@ -654,67 +662,56 @@
                     }
                     lastData = new Uint8ClampedArray(data);
                 }
-                else if (currentFilter === 'scanner-diag-sticky') {
-                    // 1. FILTRO SCANNER DIAGONAL (V5.13)
+                
+                // **** CAMBIO AQUÍ ****
+                // Renombrado el filtro
+                else if (currentFilter === 'scanner-diag') {
                     
-                    // 1. Crear mapa de bordes (Sobel)
-                    if (!edgeMap) {
-                        edgeMap = new Uint8ClampedArray(data.length); 
-                        let copy = new Uint8ClampedArray(data);
-                        for (let y = 1; y < height - 1; y++) {
-                            for (let x = 1; x < width - 1; x++) {
-                                let i = (y * width + x) * 4;
-                                let h = -copy[((y-1)*width+(x-1))*4] + copy[((y-1)*width+(x+1))*4]
-                                      -2*copy[(y*width+(x-1))*4] + 2*copy[(y*width+(x+1))*4]
-                                      -copy[((y+1)*width+(x-1))*4] + copy[((y+1)*width+(x+1))*4];
-                                let v = -copy[((y-1)*width+(x-1))*4] - 2*copy[((y-1)*width+x)*4] - copy[((y-1)*width+(x+1))*4]
-                                      +copy[((y+1)*width+(x-1))*4] + 2*copy[((y+1)*width+x)*4] + copy[((y+1)*width+(x+1))*4];
-                                if (Math.sqrt(h*h + v*v) > 50) { 
-                                    edgeMap[i+3] = 255; // Marcar como borde
-                                }
+                    // 1. Recalcular el mapa de bordes (edgeMap) en CADA frame.
+                    edgeMap = new Uint8ClampedArray(data.length); 
+                    let copy = new Uint8ClampedArray(data);
+                    for (let y = 1; y < height - 1; y++) {
+                        for (let x = 1; x < width - 1; x++) {
+                            let i = (y * width + x) * 4;
+                            let h = -copy[((y-1)*width+(x-1))*4] + copy[((y-1)*width+(x+1))*4]
+                                  -2*copy[(y*width+(x-1))*4] + 2*copy[(y*width+(x+1))*4]
+                                  -copy[((y+1)*width+(x-1))*4] + copy[((y+1)*width+(x+1))*4];
+                            let v = -copy[((y-1)*width+(x-1))*4] - 2*copy[((y-1)*width+x)*4] - copy[((y-1)*width+(x+1))*4]
+                                  +copy[((y+1)*width+(x-1))*4] + 2*copy[((y+1)*width+x)*4] + copy[((y+1)*width+(x+1))*4];
+                            if (Math.sqrt(h*h + v*v) > 50) { 
+                                edgeMap[i+3] = 255; // Marcar como borde
                             }
                         }
                     }
-                    // 2. Inicializar mapa "sticky"
-                    if (!edgeData) {
-                        edgeData = new Uint8ClampedArray(data.length);
-                    }
-                    
-                    // 3. Mover línea de barrido
-                    sweepDiagonal = (sweepDiagonal + 3) % (width + height); // Mover 3px por frame
-                    
-                    // 4. Dibujar fondo (video normal)
-                    // (Ya está dibujado)
-                    
-                    // 5. Dibujar bordes "quemados" (desvanecimiento lento)
-                    for(let i=0; i<edgeData.length; i+=4) {
-                        if (edgeData[i+3] > 0) { // Si este pixel está "pegado"
-                            data[i] = 0;
-                            data[i+1] = 255;
-                            data[i+2] = 255;
-                            data[i+3] = edgeData[i+3];
-                            edgeData[i+3] -= 2; // Desvanecer
-                        }
-                    }
 
-                    // 6. Dibujar 6 líneas de barrido y activar bordes
-                    for(let lineOffset = 0; lineOffset < 30; lineOffset += 5) { // 6 líneas x 5px
+                    // 2. Mover línea de barrido
+                    sweepDiagonal = (sweepDiagonal + 3) % (width + height); 
+                    
+                    // 3. Dibujar fondo (video normal)
+                    // (Ya está dibujado en 'data')
+                    
+                    
+                    // **** CAMBIO AQUÍ ****
+                    // 4. Eliminado el bucle que dibujaba el rastro (edgeData)
+
+                    // 5. Dibujar líneas de barrido y activar bordes
+                    for(let lineOffset = 0; lineOffset < 30; lineOffset += 5) { 
                         let linePos = sweepDiagonal - lineOffset;
                         
                         for (let y = 0; y < height; y++) {
                             let x = linePos - y;
                             if (x >= 0 && x < width) {
                                 let i = (y * width + x) * 4;
-                                // Dibujar la línea de barrido (chorro de agua)
-                                data[i] = 0; 
-                                data[i+1] = 255; 
-                                data[i+2] = 255;
-                                data[i+3] = 200; // Semi-transparente
                                 
-                                // Si la línea toca un borde, activarlo en el mapa "sticky"
+                                // **** CAMBIO AQUÍ ****
+                                // Si la línea toca un borde (del edgeMap), dibujarlo brillante
                                 if (edgeMap[i+3] > 0) {
-                                    edgeData[i+3] = 255; // Reactivar
+                                    data[i] = 0; 
+                                    data[i+1] = 255; 
+                                    data[i+2] = 255;
+                                    data[i+3] = 255; // Dibujar brillante
                                 }
+                                // Si no, no hacer nada (se queda el pixel del video original)
                             }
                         }
                     }
@@ -726,10 +723,9 @@
             requestAnimationFrame(drawLoop);
         }
         
-        // 2. Lógica SLS (V5.7)
         function updateSkeleton(x, y, legs, armL, armR, h, w) {
-            let scaleH = Math.min(2.5, h / 100); // Escala vertical
-            let scaleW = Math.min(2.5, w / 80); // Escala horizontal
+            let scaleH = Math.min(2.5, h / 100); 
+            let scaleW = Math.min(2.5, w / 80); 
             
             setAttr('sk-head', { d: `M${x},${y-50*scaleH} L${x},${y-60*scaleH}` });
             setAttr('j-head', { cx: x, cy: y-60*scaleH });
@@ -738,9 +734,9 @@
             setAttr('j-hip', { cx: x, cy: y+20*scaleH });
 
             let armLX = x - 25*scaleW;
-            let armLY = armL ? y-60*scaleH : y-30*scaleH; // Brazo izquierdo arriba
+            let armLY = armL ? y-60*scaleH : y-30*scaleH; 
             let armRX = x + 25*scaleW;
-            let armRY = armR ? y-60*scaleH : y-30*scaleH; // Brazo derecho arriba
+            let armRY = armR ? y-60*scaleH : y-30*scaleH; 
 
             setAttr('sk-l-arm-1', { x1: x, y1: y-40*scaleH, x2: armLX, y2: y-40*scaleH });
             setAttr('j-el-l', { cx: armLX, cy: y-40*scaleH });
@@ -764,7 +760,7 @@
                 setAttr('sk-r-leg-2', { x1: x+15*scaleW, y1: y+70*scaleH, x2: x+20*scaleW, y2: y+120*scaleH });
                 setAttr('j-an-r', { cx: x+20*scaleW, cy: y+120*scaleH });
             } else {
-                legsGroup.style.display = 'none'; // 2. Ocultar piernas
+                legsGroup.style.display = 'none'; 
             }
         }
         function setAttr(id, attrs) {
@@ -777,10 +773,12 @@
             document.querySelectorAll('.cam-btn').forEach(b => b.classList.remove('active'));
             event.target.classList.add('active');
             edgeMap = null; // Resetear mapa de bordes
-            edgeData = null; // Resetear sticky data
+            
+            // **** CAMBIO AQUÍ ****
+            // Eliminado 'edgeData = null;'
         }
 
-        // 3. AUDIO (V5.10)
+        // AUDIO
         function initAudio() {
             if (audioCtx) return;
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -805,17 +803,16 @@
             radioOsc.type = 'sine';
             radioOsc.frequency.value = 1000;
             radioGain = audioCtx.createGain();
-            radioGain.gain.value = 0; // 3. Silbido de radio AM
+            radioGain.gain.value = 0; 
             radioOsc.connect(radioGain).connect(masterGain);
             
             reverbGain = audioCtx.createGain();
-            reverbGain.gain.value = 0.8; // 3. Reverb más fuerte
+            reverbGain.gain.value = 0.8; 
             let delay = audioCtx.createDelay(); delay.delayTime.value = 0.5; 
             let fb = audioCtx.createGain(); fb.gain.value = 0.7;
             gainNode.connect(delay); delay.connect(fb); fb.connect(delay);
             delay.connect(reverbGain).connect(masterGain);
             
-            // 3. Distorsión Sutil
             distortionNode = audioCtx.createWaveShaper();
             distortionNode.curve = makeDistortionCurve(50);
             gainNode.connect(distortionNode);
@@ -824,7 +821,7 @@
             setInterval(() => {
                 if(isRunning) {
                     let freq = 800 + Math.random() * 1500; 
-                    radioOsc.frequency.setValueAtTime(freq, audioCtx.currentTime); // 3. Salto de sintonía
+                    radioOsc.frequency.setValueAtTime(freq, audioCtx.currentTime); 
                 }
             }, 300);
 
@@ -845,42 +842,40 @@
             return curve;
         }
 
-        // 3. SENSOR EMF (V5.7)
+        // SENSOR EMF
         function initSensor() {
-            if (emfSimInterval) clearInterval(emfSimInterval); // Limpiar simulador
+            if (emfSimInterval) clearInterval(emfSimInterval); 
             
             if ('Magnetometer' in window) {
                 try {
-                    magnetometer = new Magnetometer({ frequency: 5 }); // Leer 5 veces/seg
+                    magnetometer = new Magnetometer({ frequency: 5 }); 
                     magnetometer.onreading = () => {
                         let strength = Math.sqrt(magnetometer.x**2 + magnetometer.y**2 + magnetometer.z**2);
-                        // Mapear el valor. El normal es ~50uT. Picos pueden ser 150-300.
-                        emfValue = Math.min(100, (strength - 40) * 0.5); // Normalizado a 0-100
+                        emfValue = Math.min(100, (strength - 40) * 0.5); 
                         if (emfValue < 0) emfValue = 0;
-                        if(sensorLed) sensorLed.classList.add('active-sensor'); // 3. LED Sensor Real ON
+                        if(sensorLed) sensorLed.classList.add('active-sensor'); 
                     };
                     magnetometer.onerror = (e) => {
                         console.warn("Error de Magnetómetro:", e.error.name, "Iniciando simulador.");
-                        if(sensorLed) sensorLed.classList.remove('active-sensor'); // 3. LED Sensor Real OFF
-                        startEmfSimulation(); // Fallback
+                        if(sensorLed) sensorLed.classList.remove('active-sensor'); 
+                        startEmfSimulation(); 
                     };
                     magnetometer.start();
                     console.log("Sensor EMF (Magnetómetro) activado.");
                 } catch(e) {
                     console.warn("No se pudo iniciar Magnetómetro. Iniciando simulador.");
                     if(sensorLed) sensorLed.classList.remove('active-sensor');
-                    startEmfSimulation(); // Fallback
+                    startEmfSimulation(); 
                 }
             } else {
                 console.warn("Magnetómetro no soportado. Iniciando simulador.");
                 if(sensorLed) sensorLed.classList.remove('active-sensor');
-                startEmfSimulation(); // Fallback
+                startEmfSimulation(); 
             }
         }
         
         function startEmfSimulation() {
             if (emfSimInterval) return;
-            // 3. Simulador siempre activo
             emfSimInterval = setInterval(() => {
                 emfValue = Math.random() * 100;
             }, 200);
@@ -898,15 +893,12 @@
         function startVisualLoop() {
             if (visualLoopInterval) clearInterval(visualLoopInterval); 
             visualLoopInterval = setInterval(() => {
-                // 3. El loop visual AHORA ES INDEPENDIENTE del Spirit Box
-                let intensity = emfValue; // 0-100
+                let intensity = emfValue; 
                 
-                // Actualizar LEDs y Gráfico
-                let ledIntensity = Math.floor(intensity / 10); // 0 a 10
+                let ledIntensity = Math.floor(intensity / 10); 
                 updateLEDs(ledIntensity);
                 updateEnergyGraph(intensity); 
 
-                // Si el Spirit Box está encendido, también mover la aguja
                 if(isRunning) {
                     document.getElementById('main-needle').style.transform = `translateX(-50%) rotate(${-45 + (intensity/100)*90}deg)`;
                     vuL.style.width = (intensity*0.6)+'%'; 
@@ -916,7 +908,6 @@
         }
         
         function stopVisualLoop() {
-            // El loop visual AHORA NO SE DETIENE, solo los visuales del spirit box
             if (!isRunning) {
                 document.getElementById('main-needle').style.transform = `translateX(-50%) rotate(-45deg)`;
                 vuL.style.width = '0%'; 
@@ -937,7 +928,7 @@
                 
                 if(audioCtx.state === 'suspended') audioCtx.resume();
                 lfoGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime+0.5);
-                radioGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime+0.5); // 2. Sintonizador más fuerte
+                radioGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime+0.5); 
                 
                 startAutoMode();
                 tryStartRec();
@@ -955,7 +946,6 @@
                 window.speechSynthesis.cancel();
             }
             if (isRunning) {
-                // startVisualLoop(); // No iniciar aquí, ya es global
             } else {
                 stopVisualLoop(); 
             }
@@ -991,14 +981,16 @@
 
         function speak(text) {
             isSpeaking = true;
-            lfoGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime+0.1); // 3. Bajar "shh" pero no mutear
+            lfoGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime+0.1); 
             radioGain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime+0.1);
             
             const u = new SpeechSynthesisUtterance(text);
             u.lang = 'es-MX'; 
             u.volume = 1.0; 
-            u.pitch = 0.8; // 3. Voz neutra
-            u.rate = 0.9;
+            
+            u.pitch = 1.0; 
+            u.rate = 1.1; 
+            
             u.onend = () => {
                 isSpeaking = false;
                 lfoGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime+0.2);
@@ -1028,12 +1020,12 @@
             recognition.continuous = false;
             recognition.onstart = () => { 
                 isRecognizing = true;
-                if(micLed) micLed.classList.add('active-mic'); // 3. LED Mic ON
+                if(micLed) micLed.classList.add('active-mic'); 
             };
             recognition.onend = () => { 
                 isRecognizing = false;
-                if(micLed) micLed.classList.remove('active-mic'); // 3. LED Mic OFF
-                if(isRunning) setTimeout(()=>tryStartRec(), 200); // Pausa corta
+                if(micLed) micLed.classList.remove('active-mic'); 
+                if(isRunning) setTimeout(()=>tryStartRec(), 200); 
             };
             recognition.onerror = () => {
                 isRecognizing = false;
@@ -1055,8 +1047,8 @@
             }
         }
 
-        function updateLEDs(intensity) { // 'intensity' ahora es 0-10
-            segments.forEach((seg, i) => { // i es 0-9
+        function updateLEDs(intensity) { 
+            segments.forEach((seg, i) => { 
                 seg.className = 'led-segment';
                 if (i < intensity) {
                     if (i < 3) seg.classList.add('active-blue');
