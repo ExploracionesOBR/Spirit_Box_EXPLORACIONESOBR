@@ -2,8 +2,13 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBR-FIELD-UNIT V5.30</title> <script src="https://cdn.tailwindcss.com"></script>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <link rel="apple-touch-icon" href="obr-logo.png">
+
+    <title>DETECTOR-OBR</title> <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
@@ -38,6 +43,7 @@
             width: 100%;
             height: 100%;
             position: relative;
+            pointer-events: auto;
         }
 
         #main-view-area {
@@ -48,6 +54,8 @@
             height: 100%;
             overflow: hidden;
             transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            pointer-events: auto;
+            z-index: 5;
         }
 
         #bg-camera-feed {
@@ -167,7 +175,7 @@
 
         .header-title {
             position: fixed;
-            top: 0; 
+            top: 15px; /* Ajustado para PWA */
             left: 50%;
             transform: translateX(-50%);
             width: auto;
@@ -180,17 +188,36 @@
             letter-spacing: 3px;
             background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
             padding: 15px 30px;
-            pointer-events: auto;
-            animation: breatheSlow 20s infinite ease-in-out; 
+            pointer-events: none; /* No clickeable */
             z-index: 100; 
-            opacity: 0; 
+            opacity: 1; 
+            transition: opacity 0.5s ease-in-out;
         }
         
-        @keyframes breatheSlow {
-            0%, 80% { opacity: 0; } 
-            90% { opacity: 0.7; text-shadow: 0 0 10px var(--neon-cyan); }
-            100% { opacity: 0; }
+        #kinect-banner {
+            position: fixed;
+            top: 20px; /* Ajustado para PWA */
+            left: 20px;
+            z-index: 100;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.0rem;
+            font-weight: 700;
+            color: var(--neon-green);
+            text-shadow: 0 0 5px var(--neon-green), 0 0 10px #000;
+            display: none; 
+            pointer-events: none;
+            animation: pulseGlow 1.5s infinite ease-in-out;
         }
+        #kinect-banner::before {
+            content: '::';
+            color: var(--alert-red);
+            margin-right: 10px;
+        }
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.6; text-shadow: 0 0 5px var(--neon-green), 0 0 10px #000; }
+            50% { opacity: 1.0; text-shadow: 0 0 15px var(--neon-green), 0 0 10px #000; }
+        }
+
 
         /* --- Estilos Paneles --- */
         .emf-container, .env-content {
@@ -261,6 +288,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            opacity: 1;
+            transition: opacity 0.5s ease-in-out;
         }
 
         #btn-ver {
@@ -300,6 +329,8 @@
             gap: 10px;
             z-index: 100;
             pointer-events: auto;
+            opacity: 1;
+            transition: opacity 0.5s ease-in-out;
         }
         .filter-btn {
             width: 50px;
@@ -358,6 +389,7 @@
             .filter-btn { width: 45px; height: 45px; }
             
             #menu-container { left: 50%; transform: translateX(-50%); }
+            #kinect-banner { left: 10px; top: 10px; font-size: 0.8rem;}
             
             @media (max-width: 768px) and (orientation: landscape) {
                 :root { --panel-width: 240px; }
@@ -367,7 +399,7 @@
 </head>
 <body>
 
-<div id="app-ui">
+<div id="app-ui" onclick="handleUITap(event)">
 
     <div id="main-view-area">
         <video id="bg-camera-feed" playsinline autoplay muted></video>
@@ -375,7 +407,9 @@
     </div>
     <canvas id="temp-canvas" class="hidden-canvas"></canvas>
 
-    <div class="header-title">EQUIPO PROFESIONAL DE EXPLORACIONES OBR</div>
+    <div class="header-title">EXPLORACIONES OBR | EQUIPO ACTIVO 🟢</div>
+
+    <div id="kinect-banner">KINEC ACTIVO 🔴</div>
 
     <div id="side-panel-container">
         
@@ -387,10 +421,10 @@
             
             <div class="env-content">
                 <div class="temp-readout" id="temp-val">19.8°C</div>
-                <div class="temp-label-small">TEMP AMBIENTE</div>
+                <div class="temp-label-small">TEMP AMBIENTE 🌡️</div>
                 
                 <div class="energy-container">
-                    <div class="energy-label" style="margin-top:10px;">INTENSIDAD DE CAMPO</div>
+                    <div class="energy-label" style="margin-top:10px;">ENERGIA DEL CAMPO 🚥</div>
                     <div class="led-bar">
                         <div class="led-segment" id="seg-1"></div>
                         <div class="led-segment" id="seg-2"></div>
@@ -412,7 +446,7 @@
         
         <div class="panel" id="p-detector">
             <div class="panel-header">
-                RADIO-FRECUENCIA
+                SPIRIT BOX 🎙️
                 <div class="status-led" id="mic-led" title="Micrófono Escuchando"></div>
             </div>
             
@@ -430,11 +464,11 @@
                 <div class="knobs-section">
                     <div style="text-align:center">
                         <div class="knob-circle" id="knob-power" style="transform: rotate(-135deg);"><div class="knob-indicator"></div></div>
-                        <div class="knob-label">POWER</div>
+                        <div class="knob-label">ENCENDER</div>
                     </div>
                     <div style="text-align:center">
                         <div class="knob-circle" id="knob-scan" style="transform: rotate(-135deg);"><div class="knob-indicator"></div></div>
-                        <div class="knob-label">SCAN</div>
+                        <div class="knob-label">FRECUENCIA</div>
                     </div>
                 </div>
                 <div class="volume-slider-container">
@@ -447,7 +481,7 @@
     </div>
 
     <div id="filter-controls-container">
-        <button class="filter-btn" onclick="setFilter('scanner-topo')">SCN</button>
+        <button class="filter-btn" onclick="setFilter('night-vision')">VNO</button>
         <button class="filter-btn" onclick="setFilter('sls')">SLS</button>
         <button class="filter-btn" onclick="setFilter('relief')">RLV</button>
     </div>
@@ -457,7 +491,7 @@
             <div class="menu-item active" id="m-detector" onclick="togglePanel('p-detector')">SPIRIT BOX</div>
             <div class="menu-item active" id="m-env" onclick="togglePanel('p-env')">SENSORES</div>
         </div>
-        <div id="btn-ver">MENU</div>
+        <div id="btn-ver" onclick="toggleMenu()">MENU</div>
     </div>
 
 </div> 
@@ -509,7 +543,9 @@
         // SOLUCIÓN 1: 'isDetectingPose' NO se usa en esta versión
         
         let autoModeDelay = 5000; 
-        let sweepY = 0; 
+        
+        // SOLUCIÓN 3: Variable para el temporizador de la UI
+        let uiHideTimeout;
 
         async function startCamera() {
             try {
@@ -538,17 +574,14 @@
             mainFilterCanvas.height = h;
             tempCanvas.width = w;
             tempCanvas.height = h;
-            sweepY = 0; 
         }
 
-        // SOLUCIÓN 1: Función de IA (V5.23) restaurada
         async function initMLModel() {
             try {
-                // SOLUCIÓN 1: Cargar modelo MULTIPOSE
                 const model = poseDetection.SupportedModels.MoveNet;
                 const detectorConfig = {
                     modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING,
-                    maxPoses: 6 // Especificar 6 poses
+                    maxPoses: 6 
                 };
                 poseDetector = await poseDetection.createDetector(model, detectorConfig);
                 console.log("MoveNet (IA Multi-Pose) cargado.");
@@ -586,7 +619,6 @@
         }
 
         
-        // SOLUCIÓN 1: drawLoop es ASYNC de nuevo
         async function drawLoop() {
             if (videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
                 
@@ -595,110 +627,122 @@
 
                 mainFilterCtx.clearRect(0, 0, w, h);
                 
+                // SOLUCIÓN 2: Controlar visibilidad del banner y título
+                const kinectBanner = document.getElementById('kinect-banner');
+                const headerTitle = document.querySelector('.header-title');
+                
                 if (currentFilter === 'sls') {
-                    // SOLUCIÓN 1: Lógica de IA (V5.23) restaurada
+                    kinectBanner.style.display = 'block';
+                    headerTitle.style.opacity = '0'; // Ocultar título principal
                     
-                    // 1. Dibujar video en canvas temporal
                     drawVideoWithCover(tempCtx, videoBg);
                     
-                    // 2. Ejecutar detección (LENTO)
                     if(poseDetector) {
-                        // SOLUCIÓN 1 (Error 2): Usar tempCanvas (el elemento) no tempCtx (el contexto)
+                        // SOLUCIÓN 1: Corregido a tempCanvas
                         const poses = await poseDetector.estimatePoses(tempCanvas); 
-                        latestPoses = poses; // Guardar resultado
+                        latestPoses = poses; 
                     }
                     
-                    // 3. Dibujar video en canvas principal
                     drawVideoWithCover(mainFilterCtx, videoBg);
                     
-                    // 4. Tinte verde Kinect
-                    mainFilterCtx.globalAlpha = 0.15;
-                    mainFilterCtx.fillStyle = '#39FF14'; // Verde
-                    mainFilterCtx.fillRect(0, 0, w, h);
-                    mainFilterCtx.globalAlpha = 1.0;
+                    // SOLUCIÓN 2: Tinte verde ELIMINADO
                     
-                    // 5. Dibujar esqueletos (el último resultado guardado)
                     if (latestPoses) {
                         drawAllSkeletons(latestPoses); 
                     }
                 
-                } else if (currentFilter === 'relief') {
-                    // SOLUCIÓN 3: Corregido para no "marcar todo"
-                    // 1. Dibujar en canvas temporal
-                    drawVideoWithCover(tempCtx, videoBg);
+                } else {
+                    kinectBanner.style.display = 'none';
+                    // La opacidad del título es controlada por la función showUI()
                     
-                    // 2. Obtener y procesar datos
-                    let frame = tempCtx.getImageData(0, 0, w, h);
-                    let data = frame.data;
-                    let copy = new Uint8ClampedArray(data);
-                    
-                    for (let y = 1; y < h - 1; y++) {
-                        for (let x = 1; x < w - 1; x++) {
-                            let i = (y * w + x) * 4;
-                            let hpx = -copy[((y-1)*w+(x-1))*4] + copy[((y-1)*w+(x+1))*4]
-                                  -2*copy[(y*w+(x-1))*4] + 2*copy[(y*w+(x+1))*4]
-                                  -copy[((y+1)*w+(x-1))*4] + copy[((y+1)*w+(x+1))*4];
-                            let vpx = -copy[((y-1)*w+(x-1))*4] - 2*copy[((y-1)*w+x)*4] - copy[((y-1)*w+(x+1))*4]
-                                  +copy[((y+1)*w+(x-1))*4] + 2*copy[((y+1)*w+x)*4] + copy[((y+1)*w+(x+1))*4];
-                            
-                            let diff = Math.sqrt(hpx*hpx + vpx*vpx);
-                            if (diff > 30) { 
-                                data[i] = diff; data[i+1] = 255; data[i+2] = 255; // Cian
-                            } else {
-                                data[i] = 10; data[i+1] = 10; data[i+2] = 10; // Negro
+                    if (currentFilter === 'relief') {
+                        // SOLUCIÓN 3: Corregido para no "marcar todo"
+                        drawVideoWithCover(tempCtx, videoBg);
+                        let frame = tempCtx.getImageData(0, 0, w, h);
+                        let data = frame.data;
+                        let copy = new Uint8ClampedArray(data);
+                        
+                        for (let y = 1; y < h - 1; y++) {
+                            for (let x = 1; x < w - 1; x++) {
+                                let i = (y * w + x) * 4;
+                                let hpx = -copy[((y-1)*w+(x-1))*4] + copy[((y-1)*w+(x+1))*4]
+                                      -2*copy[(y*w+(x-1))*4] + 2*copy[(y*w+(x+1))*4]
+                                      -copy[((y+1)*w+(x-1))*4] + copy[((y+1)*w+(x+1))*4];
+                                let vpx = -copy[((y-1)*w+(x-1))*4] - 2*copy[((y-1)*w+x)*4] - copy[((y-1)*w+(x+1))*4]
+                                      +copy[((y+1)*w+(x-1))*4] + 2*copy[((y+1)*w+x)*4] + copy[((y+1)*w+(x+1))*4];
+                                
+                                let diff = Math.sqrt(hpx*hpx + vpx*vpx);
+                                if (diff > 30) { 
+                                    data[i] = diff; data[i+1] = 255; data[i+2] = 255; // Cian
+                                } else {
+                                    data[i] = 10; data[i+1] = 10; data[i+2] = 10; // Negro
+                                }
                             }
                         }
-                    }
-                    // 3. Poner datos procesados en canvas principal
-                    mainFilterCtx.putImageData(frame, 0, 0);
+                        mainFilterCtx.putImageData(frame, 0, 0);
 
-                } else if (currentFilter === 'scanner-topo') {
-                    drawVideoWithCover(tempCtx, videoBg);
-                    let frame = tempCtx.getImageData(0, 0, w, h);
-                    let data = frame.data;
-                    
-                    let topoMapData = tempCtx.createImageData(w, h); 
-                    let topoData = topoMapData.data;
-                    
-                    for (let i = 0; i < data.length; i += 4) {
-                        let l = (data[i] + data[i+1] + data[i+2]) / 3; 
+                    // SOLUCIÓN 1: Nuevo filtro 'night-vision'
+                    } else if (currentFilter === 'night-vision') {
+                        drawVideoWithCover(mainFilterCtx, videoBg);
+                        let frame = mainFilterCtx.getImageData(0, 0, w, h);
+                        let data = frame.data;
                         
-                        if (Math.floor(l) % 25 < 4) { 
-                            topoData[i] = 0;      
-                            topoData[i+1] = 136;  
-                            topoData[i+2] = 255;  // Azul Neón
-                            topoData[i+3] = 255;  
-                        } else {
-                            topoData[i+3] = 0; 
-                        }
-                    }
-                    tempCtx.putImageData(topoMapData, 0, 0); 
+                        for (let i = 0; i < data.length; i += 4) {
+                            let l = (data[i] * 0.3) + (data[i+1] * 0.59) + (data[i+2] * 0.11); // Luminosidad
+                            data[i] = 0; // Rojo
+                            data[i+1] = l * 1.2; // Verde
+                            data[i+2] = 0; // Azul
 
-                    sweepY = (sweepY + 8) % h; 
+                            // Scanlines
+                            let y = Math.floor((i / 4) / w);
+                            if (y % 4 === 0) {
+                                data[i+1] *= 0.8; // Oscurecer
+                            }
+                        }
+                        
+                        // Viñeta
+                        for (let y = 0; y < h; y++) {
+                            for (let x = 0; x < w; x++) {
+                                let i = (y * w + x) * 4;
+                                let dx = (x / w) - 0.5;
+                                let dy = (y / h) - 0.5;
+                                let dist = Math.sqrt(dx*dx + dy*dy) * 2;
+                                let factor = Math.max(0, 1.0 - dist * 0.8);
+                                data[i+1] *= factor;
+                            }
+                        }
+                        
+                        mainFilterCtx.putImageData(frame, 0, 0);
                     
-                    mainFilterCtx.drawImage(
-                        tempCanvas, 
-                        0, 0, w, sweepY,
-                        0, 0, w, sweepY
-                    );
-                    
-                    mainFilterCtx.fillStyle = 'var(--neon-blue)';
-                    mainFilterCtx.shadowColor = 'var(--neon-blue)';
-                    mainFilterCtx.shadowBlur = 15;
-                    mainFilterCtx.fillRect(0, sweepY, w, 3);
-                    mainFilterCtx.shadowBlur = 0;
-                
-                } else if (currentFilter === 'none') {
-                    // El canvas se queda transparente
+                    } else if (currentFilter === 'none') {
+                        // El canvas se queda transparente
+                    }
                 }
             }
             requestAnimationFrame(drawLoop);
         }
         
-        // SOLUCIÓN 1: Bucle de detección de IA ELIMINADO de aquí (está en V5.28, no V5.23)
+        // SOLUCIÓN 1: Bucle de detección de IA (RE-AGREGADO)
+        async function detectPoseLoop() {
+            while (true) {
+                if (currentFilter === 'sls' && poseDetector && videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
+                    
+                    drawVideoWithCover(tempCtx, videoBg);
+                    
+                    // SOLUCIÓN 1 (Error 2): Usar tempCanvas (el elemento) no tempCtx
+                    const poses = await poseDetector.estimatePoses(tempCanvas); 
+                    
+                    latestPoses = poses; 
+                    
+                    await new Promise(r => setTimeout(r, 10));
+                } else {
+                    latestPoses = []; 
+                    await new Promise(r => setTimeout(r, 100));
+                }
+            }
+        }
 
 
-        // SOLUCIÓN 1: Funciones de IA re-agregadas
         const confidenceThreshold = 0.3; 
         const skeletonMap = [
             ['left_shoulder', 'right_shoulder'], ['left_shoulder', 'left_elbow'],
@@ -712,7 +756,6 @@
         function drawAllSkeletons(poses) {
             const ctx = mainFilterCtx; 
             
-            // SOLUCIÓN 1: Líneas Verdes, Puntos Rojos
             ctx.strokeStyle = '#39FF14'; 
             ctx.fillStyle = '#FF3333';   
             ctx.lineWidth = 2.5;
@@ -772,11 +815,10 @@
                 const targetBtn = event ? event.target : document.querySelector(`.filter-btn[onclick="setFilter('${f}')"]`);
                 if(targetBtn) targetBtn.classList.add('active');
             }
+            showUI(); // Resetear timer de UI
         }
 
-        // --- Resto del código (Audio, Sensores, UI) sin cambios ---
-
-        // AUDIO
+        // --- AUDIO (V5.26) ---
         function initAudio() {
             if (audioCtx) return;
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -840,7 +882,7 @@
             return curve;
         }
 
-        // SENSOR EMF
+        // --- SENSORES ---
         function initSensor() {
             if (emfSimInterval) clearInterval(emfSimInterval); 
             
@@ -913,6 +955,7 @@
             }
         }
 
+        // --- SPIRIT BOX (V5.26) ---
         const pwr = document.getElementById('knob-power');
         pwr.addEventListener('click', () => {
             if(!audioCtx) initAudio();
@@ -979,9 +1022,9 @@
         function speak(text) {
             isSpeaking = true;
             
-            lfoGain.gain.linearRampToValueAtTime(0.03, audioCtx.currentTime+0.1); 
-            lfo.frequency.linearRampToValueAtTime(15, audioCtx.currentTime + 0.1);
-            radioGain.gain.linearRampToValueAtTime(0.005, audioCtx.currentTime+0.1);
+            // Voz más fuerte, Tono neutro
+            lfoGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime+0.1); 
+            radioGain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime+0.1);
             
             const u = new SpeechSynthesisUtterance(text);
             u.lang = 'es-MX'; 
@@ -1127,13 +1170,49 @@
         setInterval(updateSensorReadings, 2000);
 
         // --- UI Lógica Actualizada ---
+        
+        // SOLUCIÓN 3: Lógica de UI auto-ocultable
+        const menuContainer = document.getElementById('menu-container');
+        const filterControls = document.getElementById('filter-controls-container');
+        const headerTitle = document.querySelector('.header-title');
+        
+        function showUI() {
+            filterControls.style.opacity = '1';
+            menuContainer.style.opacity = '1';
+            if (currentFilter !== 'sls') { // No mostrar si el banner kinect está activo
+                headerTitle.style.opacity = '1';
+            }
+            filterControls.style.pointerEvents = 'auto';
+            menuContainer.style.pointerEvents = 'auto';
+            
+            clearTimeout(uiHideTimeout);
+            uiHideTimeout = setTimeout(hideUI, 4000); // Ocultar después de 4 seg
+        }
+
+        function hideUI() {
+            filterControls.style.opacity = '0';
+            menuContainer.style.opacity = '0';
+            headerTitle.style.opacity = '0';
+            filterControls.style.pointerEvents = 'none';
+            menuContainer.style.pointerEvents = 'none';
+        }
+
+        function handleUITap(event) {
+            // Si el clic NO es en un panel, mostrar la UI
+            if (!event.target.closest('.panel')) {
+                showUI();
+            }
+        }
+
         const menu = document.getElementById('menu-tools');
         let mT;
-        document.getElementById('btn-ver').addEventListener('click', () => {
+        function toggleMenu() {
             menu.classList.toggle('visible');
             clearTimeout(mT);
             if(menu.classList.contains('visible')) mT = setTimeout(()=>menu.classList.remove('visible'), 5000);
-        });
+            showUI(); // Resetear el timer al usar el menú
+        }
+        document.getElementById('btn-ver').addEventListener('click', toggleMenu);
         
         function checkPanelState() {
             const p1 = document.getElementById('p-detector').classList.contains('hidden');
@@ -1157,12 +1236,12 @@
             menu.classList.remove('visible');
             
             if(id === 'p-env' && !p.classList.contains('hidden')) resizeEnergyCanvas();
+            showUI(); // Resetear el timer
         }
         
         // SOLUCIÓN 1: Bucle de detección de IA re-agregado
         async function detectPoseLoop() {
             while (true) {
-                // Solo detectar si el filtro está activo, el detector está cargado y el video está listo
                 if (currentFilter === 'sls' && poseDetector && videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
                     
                     drawVideoWithCover(tempCtx, videoBg);
@@ -1198,6 +1277,9 @@
             document.querySelector('#m-detector').classList.remove('active');
             document.querySelector('#m-env').classList.remove('active');
             checkPanelState();
+            
+            // SOLUCIÓN 3: Mostrar UI al inicio y empezar temporizador
+            showUI();
         };
         
         window.onresize = () => {
