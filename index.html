@@ -3,8 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBR-FIELD-UNIT V5.17</title> <script src="https://cdn.tailwindcss.com"></script>
+    <title>OBR-FIELD-UNIT V5.18</title> <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+
     <style>
         :root {
             --glow-color: #00FFFF; 
@@ -41,10 +47,10 @@
             transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
         
-        /* SOLUCIÓN 4: Zoom Out (Estilo .5) más pronunciado */
+        /* Zoom Out (Estilo .5) */
         body.panels-active #bg-camera-feed {
             object-fit: contain; 
-            transform: scale(0.55); /* Era 0.7 */
+            transform: scale(0.55); /* (V5.17) */
             filter: brightness(0.4);
             background-color: #000;
         }
@@ -412,57 +418,7 @@
                 <div class="panel-header">FILTROS ESPECTRALES</div>
                 <div class="camera-view-box">
                     <canvas id="ghosttube-canvas"></canvas>
-                    <svg id="sls-overlay" viewBox="0 0 320 240">
-                        <g id="skeleton-group" stroke="var(--neon-green)" stroke-width="1.5" fill="none" stroke-linecap="round" style="display: none; filter: drop-shadow(0 0 3px var(--neon-green));">
-                            <path id="sk-head" d="M155 35 L 165 35 L 170 45 L 165 55 L 155 55 L 150 45 Z" stroke-width="1"/>
-                            <line id="sk-spine" x1="160" y1="55" x2="160" y2="120" />
-                            <line id="sk-l-arm-1" x1="160" y1="65" x2="130" y2="80" /> 
-                            <line id="sk-l-arm-2" x1="130" y1="80" x2="120" y2="110" /> 
-                            <line id="sk-r-arm-1" x1="160" y1="65" x2="190" y2="80" />
-                            <line id="sk-r-arm-2" x1="190" y1="80" x2="200" y2="110" />
-                            <g id="sk-legs">
-                                <line id="sk-l-leg-1" x1="160" y1="120" x2="145" y2="170" /> 
-                                <line id="sk-l-leg-2" x1="145" y1="170" x2="140" y2="220" /> 
-                                <line id="sk-r-leg-1" x1="160" y1="120" x2="175" y2="170" />
-                                <line id="sk-r-leg-2" x1="175" y1="170" x2="180" y2="220" />
-                                <circle id="j-kn-l" cx="145" cy="170" r="2" fill="#fff" stroke="none"/>
-                                <circle id="j-kn-r" cx="175" cy="170" r="2" fill="#fff" stroke="none"/>
-                                <circle id="j-an-l" cx="140" cy="220" r="2" fill="#fff" stroke="none"/>
-                                <circle id="j-an-r" cx="180" cy="220" r="2" fill="#fff" stroke="none"/>
-                            </g>
-                            <circle id="j-neck" cx="160" cy="55" r="2" fill="#fff" stroke="none"/>
-                            <circle id="j-hip" cx="160" cy="120" r="2" fill="#fff" stroke="none"/>
-                            <circle id="j-el-l" cx="130" cy="80" r="2" fill="#fff" stroke="none"/>
-                            <circle id="j-el-r" cx="190" cy="80" r="2" fill="#fff" stroke="none"/>
-                            <circle id="j-wr-l" cx="120" cy="110" r="2" fill="#fff" stroke="none"/>
-                            <circle id="j-wr-r" cx="200" cy="110" r="2" fill="#fff" stroke="none"/>
-                        </g>
-                        
-                        <g id="skeleton-group-2" stroke="var(--neon-green)" stroke-width="1.5" fill="none" stroke-linecap="round" style="display: none; filter: drop-shadow(0 0 3px var(--neon-green));">
-                            <path id="sk-head-2" d="M155 35 L 165 35 L 170 45 L 165 55 L 155 55 L 150 45 Z" stroke-width="1"/>
-                            <line id="sk-spine-2" x1="160" y1="55" x2="160" y2="120" />
-                            <line id="sk-l-arm-1-2" x1="160" y1="65" x2="130" y2="80" /> 
-                            <line id="sk-l-arm-2-2" x1="130" y1="80" x2="120" y2="110" /> 
-                            <line id="sk-r-arm-1-2" x1="160" y1="65" x2="190" y2="80" />
-                            <line id="sk-r-arm-2-2" x1="190" y1="80" x2="200" y2="110" />
-                            <g id="sk-legs-2">
-                                <line id="sk-l-leg-1-2" x1="160" y1="120" x2="145" y2="170" /> 
-                                <line id="sk-l-leg-2-2" x1="145" y1="170" x2="140" y2="220" /> 
-                                <line id="sk-r-leg-1-2" x1="160" y1="120" x2="175" y2="170" />
-                                <line id="sk-r-leg-2-2" x1="175" y1="170" x2="180" y2="220" />
-                                <circle id="j-kn-l-2" cx="145" cy="170" r="2" fill="#fff" stroke="none"/>
-                                <circle id="j-kn-r-2" cx="175" cy="170" r="2" fill="#fff" stroke="none"/>
-                                <circle id="j-an-l-2" cx="140" cy="220" r="2" fill="#fff" stroke="none"/>
-                                <circle id="j-an-r-2" cx="180" cy="220" r="2" fill="#fff" stroke="none"/>
-                            </g>
-                            <circle id="j-neck-2" cx="160" cy="55" r="2" fill="#fff" stroke="none"/>
-                            <circle id="j-hip-2" cx="160" cy="120" r="2" fill="#fff" stroke="none"/>
-                            <circle id="j-el-l-2" cx="130" cy="80" r="2" fill="#fff" stroke="none"/>
-                            <circle id="j-el-r-2" cx="190" cy="80" r="2" fill="#fff" stroke="none"/>
-                            <circle id="j-wr-l-2" cx="120" cy="110" r="2" fill="#fff" stroke="none"/>
-                            <circle id="j-wr-r-2" cx="200" cy="110" r="2" fill="#fff" stroke="none"/>
-                        </g>
-                    </svg>
+                    <svg id="sls-overlay" viewBox="0 0 320 240"></svg>
                 </div>
                 <div class="camera-controls">
                     <button class="cam-btn active" onclick="setFilter('scanner-diag')">SCANNER-DIAG</button>
@@ -550,19 +506,9 @@
         let currentFilter = 'scanner-diag'; 
         let scanSpeed = 0; 
         
-        // SOLUCIÓN 1: Variables para Esqueleto 1 y 2
-        let slsPos = { x: 160, y: 100 };
-        let slsPos2 = { x: 160, y: 100 };
-        
-        let jitter = 0; 
-        
         const videoBg = document.getElementById('bg-camera-feed');
         const canvas = document.getElementById('ghosttube-canvas');
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        
-        // SOLUCIÓN 1: Referencias a ambos esqueletos
-        const skeletonGroup = document.getElementById('skeleton-group');
-        const skeletonGroup2 = document.getElementById('skeleton-group-2');
         
         const envContent = document.getElementById('env-content-box');
         const detectorPanel = document.getElementById('p-detector');
@@ -590,6 +536,9 @@
         let emfSimInterval = null;
         let visualLoopInterval; 
 
+        // SOLUCIÓN 1: Variable para el detector de IA
+        let poseDetector;
+
         async function startCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
@@ -604,213 +553,172 @@
                         energyCtx = energyCanvas.getContext('2d');
                         resizeEnergyCanvas();
                     }
-                    drawLoop();
+                    drawLoop(); // Inicia el bucle de dibujo
                 };
             } catch (e) { console.log("Error camara", e); }
         }
 
-        let lastData = null;
+        // SOLUCIÓN 1: Función para cargar el modelo de IA
+        async function initMLModel() {
+            try {
+                const model = poseDetection.SupportedModels.MoveNet;
+                poseDetector = await poseDetection.createDetector(model);
+                console.log("MoveNet (IA de Poses) cargado.");
+            } catch (e) {
+                console.error("Error al cargar modelo de IA:", e);
+            }
+        }
+
         let edgeMap = null; 
         let sweepDiagonal = 0; 
 
         
-        function drawLoop() {
+        // SOLUCIÓN 1: El bucle de dibujo ahora es ASYNC para esperar a la IA
+        async function drawLoop() {
             if (videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
-                ctx.drawImage(videoBg, 0, 0, canvas.width, canvas.height);
-                let frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                let data = frame.data;
-                let width = canvas.width;
-                let height = canvas.height;
-
-                if (currentFilter === 'relief') {
-                    let copy = new Uint8ClampedArray(data);
-                    for (let y = 1; y < height - 1; y++) {
-                        for (let x = 1; x < width - 1; x++) {
-                            let i = (y * width + x) * 4;
-                            let h = -copy[((y-1)*width+(x-1))*4] + copy[((y-1)*width+(x+1))*4]
-                                  -2*copy[(y*width+(x-1))*4] + 2*copy[(y*width+(x+1))*4]
-                                  -copy[((y+1)*width+(x-1))*4] + copy[((y+1)*width+(x+1))*4];
-                            let v = -copy[((y-1)*width+(x-1))*4] - 2*copy[((y-1)*width+x)*4] - copy[((y-1)*width+(x+1))*4]
-                                  +copy[((y+1)*width+(x-1))*4] + 2*copy[((y+1)*width+x)*4] + copy[((y+1)*width+(x+1))*4];
-                            let diff = Math.sqrt(h*h + v*v);
-                            
-                            if (diff > 40) {
-                                data[i] = diff; data[i+1] = 255; data[i+2] = 255; 
-                            } else {
-                                data[i] = 10; data[i+1] = 10; data[i+2] = 10; 
-                            }
-                        }
-                    }
-                    ctx.putImageData(frame, 0, 0);
-                    skeletonGroup.style.display = 'none';
-                    skeletonGroup2.style.display = 'none';
-                } 
-                else if (currentFilter === 'sls') {
-                    for (let i = 0; i < data.length; i+=4) {
-                        let l = (data[i] + data[i+1] + data[i+2]) / 3;
-                        data[i] = 0; data[i+1] = l + 10; data[i+2] = 0; 
-                    }
-                    ctx.putImageData(frame, 0, 0);
-                    
-                    if (lastData) {
-                        let minX = width, maxX = 0, minY = height, maxY = 0, count = 0;
-                        let quadrantMove = { tl: 0, tr: 0 };
-                        
-                        for (let y = 0; y < height; y+=5) {
-                            for (let x = 0; x < width; x+=5) {
-                                let i = (y * width + x) * 4;
-                                if (Math.abs(data[i+1] - lastData[i+1]) > 25) {
-                                    count++;
-                                    if(x < minX) minX = x; if(x > maxX) maxX = x;
-                                    if(y < minY) minY = y; if(y > maxY) maxY = y;
-                                    
-                                    if(x < width/2 && y < height/2) quadrantMove.tl++;
-                                    else if(x >= width/2 && y < height/2) quadrantMove.tr++;
-                                }
-                            }
-                        }
-                        
-                        // SOLUCIÓN 1: Lógica de detección múltiple
-                        if (count > 15) {
-                            let cx = (minX + maxX) / 2; let cy = (minY + maxY) / 2; 
-                            let h = maxY - minY; let w = maxX - minX;
-                            jitter = (Math.random() - 0.5) * 4; 
-                            
-                            let isTorsoOnly = (maxY < height * 0.7); 
-                            let leftSideActive = (quadrantMove.tl > 5 && w > width * 0.3); 
-                            let rightSideActive = (quadrantMove.tr > 5 && w > width * 0.3);
-
-                            let isWide = w > (width * 0.6); // Umbral de 60% del ancho
-
-                            if (isWide) {
-                                // Dos esqueletos
-                                let cx1 = minX + w * 0.25; // Centro del 1er cuarto
-                                let cx2 = maxX - w * 0.25; // Centro del 3er cuarto
-                                slsPos.x += (cx1 - slsPos.x) * 0.4 + jitter;
-                                slsPos.y += (cy - slsPos.y) * 0.4 + jitter;
-                                slsPos2.x += (cx2 - slsPos2.x) * 0.4 + jitter;
-                                slsPos2.y += (cy - slsPos2.y) * 0.4 + jitter;
-                                
-                                updateSkeleton(slsPos.x, slsPos.y, !isTorsoOnly, leftSideActive, rightSideActive, h, w, "");
-                                updateSkeleton(slsPos2.x, slsPos2.y, !isTorsoOnly, leftSideActive, rightSideActive, h, w, "-2");
-                                
-                                skeletonGroup.style.display = 'inline';
-                                skeletonGroup2.style.display = 'inline';
-                            } else {
-                                // Un esqueleto
-                                slsPos.x += (cx - slsPos.x) * 0.4 + jitter;
-                                slsPos.y += (cy - slsPos.y) * 0.4 + jitter;
-                                
-                                updateSkeleton(slsPos.x, slsPos.y, !isTorsoOnly, leftSideActive, rightSideActive, h, w, ""); 
-                                
-                                skeletonGroup.style.display = 'inline';
-                                skeletonGroup2.style.display = 'none';
-                            }
-                            
-                        } else {
-                            skeletonGroup.style.display = 'none';
-                            skeletonGroup2.style.display = 'none';
-                        }
-                    }
-                    lastData = new Uint8ClampedArray(data);
-                }
                 
-                else if (currentFilter === 'scanner-diag') {
-                    
-                    edgeMap = new Uint8ClampedArray(data.length); 
-                    let copy = new Uint8ClampedArray(data);
-                    for (let y = 1; y < height - 1; y++) {
-                        for (let x = 1; x < width - 1; x++) {
-                            let i = (y * width + x) * 4;
-                            let h = -copy[((y-1)*width+(x-1))*4] + copy[((y-1)*width+(x+1))*4]
-                                  -2*copy[(y*width+(x-1))*4] + 2*copy[(y*width+(x+1))*4]
-                                  -copy[((y+1)*width+(x-1))*4] + copy[((y+1)*width+(x+1))*4];
-                            let v = -copy[((y-1)*width+(x-1))*4] - 2*copy[((y-1)*width+x)*4] - copy[((y-1)*width+(x+1))*4]
-                                  +copy[((y+1)*width+(x-1))*4] + 2*copy[((y+1)*width+x)*4] + copy[((y+1)*width+(x+1))*4];
-                            
-                            if (Math.sqrt(h*h + v*v) > 35) { 
-                                edgeMap[i+3] = 255; 
+                // 1. Dibujar la imagen base en el canvas
+                ctx.drawImage(videoBg, 0, 0, canvas.width, canvas.height);
+
+                // 2. Aplicar el filtro seleccionado
+                if (currentFilter === 'sls') {
+                    // MODO IA: Analizar el canvas y dibujar esqueletos encima
+                    if (poseDetector) {
+                        const poses = await poseDetector.estimatePoses(canvas); 
+                        drawAllSkeletons(poses); // Dibuja líneas y puntos sobre el video
+                    }
+                
+                } else if (currentFilter === 'relief' || currentFilter === 'scanner-diag') {
+                    // MODO PROCESAMIENTO: Tomar la imagen, procesar píxeles y reemplazarla
+                    let frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    let data = frame.data;
+                    let width = canvas.width;
+                    let height = canvas.height;
+
+                    if (currentFilter === 'relief') {
+                        let copy = new Uint8ClampedArray(data);
+                        for (let y = 1; y < height - 1; y++) {
+                            for (let x = 1; x < width - 1; x++) {
+                                let i = (y * width + x) * 4;
+                                let h = -copy[((y-1)*width+(x-1))*4] + copy[((y-1)*width+(x+1))*4]
+                                      -2*copy[(y*width+(x-1))*4] + 2*copy[(y*width+(x+1))*4]
+                                      -copy[((y+1)*width+(x-1))*4] + copy[((y+1)*width+(x+1))*4];
+                                let v = -copy[((y-1)*width+(x-1))*4] - 2*copy[((y-1)*width+x)*4] - copy[((y-1)*width+(x+1))*4]
+                                      +copy[((y+1)*width+(x-1))*4] + 2*copy[((y+1)*width+x)*4] + copy[((y+1)*width+(x+1))*4];
+                                let diff = Math.sqrt(h*h + v*v);
+                                
+                                if (diff > 40) {
+                                    data[i] = diff; data[i+1] = 255; data[i+2] = 255; 
+                                } else {
+                                    data[i] = 10; data[i+1] = 10; data[i+2] = 10; 
+                                }
                             }
                         }
-                    }
-
-                    sweepDiagonal = (sweepDiagonal + 3) % (width + height); 
-                    
-                    for(let lineOffset = 0; lineOffset < 30; lineOffset += 5) { 
-                        let linePos = sweepDiagonal - lineOffset;
-                        
-                        for (let y = 0; y < height; y++) {
-                            let x = linePos - y;
-                            if (x >= 0 && x < width) {
+                    } 
+                    else if (currentFilter === 'scanner-diag') {
+                        edgeMap = new Uint8ClampedArray(data.length); 
+                        let copy = new Uint8ClampedArray(data);
+                        for (let y = 1; y < height - 1; y++) {
+                            for (let x = 1; x < width - 1; x++) {
                                 let i = (y * width + x) * 4;
+                                let h = -copy[((y-1)*width+(x-1))*4] + copy[((y-1)*width+(x+1))*4]
+                                      -2*copy[(y*width+(x-1))*4] + 2*copy[(y*width+(x+1))*4]
+                                      -copy[((y+1)*width+(x-1))*4] + copy[((y+1)*width+(x+1))*4];
+                                let v = -copy[((y-1)*width+(x-1))*4] - 2*copy[((y-1)*width+x)*4] - copy[((y-1)*width+(x+1))*4]
+                                      +copy[((y+1)*width+(x-1))*4] + 2*copy[((y+1)*width+x)*4] + copy[((y+1)*width+(x+1))*4];
                                 
-                                if (edgeMap[i+3] > 0) {
-                                    data[i] = 0; 
-                                    data[i+1] = 255; 
-                                    data[i+2] = 255;
-                                    data[i+3] = 255; 
+                                if (Math.sqrt(h*h + v*v) > 35) { 
+                                    edgeMap[i+3] = 255; 
+                                }
+                            }
+                        }
+
+                        sweepDiagonal = (sweepDiagonal + 3) % (width + height); 
+                        
+                        for(let lineOffset = 0; lineOffset < 30; lineOffset += 5) { 
+                            let linePos = sweepDiagonal - lineOffset;
+                            
+                            for (let y = 0; y < height; y++) {
+                                let x = linePos - y;
+                                if (x >= 0 && x < width) {
+                                    let i = (y * width + x) * 4;
+                                    if (edgeMap[i+3] > 0) {
+                                        data[i] = 0; data[i+1] = 255; data[i+2] = 255; data[i+3] = 255; 
+                                    }
                                 }
                             }
                         }
                     }
                     
+                    // 3. Reemplazar el canvas con la data procesada
                     ctx.putImageData(frame, 0, 0);
-                    skeletonGroup.style.display = 'none';
-                    skeletonGroup2.style.display = 'none';
                 }
             }
+            // 4. Pedir el siguiente frame
             requestAnimationFrame(drawLoop);
         }
         
-        // SOLUCIÓN 1: Modificada para aceptar un sufijo de ID (ej. "" o "-2")
-        function updateSkeleton(x, y, legs, armL, armR, h, w, suffix = "") {
-            let scaleH = Math.min(2.5, h / 100); 
-            let scaleW = Math.min(2.5, w / 80); 
-            
-            setAttr('sk-head' + suffix, { d: `M${x},${y-50*scaleH} L${x},${y-60*scaleH}` });
-            setAttr('j-head' + suffix, { cx: x, cy: y-60*scaleH });
-            setAttr('j-neck' + suffix, { cx: x, cy: y-50*scaleH });
-            setAttr('sk-spine' + suffix, { x1: x, y1: y-50*scaleH, x2: x, y2: y+20*scaleH });
-            setAttr('j-hip' + suffix, { cx: x, cy: y+20*scaleH });
+        // --- SOLUCIÓN 1: NUEVAS FUNCIONES PARA DIBUJAR ESQUELETOS DE IA ---
+        
+        const confidenceThreshold = 0.3; // Confianza mínima de la IA (0.0 a 1.0)
+        // Mapa de conexiones de MoveNet
+        const skeletonMap = [
+            ['left_shoulder', 'right_shoulder'], ['left_shoulder', 'left_elbow'],
+            ['left_elbow', 'left_wrist'], ['right_shoulder', 'right_elbow'],
+            ['right_elbow', 'right_wrist'], ['left_shoulder', 'left_hip'],
+            ['right_shoulder', 'right_hip'], ['left_hip', 'right_hip'],
+            ['left_hip', 'left_knee'], ['left_knee', 'left_ankle'],
+            ['right_hip', 'right_knee'], ['right_knee', 'right_ankle']
+        ];
+        
+        /** Dibuja todos los esqueletos detectados en la lista de 'poses' */
+        function drawAllSkeletons(poses) {
+            ctx.strokeStyle = 'var(--neon-green)';
+            ctx.fillStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = 0.8; // Un poco de transparencia
 
-            let armLX = x - 25*scaleW;
-            let armLY = armL ? y-60*scaleH : y-30*scaleH; 
-            let armRX = x + 25*scaleW;
-            let armRY = armR ? y-60*scaleH : y-30*scaleH; 
+            poses.forEach(pose => {
+                if (pose.score > confidenceThreshold) {
+                    drawKeypoints(pose.keypoints);
+                    drawConnections(pose.keypoints);
+                }
+            });
+            ctx.globalAlpha = 1.0; // Restaurar alfa
+        }
 
-            setAttr('sk-l-arm-1' + suffix, { x1: x, y1: y-40*scaleH, x2: armLX, y2: y-40*scaleH });
-            setAttr('j-el-l' + suffix, { cx: armLX, cy: y-40*scaleH });
-            setAttr('sk-l-arm-2' + suffix, { x1: armLX, y1: y-40*scaleH, x2: armLX - 15*scaleW, y2: armLY });
-            setAttr('j-wr-l' + suffix, { cx: armLX - 15*scaleW, cy: armLY });
-
-            setAttr('sk-r-arm-1' + suffix, { x1: x, y1: y-40*scaleH, x2: armRX, y2: y-40*scaleH });
-            setAttr('j-el-r' + suffix, { cx: armRX, cy: y-40*scaleH });
-            setAttr('sk-r-arm-2' + suffix, { x1: armRX, y1: y-40*scaleH, x2: armRX + 15*scaleW, y2: armRY });
-            setAttr('j-wr-r' + suffix, { cx: armRX + 15*scaleW, cy: armRY });
-            
-            const legsGroup = document.getElementById('sk-legs' + suffix);
-            if (legsGroup) {
-                if (legs) {
-                    legsGroup.style.display = 'inline';
-                    setAttr('sk-l-leg-1' + suffix, { x1: x, y1: y+20*scaleH, x2: x-15*scaleW, y2: y+70*scaleH });
-                    setAttr('j-kn-l' + suffix, { cx: x-15*scaleW, cy: y+70*scaleH });
-                    setAttr('sk-l-leg-2' + suffix, { x1: x-15*scaleW, y1: y+70*scaleH, x2: x-20*scaleW, y2: y+120*scaleH });
-                    setAttr('j-an-l' + suffix, { cx: x-20*scaleW, cy: y+120*scaleH });
-
-                    setAttr('sk-r-leg-1' + suffix, { x1: x, y1: y+20*scaleH, x2: x+15*scaleW, y2: y+70*scaleH });
-                    setAttr('j-kn-r' + suffix, { cx: x+15*scaleW, cy: y+70*scaleH });
-                    setAttr('sk-r-leg-2' + suffix, { x1: x+15*scaleW, y1: y+70*scaleH, x2: x+20*scaleW, y2: y+120*scaleH });
-                    setAttr('j-an-r' + suffix, { cx: x+20*scaleW, cy: y+120*scaleH });
-                } else {
-                    legsGroup.style.display = 'none'; 
+        /** Dibuja los puntos (articulaciones) */
+        function drawKeypoints(keypoints) {
+            for (let i = 0; i < keypoints.length; i++) {
+                const keypoint = keypoints[i];
+                if (keypoint.score > confidenceThreshold) {
+                    ctx.beginPath();
+                    ctx.arc(keypoint.x, keypoint.y, 4, 0, 2 * Math.PI); // Círculo de 4px
+                    ctx.fill();
                 }
             }
         }
-        
-        function setAttr(id, attrs) {
-            const el = document.getElementById(id);
-            if(el) for(let k in attrs) el.setAttribute(k, attrs[k]);
+
+        /** Dibuja las líneas (huesos) que conectan las articulaciones */
+        function drawConnections(keypoints) {
+            const keypointMap = new Map();
+            keypoints.forEach(keypoint => {
+                keypointMap.set(keypoint.name, keypoint);
+            });
+
+            skeletonMap.forEach(connection => {
+                const start = keypointMap.get(connection[0]);
+                const end = keypointMap.get(connection[1]);
+
+                if (start && end && start.score > confidenceThreshold && end.score > confidenceThreshold) {
+                    ctx.beginPath();
+                    ctx.moveTo(start.x, start.y);
+                    ctx.lineTo(end.x, end.y);
+                    ctx.stroke();
+                }
+            });
         }
+        // --- FIN DE LAS NUEVAS FUNCIONES DE IA ---
 
         function setFilter(f) {
             currentFilter = f;
@@ -1022,10 +930,9 @@
         function speak(text) {
             isSpeaking = true;
             
-            // SOLUCIÓN 3: Efecto de "barrido sucio" sobre la voz
-            // Aumentar la ganancia y frecuencia del LFO (estática)
-            lfoGain.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime+0.1); // Era 0.03
-            lfo.frequency.linearRampToValueAtTime(15, audioCtx.currentTime + 0.1); // Más rápido
+            // Efecto de "barrido sucio" sobre la voz (V5.17)
+            lfoGain.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime+0.1);
+            lfo.frequency.linearRampToValueAtTime(15, audioCtx.currentTime + 0.1);
             radioGain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime+0.1);
             
             const u = new SpeechSynthesisUtterance(text);
@@ -1203,6 +1110,8 @@
             startCamera();
             initSensor(); 
             startVisualLoop(); 
+            initMLModel(); // SOLUCIÓN 1: Cargar el modelo de IA al iniciar
+            
             setInterval(updateSensorReadings, 2000); 
             setInterval(persistentMicCheck, 1000); 
             checkPanelState(); 
