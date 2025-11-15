@@ -3,9 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBR-FIELD-UNIT V5.24</title> <script src="https://cdn.tailwindcss.com"></script>
+    <title>OBR-FIELD-UNIT V5.25</title> <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+
     <style>
         :root {
             --neon-blue: #0088FF; 
@@ -67,15 +72,8 @@
             pointer-events: none; 
         }
         
-        /* SOLUCIÓN 1: Re-agregado el SVG Overlay para la simulación SLS */
-        #sls-overlay { 
-            position: absolute; 
-            top: 0; left: 0; 
-            width: 100%; height: 100%; 
-            pointer-events: none; 
-            z-index: 3;
-        }
-
+        /* SOLUCIÓN 1: SVG Overlay eliminado */
+        
         .hidden-canvas { display: none; }
 
         #side-panel-container {
@@ -150,7 +148,6 @@
         
         .panel.hidden { display: none; }
 
-        /* SOLUCIÓN 4 & 5: CSS del Header del Panel para LEDs */
         .panel-header {
             font-size: 0.6rem; 
             text-align: center; 
@@ -158,17 +155,16 @@
             color: #888;
             text-shadow: 0 -1px 0 #000; 
             border-bottom: 2px groove #333; 
-            padding: 2px 0; /* Ajustado */
+            padding: 2px 0; 
             text-transform: uppercase; 
             letter-spacing: 1px; 
             background: rgba(0,0,0,0.3);
             border-radius: 4px; 
             z-index: 1;
-            /* Flexbox para alinear título y LED */
             display: flex;
             justify-content: center;
             align-items: center;
-            position: relative; /* Para posicionar el LED */
+            position: relative; 
         }
 
         .header-title {
@@ -233,7 +229,6 @@
         #energy-canvas { width: 100%; height: 100%; }
         .plate-obr { background: linear-gradient(to right, #222, #444, #222); border: 1px solid #000; color: #aaa; font-size: 0.6rem; padding: 4px 10px; box-shadow: 0 1px 0 rgba(255,255,255,0.1); text-shadow: 0 -1px 0 #000; border-radius: 2px; font-weight: bold; margin-top: 5px; }
 
-        /* SOLUCIÓN 4 & 5: CSS de los LEDs */
         .status-led {
             width: 10px; height: 10px; 
             background-color: #333;
@@ -241,7 +236,6 @@
             border-radius: 50%;
             transition: all 0.2s;
             box-shadow: inset 0 0 3px #000;
-            /* Posicionados dentro del header flexbox */
             position: absolute;
             right: 8px;
             top: 50%;
@@ -253,7 +247,6 @@
             box-shadow: 0 0 8px var(--alert-red), 0 0 15px var(--alert-red);
             animation: pulse 1s infinite;
         }
-        /* SOLUCIÓN 3: LED del sensor en ROJO */
         .status-led.active-sensor {
             background-color: var(--alert-red);
             box-shadow: 0 0 8px var(--alert-red), 0 0 15px var(--alert-red);
@@ -382,34 +375,7 @@
         <video id="bg-camera-feed" playsinline autoplay muted></video>
         <canvas id="main-filter-canvas"></canvas>
         
-        <svg id="sls-overlay" viewBox="0 0 320 240" style="width:100%; height:100%;">
-            <g id="skeleton-group" stroke="var(--neon-green)" stroke-width="2" fill="none" stroke-linecap="round" style="display: none; filter: drop-shadow(0 0 4px var(--neon-green));">
-                <circle id="sk-head" cx="160" cy="45" r="10" stroke-width="1"/>
-                <line id="sk-spine" x1="160" y1="55" x2="160" y2="120" />
-                <line id="sk-l-arm-1" x1="160" y1="65" x2="130" y2="80" /> 
-                <line id="sk-l-arm-2" x1="130" y1="80" x2="120" y2="110" /> 
-                <line id="sk-r-arm-1" x1="160" y1="65" x2="190" y2="80" />
-                <line id="sk-r-arm-2" x1="190" y1="80" x2="200" y2="110" />
-                <g id="sk-legs">
-                    <line id="sk-l-leg-1" x1="160" y1="120" x2="145" y2="170" /> 
-                    <line id="sk-l-leg-2" x1="145" y1="170" x2="140" y2="220" /> 
-                    <line id="sk-r-leg-1" x1="160" y1="120" x2="175" y2="170" />
-                    <line id="sk-r-leg-2" x1="175" y1="170" x2="180" y2="220" />
-                </g>
-                <circle id="j-kn-l" cx="145" cy="170" r="3" fill="var(--alert-red)" stroke="none"/>
-                <circle id="j-kn-r" cx="175" cy="170" r="3" fill="var(--alert-red)" stroke="none"/>
-                <circle id="j-an-l" cx="140" cy="220" r="3" fill="var(--alert-red)" stroke="none"/>
-                <circle id="j-an-r" cx="180" cy="220" r="3" fill="var(--alert-red)" stroke="none"/>
-                <circle id="j-neck" cx="160" cy="55" r="3" fill="var(--alert-red)" stroke="none"/>
-                <circle id="j-hip" cx="160" cy="120" r="3" fill="var(--alert-red)" stroke="none"/>
-                <circle id="j-el-l" cx="130" cy="80" r="3" fill="var(--alert-red)" stroke="none"/>
-                <circle id="j-el-r" cx="190" cy="80" r="3" fill="var(--alert-red)" stroke="none"/>
-                <circle id="j-wr-l" cx="120" cy="110" r="3" fill="var(--alert-red)" stroke="none"/>
-                <circle id="j-wr-r" cx="200" cy="110" r="3" fill="var(--alert-red)" stroke="none"/>
-            </g>
-        </svg>
-
-    </div>
+        </div>
     <canvas id="temp-canvas" class="hidden-canvas"></canvas>
 
     <div class="header-title">EQUIPO PROFESIONAL DE EXPLORACIONES OBR</div>
@@ -500,7 +466,6 @@
 </div> 
 
     <script>
-        // SOLUCIÓN 4: URL de SheetDB Corregida
         const SHEETDB_URL = "https://sheetdb.io/api/v1/9xzfnke69kkej"; 
         let isRunning = false;
         let currentFilter = 'none'; 
@@ -514,12 +479,7 @@
         const tempCanvas = document.getElementById('temp-canvas');
         const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
         
-        // SOLUCIÓN 1: Referencias al esqueleto SVG
-        const skeletonGroup = document.getElementById('skeleton-group');
-        const slsOverlay = document.getElementById('sls-overlay');
-        let lastData = null; // Para la detección de movimiento
-        let slsPos = { x: 160, y: 100 };
-        let jitter = 0; 
+        // SOLUCIÓN 1: Referencias de simulación SLS eliminadas
 
         const envContent = document.getElementById('env-content-box');
         const detectorPanel = document.getElementById('p-detector');
@@ -547,8 +507,12 @@
         let emfSimInterval = null;
         let visualLoopInterval; 
 
-        // SOLUCIÓN 2: Acelerar auto-speech
-        let autoModeDelay = 5000; // Delay inicial (lento)
+        // SOLUCIÓN 1: Variables de IA re-agregadas
+        let poseDetector; 
+        let latestPoses = [];
+        let isDetectingPose = false;
+
+        let autoModeDelay = 5000; 
 
         let sweepY = 0; // Barrido SCN
 
@@ -579,10 +543,19 @@
             mainFilterCanvas.height = h;
             tempCanvas.width = w;
             tempCanvas.height = h;
-            sweepY = 0; // SOLUCIÓN 2: Resetear barrido (ahora empieza en 0)
+            sweepY = 0; 
         }
 
-        // SOLUCIÓN 1: initMLModel y funciones de IA eliminadas
+        // SOLUCIÓN 1: Función de IA re-agregada
+        async function initMLModel() {
+            try {
+                const model = poseDetection.SupportedModels.MoveNet;
+                poseDetector = await poseDetection.createDetector(model);
+                console.log("MoveNet (IA de Poses) cargado.");
+            } catch (e) {
+                console.error("Error al cargar modelo de IA:", e);
+            }
+        }
 
         function drawVideoWithCover(ctx, video) {
             const canvasW = ctx.canvas.width;
@@ -620,56 +593,31 @@
                 const h = mainFilterCanvas.height;
 
                 mainFilterCtx.clearRect(0, 0, w, h);
-                slsOverlay.style.display = 'none'; // Ocultar SLS por defecto
                 
                 if (currentFilter === 'sls') {
-                    // 1. Dibujar video en canvas
+                    // SOLUCIÓN 1: Lógica de IA (V5.23) restaurada
+                    if (!isDetectingPose && poseDetector) {
+                        isDetectingPose = true;
+                        // Analizar el canvas (que es costoso)
+                        drawVideoWithCover(tempCtx, videoBg); // Dibujar en el temporal para analizar
+                        const poses = await poseDetector.estimatePoses(tempCtx);
+                        latestPoses = poses; // Guardar resultado
+                        isDetectingPose = false;
+                    }
+                    
+                    // 1. Dibujar video (rápido)
                     drawVideoWithCover(mainFilterCtx, videoBg);
                     
-                    // 2. Tinte verde Kinect (Corregido a Hex)
+                    // 2. Tinte verde Kinect
                     mainFilterCtx.globalAlpha = 0.15;
-                    mainFilterCtx.fillStyle = '#39FF14'; // Forzado a verde
+                    mainFilterCtx.fillStyle = '#39FF14'; // Verde
                     mainFilterCtx.fillRect(0, 0, w, h);
                     mainFilterCtx.globalAlpha = 1.0;
                     
-                    // 3. Analizar movimiento en temp canvas (para no leer la imagen con tinte)
-                    drawVideoWithCover(tempCtx, videoBg);
-                    let frame = tempCtx.getImageData(0, 0, w, h);
-                    let data = frame.data;
-
-                    if (lastData) {
-                        let minX = w, maxX = 0, minY = h, maxY = 0, count = 0;
-                        for (let y = 0; y < h; y+=10) { // Muestreo más rápido
-                            for (let x = 0; x < w; x+=10) {
-                                let i = (y * w + x) * 4;
-                                let l = (data[i] + data[i+1] + data[i+2]) / 3;
-                                let lastL = (lastData[i] + lastData[i+1] + lastData[i+2]) / 3;
-                                
-                                if (Math.abs(l - lastL) > 20) { // Umbral de movimiento
-                                    count++;
-                                    if(x < minX) minX = x; if(x > maxX) maxX = x;
-                                    if(y < minY) minY = y; if(y > maxY) maxY = y;
-                                }
-                            }
-                        }
-                        
-                        if (count > 10) { // Umbral de "píxeles" movidos
-                            let cx = (minX + maxX) / 2; 
-                            let cy = (minY + maxY) / 2; 
-                            
-                            // Mapear coordenadas del canvas (pantalla completa) al ViewBox del SVG (320x240)
-                            let svgX = (cx / w) * 320;
-                            let svgY = (cy / h) * 240;
-
-                            jitter = (Math.random() - 0.5) * 4; 
-                            slsPos.x += (svgX - slsPos.x) * 0.4 + jitter;
-                            slsPos.y += (svgY - slsPos.y) * 0.4 + jitter;
-                            
-                            updateSkeleton(slsPos.x, slsPos.y); 
-                            slsOverlay.style.display = 'block';
-                        }
+                    // 3. Dibujar esqueletos (rápido)
+                    if (latestPoses) {
+                        drawAllSkeletons(latestPoses); 
                     }
-                    lastData = new Uint8ClampedArray(data);
                 
                 } else if (currentFilter === 'relief') {
                     drawVideoWithCover(mainFilterCtx, videoBg);
@@ -698,6 +646,7 @@
                     mainFilterCtx.putImageData(frame, 0, 0);
 
                 } else if (currentFilter === 'scanner-topo') {
+                    // SOLUCIÓN 2: Lógica Topo (V5.24) mantenida
                     drawVideoWithCover(tempCtx, videoBg);
                     let frame = tempCtx.getImageData(0, 0, w, h);
                     let data = frame.data;
@@ -708,8 +657,7 @@
                     for (let i = 0; i < data.length; i += 4) {
                         let l = (data[i] + data[i+1] + data[i+2]) / 3; 
                         
-                        // SOLUCIÓN 2: Banda más ancha para menos "grano"
-                        if (Math.floor(l) % 25 < 4) { // Era < 2
+                        if (Math.floor(l) % 25 < 4) { // Banda ancha para menos "grano"
                             topoData[i] = 0;      
                             topoData[i+1] = 136;  
                             topoData[i+2] = 255;  // Azul Neón
@@ -720,17 +668,15 @@
                     }
                     tempCtx.putImageData(topoMapData, 0, 0); 
 
-                    // SOLUCIÓN 2: Barrido de Arriba a Abajo
-                    sweepY = (sweepY + 8) % h; // Era -8 y empezaba en h
+                    // Barrido de Arriba a Abajo
+                    sweepY = (sweepY + 8) % h; 
                     
-                    // 3. Dibujar parte revelada
                     mainFilterCtx.drawImage(
                         tempCanvas, 
-                        0, 0, w, sweepY, // Origen
-                        0, 0, w, sweepY  // Destino
+                        0, 0, w, sweepY,
+                        0, 0, w, sweepY
                     );
                     
-                    // 4. Dibujar línea de barrido
                     mainFilterCtx.fillStyle = 'var(--neon-blue)';
                     mainFilterCtx.shadowColor = 'var(--neon-blue)';
                     mainFilterCtx.shadowBlur = 15;
@@ -744,50 +690,73 @@
             requestAnimationFrame(drawLoop);
         }
         
-        // SOLUCIÓN 1: Funciones de IA eliminadas y reemplazadas por simulación
+        // SOLUCIÓN 1: Funciones de IA re-agregadas
+        const confidenceThreshold = 0.3; 
+        const skeletonMap = [
+            ['left_shoulder', 'right_shoulder'], ['left_shoulder', 'left_elbow'],
+            ['left_elbow', 'left_wrist'], ['right_shoulder', 'right_elbow'],
+            ['right_elbow', 'right_wrist'], ['left_shoulder', 'left_hip'],
+            ['right_shoulder', 'right_hip'], ['left_hip', 'right_hip'],
+            ['left_hip', 'left_knee'], ['left_knee', 'left_ankle'],
+            ['right_hip', 'right_knee'], ['right_knee', 'right_ankle']
+        ];
         
-        function updateSkeleton(x, y) {
-            let scaleH = 1; // El SVG se escala con viewBox, usar coords 1:1
-            let scaleW = 1;
+        function drawAllSkeletons(poses) {
+            // SOLUCIÓN 1: Dibujar en el canvas principal
+            const ctx = mainFilterCtx; 
             
-            setAttr('sk-head', { cx: x, cy: y-55*scaleH });
-            setAttr('j-neck', { cx: x, cy: y-45*scaleH });
-            setAttr('sk-spine', { x1: x, y1: y-45*scaleH, x2: x, y2: y+20*scaleH });
-            setAttr('j-hip', { cx: x, cy: y+20*scaleH });
+            // SOLUCIÓN 1: Líneas Verdes, Puntos Rojos
+            ctx.strokeStyle = '#39FF14'; 
+            ctx.fillStyle = '#FF3333';   
+            ctx.lineWidth = 2.5;
+            ctx.filter = 'drop-shadow(0 0 4px #39FF14)';
 
-            let armLX = x - 25*scaleW;
-            let armLY = y-30*scaleH; 
-            let armRX = x + 25*scaleW;
-            let armRY = y-30*scaleH; 
+            // Mapear coordenadas del canvas temporal (análisis) al canvas principal (dibujo)
+            const scaleX = mainFilterCanvas.width / tempCanvas.width;
+            const scaleY = mainFilterCanvas.height / tempCanvas.height;
 
-            setAttr('sk-l-arm-1', { x1: x, y1: y-35*scaleH, x2: armLX, y2: y-10*scaleH });
-            setAttr('j-el-l', { cx: armLX, cy: y-10*scaleH });
-            setAttr('sk-l-arm-2', { x1: armLX, y1: y-10*scaleH, x2: armLX - 5*scaleW, y2: armLY });
-            setAttr('j-wr-l', { cx: armLX - 5*scaleW, cy: armLY });
-
-            setAttr('sk-r-arm-1', { x1: x, y1: y-35*scaleH, x2: armRX, y2: y-10*scaleH });
-            setAttr('j-el-r', { cx: armRX, cy: y-10*scaleH });
-            setAttr('sk-r-arm-2', { x1: armRX, y1: y-10*scaleH, x2: armRX + 5*scaleW, y2: armRY });
-            setAttr('j-wr-r', { cx: armRX + 5*scaleW, cy: armRY });
-            
-            const legsGroup = document.getElementById('sk-legs');
-            legsGroup.style.display = 'inline';
-            setAttr('sk-l-leg-1', { x1: x, y1: y+20*scaleH, x2: x-15*scaleW, y2: y+70*scaleH });
-            setAttr('j-kn-l', { cx: x-15*scaleW, cy: y+70*scaleH });
-            setAttr('sk-l-leg-2', { x1: x-15*scaleW, y1: y+70*scaleH, x2: x-20*scaleW, y2: y+120*scaleH });
-            setAttr('j-an-l', { cx: x-20*scaleW, cy: y+120*scaleH });
-
-            setAttr('sk-r-leg-1', { x1: x, y1: y+20*scaleH, x2: x+15*scaleW, y2: y+70*scaleH });
-            setAttr('j-kn-r', { cx: x+15*scaleW, cy: y+70*scaleH });
-            setAttr('sk-r-leg-2', { x1: x+15*scaleW, y1: y+70*scaleH, x2: x+20*scaleW, y2: y+120*scaleH });
-            setAttr('j-an-r', { cx: x+20*scaleW, cy: y+120*scaleH });
+            poses.forEach(pose => {
+                if (pose.score > confidenceThreshold) {
+                    drawKeypoints(pose.keypoints, scaleX, scaleY);
+                    drawConnections(pose.keypoints, scaleX, scaleY);
+                }
+            });
+            ctx.filter = 'none';
         }
 
-        function setAttr(id, attrs) {
-            const el = document.getElementById(id);
-            if(el) for(let k in attrs) el.setAttribute(k, attrs[k]);
+        function drawKeypoints(keypoints, scaleX, scaleY) {
+            const ctx = mainFilterCtx;
+            for (let i = 0; i < keypoints.length; i++) {
+                const keypoint = keypoints[i];
+                if (keypoint.score > confidenceThreshold) {
+                    ctx.beginPath();
+                    ctx.arc(keypoint.x * scaleX, keypoint.y * scaleY, 4, 0, 2 * Math.PI); 
+                    ctx.fill();
+                }
+            }
+        }
+
+        function drawConnections(keypoints, scaleX, scaleY) {
+            const ctx = mainFilterCtx;
+            const keypointMap = new Map();
+            keypoints.forEach(keypoint => {
+                keypointMap.set(keypoint.name, keypoint);
+            });
+
+            skeletonMap.forEach(connection => {
+                const start = keypointMap.get(connection[0]);
+                const end = keypointMap.get(connection[1]);
+
+                if (start && end && start.score > confidenceThreshold && end.score > confidenceThreshold) {
+                    ctx.beginPath();
+                    ctx.moveTo(start.x * scaleX, start.y * scaleY);
+                    ctx.lineTo(end.x * scaleX, end.y * scaleY);
+                    ctx.stroke();
+                }
+            });
         }
         
+        // SOLUCIÓN 1: Simulación SLS eliminada
 
         function setFilter(f) {
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -798,12 +767,6 @@
                 currentFilter = f; // Activar
                 const targetBtn = event ? event.target : document.querySelector(`.filter-btn[onclick="setFilter('${f}')"]`);
                 if(targetBtn) targetBtn.classList.add('active');
-            }
-            
-            // Limpiar datos de SLS si se cambia de filtro
-            if (currentFilter !== 'sls') {
-                lastData = null;
-                slsOverlay.style.display = 'none';
             }
         }
 
@@ -972,7 +935,7 @@
                 
                 isRecognizing = false;
                 window.speechSynthesis.cancel();
-                autoModeDelay = 5000; // Resetear delay
+                autoModeDelay = 5000; 
             }
             if (isRunning) {
             } else {
@@ -1034,7 +997,6 @@
             setTimeout(() => sensorPanel.classList.remove('alert'), 500);
         }
 
-        // SOLUCIÓN 2: Auto-speech acelerado
         function startAutoMode() {
             if(!isRunning) return;
             let randomTime = 1000 + Math.random() * (autoModeDelay - 1000);
@@ -1067,7 +1029,7 @@
                 if(micLed) micLed.classList.remove('active-mic');
             };
             recognition.onresult = (e) => {
-                autoModeDelay = 2000; // Acelerar
+                autoModeDelay = 2000; 
                 
                 let t = e.results[0][0].transcript.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
                 if(programadoData.has(t)) speak(programadoData.get(t));
@@ -1196,7 +1158,7 @@
             startCamera();
             initSensor(); 
             startVisualLoop(); 
-            // SOLUCIÓN 1: initMLModel() eliminado
+            initMLModel(); // SOLUCIÓN 1: Iniciar el modelo de IA
             
             setInterval(updateSensorReadings, 2000); 
             setInterval(persistentMicCheck, 1000); 
