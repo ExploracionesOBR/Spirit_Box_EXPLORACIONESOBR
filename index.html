@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBR-FIELD-UNIT V5.18</title> <script src="https://cdn.tailwindcss.com"></script>
+    <title>OBR-FIELD-UNIT V5.19</title> <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
@@ -34,6 +34,7 @@
             align-items: center;
         }
 
+        /* SOLUCIÓN 3 y 5: Cámara siempre fullscreen y sin atenuar */
         #bg-camera-feed {
             position: fixed;
             top: 0;
@@ -42,17 +43,20 @@
             height: 100%;
             object-fit: cover; 
             z-index: 0;
-            filter: brightness(0.8);
+            filter: brightness(1.0); /* Era 0.8 */
             transform: scaleX(1); 
             transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
         
-        /* Zoom Out (Estilo .5) */
-        body.panels-active #bg-camera-feed {
-            object-fit: contain; 
-            transform: scale(0.55); /* (V5.17) */
-            filter: brightness(0.4);
-            background-color: #000;
+        /* SOLUCIÓN 2: Canvas de filtro principal (pantalla completa) */
+        #main-filter-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1; /* Encima del video, debajo del UI */
+            pointer-events: none; /* Permite clics a través de él */
         }
 
         #ui-container {
@@ -94,9 +98,10 @@
             100% { opacity: 0; }
         }
 
+        /* SOLUCIÓN 4: Layout de 2 columnas */
         .panels-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-columns: 1fr 1fr; /* Era 1fr 1fr 1fr */
             gap: 8px;
             width: 100%;
             max-height: 35vh; 
@@ -150,35 +155,7 @@
         }
 
         /* --- PANEL 1: CÁMARA --- */
-        .camera-view-box {
-            flex-grow: 1; background: #050505; border: 2px inset #333; border-radius: 4px;
-            position: relative; overflow: hidden; margin-bottom: 5px; z-index: 1;
-        }
-        
-        #ghosttube-canvas { 
-            width: 100%; height: 100%; 
-            object-fit: contain; 
-        }
-        
-        .camera-controls {
-            display: flex; justify-content: space-between; gap: 4px; z-index: 1;
-        }
-        
-        .cam-btn {
-            background: linear-gradient(to bottom, #333, #1a1a1a); border: 1px solid #444;
-            color: #00aaaa; 
-            font-size: 0.65rem; 
-            border-radius: 2px; cursor: pointer;
-            flex: 1; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 2px 0 #000;
-            height: 40px; 
-            padding: 5px 2px; 
-        }
-        .cam-btn:active { transform: translateY(2px); box-shadow: none; }
-        .cam-btn.active {
-            background: #003333; color: var(--glow-color); border-color: var(--glow-color);
-            box-shadow: inset 0 0 5px var(--glow-color);
-        }
+        /* SOLUCIÓN 1: Panel de cámara eliminado */
 
         /* --- PANEL 2: DETECTOR --- */
         .emf-container {
@@ -374,11 +351,13 @@
             font-weight: bold; font-size: 0.8rem; display: flex; justify-content: center;
             align-items: center; cursor: pointer; box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
             z-index: 100;
+            pointer-events: auto; /* Asegurarse de que sea clickeable */
         }
         #menu-tools {
             position: fixed; bottom: 85px; right: 20px; background: rgba(10,15,20,0.95);
             border: 1px solid #00aaaa; border-radius: 8px; padding: 5px;
             display: none; z-index: 99;
+            pointer-events: auto; /* Asegurarse de que sea clickeable */
         }
         #menu-tools.visible { display: block; }
         .menu-item {
@@ -391,17 +370,63 @@
             background: rgba(0, 255, 255, 0.1);
         }
 
-        #sls-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        /* SOLUCIÓN 6: Nuevos botones de filtro */
+        #filter-controls-container {
+            position: fixed;
+            top: 50%;
+            right: 15px;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 100;
+            pointer-events: auto;
+        }
+        .filter-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(0, 50, 50, 0.7);
+            border: 2px solid var(--glow-color);
+            color: var(--glow-color);
+            font-family: 'Share Tech Mono', monospace;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            transition: all 0.2s;
+        }
+        .filter-btn:active {
+            background: var(--glow-color);
+            color: #000;
+        }
+        .filter-btn.active {
+            background: var(--glow-color);
+            color: #000;
+            box-shadow: 0 0 20px #fff;
+        }
+
 
         @media (max-width: 768px) and (orientation: portrait) {
             .panels-grid { 
-                grid-template-columns: 1fr; 
+                grid-template-columns: 1fr; /* Paneles se apilan en vertical */
                 gap: 10px; 
                 padding-bottom: 80px; 
-                max-height: 70vh; 
+                max-height: 50vh; /* Reducido un poco */
                 overflow-y: auto; 
             }
-            .panel { height: 320px; flex-shrink: 0; } 
+            .panel { 
+                height: auto; /* Altura automática */
+                min-height: 280px; /* Pero con un mínimo */
+                flex-shrink: 0; 
+            } 
+            
+            #filter-controls-container {
+                right: 10px;
+            }
+            .filter-btn {
+                width: 45px;
+                height: 45px;
+            }
         }
     </style>
 </head>
@@ -409,23 +434,12 @@
 
     <video id="bg-camera-feed" playsinline autoplay muted></video>
 
+    <canvas id="main-filter-canvas"></canvas>
+
     <div id="ui-container">
         <div class="header-title">EQUIPO PROFESIONAL DE EXPLORACIONES OBR</div>
 
         <div class="panels-grid" id="panels-container">
-
-            <div class="panel" id="p-camera">
-                <div class="panel-header">FILTROS ESPECTRALES</div>
-                <div class="camera-view-box">
-                    <canvas id="ghosttube-canvas"></canvas>
-                    <svg id="sls-overlay" viewBox="0 0 320 240"></svg>
-                </div>
-                <div class="camera-controls">
-                    <button class="cam-btn active" onclick="setFilter('scanner-diag')">SCANNER-DIAG</button>
-                    <button class="cam-btn" onclick="setFilter('sls')">SLS KINECT</button>
-                    <button class="cam-btn" onclick="setFilter('relief')">RELIEVE</button>
-                </div>
-            </div>
 
             <div class="panel" id="p-detector">
                 <div class="panel-header">RADIO-FRECUENCIA</div>
@@ -493,9 +507,16 @@
         </div>
     </div>
 
+    <div id="filter-controls-container">
+        <button class="filter-btn active" onclick="setFilter('none')">NRM</button>
+        <button class="filter-btn" onclick="setFilter('scanner-diag')">SCN</button>
+        <button class="filter-btn" onclick="setFilter('sls')">SLS</button>
+        <button class="filter-btn" onclick="setFilter('relief')">RLV</button>
+    </div>
+
+
     <div id="btn-ver">VER</div>
     <div id="menu-tools">
-        <div class="menu-item active" id="m-camera" onclick="togglePanel('p-camera')">CÁMARA</div>
         <div class="menu-item active" id="m-detector" onclick="togglePanel('p-detector')">DETECTOR</div>
         <div class="menu-item active" id="m-env" onclick="togglePanel('p-env')">SENSOR</div>
     </div>
@@ -503,12 +524,19 @@
     <script>
         const SHEETDB_URL = "https.sheetdb.io/api/v1/9xzfnke69kkej"; 
         let isRunning = false;
-        let currentFilter = 'scanner-diag'; 
+        
+        // SOLUCIÓN 2: Filtro por defecto es 'none'
+        let currentFilter = 'none'; 
+        
         let scanSpeed = 0; 
         
         const videoBg = document.getElementById('bg-camera-feed');
-        const canvas = document.getElementById('ghosttube-canvas');
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        
+        // SOLUCIÓN 2: Referencia al nuevo canvas principal
+        const mainFilterCanvas = document.getElementById('main-filter-canvas');
+        const mainFilterCtx = mainFilterCanvas.getContext('2d', { willReadFrequently: true });
+
+        // SOLUCIÓN 1: Referencias al canvas pequeño eliminadas
         
         const envContent = document.getElementById('env-content-box');
         const detectorPanel = document.getElementById('p-detector');
@@ -536,8 +564,7 @@
         let emfSimInterval = null;
         let visualLoopInterval; 
 
-        // SOLUCIÓN 1: Variable para el detector de IA
-        let poseDetector;
+        let poseDetector; // Variable para la IA
 
         async function startCamera() {
             try {
@@ -547,7 +574,11 @@
                 });
                 videoBg.srcObject = stream;
                 videoBg.onloadedmetadata = () => {
-                    canvas.width = 320; canvas.height = 240;
+                    // SOLUCIÓN 2: Redimensionar el canvas principal
+                    mainFilterCanvas.width = window.innerWidth;
+                    mainFilterCanvas.height = window.innerHeight;
+
+                    // Referencias al canvas de energía (sigue igual)
                     energyCanvas = document.getElementById('energy-canvas');
                     if (energyCanvas) { 
                         energyCtx = energyCanvas.getContext('2d');
@@ -558,7 +589,6 @@
             } catch (e) { console.log("Error camara", e); }
         }
 
-        // SOLUCIÓN 1: Función para cargar el modelo de IA
         async function initMLModel() {
             try {
                 const model = poseDetection.SupportedModels.MoveNet;
@@ -573,27 +603,32 @@
         let sweepDiagonal = 0; 
 
         
-        // SOLUCIÓN 1: El bucle de dibujo ahora es ASYNC para esperar a la IA
+        // Bucle de dibujo principal (ahora dibuja en mainFilterCanvas)
         async function drawLoop() {
             if (videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
                 
-                // 1. Dibujar la imagen base en el canvas
-                ctx.drawImage(videoBg, 0, 0, canvas.width, canvas.height);
+                // 1. Limpiar el canvas principal
+                mainFilterCtx.clearRect(0, 0, mainFilterCanvas.width, mainFilterCanvas.height);
+                
+                // 2. Dibujar video en el canvas (necesario para filtros de píxeles y SLS)
+                if (currentFilter !== 'none') {
+                     mainFilterCtx.drawImage(videoBg, 0, 0, mainFilterCanvas.width, mainFilterCanvas.height);
+                }
 
-                // 2. Aplicar el filtro seleccionado
+                // 3. Aplicar el filtro seleccionado
                 if (currentFilter === 'sls') {
                     // MODO IA: Analizar el canvas y dibujar esqueletos encima
                     if (poseDetector) {
-                        const poses = await poseDetector.estimatePoses(canvas); 
+                        const poses = await poseDetector.estimatePoses(mainFilterCanvas); 
                         drawAllSkeletons(poses); // Dibuja líneas y puntos sobre el video
                     }
                 
                 } else if (currentFilter === 'relief' || currentFilter === 'scanner-diag') {
                     // MODO PROCESAMIENTO: Tomar la imagen, procesar píxeles y reemplazarla
-                    let frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    let frame = mainFilterCtx.getImageData(0, 0, mainFilterCanvas.width, mainFilterCanvas.height);
                     let data = frame.data;
-                    let width = canvas.width;
-                    let height = canvas.height;
+                    let width = mainFilterCanvas.width;
+                    let height = mainFilterCanvas.height;
 
                     if (currentFilter === 'relief') {
                         let copy = new Uint8ClampedArray(data);
@@ -650,18 +685,17 @@
                         }
                     }
                     
-                    // 3. Reemplazar el canvas con la data procesada
-                    ctx.putImageData(frame, 0, 0);
+                    // 4. Reemplazar el canvas con la data procesada
+                    mainFilterCtx.putImageData(frame, 0, 0);
                 }
             }
-            // 4. Pedir el siguiente frame
+            // 5. Pedir el siguiente frame
             requestAnimationFrame(drawLoop);
         }
         
-        // --- SOLUCIÓN 1: NUEVAS FUNCIONES PARA DIBUJAR ESQUELETOS DE IA ---
+        // --- Funciones de dibujo de IA (ahora usan mainFilterCtx) ---
         
-        const confidenceThreshold = 0.3; // Confianza mínima de la IA (0.0 a 1.0)
-        // Mapa de conexiones de MoveNet
+        const confidenceThreshold = 0.3; 
         const skeletonMap = [
             ['left_shoulder', 'right_shoulder'], ['left_shoulder', 'left_elbow'],
             ['left_elbow', 'left_wrist'], ['right_shoulder', 'right_elbow'],
@@ -671,12 +705,12 @@
             ['right_hip', 'right_knee'], ['right_knee', 'right_ankle']
         ];
         
-        /** Dibuja todos los esqueletos detectados en la lista de 'poses' */
         function drawAllSkeletons(poses) {
-            ctx.strokeStyle = 'var(--neon-green)';
-            ctx.fillStyle = '#fff';
-            ctx.lineWidth = 2;
-            ctx.globalAlpha = 0.8; // Un poco de transparencia
+            // SOLUCIÓN 7: Color de esqueleto verde neón
+            mainFilterCtx.strokeStyle = 'var(--neon-green)';
+            mainFilterCtx.fillStyle = '#fff';
+            mainFilterCtx.lineWidth = 2;
+            mainFilterCtx.globalAlpha = 0.8; 
 
             poses.forEach(pose => {
                 if (pose.score > confidenceThreshold) {
@@ -684,22 +718,20 @@
                     drawConnections(pose.keypoints);
                 }
             });
-            ctx.globalAlpha = 1.0; // Restaurar alfa
+            mainFilterCtx.globalAlpha = 1.0; 
         }
 
-        /** Dibuja los puntos (articulaciones) */
         function drawKeypoints(keypoints) {
             for (let i = 0; i < keypoints.length; i++) {
                 const keypoint = keypoints[i];
                 if (keypoint.score > confidenceThreshold) {
-                    ctx.beginPath();
-                    ctx.arc(keypoint.x, keypoint.y, 4, 0, 2 * Math.PI); // Círculo de 4px
-                    ctx.fill();
+                    mainFilterCtx.beginPath();
+                    mainFilterCtx.arc(keypoint.x, keypoint.y, 4, 0, 2 * Math.PI); 
+                    mainFilterCtx.fill();
                 }
             }
         }
 
-        /** Dibuja las líneas (huesos) que conectan las articulaciones */
         function drawConnections(keypoints) {
             const keypointMap = new Map();
             keypoints.forEach(keypoint => {
@@ -711,21 +743,22 @@
                 const end = keypointMap.get(connection[1]);
 
                 if (start && end && start.score > confidenceThreshold && end.score > confidenceThreshold) {
-                    ctx.beginPath();
-                    ctx.moveTo(start.x, start.y);
-                    ctx.lineTo(end.x, end.y);
-                    ctx.stroke();
+                    mainFilterCtx.beginPath();
+                    mainFilterCtx.moveTo(start.x, start.y);
+                    mainFilterCtx.lineTo(end.x, end.y);
+                    mainFilterCtx.stroke();
                 }
             });
         }
-        // --- FIN DE LAS NUEVAS FUNCIONES DE IA ---
 
+        // SOLUCIÓN 6: Nueva función setFilter
         function setFilter(f) {
             currentFilter = f;
-            document.querySelectorAll('.cam-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             event.target.classList.add('active');
-            edgeMap = null; 
         }
+
+        // --- Resto del código (Audio, Sensores, UI) sin cambios ---
 
         // AUDIO
         function initAudio() {
@@ -930,7 +963,6 @@
         function speak(text) {
             isSpeaking = true;
             
-            // Efecto de "barrido sucio" sobre la voz (V5.17)
             lfoGain.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime+0.1);
             lfo.frequency.linearRampToValueAtTime(15, audioCtx.currentTime + 0.1);
             radioGain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime+0.1);
@@ -943,7 +975,6 @@
             
             u.onend = () => {
                 isSpeaking = false;
-                // Devolver el LFO a la normalidad
                 lfoGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime+0.2);
                 lfo.frequency.linearRampToValueAtTime([5,12,20][scanSpeed], audioCtx.currentTime + 0.2);
                 radioGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime+0.2);
@@ -1084,14 +1115,7 @@
             if(menu.classList.contains('visible')) mT = setTimeout(()=>menu.classList.remove('visible'), 5000);
         });
         
-        
-        function checkPanelState() {
-            const anyVis = !document.getElementById('p-camera').classList.contains('hidden') || 
-                           !document.getElementById('p-detector').classList.contains('hidden') ||
-                           !document.getElementById('p-env').classList.contains('hidden');
-            if(anyVis) document.body.classList.add('panels-active');
-            else document.body.classList.remove('panels-active');
-        }
+        // SOLUCIÓN 3: checkPanelState eliminado
 
         function togglePanel(id) {
             const p = document.getElementById(id);
@@ -1099,7 +1123,7 @@
             p.classList.toggle('hidden');
             if(btn) btn.classList.toggle('active');
             
-            checkPanelState(); 
+            // SOLUCIÓN 3: Llamada a checkPanelState eliminada
             
             menu.classList.remove('visible');
             
@@ -1110,14 +1134,19 @@
             startCamera();
             initSensor(); 
             startVisualLoop(); 
-            initMLModel(); // SOLUCIÓN 1: Cargar el modelo de IA al iniciar
+            initMLModel(); 
             
             setInterval(updateSensorReadings, 2000); 
             setInterval(persistentMicCheck, 1000); 
-            checkPanelState(); 
+            
+            // SOLUCIÓN 3: Llamada a checkPanelState eliminada
         };
         
         window.onresize = () => {
+            // SOLUCIÓN 2: Redimensionar canvas principal
+            mainFilterCanvas.width = window.innerWidth;
+            mainFilterCanvas.height = window.innerHeight;
+            
             if(energyCanvas && !document.getElementById('p-env').classList.contains('hidden')) {
                 resizeEnergyCanvas();
             }
