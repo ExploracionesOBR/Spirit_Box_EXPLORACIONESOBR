@@ -2,8 +2,14 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBR-FIELD-UNIT V5.30</title> <script src="https://cdn.tailwindcss.com"></script>
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+    <link rel="apple-touch-icon" href="obr-logo.png">
+
+    <title>OBR-FIELD-UNIT V5.31</title> <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
@@ -38,8 +44,6 @@
             width: 100%;
             height: 100%;
             position: relative;
-            /* SOLUCIÓN 3: Permite capturar clics */
-            pointer-events: auto;
         }
 
         #main-view-area {
@@ -50,9 +54,6 @@
             height: 100%;
             overflow: hidden;
             transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            /* SOLUCIÓN 3: Clickeable para mostrar UI */
-            pointer-events: auto;
-            z-index: 5;
         }
 
         #bg-camera-feed {
@@ -189,8 +190,6 @@
             animation: breatheSlow 20s infinite ease-in-out; 
             z-index: 100; 
             opacity: 0; 
-            /* SOLUCIÓN 3: Transición para ocultar/mostrar */
-            transition: opacity 0.5s ease-in-out;
         }
         
         @keyframes breatheSlow {
@@ -268,9 +267,6 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            /* SOLUCIÓN 3: Transición para ocultar/mostrar */
-            opacity: 1;
-            transition: opacity 0.5s ease-in-out;
         }
 
         #btn-ver {
@@ -310,9 +306,6 @@
             gap: 10px;
             z-index: 100;
             pointer-events: auto;
-            /* SOLUCIÓN 3: Transición para ocultar/mostrar */
-            opacity: 1;
-            transition: opacity 0.5s ease-in-out;
         }
         .filter-btn {
             width: 50px;
@@ -335,31 +328,6 @@
             background: var(--neon-cyan);
             color: #000;
             box-shadow: 0 0 20px #fff;
-        }
-
-        /* SOLUCIÓN 2: Banner KINEC ACTIVO */
-        #kinect-banner {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 100;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.0rem;
-            font-weight: 700;
-            color: var(--neon-green);
-            text-shadow: 0 0 5px var(--neon-green), 0 0 10px #000;
-            display: none; /* Oculto por defecto */
-            pointer-events: none;
-            animation: pulseGlow 1.5s infinite ease-in-out;
-        }
-        #kinect-banner::before {
-            content: '::';
-            color: var(--alert-red);
-            margin-right: 10px;
-        }
-        @keyframes pulseGlow {
-            0%, 100% { opacity: 0.6; text-shadow: 0 0 5px var(--neon-green), 0 0 10px #000; }
-            50% { opacity: 1.0; text-shadow: 0 0 15px var(--neon-green), 0 0 10px #000; }
         }
 
 
@@ -396,7 +364,6 @@
             .filter-btn { width: 45px; height: 45px; }
             
             #menu-container { left: 50%; transform: translateX(-50%); }
-            #kinect-banner { left: 10px; top: 10px; font-size: 0.8rem;}
             
             @media (max-width: 768px) and (orientation: landscape) {
                 :root { --panel-width: 240px; }
@@ -406,7 +373,7 @@
 </head>
 <body>
 
-<div id="app-ui" onclick="handleUITap(event)">
+<div id="app-ui">
 
     <div id="main-view-area">
         <video id="bg-camera-feed" playsinline autoplay muted></video>
@@ -415,8 +382,6 @@
     <canvas id="temp-canvas" class="hidden-canvas"></canvas>
 
     <div class="header-title">EQUIPO PROFESIONAL DE EXPLORACIONES OBR</div>
-
-    <div id="kinect-banner">KINEC ACTIVO</div>
 
     <div id="side-panel-container">
         
@@ -488,7 +453,7 @@
     </div>
 
     <div id="filter-controls-container">
-        <button class="filter-btn" onclick="setFilter('night-vision')">VNO</button>
+        <button class="filter-btn" onclick="setFilter('scanner-topo')">SCN</button>
         <button class="filter-btn" onclick="setFilter('sls')">SLS</button>
         <button class="filter-btn" onclick="setFilter('relief')">RLV</button>
     </div>
@@ -498,7 +463,7 @@
             <div class="menu-item active" id="m-detector" onclick="togglePanel('p-detector')">SPIRIT BOX</div>
             <div class="menu-item active" id="m-env" onclick="togglePanel('p-env')">SENSORES</div>
         </div>
-        <div id="btn-ver" onclick="toggleMenu()">MENU</div>
+        <div id="btn-ver">MENU</div>
     </div>
 
 </div> 
@@ -550,9 +515,7 @@
         // SOLUCIÓN 1: 'isDetectingPose' NO se usa en esta versión
         
         let autoModeDelay = 5000; 
-        
-        // SOLUCIÓN 3: Variable para el temporizador de la UI
-        let uiHideTimeout;
+        let sweepY = 0; 
 
         async function startCamera() {
             try {
@@ -581,14 +544,17 @@
             mainFilterCanvas.height = h;
             tempCanvas.width = w;
             tempCanvas.height = h;
+            sweepY = 0; 
         }
 
+        // SOLUCIÓN 1: Función de IA (V5.23) restaurada
         async function initMLModel() {
             try {
+                // SOLUCIÓN 1: Cargar modelo MULTIPOSE
                 const model = poseDetection.SupportedModels.MoveNet;
                 const detectorConfig = {
                     modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING,
-                    maxPoses: 6 
+                    maxPoses: 6 // Especificar 6 poses
                 };
                 poseDetector = await poseDetection.createDetector(model, detectorConfig);
                 console.log("MoveNet (IA Multi-Pose) cargado.");
@@ -626,6 +592,7 @@
         }
 
         
+        // SOLUCIÓN 1: drawLoop es ASYNC de nuevo
         async function drawLoop() {
             if (videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
                 
@@ -634,118 +601,110 @@
 
                 mainFilterCtx.clearRect(0, 0, w, h);
                 
-                // SOLUCIÓN 2: Controlar visibilidad del banner y título
-                const kinectBanner = document.getElementById('kinect-banner');
-                const headerTitle = document.querySelector('.header-title');
-                
                 if (currentFilter === 'sls') {
-                    kinectBanner.style.display = 'block';
-                    headerTitle.style.opacity = '0'; // Ocultar título principal
+                    // SOLUCIÓN 1: Lógica de IA (V5.23) restaurada
                     
+                    // 1. Dibujar video en canvas temporal
                     drawVideoWithCover(tempCtx, videoBg);
                     
+                    // 2. Ejecutar detección (LENTO)
                     if(poseDetector) {
+                        // SOLUCIÓN 1 (Error 2): Usar tempCanvas (el elemento) no tempCtx (el contexto)
                         const poses = await poseDetector.estimatePoses(tempCanvas); 
-                        latestPoses = poses; 
+                        latestPoses = poses; // Guardar resultado
                     }
                     
+                    // 3. Dibujar video en canvas principal
                     drawVideoWithCover(mainFilterCtx, videoBg);
                     
-                    // SOLUCIÓN 2: Tinte verde ELIMINADO
+                    // 4. Tinte verde Kinect
+                    mainFilterCtx.globalAlpha = 0.15;
+                    mainFilterCtx.fillStyle = '#39FF14'; // Verde
+                    mainFilterCtx.fillRect(0, 0, w, h);
+                    mainFilterCtx.globalAlpha = 1.0;
                     
+                    // 5. Dibujar esqueletos (el último resultado guardado)
                     if (latestPoses) {
                         drawAllSkeletons(latestPoses); 
                     }
                 
-                } else {
-                    kinectBanner.style.display = 'none';
-                    headerTitle.style.opacity = '1'; // Mostrar título principal
+                } else if (currentFilter === 'relief') {
+                    // SOLUCIÓN 3: Corregido para no "marcar todo"
+                    // 1. Dibujar en canvas temporal
+                    drawVideoWithCover(tempCtx, videoBg);
                     
-                    if (currentFilter === 'relief') {
-                        drawVideoWithCover(tempCtx, videoBg);
-                        let frame = tempCtx.getImageData(0, 0, w, h);
-                        let data = frame.data;
-                        let copy = new Uint8ClampedArray(data);
-                        
-                        for (let y = 1; y < h - 1; y++) {
-                            for (let x = 1; x < w - 1; x++) {
-                                let i = (y * w + x) * 4;
-                                let hpx = -copy[((y-1)*w+(x-1))*4] + copy[((y-1)*w+(x+1))*4]
-                                      -2*copy[(y*w+(x-1))*4] + 2*copy[(y*w+(x+1))*4]
-                                      -copy[((y+1)*w+(x-1))*4] + copy[((y+1)*w+(x+1))*4];
-                                let vpx = -copy[((y-1)*w+(x-1))*4] - 2*copy[((y-1)*w+x)*4] - copy[((y-1)*w+(x+1))*4]
-                                      +copy[((y+1)*w+(x-1))*4] + 2*copy[((y+1)*w+x)*4] + copy[((y+1)*w+(x+1))*4];
-                                
-                                let diff = Math.sqrt(hpx*hpx + vpx*vpx);
-                                if (diff > 30) { 
-                                    data[i] = diff; data[i+1] = 255; data[i+2] = 255; // Cian
-                                } else {
-                                    data[i] = 10; data[i+1] = 10; data[i+2] = 10; // Negro
-                                }
-                            }
-                        }
-                        mainFilterCtx.putImageData(frame, 0, 0);
-
-                    // SOLUCIÓN 1: Nuevo filtro 'night-vision'
-                    } else if (currentFilter === 'night-vision') {
-                        drawVideoWithCover(mainFilterCtx, videoBg);
-                        let frame = mainFilterCtx.getImageData(0, 0, w, h);
-                        let data = frame.data;
-                        
-                        for (let i = 0; i < data.length; i += 4) {
-                            let l = (data[i] * 0.3) + (data[i+1] * 0.59) + (data[i+2] * 0.11); // Luminosidad
-                            data[i] = 0; // Rojo
-                            data[i+1] = l * 1.2; // Verde
-                            data[i+2] = 0; // Azul
-
-                            // Scanlines
-                            let y = Math.floor((i / 4) / w);
-                            if (y % 4 === 0) {
-                                data[i+1] *= 0.8; // Oscurecer
-                            }
-                        }
-                        
-                        // Viñeta
-                        for (let y = 0; y < h; y++) {
-                            for (let x = 0; x < w; x++) {
-                                let i = (y * w + x) * 4;
-                                let dx = (x / w) - 0.5;
-                                let dy = (y / h) - 0.5;
-                                let dist = Math.sqrt(dx*dx + dy*dy) * 2;
-                                let factor = Math.max(0, 1.0 - dist * 0.8);
-                                data[i+1] *= factor;
-                            }
-                        }
-                        
-                        mainFilterCtx.putImageData(frame, 0, 0);
+                    // 2. Obtener y procesar datos
+                    let frame = tempCtx.getImageData(0, 0, w, h);
+                    let data = frame.data;
+                    let copy = new Uint8ClampedArray(data);
                     
-                    } else if (currentFilter === 'none') {
-                        // El canvas se queda transparente
+                    for (let y = 1; y < h - 1; y++) {
+                        for (let x = 1; x < w - 1; x++) {
+                            let i = (y * w + x) * 4;
+                            let hpx = -copy[((y-1)*w+(x-1))*4] + copy[((y-1)*w+(x+1))*4]
+                                  -2*copy[(y*w+(x-1))*4] + 2*copy[(y*w+(x+1))*4]
+                                  -copy[((y+1)*w+(x-1))*4] + copy[((y+1)*w+(x+1))*4];
+                            let vpx = -copy[((y-1)*w+(x-1))*4] - 2*copy[((y-1)*w+x)*4] - copy[((y-1)*w+(x+1))*4]
+                                  +copy[((y+1)*w+(x-1))*4] + 2*copy[((y+1)*w+x)*4] + copy[((y+1)*w+(x+1))*4];
+                            
+                            let diff = Math.sqrt(hpx*hpx + vpx*vpx);
+                            if (diff > 30) { 
+                                data[i] = diff; data[i+1] = 255; data[i+2] = 255; // Cian
+                            } else {
+                                data[i] = 10; data[i+1] = 10; data[i+2] = 10; // Negro
+                            }
+                        }
                     }
+                    // 3. Poner datos procesados en canvas principal
+                    mainFilterCtx.putImageData(frame, 0, 0);
+
+                } else if (currentFilter === 'scanner-topo') {
+                    drawVideoWithCover(tempCtx, videoBg);
+                    let frame = tempCtx.getImageData(0, 0, w, h);
+                    let data = frame.data;
+                    
+                    let topoMapData = tempCtx.createImageData(w, h); 
+                    let topoData = topoMapData.data;
+                    
+                    for (let i = 0; i < data.length; i += 4) {
+                        let l = (data[i] + data[i+1] + data[i+2]) / 3; 
+                        
+                        if (Math.floor(l) % 25 < 4) { 
+                            topoData[i] = 0;      
+                            topoData[i+1] = 136;  
+                            topoData[i+2] = 255;  // Azul Neón
+                            topoData[i+3] = 255;  
+                        } else {
+                            topoData[i+3] = 0; 
+                        }
+                    }
+                    tempCtx.putImageData(topoMapData, 0, 0); 
+
+                    sweepY = (sweepY + 8) % h; 
+                    
+                    mainFilterCtx.drawImage(
+                        tempCanvas, 
+                        0, 0, w, sweepY,
+                        0, 0, w, sweepY
+                    );
+                    
+                    mainFilterCtx.fillStyle = 'var(--neon-blue)';
+                    mainFilterCtx.shadowColor = 'var(--neon-blue)';
+                    mainFilterCtx.shadowBlur = 15;
+                    mainFilterCtx.fillRect(0, sweepY, w, 3);
+                    mainFilterCtx.shadowBlur = 0;
+                
+                } else if (currentFilter === 'none') {
+                    // El canvas se queda transparente
                 }
             }
             requestAnimationFrame(drawLoop);
         }
         
-        // SOLUCIÓN 1: Bucle de detección de IA (RE-AGREGADO)
-        async function detectPoseLoop() {
-            while (true) {
-                if (currentFilter === 'sls' && poseDetector && videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
-                    drawVideoWithCover(tempCtx, videoBg);
-                    
-                    // SOLUCIÓN 1: Usar tempCanvas (el elemento) no tempCtx
-                    const poses = await poseDetector.estimatePoses(tempCanvas); 
-                    latestPoses = poses; 
-                    
-                    await new Promise(r => setTimeout(r, 10));
-                } else {
-                    latestPoses = []; 
-                    await new Promise(r => setTimeout(r, 100));
-                }
-            }
-        }
+        // SOLUCIÓN 1: Bucle de detección de IA ELIMINADO de aquí (está en V5.28, no V5.23)
 
 
+        // SOLUCIÓN 1: Funciones de IA re-agregadas
         const confidenceThreshold = 0.3; 
         const skeletonMap = [
             ['left_shoulder', 'right_shoulder'], ['left_shoulder', 'left_elbow'],
@@ -759,6 +718,7 @@
         function drawAllSkeletons(poses) {
             const ctx = mainFilterCtx; 
             
+            // SOLUCIÓN 1: Líneas Verdes, Puntos Rojos
             ctx.strokeStyle = '#39FF14'; 
             ctx.fillStyle = '#FF3333';   
             ctx.lineWidth = 2.5;
@@ -820,7 +780,9 @@
             }
         }
 
-        // --- AUDIO (V5.26) ---
+        // --- Resto del código (Audio, Sensores, UI) sin cambios ---
+
+        // AUDIO
         function initAudio() {
             if (audioCtx) return;
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -884,7 +846,7 @@
             return curve;
         }
 
-        // --- SENSORES ---
+        // SENSOR EMF
         function initSensor() {
             if (emfSimInterval) clearInterval(emfSimInterval); 
             
@@ -957,7 +919,6 @@
             }
         }
 
-        // --- SPIRIT BOX (V5.26) ---
         const pwr = document.getElementById('knob-power');
         pwr.addEventListener('click', () => {
             if(!audioCtx) initAudio();
@@ -1103,7 +1064,7 @@
                 if (i < intensity) {
                     if (i < 3) seg.classList.add('active-blue');
                     else if (i < 7) seg.classList.add('active-yellow');
-                    else seg.classList.add('active-red');
+                    else if (i < 8) seg.classList.add('active-red');
                 }
             });
         }
@@ -1172,44 +1133,13 @@
         setInterval(updateSensorReadings, 2000);
 
         // --- UI Lógica Actualizada ---
-        
-        // SOLUCIÓN 3: Lógica de UI auto-ocultable
-        const menuContainer = document.getElementById('menu-container');
-        const filterControls = document.getElementById('filter-controls-container');
-        
-        function showUI() {
-            filterControls.style.opacity = '1';
-            menuContainer.style.opacity = '1';
-            filterControls.style.pointerEvents = 'auto';
-            menuContainer.style.pointerEvents = 'auto';
-            
-            clearTimeout(uiHideTimeout);
-            uiHideTimeout = setTimeout(hideUI, 4000); // Ocultar después de 4 seg
-        }
-
-        function hideUI() {
-            filterControls.style.opacity = '0';
-            menuContainer.style.opacity = '0';
-            filterControls.style.pointerEvents = 'none';
-            menuContainer.style.pointerEvents = 'none';
-        }
-
-        function handleUITap(event) {
-            // Si el clic NO es en un panel, mostrar la UI
-            if (!event.target.closest('.panel')) {
-                showUI();
-            }
-        }
-
         const menu = document.getElementById('menu-tools');
         let mT;
-        function toggleMenu() {
+        document.getElementById('btn-ver').addEventListener('click', () => {
             menu.classList.toggle('visible');
             clearTimeout(mT);
             if(menu.classList.contains('visible')) mT = setTimeout(()=>menu.classList.remove('visible'), 5000);
-            showUI(); // Resetear el timer al usar el menú
-        }
-        document.getElementById('btn-ver').addEventListener('click', toggleMenu);
+        });
         
         function checkPanelState() {
             const p1 = document.getElementById('p-detector').classList.contains('hidden');
@@ -1233,16 +1163,36 @@
             menu.classList.remove('visible');
             
             if(id === 'p-env' && !p.classList.contains('hidden')) resizeEnergyCanvas();
-            showUI(); // Resetear el timer
         }
+        
+        // SOLUCIÓN 1: Bucle de detección de IA re-agregado
+        async function detectPoseLoop() {
+            while (true) {
+                if (currentFilter === 'sls' && poseDetector && videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
+                    
+                    drawVideoWithCover(tempCtx, videoBg);
+                    
+                    // SOLUCIÓN 1 (Error 2): Usar tempCanvas (el elemento) no tempCtx
+                    const poses = await poseDetector.estimatePoses(tempCanvas); 
+                    
+                    latestPoses = poses; 
+                    
+                    await new Promise(r => setTimeout(r, 10));
+                } else {
+                    latestPoses = []; 
+                    await new Promise(r => setTimeout(r, 100));
+                }
+            }
+        }
+
 
         window.onload = () => {
             startCamera();
             initSensor(); 
             startVisualLoop(); 
-            initMLModel(); 
+            initMLModel(); // SOLUCIÓN 1: Iniciar el modelo de IA
             
-            // SOLUCIÓN 1: Iniciar el bucle de detección de IA
+            // SOLUCIÓN 1 (Error 1): Iniciar el bucle de detección de IA
             detectPoseLoop(); 
             
             setInterval(updateSensorReadings, 2000); 
@@ -1253,9 +1203,6 @@
             document.querySelector('#m-detector').classList.remove('active');
             document.querySelector('#m-env').classList.remove('active');
             checkPanelState();
-            
-            // SOLUCIÓN 3: Mostrar UI al inicio y empezar temporizador
-            showUI();
         };
         
         window.onresize = () => {
