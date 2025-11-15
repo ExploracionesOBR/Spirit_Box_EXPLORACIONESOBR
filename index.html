@@ -3,19 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GhostTube Simulator</title>
+    <title>OBR-FIELD-UNIT V5.13</title> <!-- V5.13 -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --glow-color: #00FFFF; 
-            --panel-bg: rgba(10, 15, 20, 0.9);
-            --neon-green: #00FF00; 
+            --panel-bg: #1a1a1a; 
+            --neon-green: #39FF14; 
             --alert-red: #FF3333;
+            --amber-light: rgba(255, 176, 0, 0.1);
+            --led-blue: #0055FF;
+            --led-yellow: #FFCC00;
         }
         
         body {
-            font-family: 'Orbitron', sans-serif;
+            font-family: 'Share Tech Mono', monospace;
             background-color: #000;
             color: var(--glow-color);
             overflow: hidden;
@@ -26,403 +29,435 @@
             align-items: center;
         }
 
-        /* --- Fondo de Cámara (NITIDO) --- */
         #bg-camera-feed {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: cover; 
             z-index: 0;
-            filter: brightness(0.6); 
+            filter: brightness(0.8);
+            transform: scaleX(1); 
+            transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        
+        /* 5. Zoom de Cámara (Arreglado) */
+        body.panels-active #bg-camera-feed {
+            object-fit: contain; 
+            transform: scale(0.7); /* Zoom out */
+            filter: brightness(0.4);
+            background-color: #000;
         }
 
-        /* --- Título Superior --- */
-        .header-title {
+        #ui-container {
             position: relative;
-            z-index: 20;
-            margin-top: 20px;
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--glow-color);
-            text-shadow: 0 0 10px var(--glow-color);
-            text-align: center;
-            letter-spacing: 1px;
             width: 100%;
-            pointer-events: none;
-        }
-
-        /* --- Contenedor de Paneles --- */
-        .bottom-container {
-            position: absolute;
-            bottom: 20px;
-            left: 0;
-            width: 100%;
-            height: auto;
+            height: 100%;
             z-index: 10;
             display: flex;
-            justify-content: center;
-            align-items: flex-end;
-            padding: 0 20px;
-            pointer-events: none;
+            flex-direction: column;
+            justify-content: flex-end; 
+            padding: 10px;
+            box-sizing: border-box;
+            pointer-events: none; 
+        }
+
+        .header-title {
+            position: absolute;
+            top: 0; 
+            left: 0; 
+            width: 100%;
+            text-align: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: rgba(0, 255, 255, 0.8);
+            text-shadow: 0 0 5px var(--glow-color);
+            letter-spacing: 3px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
+            padding: 15px 0;
+            pointer-events: auto;
+            animation: breatheSlow 20s infinite ease-in-out; 
+            z-index: 20;
+            opacity: 0; 
+        }
+        
+        @keyframes breatheSlow {
+            0%, 80% { opacity: 0; } 
+            90% { opacity: 0.7; text-shadow: 0 0 10px var(--glow-color); }
+            100% { opacity: 0; }
         }
 
         .panels-grid {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 20px;
+            gap: 8px;
             width: 100%;
-            max-width: 1200px;
+            max-height: 35vh; /* 5. Paneles más pequeños */
             pointer-events: auto;
+            transition: opacity 0.3s;
+            padding-bottom: 5px;
         }
 
+        /* Estética V5.0 (Metal Viejo) */
         .panel {
-            background: var(--panel-bg);
-            border: 1px solid rgba(0, 255, 255, 0.3);
-            border-radius: 20px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 255, 255, 0.05);
+            background: repeating-linear-gradient(135deg, #1a1a1a, #1a1a1a 10px, #222 10px, #222 12px);
+            border: 1px solid #444;
+            border-top: 1px solid #666;
+            border-bottom: 1px solid #000;
+            border-radius: 8px;
+            box-shadow: inset 0 0 20px #000, 0 5px 15px rgba(0,0,0,0.8);
             display: flex;
             flex-direction: column;
-            padding: 15px;
-            height: 320px;
+            padding: 8px;
             position: relative;
-            transition: all 0.3s ease;
+            overflow: hidden;
+            transition: box-shadow 0.3s ease;
         }
+        
+        /* 4. Efecto de Alerta de Energía */
+        .panel.alert {
+            box-shadow: inset 0 0 20px #000, 0 5px 15px rgba(0,0,0,0.8), 0 0 20px var(--alert-red);
+            border-color: var(--alert-red);
+        }
+        
+        .panel::before, .panel::after {
+            content: ''; position: absolute; top: 5px; width: 6px; height: 6px;
+            background: radial-gradient(circle, #555, #111);
+            border-radius: 50%; box-shadow: 0 1px 0 rgba(255,255,255,0.2);
+        }
+        .panel::before { left: 5px; }
+        .panel::after { right: 5px; }
+
+        #p-detector.retro-lit::before {
+            content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
+            background: radial-gradient(circle at center, var(--amber-light), transparent 80%);
+            pointer-events: none; z-index: 0; animation: flicker 0.1s infinite;
+        }
+        @keyframes flicker { 0% { opacity: 0.95; } 100% { opacity: 1; } }
         
         .panel.hidden { display: none; }
 
         .panel-header {
-            font-size: 0.8rem;
-            text-align: center;
-            margin-bottom: 10px;
-            color: var(--glow-color);
-            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
-            padding-bottom: 5px;
+            font-size: 0.6rem; text-align: center; margin-bottom: 5px; color: #888;
+            text-shadow: 0 -1px 0 #000; border-bottom: 2px groove #333; padding-bottom: 2px;
+            text-transform: uppercase; letter-spacing: 1px; background: rgba(0,0,0,0.3);
+            border-radius: 4px; z-index: 1;
         }
 
         /* --- PANEL 1: CÁMARA --- */
         .camera-view-box {
-            flex-grow: 1;
-            background: #000;
-            border-radius: 10px;
-            border: 1px solid #333;
-            position: relative;
-            overflow: hidden;
-            margin-bottom: 10px;
+            flex-grow: 1; background: #050505; border: 2px inset #333; border-radius: 4px;
+            position: relative; overflow: hidden; margin-bottom: 5px; z-index: 1;
         }
-        #ghosttube-canvas {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+        #ghosttube-canvas { 
+            width: 100%; height: 100%; object-fit: cover;
+            transform: scaleX(1); 
         }
         
         .camera-controls {
-            display: flex;
-            justify-content: space-between;
-            gap: 5px;
+            display: flex; justify-content: space-between; gap: 4px; height: 25px; z-index: 1;
         }
         .cam-btn {
-            background: transparent;
-            border: 1px solid var(--glow-color);
-            color: var(--glow-color);
-            font-size: 0.6rem;
-            padding: 5px 10px;
-            border-radius: 15px;
-            cursor: pointer;
-            flex: 1;
-            transition: all 0.2s;
-            font-family: 'Share Tech Mono', monospace;
+            background: linear-gradient(to bottom, #333, #1a1a1a); border: 1px solid #444;
+            color: #00aaaa; font-size: 0.5rem; border-radius: 2px; cursor: pointer;
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 0 #000;
         }
+        .cam-btn:active { transform: translateY(2px); box-shadow: none; }
         .cam-btn.active {
-            background: var(--glow-color);
-            color: #000;
-            font-weight: bold;
-            box-shadow: 0 0 10px var(--glow-color);
+            background: #003333; color: var(--glow-color); border-color: var(--glow-color);
+            box-shadow: inset 0 0 5px var(--glow-color);
         }
 
         /* --- PANEL 2: DETECTOR --- */
         .emf-container {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            justify-content: space-between;
+            display: flex; flex-direction: column; height: 100%; justify-content: space-between; z-index: 1;
         }
+        
         .vu-section {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-            padding: 0 5px;
+            display: flex; justify-content: space-between; margin-bottom: 5px; gap: 5px; height: 15px;
         }
         .vu-box {
-            width: 48%;
-            height: 30px;
-            background: #111;
-            border: 1px solid #333;
-            border-radius: 3px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
+            flex: 1; background: #111; border: 1px inset #444; position: relative; overflow: hidden;
         }
         .vu-bar-fill {
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, #00ff00 0%, #ffff00 60%, #ff0000 100%);
-            transform: scaleX(0);
-            transform-origin: left;
-            transition: transform 0.05s linear;
-            opacity: 0.8;
+            height: 100%; width: 0%; opacity: 0.9; transition: width 0.05s linear;
+            box-shadow: 0 0 5px #0f0, 0 0 10px #ff0;
+        }
+        #vu-l {
+            background: linear-gradient(to right, #00ff00, #ffff00, #ff0000);
+            float: left;
+        }
+        #vu-r {
+            background: linear-gradient(to left, #00ff00, #ffff00, #ff0000);
+            float: right;
         }
 
         .meter-section {
-            flex-grow: 1;
-            position: relative;
-            background: url('data:image/svg+xml;utf8,<svg width="200" height="100" viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg"><path d="M20,100 A80,80 0 0,1 180,100" fill="none" stroke="%23333" stroke-width="2"/><path d="M20,100 A80,80 0 0,1 60,30" fill="none" stroke="red" stroke-width="3" opacity="0.5"/></svg>') no-repeat bottom center;
-            background-size: contain;
-            margin-bottom: 5px;
+            flex-grow: 1; position: relative;
+            background: 
+                linear-gradient(90deg, transparent 49%, rgba(0,255,255,0.1) 50%, transparent 51%),
+                repeating-linear-gradient(90deg, transparent, transparent 19px, rgba(255,255,255,0.05) 20px),
+                radial-gradient(circle at 50% 100%, #222, #000);
+            border: 1px solid #333; border-radius: 4px; margin-bottom: 5px;
+            box-shadow: inset 0 0 10px #000;
         }
+        .meter-freqs {
+            position: absolute; top: 5px; left: 0; width: 100%; text-align: center;
+            font-size: 0.45rem; color: #555; z-index: 1; display: flex; justify-content: space-between; padding: 0 10px;
+        }
+        
         #main-needle {
-            width: 4px;
-            height: 70%;
-            background: red;
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            transform-origin: bottom center;
-            transform: rotate(-45deg);
-            transition: transform 0.1s ease-out;
-            box-shadow: 0 0 5px red;
-            border-radius: 2px;
+            width: 2px; height: 85%; background: #ff5500; position: absolute;
+            bottom: 0; left: 50%; transform-origin: bottom center; transform: rotate(-45deg);
+            transition: transform 0.1s cubic-bezier(0.2, 1.5, 0.5, 1);
+            box-shadow: 0 0 5px #ff5500; z-index: 2;
         }
 
-        .knobs-section {
-            display: flex;
-            justify-content: space-around;
-            margin-bottom: 5px;
-        }
+        .knobs-section { display: flex; justify-content: space-around; margin-bottom: 5px; }
         .knob-circle {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            border: 2px solid var(--glow-color);
-            position: relative;
-            margin: 0 auto 5px auto;
-            cursor: pointer;
-            box-shadow: 0 0 5px var(--glow-color);
-            transition: transform 0.2s ease; /* Transición suave para cambios manuales */
+            width: 35px; height: 35px; border-radius: 50%; border: 2px solid #555;
+            position: relative; margin: 0 auto 2px auto; cursor: pointer;
+            background: conic-gradient(#222, #000, #222); box-shadow: 0 3px 5px #000;
+        }
+        .knob-circle::after {
+            content:''; position:absolute; top:0; left:0; width:100%; height:100%;
+            border-radius:50%; background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
         }
         .knob-indicator {
-            position: absolute;
-            top: 2px;
-            left: 50%;
-            width: 3px;
-            height: 8px;
-            background: var(--glow-color);
-            transform: translateX(-50%);
+            position: absolute; top: 2px; left: 50%; width: 2px; height: 10px;
+            background: #ff5500; transform: translateX(-50%);
         }
-        .knob-label { font-size: 0.6rem; color: var(--glow-color); text-align: center; }
+        .knob-label { font-size: 0.5rem; color: #aaa; text-align: center; text-shadow: 0 1px 0 #000; }
 
         .volume-slider-container {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            width: 100%; display: flex; align-items: center; gap: 8px; padding: 5px 0;
         }
         input[type=range] {
-            flex-grow: 1;
-            -webkit-appearance: none;
-            height: 4px;
-            background: #333;
+            flex-grow: 1; -webkit-appearance: none; height: 20px; background: #111;
+            border: 1px solid #333; border-radius: 10px; overflow: hidden;
         }
+        /* 5. Slider de Volumen (Móvil) */
         input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 12px;
-            height: 12px;
-            background: var(--glow-color);
-            border-radius: 50%;
+            -webkit-appearance: none; width: 30px; height: 30px; /* Más grande */
+            background: #444;
+            border: 1px solid #666; 
+            border-radius: 50%; /* Redondo */
+            box-shadow: -100vw 0 0 100vw var(--glow-color);
+            cursor: pointer;
         }
 
         /* --- PANEL 3: AMBIENTE --- */
         .env-content {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
+            display: flex; flex-direction: column; height: 100%; justify-content: center; /* Centro por defecto */
+            align-items: center; padding: 5px 0; z-index: 1; transition: all 0.5s ease;
         }
+        
         .temp-readout {
-            font-size: 3rem;
-            font-weight: bold;
-            color: var(--glow-color);
-            text-shadow: 0 0 15px var(--glow-color);
+            font-size: 2.5rem; font-weight: bold; color: var(--glow-color);
+            text-shadow: 0 0 15px rgba(0,255,255,0.3);
+            background: rgba(0,0,0,0.5);
+            padding: 15px 25px;
+            border: 2px solid #333;
+            border-left: 4px solid var(--glow-color); 
+            border-radius: 0 10px 10px 0;
+            font-family: 'Share Tech Mono', monospace;
+            transition: all 0.5s ease;
         }
-        /* Alerta de Energía */
-        .energy-label {
-            font-size: 0.7rem;
-            transition: all 0.2s;
-            padding: 2px 5px;
-            border-radius: 3px;
+        .temp-label-small { font-size: 0.6rem; color: #666; margin-top: 5px; }
+        
+        .energy-container {
+            width: 100%; display: flex; flex-direction: column; align-items: center;
+            height: 0; opacity: 0; overflow: hidden; transition: all 0.5s ease;
+            transform: scaleY(0.5); 
         }
-        .energy-alert {
-            color: var(--alert-red);
-            text-shadow: 0 0 10px var(--alert-red);
-            font-weight: bold;
-            animation: alertPulse 0.5s infinite alternate;
-        }
-        @keyframes alertPulse { from { opacity: 0.5; } to { opacity: 1; } }
+        
+        .env-content.active { justify-content: space-between; }
+        .env-content.active .temp-readout { font-size: 1.5rem; padding: 5px 15px; border-width: 1px; }
+        .env-content.active .energy-container { height: auto; opacity: 1; flex-grow: 1; margin-top: 5px; transform: scaleY(1); }
 
+        .led-bar {
+            display: flex; gap: 3px; margin-bottom: 5px;
+            background: #000; padding: 4px; border-radius: 4px; border: 1px solid #333;
+        }
+        .led-segment {
+            width: 8px; /* Más delgados */
+            height: 15px;
+            background-color: #111;
+            border: 1px solid #222;
+            transition: background-color 0.1s;
+        }
+        .led-segment.active-blue { background-color: var(--led-blue); box-shadow: 0 0 10px var(--led-blue); }
+        .led-segment.active-yellow { background-color: var(--led-yellow); box-shadow: 0 0 10px var(--led-yellow); }
+        .led-segment.active-red { background-color: var(--alert-red); box-shadow: 0 0 15px var(--alert-red); }
+
+
+        .energy-label { font-size: 0.6rem; color: #aaa; margin-bottom: 5px; letter-spacing: 1px; }
+        
         .energy-graph-box {
             width: 100%;
-            height: 80px;
+            height: 100%;
+            flex-grow: 1; 
             background: #000;
-            border: 1px solid #333;
+            border: 1px inset #333;
             border-radius: 5px;
-            position: relative;
             overflow: hidden;
+            margin-top: 5px;
         }
-        #energy-canvas { width: 100%; height: 100%; }
-        
-        .plate-obr {
-            border: 1px solid #555;
-            padding: 5px 15px;
-            border-radius: 5px;
-            background: linear-gradient(to bottom, #333, #111);
-            color: #aaa;
-            font-size: 0.7rem;
-            letter-spacing: 2px;
+        #energy-canvas {
+            width: 100%;
+            height: 100%;
         }
 
-        /* --- Menú Flotante --- */
-        #btn-ver {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            width: 60px;
-            height: 60px;
+        .plate-obr {
+            background: linear-gradient(to right, #222, #444, #222); border: 1px solid #000;
+            color: #aaa; font-size: 0.6rem; padding: 4px 10px;
+            box-shadow: 0 1px 0 rgba(255,255,255,0.1); text-shadow: 0 -1px 0 #000;
+            border-radius: 2px; font-weight: bold;
+            margin-top: 5px; 
+        }
+
+        /* 3. LEDs de Estado */
+        .status-led {
+            width: 10px; height: 10px; /* 2. Más visibles */
+            background-color: #333;
+            border: 1px solid #000;
             border-radius: 50%;
-            border: 2px solid var(--glow-color);
-            background: rgba(0, 0, 0, 0.6);
-            color: var(--glow-color);
-            font-weight: bold;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            box-shadow: 0 0 15px var(--glow-color);
+            position: absolute;
+            top: 10px; right: 10px;
+            transition: all 0.2s;
+            box-shadow: inset 0 0 3px #000;
+        }
+        #p-env .status-led { background-color: #220000; } /* 3. LED de sensor apagado */
+        
+        .status-led.active-mic {
+            background-color: var(--alert-red);
+            box-shadow: 0 0 8px var(--alert-red), 0 0 15px var(--alert-red);
+            animation: pulse 1s infinite;
+        }
+        .status-led.active-sensor {
+            background-color: var(--neon-green);
+            box-shadow: 0 0 8px var(--neon-green), 0 0 15px var(--neon-green);
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+
+        /* --- Botón VER --- */
+        #btn-ver {
+            position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px;
+            border-radius: 50%; border: 2px solid #00aaaa;
+            background: radial-gradient(#004444, #002222); color: #00ffff;
+            font-weight: bold; font-size: 0.8rem; display: flex; justify-content: center;
+            align-items: center; cursor: pointer; box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
             z-index: 100;
-            pointer-events: auto;
         }
         #menu-tools {
-            position: absolute;
-            bottom: 90px;
-            right: 20px;
-            background: rgba(0,0,0,0.95);
-            border: 1px solid var(--glow-color);
-            border-radius: 10px;
-            padding: 5px;
-            display: none;
-            z-index: 99;
-            pointer-events: auto;
+            position: fixed; bottom: 85px; right: 20px; background: rgba(10,15,20,0.95);
+            border: 1px solid #00aaaa; border-radius: 8px; padding: 5px;
+            display: none; z-index: 99;
         }
         #menu-tools.visible { display: block; }
         .menu-item {
-            padding: 10px 15px;
-            color: var(--glow-color);
-            border-bottom: 1px solid #333;
-            cursor: pointer;
-            font-size: 0.8rem;
-            white-space: nowrap;
+            padding: 10px 20px; color: #aaa; border-bottom: 1px solid #333;
+            cursor: pointer; font-size: 0.7rem;
+        }
+        /* 7. Neón del Menú */
+        .menu-item.active { 
+            color: #00ffff; 
+            text-shadow: 0 0 5px #00ffff; 
+            background: rgba(0, 255, 255, 0.1);
         }
 
-        /* SVG Overlay para SLS */
-        #sls-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-        }
+        #sls-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
 
-        /* Responsive Móvil Vertical */
+        /* 6. Responsive (Móvil Vertical) */
         @media (max-width: 768px) and (orientation: portrait) {
-            .panels-grid { grid-template-columns: 1fr; gap: 10px; }
-            .panel { height: 280px; }
-            .bottom-container { position: relative; margin-top: 20px; padding-bottom: 80px; }
-            body { overflow-y: auto; justify-content: flex-start; }
+            .panels-grid { 
+                grid-template-columns: 1fr; 
+                gap: 10px; 
+                padding-bottom: 80px; 
+                max-height: 70vh; /* Más altura en vertical */
+                overflow-y: auto; 
+            }
+            .panel { height: 280px; flex-shrink: 0; }
+            .header-title { font-size: 0.8rem; top: 0; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Fondo de Cámara -->
     <video id="bg-camera-feed" playsinline autoplay muted></video>
 
-    <div class="header-title">EQUIPO PROFESIONAL DE EXPLORACIONES OBR</div>
+    <div id="ui-container">
+        <div class="header-title">EQUIPO PROFESIONAL DE EXPLORACIONES OBR</div>
 
-    <div class="bottom-container">
-        <div class="panels-grid">
+        <div class="panels-grid" id="panels-container">
 
             <!-- PANEL 1: CÁMARA -->
             <div class="panel" id="p-camera">
-                <div class="panel-header">FILTROS CÁMARA</div>
+                <div class="panel-header">FILTROS ESPECTRALES</div>
                 <div class="camera-view-box">
                     <canvas id="ghosttube-canvas"></canvas>
                     <svg id="sls-overlay" viewBox="0 0 320 240">
-                        <!-- Grupo Esqueleto SLS -->
-                        <g id="skeleton-group" stroke="var(--neon-green)" stroke-width="2" fill="none" stroke-linecap="round" style="display: none; filter: drop-shadow(0 0 4px var(--neon-green));">
-                            <!-- Cabeza Técnica -->
-                            <path id="sk-head-lines" d="M155,50 L165,50 L165,65 L155,65 Z" />
-                            <!-- Columna -->
-                            <line id="sk-spine" x1="160" y1="65" x2="160" y2="140" />
-                            <!-- Hombros -->
-                            <line id="sk-shoulder" x1="130" y1="80" x2="190" y2="80" />
-                            <!-- Brazos -->
-                            <line id="sk-arm-l" x1="130" y1="80" x2="120" y2="120" />
-                            <line id="sk-arm-r" x1="190" y1="80" x2="200" y2="120" />
-                            <!-- Piernas -->
+                        <g id="skeleton-group" stroke="var(--neon-green)" stroke-width="1.5" fill="none" stroke-linecap="round" style="display: none; filter: drop-shadow(0 0 3px var(--neon-green));">
+                            <path id="sk-head" d="M155 35 L 165 35 L 170 45 L 165 55 L 155 55 L 150 45 Z" stroke-width="1"/>
+                            <line id="sk-spine" x1="160" y1="55" x2="160" y2="120" />
+                            <line id="sk-l-arm-1" x1="160" y1="65" x2="130" y2="80" /> 
+                            <line id="sk-l-arm-2" x1="130" y1="80" x2="120" y2="110" /> 
+                            <line id="sk-r-arm-1" x1="160" y1="65" x2="190" y2="80" />
+                            <line id="sk-r-arm-2" x1="190" y1="80" x2="200" y2="110" />
                             <g id="sk-legs">
-                                <line id="sk-hip" x1="140" y1="140" x2="180" y2="140" />
-                                <line id="sk-leg-l" x1="140" y1="140" x2="140" y2="200" />
-                                <line id="sk-leg-r" x1="180" y1="140" x2="180" y2="200" />
-                                <circle cx="140" cy="140" r="2" fill="var(--neon-green)" stroke="none"/>
-                                <circle cx="180" cy="140" r="2" fill="var(--neon-green)" stroke="none"/>
+                                <line id="sk-l-leg-1" x1="160" y1="120" x2="145" y2="170" /> 
+                                <line id="sk-l-leg-2" x1="145" y1="170" x2="140" y2="220" /> 
+                                <line id="sk-r-leg-1" x1="160" y1="120" x2="175" y2="170" />
+                                <line id="sk-r-leg-2" x1="175" y1="170" x2="180" y2="220" />
+                                <circle id="j-kn-l" cx="145" cy="170" r="2" fill="#fff" stroke="none"/>
+                                <circle id="j-kn-r" cx="175" cy="170" r="2" fill="#fff" stroke="none"/>
+                                <circle id="j-an-l" cx="140" cy="220" r="2" fill="#fff" stroke="none"/>
+                                <circle id="j-an-r" cx="180" cy="220" r="2" fill="#fff" stroke="none"/>
                             </g>
-                            <!-- Uniones Superiores -->
-                            <circle cx="160" cy="65" r="2" fill="var(--neon-green)" stroke="none"/>
-                            <circle cx="130" cy="80" r="2" fill="var(--neon-green)" stroke="none"/>
-                            <circle cx="190" cy="80" r="2" fill="var(--neon-green)" stroke="none"/>
+                            <circle id="j-neck" cx="160" cy="55" r="2" fill="#fff" stroke="none"/>
+                            <circle id="j-hip" cx="160" cy="120" r="2" fill="#fff" stroke="none"/>
+                            <circle id="j-el-l" cx="130" cy="80" r="2" fill="#fff" stroke="none"/>
+                            <circle id="j-el-r" cx="190" cy="80" r="2" fill="#fff" stroke="none"/>
+                            <circle id="j-wr-l" cx="120" cy="110" r="2" fill="#fff" stroke="none"/>
+                            <circle id="j-wr-r" cx="200" cy="110" r="2" fill="#fff" stroke="none"/>
                         </g>
                     </svg>
                 </div>
                 <div class="camera-controls">
-                    <button class="cam-btn active" onclick="setFilter('normal')">NORMAL</button>
-                    <button class="cam-btn" onclick="setFilter('sls')">SLS</button>
+                    <button class="cam-btn active" onclick="setFilter('scanner-diag-sticky')">SCANNER-DIAG</button>
+                    <button class="cam-btn" onclick="setFilter('sls')">SLS KINECT</button>
                     <button class="cam-btn" onclick="setFilter('relief')">RELIEVE</button>
                 </div>
             </div>
 
-            <!-- PANEL 2: DETECTOR -->
+            <!-- PANEL 2: DETECTOR (V5.0 Visuals) -->
             <div class="panel" id="p-detector">
-                <div class="panel-header">DETECTOR EMF (ESPÍRITUS)</div>
+                <div class="panel-header">RADIO-FRECUENCIA</div>
+                <div class="status-led" id="mic-led" title="Micrófono Escuchando"></div>
+                
                 <div class="emf-container">
-                    <!-- VU Bars -->
                     <div class="vu-section">
                         <div class="vu-box"><div id="vu-l" class="vu-bar-fill"></div></div>
                         <div class="vu-box"><div id="vu-r" class="vu-bar-fill"></div></div>
                     </div>
                     <div class="meter-section">
+                        <div class="meter-freqs">
+                            <span>| 50</span><span>| 100</span><span>| 500</span><span>| 1k</span><span>| 10k |</span>
+                        </div>
                         <div id="main-needle"></div>
                     </div>
                     <div class="knobs-section">
-                        <!-- Perilla Encendido -->
                         <div style="text-align:center">
                             <div class="knob-circle" id="knob-power" style="transform: rotate(-135deg);"><div class="knob-indicator"></div></div>
-                            <div class="knob-label">ENCENDIDO</div>
+                            <div class="knob-label">POWER</div>
                         </div>
-                        <!-- Perilla Velocidad (Manual) -->
                         <div style="text-align:center">
                             <div class="knob-circle" id="knob-scan" style="transform: rotate(-135deg);"><div class="knob-indicator"></div></div>
-                            <div class="knob-label">ESCANEAR</div>
+                            <div class="knob-label">SCAN</div>
                         </div>
                     </div>
                     <div class="volume-slider-container">
@@ -432,17 +467,35 @@
                 </div>
             </div>
 
-            <!-- PANEL 3: AMBIENTE -->
+            <!-- PANEL 3: AMBIENTE (Híbrido) -->
             <div class="panel" id="p-env">
-                <div class="panel-header">SENSOR AMBIENTE</div>
-                <div class="env-content">
-                    <div class="temp-readout" id="temp-val">--.-°C</div>
-                    <div id="energy-label" class="energy-label">ENERGÍA DETECTADA</div>
-                    <!-- Gráfico -->
-                    <div class="energy-graph-box">
-                        <canvas id="energy-canvas"></canvas>
+                <div class="panel-header">SENSORES</div>
+                <div class="status-led" id="sensor-led" title="Sensor EMF Real Activo"></div>
+                
+                <div class="env-content" id="env-content-box">
+                    <div class="temp-readout" id="temp-val">19.8°C</div>
+                    <div class="temp-label-small">TEMP AMBIENTE</div>
+                    
+                    <div class="energy-container">
+                        <div class="energy-label" style="margin-top:10px;">INTENSIDAD DE CAMPO</div>
+                        <div class="led-bar">
+                            <div class="led-segment" id="seg-1"></div>
+                            <div class="led-segment" id="seg-2"></div>
+                            <div class="led-segment" id="seg-3"></div>
+                            <div class="led-segment" id="seg-4"></div>
+                            <div class="led-segment" id="seg-5"></div>
+                            <div class="led-segment" id="seg-6"></div>
+                            <div class="led-segment" id="seg-7"></div>
+                            <div class="led-segment" id="seg-8"></div>
+                            <div class="led-segment" id="seg-9"></div>
+                            <div class="led-segment" id="seg-10"></div>
+                        </div>
+                        <div class="energy-graph-box">
+                            <canvas id="energy-canvas"></canvas>
+                        </div>
                     </div>
-                    <div class="plate-obr">OBR-SIMULATOR</div>
+                    
+                    <div class="plate-obr">OBR-FIELD-UNIT</div> 
                 </div>
             </div>
 
@@ -451,54 +504,52 @@
 
     <div id="btn-ver">VER</div>
     <div id="menu-tools">
-        <div class="menu-item" onclick="togglePanel('p-camera')">CÁMARA</div>
-        <div class="menu-item" onclick="togglePanel('p-detector')">DETECTOR</div>
-        <div class="menu-item" onclick="togglePanel('p-env')">SENSOR</div>
+        <div class="menu-item active" id="m-camera" onclick="togglePanel('p-camera')">CÁMARA</div>
+        <div class="menu-item active" id="m-detector" onclick="togglePanel('p-detector')">DETECTOR</div>
+        <div class="menu-item active" id="m-env" onclick="togglePanel('p-env')">SENSOR</div>
     </div>
 
     <script>
-        // --- CONFIGURACIÓN ---
         const SHEETDB_URL = "https://sheetdb.io/api/v1/9xzfnke69kkej"; 
         let isRunning = false;
-        let currentFilter = 'normal';
-        let scanSpeed = 0; // 0: Lento, 1: Medio, 2: Rápido
+        let currentFilter = 'scanner-diag-sticky'; // 1. Filtro Diagonal por defecto
+        let scanSpeed = 0; // 0=Lento, 1=Medio, 2=Rápido
+        let slsPos = { x: 160, y: 100 };
+        let jitter = 0; 
         
-        // SLS Variables
-        let slsCenter = { x: 160, y: 100 };
-        let hasLegs = false;
-
-        // Elementos
         const videoBg = document.getElementById('bg-camera-feed');
         const canvas = document.getElementById('ghosttube-canvas');
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         const skeletonGroup = document.getElementById('skeleton-group');
         const legsGroup = document.getElementById('sk-legs');
-        const energyLabel = document.getElementById('energy-label');
+        const envContent = document.getElementById('env-content-box');
+        const detectorPanel = document.getElementById('p-detector');
+        const sensorPanel = document.getElementById('p-env'); 
+        const segments = [1,2,3,4,5,6,7,8,9,10].map(i => document.getElementById('seg-'+i));
         const vuL = document.getElementById('vu-l');
         const vuR = document.getElementById('vu-r');
         
-        // Audio
-        let audioCtx, masterGain, gainNode, lfo, lfoGain, whiteNoiseNode, radioTuneNode, radioGain;
-        let delayNode, delayFeedback, delayWet;
-        let isSpeaking = false; 
+        // 3. LEDs de Estado
+        const micLed = document.getElementById('mic-led');
+        const sensorLed = document.getElementById('sensor-led');
         
-        // Voz
+        let energyHistory = new Array(50).fill(0);
+        let energyCanvas, energyCtx;
+        
+        let audioCtx, masterGain, gainNode, lfo, lfoGain, whiteNoiseNode, radioOsc, radioGain, reverb, reverbGain, distortionNode;
+        let isSpeaking = false; 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        let recognition;
-        let isRecognizing = false;
-        let recognitionWatchdog;
-
-        // Datos
+        let recognition, isRecognizing = false;
         let programadoData = new Map();
         let automaticoData = [];
-
-        // Energía
-        let energyHistory = new Array(50).fill(0);
-        const energyCanvas = document.getElementById('energy-canvas');
-        const energyCtx = energyCanvas.getContext('2d');
         let currentTemp = 19.8;
+        
+        // 3. Sensor EMF
+        let magnetometer; 
+        let emfValue = 0; // Valor 0-100
+        let emfSimInterval = null;
+        let visualLoopInterval; // Para los visuales del detector
 
-        // --- 1. CÁMARA & VISIÓN ---
         async function startCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
@@ -508,440 +559,613 @@
                 videoBg.srcObject = stream;
                 videoBg.onloadedmetadata = () => {
                     canvas.width = 320; canvas.height = 240;
+                    energyCanvas = document.getElementById('energy-canvas');
+                    if (energyCanvas) { 
+                        energyCtx = energyCanvas.getContext('2d');
+                        resizeEnergyCanvas();
+                    }
                     drawLoop();
                 };
-            } catch (e) { console.log("Camara error", e); }
+            } catch (e) { console.log("Error camara", e); }
         }
 
-        // --- LOOP VISUAL ---
         let lastData = null;
+        let edgeMap = null; 
+        let edgeData = null; // 1. Para el "sticky" scanner
+        let sweepDiagonal = 0; // 1. Para el scanner diagonal
+
+        
         function drawLoop() {
             if (videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
                 ctx.drawImage(videoBg, 0, 0, canvas.width, canvas.height);
-                
                 let frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 let data = frame.data;
                 let width = canvas.width;
                 let height = canvas.height;
 
-                // --- Filtros ---
                 if (currentFilter === 'relief') {
+                    // 4. Filtro Relieve (Neón)
                     let copy = new Uint8ClampedArray(data);
-                    for (let y = 0; y < height; y++) {
-                        for (let x = 0; x < width; x++) {
-                            if (x === 0) continue;
+                    for (let y = 1; y < height - 1; y++) {
+                        for (let x = 1; x < width - 1; x++) {
                             let i = (y * width + x) * 4;
-                            let prev = (y * width + (x-1)) * 4;
-                            let diff = Math.abs(copy[i] - copy[prev]) * 2; 
-                            data[i] = diff + 50;   // R
-                            data[i+1] = diff + 20; // G
-                            data[i+2] = diff;      // B
+                            // Kernel Sobel simple
+                            let h = -copy[((y-1)*width+(x-1))*4] + copy[((y-1)*width+(x+1))*4]
+                                  -2*copy[(y*width+(x-1))*4] + 2*copy[(y*width+(x+1))*4]
+                                  -copy[((y+1)*width+(x-1))*4] + copy[((y+1)*width+(x+1))*4];
+                            let v = -copy[((y-1)*width+(x-1))*4] - 2*copy[((y-1)*width+x)*4] - copy[((y-1)*width+(x+1))*4]
+                                  +copy[((y+1)*width+(x-1))*4] + 2*copy[((y+1)*width+x)*4] + copy[((y+1)*width+(x+1))*4];
+                            let diff = Math.sqrt(h*h + v*v);
+                            
+                            if (diff > 40) {
+                                data[i] = diff; // R (cian)
+                                data[i+1] = 255;  // G (cian)
+                                data[i+2] = 255;  // B (cian)
+                            } else {
+                                data[i] = 10; data[i+1] = 10; data[i+2] = 10; // Fondo oscuro
+                            }
                         }
                     }
                     ctx.putImageData(frame, 0, 0);
-                    // DESHABILITAR SLS EN RELIEVE
                     skeletonGroup.style.display = 'none';
                 } 
                 else if (currentFilter === 'sls') {
                     for (let i = 0; i < data.length; i+=4) {
                         let l = (data[i] + data[i+1] + data[i+2]) / 3;
-                        data[i] = 0; data[i+1] = l; data[i+2] = 0; 
+                        data[i] = 0; data[i+1] = l + 10; data[i+2] = 0; 
                     }
                     ctx.putImageData(frame, 0, 0);
                     
-                    // Detección
                     if (lastData) {
-                        let minX = width, maxX = 0, minY = height, maxY = 0;
-                        let motionPixels = 0;
+                        let minX = width, maxX = 0, minY = height, maxY = 0, count = 0;
+                        let quadrantMove = { tl: 0, tr: 0 };
                         
                         for (let y = 0; y < height; y+=5) {
                             for (let x = 0; x < width; x+=5) {
                                 let i = (y * width + x) * 4;
-                                let diff = Math.abs(data[i+1] - lastData[i+1]); 
-                                if (diff > 30) {
-                                    motionPixels++;
-                                    if (x < minX) minX = x;
-                                    if (x > maxX) maxX = x;
-                                    if (y < minY) minY = y;
-                                    if (y > maxY) maxY = y;
+                                if (Math.abs(data[i+1] - lastData[i+1]) > 25) {
+                                    count++;
+                                    if(x < minX) minX = x; if(x > maxX) maxX = x;
+                                    if(y < minY) minY = y; if(y > maxY) maxY = y;
+                                    
+                                    if(x < width/2 && y < height/2) quadrantMove.tl++;
+                                    else if(x >= width/2 && y < height/2) quadrantMove.tr++;
                                 }
                             }
                         }
                         
-                        if (motionPixels > 20) {
-                            let cx = (minX + maxX) / 2;
-                            let cy = (minY + maxY) / 2;
-                            let h = maxY - minY;
+                        if (count > 15) {
+                            let cx = (minX + maxX) / 2; let cy = (minY + maxY) / 2; 
+                            let h = maxY - minY; let w = maxX - minX;
+                            jitter = (Math.random() - 0.5) * 4; 
+                            slsPos.x += (cx - slsPos.x) * 0.2 + jitter;
+                            slsPos.y += (cy - slsPos.y) * 0.2 + jitter;
                             
-                            slsCenter.x += (cx - slsCenter.x) * 0.1;
-                            slsCenter.y += (cy - slsCenter.y) * 0.1;
+                            // 2. Lógica de Torso/Brazos (V5.7)
+                            let isTorsoOnly = (maxY < height * 0.7); // Si el movimiento está en la mitad superior
+                            let leftSideActive = (quadrantMove.tl > 5 && w > width * 0.3); 
+                            let rightSideActive = (quadrantMove.tr > 5 && w > width * 0.3);
                             
-                            // Escalado dinámico basado en la altura de detección
-                            let scale = Math.min(1.5, Math.max(0.5, h / 100));
-                            hasLegs = h > height * 0.4;
-                            
+                            updateSkeleton(slsPos.x, slsPos.y, !isTorsoOnly, leftSideActive, rightSideActive, h, w);
                             skeletonGroup.style.display = 'inline';
-                            updateSkeleton(slsCenter.x, slsCenter.y, hasLegs, scale);
-                            
-                            // Alerta de Energía por detección Visual
-                            triggerEnergyAlert();
                         } else {
-                            slsCenter.x += Math.sin(Date.now()/500);
-                            updateSkeleton(slsCenter.x, slsCenter.y, hasLegs, 1);
+                            skeletonGroup.style.display = 'none';
                         }
                     }
                     lastData = new Uint8ClampedArray(data);
-                } else {
+                }
+                else if (currentFilter === 'scanner-diag-sticky') {
+                    // 1. FILTRO SCANNER DIAGONAL (V5.13)
+                    
+                    // 1. Crear mapa de bordes (Sobel)
+                    if (!edgeMap) {
+                        edgeMap = new Uint8ClampedArray(data.length); 
+                        let copy = new Uint8ClampedArray(data);
+                        for (let y = 1; y < height - 1; y++) {
+                            for (let x = 1; x < width - 1; x++) {
+                                let i = (y * width + x) * 4;
+                                let h = -copy[((y-1)*width+(x-1))*4] + copy[((y-1)*width+(x+1))*4]
+                                      -2*copy[(y*width+(x-1))*4] + 2*copy[(y*width+(x+1))*4]
+                                      -copy[((y+1)*width+(x-1))*4] + copy[((y+1)*width+(x+1))*4];
+                                let v = -copy[((y-1)*width+(x-1))*4] - 2*copy[((y-1)*width+x)*4] - copy[((y-1)*width+(x+1))*4]
+                                      +copy[((y+1)*width+(x-1))*4] + 2*copy[((y+1)*width+x)*4] + copy[((y+1)*width+(x+1))*4];
+                                if (Math.sqrt(h*h + v*v) > 50) { 
+                                    edgeMap[i+3] = 255; // Marcar como borde
+                                }
+                            }
+                        }
+                    }
+                    // 2. Inicializar mapa "sticky"
+                    if (!edgeData) {
+                        edgeData = new Uint8ClampedArray(data.length);
+                    }
+                    
+                    // 3. Mover línea de barrido
+                    sweepDiagonal = (sweepDiagonal + 3) % (width + height); // Mover 3px por frame
+                    
+                    // 4. Dibujar fondo (video normal)
+                    // (Ya está dibujado)
+                    
+                    // 5. Dibujar bordes "quemados" (desvanecimiento lento)
+                    for(let i=0; i<edgeData.length; i+=4) {
+                        if (edgeData[i+3] > 0) { // Si este pixel está "pegado"
+                            data[i] = 0;
+                            data[i+1] = 255;
+                            data[i+2] = 255;
+                            data[i+3] = edgeData[i+3];
+                            edgeData[i+3] -= 2; // Desvanecer
+                        }
+                    }
+
+                    // 6. Dibujar 6 líneas de barrido y activar bordes
+                    for(let lineOffset = 0; lineOffset < 30; lineOffset += 5) { // 6 líneas x 5px
+                        let linePos = sweepDiagonal - lineOffset;
+                        
+                        for (let y = 0; y < height; y++) {
+                            let x = linePos - y;
+                            if (x >= 0 && x < width) {
+                                let i = (y * width + x) * 4;
+                                // Dibujar la línea de barrido (chorro de agua)
+                                data[i] = 0; 
+                                data[i+1] = 255; 
+                                data[i+2] = 255;
+                                data[i+3] = 200; // Semi-transparente
+                                
+                                // Si la línea toca un borde, activarlo en el mapa "sticky"
+                                if (edgeMap[i+3] > 0) {
+                                    edgeData[i+3] = 255; // Reactivar
+                                }
+                            }
+                        }
+                    }
+                    
+                    ctx.putImageData(frame, 0, 0);
                     skeletonGroup.style.display = 'none';
                 }
             }
             requestAnimationFrame(drawLoop);
         }
-
-        function updateSkeleton(x, y, legs, scale = 1) {
-            // Escalar offsets
-            const s = scale; 
-            const headLines = document.getElementById('sk-head-lines');
-            const spine = document.getElementById('sk-spine');
-            const shoulder = document.getElementById('sk-shoulder');
-            const armL = document.getElementById('sk-arm-l');
-            const armR = document.getElementById('sk-arm-r');
+        
+        // 2. Lógica SLS (V5.7)
+        function updateSkeleton(x, y, legs, armL, armR, h, w) {
+            let scaleH = Math.min(2.5, h / 100); // Escala vertical
+            let scaleW = Math.min(2.5, w / 80); // Escala horizontal
             
-            let hx = x - (10*s); let hy = y - (50*s);
-            headLines.setAttribute('d', `M${hx},${hy} L${hx+(20*s)},${hy} L${hx+(20*s)},${hy+(20*s)} L${hx},${hy+(20*s)} Z`);
+            setAttr('sk-head', { d: `M${x},${y-50*scaleH} L${x},${y-60*scaleH}` });
+            setAttr('j-head', { cx: x, cy: y-60*scaleH });
+            setAttr('j-neck', { cx: x, cy: y-50*scaleH });
+            setAttr('sk-spine', { x1: x, y1: y-50*scaleH, x2: x, y2: y+20*scaleH });
+            setAttr('j-hip', { cx: x, cy: y+20*scaleH });
 
-            spine.setAttribute('x1', x); spine.setAttribute('y1', y - (30*s));
-            spine.setAttribute('x2', x); spine.setAttribute('y2', y + (40*s));
+            let armLX = x - 25*scaleW;
+            let armLY = armL ? y-60*scaleH : y-30*scaleH; // Brazo izquierdo arriba
+            let armRX = x + 25*scaleW;
+            let armRY = armR ? y-60*scaleH : y-30*scaleH; // Brazo derecho arriba
 
-            shoulder.setAttribute('x1', x - (20*s)); shoulder.setAttribute('y1', y - (20*s));
-            shoulder.setAttribute('x2', x + (20*s)); shoulder.setAttribute('y2', y - (20*s));
+            setAttr('sk-l-arm-1', { x1: x, y1: y-40*scaleH, x2: armLX, y2: y-40*scaleH });
+            setAttr('j-el-l', { cx: armLX, cy: y-40*scaleH });
+            setAttr('sk-l-arm-2', { x1: armLX, y1: y-40*scaleH, x2: armLX - 15*scaleW, y2: armLY });
+            setAttr('j-wr-l', { cx: armLX - 15*scaleW, cy: armLY });
 
-            let sway = Math.sin(Date.now() / 300) * (10*s);
-            armL.setAttribute('x1', x - (20*s)); armL.setAttribute('y1', y - (20*s));
-            armL.setAttribute('x2', x - (35*s)); armL.setAttribute('y2', y + (10*s) + sway);
-            
-            armR.setAttribute('x1', x + (20*s)); armR.setAttribute('y1', y - (20*s));
-            armR.setAttribute('x2', x + (35*s)); armR.setAttribute('y2', y + (10*s) - sway);
+            setAttr('sk-r-arm-1', { x1: x, y1: y-40*scaleH, x2: armRX, y2: y-40*scaleH });
+            setAttr('j-el-r', { cx: armRX, cy: y-40*scaleH });
+            setAttr('sk-r-arm-2', { x1: armRX, y1: y-40*scaleH, x2: armRX + 15*scaleW, y2: armRY });
+            setAttr('j-wr-r', { cx: armRX + 15*scaleW, cy: armRY });
 
             if (legs) {
                 legsGroup.style.display = 'inline';
-                const hip = document.getElementById('sk-hip');
-                const legL = document.getElementById('sk-leg-l');
-                const legR = document.getElementById('sk-leg-r');
-                
-                hip.setAttribute('x1', x - (15*s)); hip.setAttribute('y1', y + (40*s));
-                hip.setAttribute('x2', x + (15*s)); hip.setAttribute('y2', y + (40*s));
+                setAttr('sk-l-leg-1', { x1: x, y1: y+20*scaleH, x2: x-15*scaleW, y2: y+70*scaleH });
+                setAttr('j-kn-l', { cx: x-15*scaleW, cy: y+70*scaleH });
+                setAttr('sk-l-leg-2', { x1: x-15*scaleW, y1: y+70*scaleH, x2: x-20*scaleW, y2: y+120*scaleH });
+                setAttr('j-an-l', { cx: x-20*scaleW, cy: y+120*scaleH });
 
-                legL.setAttribute('x1', x - (15*s)); legL.setAttribute('y1', y + (40*s));
-                legL.setAttribute('x2', x - (20*s)); legL.setAttribute('y2', y + (100*s));
-                
-                legR.setAttribute('x1', x + (15*s)); legR.setAttribute('y1', y + (40*s));
-                legR.setAttribute('x2', x + (20*s)); legR.setAttribute('y2', y + (100*s));
-                
-                // Uniones piernas
-                legsGroup.querySelectorAll('circle')[0].setAttribute('cx', x-(15*s));
-                legsGroup.querySelectorAll('circle')[0].setAttribute('cy', y+(40*s));
-                legsGroup.querySelectorAll('circle')[1].setAttribute('cx', x+(15*s));
-                legsGroup.querySelectorAll('circle')[1].setAttribute('cy', y+(40*s));
+                setAttr('sk-r-leg-1', { x1: x, y1: y+20*scaleH, x2: x+15*scaleW, y2: y+70*scaleH });
+                setAttr('j-kn-r', { cx: x+15*scaleW, cy: y+70*scaleH });
+                setAttr('sk-r-leg-2', { x1: x+15*scaleW, y1: y+70*scaleH, x2: x+20*scaleW, y2: y+120*scaleH });
+                setAttr('j-an-r', { cx: x+20*scaleW, cy: y+120*scaleH });
             } else {
-                legsGroup.style.display = 'none';
+                legsGroup.style.display = 'none'; // 2. Ocultar piernas
             }
-            
-            // Uniones superiores
-            const circles = skeletonGroup.querySelectorAll(':scope > circle');
-            circles[0].setAttribute('cx', x); circles[0].setAttribute('cy', y-(30*s));
-            circles[1].setAttribute('cx', x-(20*s)); circles[1].setAttribute('cy', y-(20*s));
-            circles[2].setAttribute('cx', x+(20*s)); circles[2].setAttribute('cy', y-(20*s));
+        }
+        function setAttr(id, attrs) {
+            const el = document.getElementById(id);
+            if(el) for(let k in attrs) el.setAttribute(k, attrs[k]);
         }
 
         function setFilter(f) {
             currentFilter = f;
             document.querySelectorAll('.cam-btn').forEach(b => b.classList.remove('active'));
             event.target.classList.add('active');
+            edgeMap = null; // Resetear mapa de bordes
+            edgeData = null; // Resetear sticky data
         }
 
-        // --- 2. AUDIO / SPIRIT BOX ---
+        // 3. AUDIO (V5.10)
         function initAudio() {
             if (audioCtx) return;
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             masterGain = audioCtx.createGain();
             masterGain.connect(audioCtx.destination);
 
-            // Ruido Blanco
             whiteNoiseNode = audioCtx.createBufferSource();
-            let bSize = audioCtx.sampleRate * 2;
-            let buffer = audioCtx.createBuffer(1, bSize, audioCtx.sampleRate);
-            let d = buffer.getChannelData(0);
-            for (let i = 0; i < bSize; i++) d[i] = Math.random() * 2 - 1;
-            whiteNoiseNode.buffer = buffer;
-            whiteNoiseNode.loop = true;
+            let b = audioCtx.createBuffer(1, audioCtx.sampleRate*2, audioCtx.sampleRate);
+            let d = b.getChannelData(0);
+            for(let i=0;i<d.length;i++) d[i] = Math.random()*2-1;
+            whiteNoiseNode.buffer = b; whiteNoiseNode.loop = true;
+            
+            gainNode = audioCtx.createGain(); gainNode.gain.value = 0;
+            
+            lfo = audioCtx.createOscillator(); lfo.type = 'square'; lfo.frequency.value = 8;
+            lfoGain = audioCtx.createGain(); lfoGain.gain.value = 0.05;
+            lfo.connect(lfoGain).connect(gainNode.gain);
+            
+            whiteNoiseNode.connect(gainNode); gainNode.connect(masterGain);
 
-            gainNode = audioCtx.createGain();
-            gainNode.gain.value = 0; 
-
-            // Efecto Chop (Escaneo)
-            lfo = audioCtx.createOscillator();
-            lfo.type = 'square'; 
-            lfo.frequency.value = 8; 
-
-            lfoGain = audioCtx.createGain();
-            lfoGain.gain.value = 0.05; 
-
-            lfo.connect(lfoGain);
-            lfoGain.connect(gainNode.gain);
-            whiteNoiseNode.connect(gainNode);
-            gainNode.connect(masterGain);
-
-            // Ruido Radio AM (Sintetizado)
-            let radioBuf = audioCtx.createBuffer(1, bSize, audioCtx.sampleRate);
-            let rd = radioBuf.getChannelData(0);
-            for(let i=0; i<bSize; i++) rd[i] = (Math.random() - 0.5) * 0.2; // Ruido suave
-            radioTuneNode = audioCtx.createBufferSource();
-            radioTuneNode.buffer = radioBuf;
-            radioTuneNode.loop = true;
+            radioOsc = audioCtx.createOscillator();
+            radioOsc.type = 'sine';
+            radioOsc.frequency.value = 1000;
             radioGain = audioCtx.createGain();
-            radioGain.gain.value = 0;
+            radioGain.gain.value = 0; // 3. Silbido de radio AM
+            radioOsc.connect(radioGain).connect(masterGain);
             
-            // Filtro paso alto para sonido "radio vieja"
-            let hpf = audioCtx.createBiquadFilter();
-            hpf.type = 'highpass';
-            hpf.frequency.value = 500;
+            reverbGain = audioCtx.createGain();
+            reverbGain.gain.value = 0.8; // 3. Reverb más fuerte
+            let delay = audioCtx.createDelay(); delay.delayTime.value = 0.5; 
+            let fb = audioCtx.createGain(); fb.gain.value = 0.7;
+            gainNode.connect(delay); delay.connect(fb); fb.connect(delay);
+            delay.connect(reverbGain).connect(masterGain);
             
-            radioTuneNode.connect(hpf);
-            hpf.connect(radioGain);
-            radioGain.connect(masterGain);
-            radioTuneNode.start();
+            // 3. Distorsión Sutil
+            distortionNode = audioCtx.createWaveShaper();
+            distortionNode.curve = makeDistortionCurve(50);
+            gainNode.connect(distortionNode);
+            distortionNode.connect(masterGain);
 
-            // Eco
-            delayNode = audioCtx.createDelay();
-            delayFeedback = audioCtx.createGain();
-            delayWet = audioCtx.createGain();
-            delayNode.delayTime.value = 0.4;
-            delayFeedback.gain.value = 0.4;
-            delayWet.gain.value = 0.3;
+            setInterval(() => {
+                if(isRunning) {
+                    let freq = 800 + Math.random() * 1500; 
+                    radioOsc.frequency.setValueAtTime(freq, audioCtx.currentTime); // 3. Salto de sintonía
+                }
+            }, 300);
 
-            gainNode.connect(delayWet);
-            delayWet.connect(delayNode);
-            delayNode.connect(delayFeedback);
-            delayFeedback.connect(delayNode);
-            delayNode.connect(masterGain);
-
-            whiteNoiseNode.start();
-            lfo.start();
-
-            loadSheetData();
+            radioOsc.start(); whiteNoiseNode.start(); lfo.start();
             initSpeechRec();
         }
-
-        // --- ALERTAS VISUALES ---
-        function triggerEnergyAlert() {
-            energyLabel.classList.add('energy-alert');
-            setTimeout(() => energyLabel.classList.remove('energy-alert'), 1000);
+        
+        function makeDistortionCurve(amount) {
+            let k = typeof amount === 'number' ? amount : 50,
+                n_samples = 44100,
+                curve = new Float32Array(n_samples),
+                deg = Math.PI / 180,
+                i = 0, x;
+            for ( ; i < n_samples; ++i ) {
+                x = i * 2 / n_samples - 1;
+                curve[i] = ( 3 + k ) * x * 20 * deg / ( Math.PI + k * Math.abs(x) );
+            }
+            return curve;
         }
 
-        function updateVUMeters(active) {
-            if (active) {
-                // Simular picos de audio
-                let valL = Math.random();
-                let valR = Math.random();
-                vuL.style.transform = `scaleX(${valL})`;
-                vuR.style.transform = `scaleX(${valR})`;
+        // 3. SENSOR EMF (V5.7)
+        function initSensor() {
+            if (emfSimInterval) clearInterval(emfSimInterval); // Limpiar simulador
+            
+            if ('Magnetometer' in window) {
+                try {
+                    magnetometer = new Magnetometer({ frequency: 5 }); // Leer 5 veces/seg
+                    magnetometer.onreading = () => {
+                        let strength = Math.sqrt(magnetometer.x**2 + magnetometer.y**2 + magnetometer.z**2);
+                        // Mapear el valor. El normal es ~50uT. Picos pueden ser 150-300.
+                        emfValue = Math.min(100, (strength - 40) * 0.5); // Normalizado a 0-100
+                        if (emfValue < 0) emfValue = 0;
+                        if(sensorLed) sensorLed.classList.add('active-sensor'); // 3. LED Sensor Real ON
+                    };
+                    magnetometer.onerror = (e) => {
+                        console.warn("Error de Magnetómetro:", e.error.name, "Iniciando simulador.");
+                        if(sensorLed) sensorLed.classList.remove('active-sensor'); // 3. LED Sensor Real OFF
+                        startEmfSimulation(); // Fallback
+                    };
+                    magnetometer.start();
+                    console.log("Sensor EMF (Magnetómetro) activado.");
+                } catch(e) {
+                    console.warn("No se pudo iniciar Magnetómetro. Iniciando simulador.");
+                    if(sensorLed) sensorLed.classList.remove('active-sensor');
+                    startEmfSimulation(); // Fallback
+                }
             } else {
-                vuL.style.transform = `scaleX(0)`;
-                vuR.style.transform = `scaleX(0)`;
+                console.warn("Magnetómetro no soportado. Iniciando simulador.");
+                if(sensorLed) sensorLed.classList.remove('active-sensor');
+                startEmfSimulation(); // Fallback
+            }
+        }
+        
+        function startEmfSimulation() {
+            if (emfSimInterval) return;
+            // 3. Simulador siempre activo
+            emfSimInterval = setInterval(() => {
+                emfValue = Math.random() * 100;
+            }, 200);
+        }
+        
+        function stopSensor() {
+            if (magnetometer) magnetometer.stop();
+            if (emfSimInterval) clearInterval(emfSimInterval);
+            emfSimInterval = null;
+            emfValue = 0;
+            if(sensorLed) sensorLed.classList.remove('active-sensor');
+        }
+
+        
+        function startVisualLoop() {
+            if (visualLoopInterval) clearInterval(visualLoopInterval); 
+            visualLoopInterval = setInterval(() => {
+                // 3. El loop visual AHORA ES INDEPENDIENTE del Spirit Box
+                let intensity = emfValue; // 0-100
+                
+                // Actualizar LEDs y Gráfico
+                let ledIntensity = Math.floor(intensity / 10); // 0 a 10
+                updateLEDs(ledIntensity);
+                updateEnergyGraph(intensity); 
+
+                // Si el Spirit Box está encendido, también mover la aguja
+                if(isRunning) {
+                    document.getElementById('main-needle').style.transform = `translateX(-50%) rotate(${-45 + (intensity/100)*90}deg)`;
+                    vuL.style.width = (intensity*0.6)+'%'; 
+                    vuR.style.width = (intensity*0.6)+'%';
+                }
+            }, 150); 
+        }
+        
+        function stopVisualLoop() {
+            // El loop visual AHORA NO SE DETIENE, solo los visuales del spirit box
+            if (!isRunning) {
+                document.getElementById('main-needle').style.transform = `translateX(-50%) rotate(-45deg)`;
+                vuL.style.width = '0%'; 
+                vuR.style.width = '0%';
             }
         }
 
-        // --- RECONOCIMIENTO DE VOZ ---
-        function initSpeechRec() {
-            if (!SpeechRecognition) return;
-            recognition = new SpeechRecognition();
-            recognition.lang = 'es-MX';
-            recognition.continuous = false; 
-            recognition.interimResults = false;
-
-            recognition.onstart = () => { isRecognizing = true; };
-            
-            recognition.onend = () => { 
-                isRecognizing = false;
-                if (isRunning) {
-                    clearTimeout(recognitionWatchdog);
-                    recognitionWatchdog = setTimeout(() => {
-                        if(isRunning && !isRecognizing) try { recognition.start(); } catch(e){}
-                    }, 500);
-                }
-            };
-
-            recognition.onresult = (event) => {
-                let t = event.results[0][0].transcript.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                if (programadoData.has(t)) {
-                    isSpeaking = true; 
-                    speak(programadoData.get(t));
-                }
-            };
-        }
-
-        function startListening() {
-            if (!recognition || isRecognizing) return;
-            try { recognition.start(); } catch(e){}
-        }
-
-        function speak(text) {
-            if (!text) return;
-            isSpeaking = true;
-            triggerEnergyAlert(); // Alerta visual
-            
-            if(lfoGain) lfoGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
-            if(radioGain) radioGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime + 0.1); // Bajar radio fondo
-
-            const u = new SpeechSynthesisUtterance(text);
-            u.lang = 'es-MX';
-            u.volume = document.getElementById('vol-slider').value / 100;
-            u.rate = 0.9;
-            
-            // Loop visual de hablar
-            let speakInt = setInterval(() => updateVUMeters(true), 100);
-
-            u.onend = () => {
-                isSpeaking = false;
-                clearInterval(speakInt);
-                updateVUMeters(false);
-                if(isRunning && lfoGain) {
-                    lfoGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 0.1);
-                    radioGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 0.1);
-                }
-            };
-            window.speechSynthesis.speak(u);
-        }
-
-        // --- 3. LÓGICA DE MODOS ---
-        async function loadSheetData() {
-            try {
-                let [resAuto, resProg] = await Promise.all([
-                    fetch(`${SHEETDB_URL}?sheet=AUTOMATICO`),
-                    fetch(`${SHEETDB_URL}?sheet=PROGRAMADO`)
-                ]);
-                let jsonAuto = await resAuto.json();
-                automaticoData = jsonAuto.map(r => r.TEXTO || r.texto).filter(t => t);
-                let jsonProg = await resProg.json();
-                jsonProg.forEach(r => {
-                    let p = (r.PREGUNTA || r.pregunta || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                    let res = r.RESPUESTA || r.respuesta;
-                    if(p && res) programadoData.set(p, res);
-                });
-            } catch(e) { console.error(e); }
-        }
-
-        function startAutoMode() {
-            if (!isRunning) return;
-            let delay = 3000 + Math.random() * 4000;
-            setTimeout(() => {
-                if (isRunning && !isSpeaking && automaticoData.length > 0 && Math.random() > 0.3) {
-                    let word = automaticoData[Math.floor(Math.random() * automaticoData.length)];
-                    speak(word);
-                }
-                startAutoMode();
-            }, delay);
-        }
-
-        // --- 4. CONTROLES UI ---
-        const pwrBtn = document.getElementById('knob-power');
-        const scanBtn = document.getElementById('knob-scan'); // Perilla Escanear
-
-        pwrBtn.addEventListener('click', () => {
-            if (!audioCtx) initAudio();
+        const pwr = document.getElementById('knob-power');
+        pwr.addEventListener('click', () => {
+            if(!audioCtx) initAudio();
             isRunning = !isRunning;
-            if (isRunning) {
-                pwrBtn.style.transform = 'rotate(0deg)';
-                pwrBtn.style.boxShadow = '0 0 15px var(--glow-color)';
-                if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            if(isRunning) {
+                pwr.style.transform = 'rotate(0deg)';
+                pwr.style.boxShadow = '0 0 15px var(--glow-color)';
+                detectorPanel.classList.add('retro-lit'); 
+                envContent.classList.add('active'); 
                 
-                if(lfoGain) lfoGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 0.5);
-                if(radioGain) radioGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 0.5);
+                if(audioCtx.state === 'suspended') audioCtx.resume();
+                lfoGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime+0.5);
+                radioGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime+0.5); // 2. Sintonizador más fuerte
                 
                 startAutoMode();
-                startListening();
+                tryStartRec();
                 
-                // Loop aguja
-                setInterval(() => {
-                    if(isRunning && !isSpeaking) {
-                        let v = Math.random();
-                        document.getElementById('main-needle').style.transform = `translateX(-50%) rotate(${-45 + v*90}deg)`;
-                        updateVUMeters(v > 0.7);
-                    }
-                }, 150);
-
             } else {
-                pwrBtn.style.transform = 'rotate(-135deg)';
-                pwrBtn.style.boxShadow = 'none';
-                if(lfoGain) lfoGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
-                if(radioGain) radioGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
-                if(recognition) recognition.stop();
+                pwr.style.transform = 'rotate(-135deg)';
+                pwr.style.boxShadow = 'none';
+                detectorPanel.classList.remove('retro-lit');
+                envContent.classList.remove('active');
+                
+                lfoGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.1);
+                radioGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.1); 
+                
                 isRecognizing = false;
                 window.speechSynthesis.cancel();
-                updateVUMeters(false);
+            }
+            if (isRunning) {
+                // startVisualLoop(); // No iniciar aquí, ya es global
+            } else {
+                stopVisualLoop(); 
             }
         });
 
-        // Control Manual de Escaneo (Clic para cambiar velocidad)
-        scanBtn.addEventListener('click', () => {
-            scanSpeed = (scanSpeed + 1) % 3; // 0 -> 1 -> 2 -> 0
-            
-            // Rotar visualmente
-            let deg = -135 + (scanSpeed * 135); // -135, 0, 135
-            scanBtn.style.transform = `rotate(${deg}deg)`;
-            
-            // Cambiar velocidad LFO
-            if(lfo) {
-                let freq = (scanSpeed === 0) ? 5 : (scanSpeed === 1) ? 12 : 20;
-                lfo.frequency.linearRampToValueAtTime(freq, audioCtx.currentTime + 0.1);
-            }
+        document.getElementById('knob-scan').addEventListener('click', function() {
+            scanSpeed = (scanSpeed+1)%3;
+            this.style.transform = `rotate(${-135 + scanSpeed*135}deg)`;
+            if(lfo) lfo.frequency.linearRampToValueAtTime([5,12,20][scanSpeed], audioCtx.currentTime+0.1);
         });
 
         document.getElementById('vol-slider').addEventListener('input', (e) => {
-            if (masterGain) masterGain.gain.value = e.target.value / 100;
+            if(masterGain) masterGain.gain.value = e.target.value/100;
         });
 
-        // --- 5. SENSOR AMBIENTE ---
-        function updateEnergyGraph() {
-            let val = Math.random() * 50;
-            energyHistory.push(val);
-            energyHistory.shift();
-            energyCtx.clearRect(0, 0, energyCanvas.width, energyCanvas.height);
-            energyCtx.beginPath();
-            energyCtx.strokeStyle = '#00FFFF';
-            energyCtx.lineWidth = 2;
+        async function loadSheetData() {
+            try {
+                let [ra, rp] = await Promise.all([
+                    fetch(`${SHEETDB_URL}?sheet=AUTOMATICO`), 
+                    fetch(`${SHEETDB_URL}?sheet=PROGRAMADO`)
+                ]);
+                let ja = await ra.json(); automaticoData = ja.map(r=>r.TEXTO||r.texto).filter(t=>t);
+                let jp = await rp.json();
+                jp.forEach(r=>{
+                    let p=(r.PREGUNTA||r.pregunta||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+                    let res=r.RESPUESTA||r.respuesta;
+                    if(p&&res) programadoData.set(p,res);
+                });
+                console.log("Datos cargados:", automaticoData.length, programadoData.size);
+            } catch(e){ console.error("Error datos", e); }
+        }
+        loadSheetData();
+
+        function speak(text) {
+            isSpeaking = true;
+            lfoGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime+0.1); // 3. Bajar "shh" pero no mutear
+            radioGain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime+0.1);
+            
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'es-MX'; 
+            u.volume = 1.0; 
+            u.pitch = 0.8; // 3. Voz neutra
+            u.rate = 0.9;
+            u.onend = () => {
+                isSpeaking = false;
+                lfoGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime+0.2);
+                radioGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime+0.2);
+            };
+            window.speechSynthesis.speak(u);
+            
+            sensorPanel.classList.add('alert');
+            emfValue = 80 + Math.random() * 20; 
+            setTimeout(() => sensorPanel.classList.remove('alert'), 500);
+        }
+
+        function startAutoMode() {
+            if(!isRunning) return;
+            setTimeout(() => {
+                if(isRunning && !isSpeaking && automaticoData.length>0 && Math.random()>0.5) {
+                    speak(automaticoData[Math.floor(Math.random()*automaticoData.length)]);
+                }
+                startAutoMode();
+            }, 3000+Math.random()*4000);
+        }
+
+        function initSpeechRec() {
+            if(!SpeechRecognition) return;
+            recognition = new SpeechRecognition(); 
+            recognition.lang = 'es-MX'; 
+            recognition.continuous = false;
+            recognition.onstart = () => { 
+                isRecognizing = true;
+                if(micLed) micLed.classList.add('active-mic'); // 3. LED Mic ON
+            };
+            recognition.onend = () => { 
+                isRecognizing = false;
+                if(micLed) micLed.classList.remove('active-mic'); // 3. LED Mic OFF
+                if(isRunning) setTimeout(()=>tryStartRec(), 200); // Pausa corta
+            };
+            recognition.onerror = () => {
+                isRecognizing = false;
+                if(micLed) micLed.classList.remove('active-mic');
+            };
+            recognition.onresult = (e) => {
+                let t = e.results[0][0].transcript.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+                if(programadoData.has(t)) speak(programadoData.get(t));
+            };
+        }
+        function tryStartRec(){ 
+            if(isRunning && !isRecognizing && !isSpeaking) {
+                try { 
+                    recognition.start(); 
+                } catch(e) { 
+                    isRecognizing = false; 
+                    if(micLed) micLed.classList.remove('active-mic');
+                } 
+            }
+        }
+
+        function updateLEDs(intensity) { // 'intensity' ahora es 0-10
+            segments.forEach((seg, i) => { // i es 0-9
+                seg.className = 'led-segment';
+                if (i < intensity) {
+                    if (i < 3) seg.classList.add('active-blue');
+                    else if (i < 7) seg.classList.add('active-yellow');
+                    else seg.classList.add('active-red');
+                }
+            });
+        }
+
+        function updateEnergyGraph(value) {
+            if (!energyCtx || !energyCanvas) return; 
+            
+            energyHistory.push(value);
+            if (energyHistory.length > 50) energyHistory.shift();
+
             let w = energyCanvas.width;
             let h = energyCanvas.height;
+            if (w === 0 || h === 0) {
+                resizeEnergyCanvas();
+                w = energyCanvas.width;
+                h = energyCanvas.height;
+                if(w === 0 || h === 0) return;
+            }
+            
+            energyCtx.clearRect(0, 0, w, h);
             let step = w / energyHistory.length;
-            for(let i=0; i<energyHistory.length; i++) {
-                let y = h - (energyHistory[i] / 100 * h);
-                if (i===0) energyCtx.moveTo(0, y);
-                else energyCtx.lineTo(i * step, y);
+
+            energyCtx.beginPath();
+            energyCtx.strokeStyle = 'var(--glow-color)';
+            energyCtx.lineWidth = 1;
+            energyCtx.moveTo(0, h - (energyHistory[0] / 100 * h));
+            for(let i=1; i<energyHistory.length; i++) {
+                energyCtx.lineTo(i * step, h - (energyHistory[i] / 100 * h));
             }
             energyCtx.stroke();
             
-            // Temp estable (cambia lento)
-            currentTemp += (Math.random() * 0.2 - 0.1);
-            document.getElementById('temp-val').innerText = currentTemp.toFixed(1) + "°C";
+            energyCtx.beginPath();
+            energyCtx.strokeStyle = 'var(--alert-red)';
+            energyCtx.lineWidth = 2; 
+            let inPeak = false;
+            for(let i=0; i<energyHistory.length; i++) {
+                let val = energyHistory[i];
+                let y = h - (val / 100 * h);
+                
+                if (val > 70) { 
+                    if (!inPeak) {
+                        energyCtx.moveTo(i * step, y);
+                        inPeak = true;
+                    } else {
+                        energyCtx.lineTo(i * step, y);
+                    }
+                } else {
+                    inPeak = false;
+                }
+            }
+            energyCtx.stroke(); 
         }
-        setInterval(updateEnergyGraph, 3000); // Lento para temp
 
-        // UI Helpers
+        function resizeEnergyCanvas() {
+            if(energyCanvas && energyCanvas.parentElement) {
+                energyCanvas.width = energyCanvas.parentElement.offsetWidth;
+                energyCanvas.height = energyCanvas.parentElement.offsetHeight;
+            }
+        }
+
+
+        function updateSensorReadings() {
+            currentTemp += (Math.random()*0.04 - 0.02); 
+            document.getElementById('temp-val').innerText = currentTemp.toFixed(1)+"°C";
+        }
+        setInterval(updateSensorReadings, 2000);
+
+        // UI
         const menu = document.getElementById('menu-tools');
-        let menuT;
+        let mT;
         document.getElementById('btn-ver').addEventListener('click', () => {
             menu.classList.toggle('visible');
-            clearTimeout(menuT);
-            if(menu.classList.contains('visible')) menuT = setTimeout(()=>menu.classList.remove('visible'), 5000);
+            clearTimeout(mT);
+            if(menu.classList.contains('visible')) mT = setTimeout(()=>menu.classList.remove('visible'), 5000);
         });
-        function togglePanel(id) { 
-            document.getElementById(id).classList.toggle('hidden');
+        
+        function togglePanel(id) {
+            const p = document.getElementById(id);
+            const btn = document.querySelector(`.menu-item[onclick="togglePanel('${id}')"]`);
+            p.classList.toggle('hidden');
+            if(btn) btn.classList.toggle('active');
+            
+            const anyVis = !document.getElementById('p-camera').classList.contains('hidden') || 
+                           !document.getElementById('p-detector').classList.contains('hidden') ||
+                           !document.getElementById('p-env').classList.contains('hidden');
+            if(anyVis) document.body.classList.add('panels-active');
+            else document.body.classList.remove('panels-active');
             menu.classList.remove('visible');
+            
+            if(id === 'p-env' && !p.classList.contains('hidden')) resizeEnergyCanvas();
         }
 
-        window.onload = startCamera;
-
+        window.onload = () => {
+            startCamera();
+            initSensor(); 
+            startVisualLoop(); 
+            setInterval(updateSensorReadings, 2000); 
+        };
+        
+        window.onresize = () => {
+            if(energyCanvas && !document.getElementById('p-env').classList.contains('hidden')) {
+                resizeEnergyCanvas();
+            }
+        };
     </script>
 </body>
 </html>
