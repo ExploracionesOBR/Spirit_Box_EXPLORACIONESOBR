@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBR-FIELD-UNIT V5.28</title> <script src="https://cdn.tailwindcss.com"></script>
+    <title>OBR-FIELD-UNIT V5.29</title> <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
@@ -71,8 +71,6 @@
             z-index: 2; 
             pointer-events: none; 
         }
-        
-        /* SOLUCIÓN 1: SVG Overlay ELIMINADO */
         
         .hidden-canvas { display: none; }
 
@@ -549,9 +547,13 @@
         // SOLUCIÓN 1: Función de IA (V5.23) restaurada
         async function initMLModel() {
             try {
+                // SOLUCIÓN 1: Cargar modelo MULTIPOSE
                 const model = poseDetection.SupportedModels.MoveNet;
-                poseDetector = await poseDetection.createDetector(model);
-                console.log("MoveNet (IA de Poses) cargado.");
+                const detectorConfig = {
+                    modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING
+                };
+                poseDetector = await poseDetection.createDetector(model, detectorConfig);
+                console.log("MoveNet (IA Multi-Pose) cargado.");
             } catch (e) {
                 console.error("Error al cargar modelo de IA:", e);
             }
@@ -968,7 +970,6 @@
         function speak(text) {
             isSpeaking = true;
             
-            // SOLUCIÓN 1 (Voz): Bajar más el fondo
             lfoGain.gain.linearRampToValueAtTime(0.03, audioCtx.currentTime+0.1); 
             lfo.frequency.linearRampToValueAtTime(15, audioCtx.currentTime + 0.1);
             radioGain.gain.linearRampToValueAtTime(0.005, audioCtx.currentTime+0.1);
@@ -976,7 +977,6 @@
             const u = new SpeechSynthesisUtterance(text);
             u.lang = 'es-MX'; 
             u.volume = 1.0; 
-            // SOLUCIÓN 1 (Tono): Tono más neutro/grave
             u.pitch = 0.9; 
             u.rate = 1.1; 
             
