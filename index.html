@@ -419,7 +419,7 @@
             <div class="emf-container">
                 <div class="vu-section">
                     <div class="vu-box"><div id="vu-l" class="vu-bar-fill"></div></div>
-                    <div class="vu-box"><div id="vu-r" class.vu-bar-fill"></div></div>
+                    <div class="vu-box"><div id="vu-r" class="vu-bar-fill"></div></div>
                 </div>
                 <div class="meter-section">
                     <div class="meter-freqs">
@@ -603,7 +603,7 @@
                     
                     // 2. Ejecutar detección (LENTO)
                     if(poseDetector) {
-                        const poses = await poseDetector.estimatePoses(tempCtx);
+                        const poses = await poseDetector.estimatePoses(tempCanvas); // Corregido a tempCanvas
                         latestPoses = poses; // Guardar resultado
                     }
                     
@@ -694,7 +694,7 @@
             requestAnimationFrame(drawLoop);
         }
         
-        // SOLUCIÓN 1: Funciones de IA (V5.23) restauradas
+        // SOLUCIÓN 1: Funciones de IA re-agregadas
         const confidenceThreshold = 0.3; 
         const skeletonMap = [
             ['left_shoulder', 'right_shoulder'], ['left_shoulder', 'left_elbow'],
@@ -708,6 +708,7 @@
         function drawAllSkeletons(poses) {
             const ctx = mainFilterCtx; 
             
+            // SOLUCIÓN 1: Líneas Verdes, Puntos Rojos
             ctx.strokeStyle = '#39FF14'; 
             ctx.fillStyle = '#FF3333';   
             ctx.lineWidth = 2.5;
@@ -1160,8 +1161,7 @@
             startVisualLoop(); 
             initMLModel(); // SOLUCIÓN 1: Iniciar el modelo de IA
             
-            // SOLUCIÓN 1: Iniciar el bucle de detección (separado del bucle de dibujo)
-            detectPoseLoop(); 
+            // SOLUCIÓN 1: Bucle de detección de IA eliminado de aquí
             
             setInterval(updateSensorReadings, 2000); 
             setInterval(persistentMicCheck, 1000); 
