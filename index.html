@@ -13,9 +13,8 @@
 
     <style>
         :root {
-            /* SOLUCIÓN 2: Definir el color azul neón del video */
             --neon-blue: #0088FF; 
-            --neon-cyan: #00FFFF; /* Renombrado */
+            --neon-cyan: #00FFFF;
             --panel-bg: #1a1a1a; 
             --neon-green: #39FF14; 
             --alert-red: #FF3333;
@@ -29,7 +28,7 @@
         body {
             font-family: 'Share Tech Mono', monospace;
             background-color: #000;
-            color: var(--neon-cyan); /* Color base de la UI */
+            color: var(--neon-cyan);
             overflow: hidden;
             width: 100vw;
             height: 100vh;
@@ -226,6 +225,7 @@
             transition: all 0.2s;
             box-shadow: inset 0 0 3px #000;
         }
+        /* SOLUCIÓN 2: Contenedor para el LED del mic */
         #mic-led-container {
             position: absolute;
             top: 10px; left: 10px;
@@ -236,9 +236,10 @@
             box-shadow: 0 0 8px var(--alert-red), 0 0 15px var(--alert-red);
             animation: pulse 1s infinite;
         }
+        /* SOLUCIÓN 3: LED del sensor en ROJO */
         .status-led.active-sensor {
-            background-color: var(--neon-green);
-            box-shadow: 0 0 8px var(--neon-green), 0 0 15px var(--neon-green);
+            background-color: var(--alert-red);
+            box-shadow: 0 0 8px var(--alert-red), 0 0 15px var(--alert-red);
         }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
@@ -258,7 +259,10 @@
             width: 55px; height: 55px;
             border-radius: 50%; border: 2px solid #00aaaa;
             background: radial-gradient(#004444, #002222); color: #00ffff;
-            font-weight: bold; font-size: 0.8rem; display: flex; justify-content: center;
+            font-weight: bold; 
+            /* SOLUCIÓN 4: Ajustar texto para "MENU" */
+            font-size: 0.8rem; 
+            display: flex; justify-content: center;
             align-items: center; cursor: pointer; box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
         }
         #menu-tools {
@@ -371,9 +375,6 @@
         <div class="panel" id="p-env">
             <div class="panel-header">SENSORES</div>
             
-            <div id="mic-led-container">
-                 <div class="status-led" id="mic-led" title="Micrófono Escuchando"></div>
-            </div>
             <div class="status-led" id="sensor-led" title="Sensor EMF Real Activo"></div>
             
             <div class="env-content">
@@ -403,6 +404,10 @@
         
         <div class="panel" id="p-detector">
             <div class="panel-header">RADIO-FRECUENCIA</div>
+            
+            <div id="mic-led-container">
+                 <div class="status-led" id="mic-led" title="Micrófono Escuchando"></div>
+            </div>
             
             <div class="emf-container">
                 <div class="vu-section">
@@ -445,7 +450,7 @@
             <div class="menu-item active" id="m-detector" onclick="togglePanel('p-detector')">SPIRIT BOX</div>
             <div class="menu-item active" id="m-env" onclick="togglePanel('p-env')">SENSORES</div>
         </div>
-        <div id="btn-ver">VER</div>
+        <div id="btn-ver">MENU</div>
     </div>
 
 </div> 
@@ -491,9 +496,15 @@
         let visualLoopInterval; 
 
         let poseDetector; 
+        
+        // SOLUCIÓN 5: Optimización SLS
+        let latestPoses = [];
+        let isDetectingPose = false;
 
-        // SOLUCIÓN 1: Variable para el barrido Topográfico
-        let sweepY = 0;
+        // SOLUCIÓN 2: Acelerar auto-speech
+        let autoModeDelay = 5000; // Delay inicial (lento)
+
+        let sweepY = 0; // Barrido SCN
 
         async function startCamera() {
             try {
@@ -522,7 +533,7 @@
             mainFilterCanvas.height = h;
             tempCanvas.width = w;
             tempCanvas.height = h;
-            sweepY = h; // Resetear barrido
+            sweepY = h; 
         }
 
         async function initMLModel() {
@@ -535,7 +546,6 @@
             }
         }
 
-        // SOLUCIÓN 1: Función para dibujar video con "cover"
         function drawVideoWithCover(ctx, video) {
             const canvasW = ctx.canvas.width;
             const canvasH = ctx.canvas.height;
@@ -550,13 +560,11 @@
             let drawW, drawH, drawX, drawY;
 
             if (videoAspect > canvasAspect) {
-                // Video más ancho
                 drawH = canvasH;
                 drawW = canvasH * videoAspect;
                 drawX = (canvasW - drawW) / 2;
                 drawY = 0;
             } else {
-                // Video más alto
                 drawW = canvasW;
                 drawH = canvasW / videoAspect;
                 drawX = 0;
@@ -576,20 +584,31 @@
                 mainFilterCtx.clearRect(0, 0, w, h);
                 
                 if (currentFilter === 'sls') {
-                    // 1. Dibujar video en canvas (CORREGIDO)
+                    // SOLUCIÓN 5: Optimización SLS
+                    // Detección (lenta) y Dibujo (rápido) separados
+                    if (!isDetectingPose && poseDetector) {
+                        isDetectingPose = true;
+                        const poses = await poseDetector.estimatePoses(mainFilterCanvas);
+                        latestPoses = poses; // Guardar resultado
+                        isDetectingPose = false;
+                    }
+                    
+                    // 1. Dibujar video
                     drawVideoWithCover(mainFilterCtx, videoBg);
                     
-                    // 2. Analizar y dibujar esqueletos
-                    if (poseDetector) {
-                        const poses = await poseDetector.estimatePoses(mainFilterCanvas); 
-                        drawAllSkeletons(poses); 
+                    // SOLUCIÓN 6: Tinte verde Kinect
+                    mainFilterCtx.globalAlpha = 0.15;
+                    mainFilterCtx.fillStyle = 'var(--neon-green)';
+                    mainFilterCtx.fillRect(0, 0, w, h);
+                    mainFilterCtx.globalAlpha = 1.0;
+                    
+                    // 2. Dibujar esqueletos (el último resultado guardado)
+                    if (latestPoses) {
+                        drawAllSkeletons(latestPoses); 
                     }
                 
                 } else if (currentFilter === 'relief') {
-                    // 1. Dibujar video en canvas (CORREGIDO)
                     drawVideoWithCover(mainFilterCtx, videoBg);
-                    
-                    // 2. Procesar
                     let frame = mainFilterCtx.getImageData(0, 0, w, h);
                     let data = frame.data;
 
@@ -613,46 +632,42 @@
                     }
                     mainFilterCtx.putImageData(frame, 0, 0);
 
-                // SOLUCIÓN 1: Nuevo filtro Topográfico (SCN)
                 } else if (currentFilter === 'scanner-topo') {
-                    // 1. Analizar en canvas temporal (CORREGIDO)
+                    // 1. Analizar en canvas temporal
                     drawVideoWithCover(tempCtx, videoBg);
                     let frame = tempCtx.getImageData(0, 0, w, h);
                     let data = frame.data;
                     
-                    // 2. Crear mapa topográfico
                     let topoMapData = tempCtx.createImageData(w, h); 
                     let topoData = topoMapData.data;
                     
                     for (let i = 0; i < data.length; i += 4) {
-                        let l = (data[i] + data[i+1] + data[i+2]) / 3; // Brillo
+                        let l = (data[i] + data[i+1] + data[i+2]) / 3; 
                         
-                        // Si el brillo está en el borde de una "banda" de 25 niveles
                         if (Math.floor(l) % 25 < 2) { 
+                            // SOLUCIÓN 1: Color Azul Neón
                             topoData[i] = 0;      // R
                             topoData[i+1] = 136;  // G
                             topoData[i+2] = 255;  // B (Azul Neón: #0088FF)
                             topoData[i+3] = 255;  // A
                         } else {
-                            topoData[i+3] = 0; // Transparente
+                            topoData[i+3] = 0; 
                         }
                     }
-                    tempCtx.putImageData(topoMapData, 0, 0); // Poner mapa en canvas temporal
+                    tempCtx.putImageData(topoMapData, 0, 0); 
 
-                    // 3. Animar barrido de abajo hacia arriba
-                    sweepY = sweepY - 5; // Mover línea hacia arriba
+                    // 2. Animar barrido
+                    sweepY = sweepY - 8; // SOLUCIÓN 1: Más rápido
                     if (sweepY < 0) sweepY = h;
 
-                    // 4. Dibujar la parte "revelada" del mapa en el canvas principal
+                    // 3. Dibujar parte revelada
                     mainFilterCtx.drawImage(
-                        tempCanvas, // Imagen fuente (el mapa topo)
-                        0, sweepY,   // Coordenadas Fuente (X, Y)
-                        w, h - sweepY, // Tamaño Fuente (W, H)
-                        0, sweepY,   // Coordenadas Destino (X, Y)
-                        w, h - sweepY  // Tamaño Destino (W, H)
+                        tempCanvas, 
+                        0, sweepY, w, h - sweepY,
+                        0, sweepY, w, h - sweepY
                     );
                     
-                    // 5. Dibujar la línea de barrido
+                    // 4. Dibujar línea de barrido
                     mainFilterCtx.fillStyle = 'var(--neon-blue)';
                     mainFilterCtx.shadowColor = 'var(--neon-blue)';
                     mainFilterCtx.shadowBlur = 15;
@@ -677,7 +692,7 @@
         ];
         
         function drawAllSkeletons(poses) {
-            // SOLUCIÓN 2: Líneas Verdes, Puntos Rojos (forzados con Hex)
+            // SOLUCIÓN 2 (de V5.20): Líneas Verdes, Puntos Rojos (forzados con Hex)
             mainFilterCtx.strokeStyle = '#39FF14'; // var(--neon-green)
             mainFilterCtx.fillStyle = '#FF3333';   // var(--alert-red)
             mainFilterCtx.lineWidth = 2.5;
@@ -722,6 +737,7 @@
             });
         }
 
+        // SOLUCIÓN 3: Lógica de filtros actualizada (sin NRM)
         function setFilter(f) {
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             
@@ -899,6 +915,7 @@
                 
                 isRecognizing = false;
                 window.speechSynthesis.cancel();
+                autoModeDelay = 5000; // SOLUCIÓN 2: Resetear delay
             }
             if (isRunning) {
             } else {
@@ -960,14 +977,18 @@
             setTimeout(() => sensorPanel.classList.remove('alert'), 500);
         }
 
+        // SOLUCIÓN 2: Auto-speech acelerado
         function startAutoMode() {
             if(!isRunning) return;
+            // El delay base es de 1000ms + un random basado en el autoModeDelay
+            let randomTime = 1000 + Math.random() * (autoModeDelay - 1000);
+            
             setTimeout(() => {
                 if(isRunning && !isSpeaking && automaticoData.length>0 && Math.random()>0.5) {
                     speak(automaticoData[Math.floor(Math.random()*automaticoData.length)]);
                 }
                 startAutoMode();
-            }, 3000+Math.random()*4000);
+            }, randomTime);
         }
 
         function initSpeechRec() {
@@ -990,6 +1011,9 @@
                 if(micLed) micLed.classList.remove('active-mic');
             };
             recognition.onresult = (e) => {
+                // SOLUCIÓN 2: Acelerar auto-speech
+                autoModeDelay = 2000; // Delay rápido (1-2s)
+                
                 let t = e.results[0][0].transcript.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
                 if(programadoData.has(t)) speak(programadoData.get(t));
             };
