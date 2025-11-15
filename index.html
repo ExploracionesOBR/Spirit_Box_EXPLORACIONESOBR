@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBR-FIELD-UNIT V5.29</title> <script src="https://cdn.tailwindcss.com"></script>
+    <title>OBR-FIELD-UNIT V5.30</title> <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
@@ -372,11 +372,10 @@
     <div id="main-view-area">
         <video id="bg-camera-feed" playsinline autoplay muted></video>
         <canvas id="main-filter-canvas"></canvas>
-        
-        </div>
-    <canvas id="temp-canvas" class.hidden-canvas"></canvas>
+    </div>
+    <canvas id="temp-canvas" class="hidden-canvas"></canvas>
 
-    <div class.header-title">EQUIPO PROFESIONAL DE EXPLORACIONES OBR</div>
+    <div class="header-title">EQUIPO PROFESIONAL DE EXPLORACIONES OBR</div>
 
     <div id="side-panel-container">
         
@@ -401,8 +400,8 @@
                         <div class="led-segment" id="seg-6"></div>
                         <div class="led-segment" id="seg-7"></div>
                         <div class="led-segment" id="seg-8"></div>
-                        <div class...led-segment" id="seg-9"></div>
-                        <div class...led-segment" id="seg-10"></div>
+                        <div class="led-segment" id="seg-9"></div>
+                        <div class="led-segment" id="seg-10"></div>
                     </div>
                     <div class="energy-graph-box">
                         <canvas id="energy-canvas"></canvas>
@@ -420,7 +419,7 @@
             <div class="emf-container">
                 <div class="vu-section">
                     <div class="vu-box"><div id="vu-l" class="vu-bar-fill"></div></div>
-                    <div class="vu-box"><div id="vu-r" class="vu-bar-fill"></div></div>
+                    <div class="vu-box"><div id="vu-r" class.vu-bar-fill"></div></div>
                 </div>
                 <div class="meter-section">
                     <div class="meter-freqs">
@@ -506,11 +505,10 @@
 
         // SOLUCIÓN 1: Variables de IA (V5.23) restauradas
         let poseDetector; 
-        let latestPoses = [];
-        let isDetectingPose = false;
-
+        let latestPoses = []; // Variable para guardar la última detección
+        // SOLUCIÓN 1: 'isDetectingPose' NO se usa en esta versión
+        
         let autoModeDelay = 5000; 
-
         let sweepY = 0; 
 
         async function startCamera() {
@@ -588,6 +586,7 @@
         }
 
         
+        // SOLUCIÓN 1: drawLoop es ASYNC de nuevo
         async function drawLoop() {
             if (videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
                 
@@ -598,34 +597,40 @@
                 
                 if (currentFilter === 'sls') {
                     // SOLUCIÓN 1: Lógica de IA (V5.23) restaurada
-                    if (!isDetectingPose && poseDetector) {
-                        isDetectingPose = true;
-                        drawVideoWithCover(tempCtx, videoBg); 
+                    
+                    // 1. Dibujar video en canvas temporal
+                    drawVideoWithCover(tempCtx, videoBg);
+                    
+                    // 2. Ejecutar detección (LENTO)
+                    if(poseDetector) {
                         const poses = await poseDetector.estimatePoses(tempCtx);
-                        latestPoses = poses; 
-                        isDetectingPose = false;
+                        latestPoses = poses; // Guardar resultado
                     }
                     
-                    // 1. Dibujar video
+                    // 3. Dibujar video en canvas principal
                     drawVideoWithCover(mainFilterCtx, videoBg);
                     
-                    // 2. Tinte verde Kinect
+                    // 4. Tinte verde Kinect
                     mainFilterCtx.globalAlpha = 0.15;
                     mainFilterCtx.fillStyle = '#39FF14'; // Verde
                     mainFilterCtx.fillRect(0, 0, w, h);
                     mainFilterCtx.globalAlpha = 1.0;
                     
-                    // 3. Dibujar esqueletos
+                    // 5. Dibujar esqueletos (el último resultado guardado)
                     if (latestPoses) {
                         drawAllSkeletons(latestPoses); 
                     }
                 
                 } else if (currentFilter === 'relief') {
-                    drawVideoWithCover(mainFilterCtx, videoBg);
-                    let frame = mainFilterCtx.getImageData(0, 0, w, h);
+                    // SOLUCIÓN 3: Corregido para no "marcar todo"
+                    // 1. Dibujar en canvas temporal
+                    drawVideoWithCover(tempCtx, videoBg);
+                    
+                    // 2. Obtener y procesar datos
+                    let frame = tempCtx.getImageData(0, 0, w, h);
                     let data = frame.data;
-
                     let copy = new Uint8ClampedArray(data);
+                    
                     for (let y = 1; y < h - 1; y++) {
                         for (let x = 1; x < w - 1; x++) {
                             let i = (y * w + x) * 4;
@@ -637,12 +642,13 @@
                             
                             let diff = Math.sqrt(hpx*hpx + vpx*vpx);
                             if (diff > 30) { 
-                                data[i] = diff; data[i+1] = 255; data[i+2] = 255; 
+                                data[i] = diff; data[i+1] = 255; data[i+2] = 255; // Cian
                             } else {
-                                data[i] = 10; data[i+1] = 10; data[i+2] = 10; 
+                                data[i] = 10; data[i+1] = 10; data[i+2] = 10; // Negro
                             }
                         }
                     }
+                    // 3. Poner datos procesados en canvas principal
                     mainFilterCtx.putImageData(frame, 0, 0);
 
                 } else if (currentFilter === 'scanner-topo') {
@@ -688,7 +694,7 @@
             requestAnimationFrame(drawLoop);
         }
         
-        // SOLUCIÓN 1: Funciones de IA re-agregadas
+        // SOLUCIÓN 1: Funciones de IA (V5.23) restauradas
         const confidenceThreshold = 0.3; 
         const skeletonMap = [
             ['left_shoulder', 'right_shoulder'], ['left_shoulder', 'left_elbow'],
@@ -702,7 +708,6 @@
         function drawAllSkeletons(poses) {
             const ctx = mainFilterCtx; 
             
-            // SOLUCIÓN 1: Líneas Verdes, Puntos Rojos
             ctx.strokeStyle = '#39FF14'; 
             ctx.fillStyle = '#FF3333';   
             ctx.lineWidth = 2.5;
@@ -752,8 +757,6 @@
             });
         }
         
-        // SOLUCIÓN 1: Simulación SLS eliminada
-
         function setFilter(f) {
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             
@@ -966,7 +969,6 @@
             } catch(e){ console.error("Error datos", e); }
         }
         
-        // SOLUCIÓN 2: Cargar datos al INICIO
         loadSheetData();
 
         function speak(text) {
@@ -1035,7 +1037,6 @@
         }
         
         function persistentMicCheck(){ 
-            // SOLUCIÓN 2: Asegurarse de que 'recognition' exista antes de llamar a 'start'
             if(recognition && isRunning && !isRecognizing && !isSpeaking) {
                 try { 
                     recognition.start(); 
@@ -1158,6 +1159,9 @@
             initSensor(); 
             startVisualLoop(); 
             initMLModel(); // SOLUCIÓN 1: Iniciar el modelo de IA
+            
+            // SOLUCIÓN 1: Iniciar el bucle de detección (separado del bucle de dibujo)
+            detectPoseLoop(); 
             
             setInterval(updateSensorReadings, 2000); 
             setInterval(persistentMicCheck, 1000); 
