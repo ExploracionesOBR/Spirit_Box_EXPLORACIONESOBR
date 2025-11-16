@@ -18,7 +18,6 @@
 
     <style>
         :root {
-            /* SOLUCIÓN: Nuevo tema retro */
             --neon-cyan: #FFB000; /* Ámbar */
             --neon-blue: #FF8C00; /* Naranja */
             --neon-green: #39FF14; 
@@ -32,7 +31,7 @@
         }
         
         body {
-            font-family: 'Share Tech Mono', monospace;
+            font-family: 'Share+Tech+Mono', monospace;
             background-color: #000;
             color: var(--neon-cyan);
             overflow: hidden;
@@ -44,7 +43,8 @@
             width: 100%;
             height: 100%;
             position: relative;
-            pointer-events: auto;
+            /* 📍 SOLUCIÓN ZOOM (PUNTO 5): Desactivar toques por defecto en iOS */
+            touch-action: none;
         }
 
         #main-view-area {
@@ -113,7 +113,6 @@
             width: calc(100% - var(--panel-width));
         }
 
-        /* SOLUCIÓN: Panel Unificado */
         .panel {
             background: repeating-linear-gradient(135deg, #1a1a1a, #1a1a1a 10px, #222 10px, #222 12px);
             border: 1px solid #444;
@@ -129,7 +128,6 @@
             transition: box-shadow 0.3s ease;
             pointer-events: auto;
             margin: 5px; 
-            /* Ocupar todo el alto */
             flex-grow: 1;
             max-height: 98vh; /* Máxima altura */
             overflow-y: auto; /* Scroll si es necesario */
@@ -158,7 +156,7 @@
         .panel.hidden { display: none; }
 
         .panel-header {
-            font-size: 0.7rem; /* Un poco más grande */
+            font-size: 0.7rem;
             text-align: center; 
             margin-bottom: 5px; 
             color: #ccc;
@@ -250,11 +248,6 @@
         .emf-container, .env-content {
             display: flex; flex-direction: column; height: 100%; justify-content: space-between; z-index: 1;
         }
-        .vu-section { display: flex; justify-content: space-between; margin-bottom: 5px; gap: 5px; height: 15px; }
-        .vu-box { flex: 1; background: #111; border: 1px inset #444; position: relative; overflow: hidden; }
-        .vu-bar-fill { height: 100%; width: 0%; opacity: 0.9; transition: width 0.05s linear; }
-        #vu-l { background: linear-gradient(to right, #00ff00, #ffff00, #ff0000); float: left; }
-        #vu-r { background: linear-gradient(to left, #00ff00, #ffff00, #ff0000); float: right; }
         .meter-section { flex-grow: 1; position: relative; background: radial-gradient(circle at 50% 100%, #222, #000); border: 1px solid #333; border-radius: 4px; margin-bottom: 5px; box-shadow: inset 0 0 10px #000; }
         .meter-freqs { position: absolute; top: 5px; left: 0; width: 100%; text-align: center; font-size: 0.45rem; color: #555; z-index: 1; display: flex; justify-content: space-between; padding: 0 10px; }
         #main-needle { width: 2px; height: 85%; background: #ff5500; position: absolute; bottom: 0; left: 50%; transform-origin: bottom center; transform: rotate(-45deg); transition: transform 0.1s cubic-bezier(0.2, 1.5, 0.5, 1); box-shadow: 0 0 5px #ff5500; z-index: 2; }
@@ -270,7 +263,6 @@
         .temp-readout { font-size: 2.5rem; font-weight: bold; color: var(--neon-cyan); text-shadow: 0 0 15px rgba(0,255,255,0.3); background: rgba(0,0,0,0.5); padding: 10px 15px; border: 2px solid #333; border-left: 4px solid var(--neon-cyan); border-radius: 0 10px 10px 0; font-family: 'Share Tech Mono', monospace; transition: all 0.5s ease; text-align: center; }
         .temp-label-small { font-size: 0.6rem; color: #666; margin-top: 5px; text-align: center; }
         .energy-container { width: 100%; display: flex; flex-direction: column; align-items: center; height: auto; opacity: 1; flex-grow: 1; margin-top: 5px; transform: scaleY(1); }
-        .env-content.active .temp-readout { font-size: 1.5rem; padding: 5px 15px; border-width: 1px; }
         .led-bar { display: flex; gap: 3px; margin-bottom: 5px; background: #000; padding: 4px; border-radius: 4px; border: 1px solid #333; }
         .led-segment { width: 8px; height: 15px; background-color: #111; border: 1px solid #222; transition: background-color 0.1s; }
         .led-segment.active-blue { background-color: var(--led-blue); box-shadow: 0 0 10px var(--led-blue); }
@@ -279,7 +271,6 @@
         .energy-label { font-size: 0.6rem; color: #aaa; margin-bottom: 5px; letter-spacing: 1px; }
         .energy-graph-box { width: 100%; height: 100%; flex-grow: 1; background: #000; border: 1px inset #333; border-radius: 5px; overflow: hidden; margin-top: 5px; min-height: 50px; }
         #energy-canvas { width: 100%; height: 100%; }
-        .plate-obr { background: linear-gradient(to right, #222, #444, #222); border: 1px solid #000; color: #aaa; font-size: 0.6rem; padding: 4px 10px; box-shadow: 0 1px 0 rgba(255,255,255,0.1); text-shadow: 0 -1px 0 #000; border-radius: 2px; font-weight: bold; margin-top: 5px; }
 
         .status-led {
             width: 10px; height: 10px; 
@@ -469,7 +460,6 @@
         @keyframes fadeIn { 0% { opacity: 0; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
         @keyframes fadeOut { 0% { opacity: 1; } 100% { opacity: 0; } }
 
-        /* SOLUCIÓN: Nuevos estilos de Brújula */
         #compass-container {
             width: 150px;
             height: 150px;
@@ -515,10 +505,6 @@
         .w { top: 50%; left: 10px; transform: translateY(-50%); }
 
 
-        /* * 📍 SOLUCIÓN CSS PUNTO 5:
-         * Se corrigió el CSS anidado. 'portrait' y 'landscape' ahora están separados.
-        */
-
         /* --- MODO MÓVIL VERTICAL (PORTRAIT) --- */
         @media (max-width: 768px) and (orientation: portrait) {
             #side-panel-container {
@@ -527,20 +513,18 @@
                 top: auto;
                 left: 0;
                 width: 100vw;
-                height: auto; /* Altura automática basada en el contenido */
-                max-height: 50vh; /* Máximo 50% de la pantalla */
+                height: auto; 
+                max-height: 50vh; 
                 transform: translateY(100%); 
-                overflow-x: auto; /* Scroll horizontal si los paneles no caben */
+                overflow-x: auto;
                 padding-bottom: env(safe-area-inset-bottom);
             }
             .panel {
                 width: 280px; 
                 flex-shrink: 0;
-                /* El panel unificado ahora controla su propia altura */
                 height: auto; 
-                max-height: 50vh; /* Asegura que no sea más alto que el contenedor */
+                max-height: 50vh;
             }
-            /* Eliminamos reglas viejas de #p-env y #p-detector */
 
             body.panels-active #side-panel-container {
                 transform: translateY(0);
@@ -548,7 +532,7 @@
             body.panels-active #main-view-area {
                 left: 0;
                 width: 100%;
-                filter: brightness(0.4); /* Mantenemos el desenfoque de fondo */
+                filter: brightness(0.4);
             }
             body.panels-active #main-filter-canvas {
                 left: 0 !important;
@@ -563,19 +547,28 @@
             #logo-image { width: 50px; height: 50px; top: 15px; right: 15px;}
         }
 
-        /* --- MODO MÓVIL HORIZONTAL (LANDSCAPE) --- */
-        /* (Este bloque ahora está SEPARADO y al nivel correcto) */
+        /* 📍 SOLUCIÓN PANEL HORIZONTAL (PUNTO 7) */
         @media (max-width: 768px) and (orientation: landscape) {
-            :root { --panel-width: 260px; } /* Un poco más ancho para landscape */
+            :root { --panel-width: 260px; }
 
-            /* Forzamos el panel unificado a ocupar toda la altura */
+            /* Forzamos el CONTENEDOR a ser 100% alto y respetar notches */
+            #side-panel-container {
+                height: 100vh;
+                padding-top: env(safe-area-inset-top);
+                padding-bottom: env(safe-area-inset-bottom);
+                box-sizing: border-box;
+            }
+            
+            /* Forzamos el PANEL a llenar el contenedor al 100% */
             #p-unified {
-                height: 98vh; /* Ocupa casi toda la altura */
+                height: 100%;
                 flex-grow: 1;
                 flex-shrink: 0;
+                margin: 0; /* Sin márgenes */
+                border-radius: 0; /* Sin bordes redondeados */
+                border-right: 1px solid #444; /* Borde separador */
             }
 
-            /* Hereda los estilos de escritorio para el movimiento del panel */
             body.panels-active #main-filter-canvas {
                 left: var(--panel-width) !important;
                 width: calc(100% - var(--panel-width)) !important;
@@ -585,9 +578,7 @@
 </head>
 <body>
 
-<div id="app-ui" onclick="handleUITap(event)">
-
-    <div id="loading-overlay">
+<div id="app-ui"> <div id="loading-overlay">
         <div id="loading-content">
             <div id="loading-text">SINCRONIZANDO GUIONES...</div>
             <div id="loading-bar-container">
@@ -596,11 +587,14 @@
         </div>
     </div>
 
-    <div id="main-view-area">
+    <div id="main-view-area" onclick="handleUITap(event)">
         <video id="bg-camera-feed" playsinline autoplay muted></video>
         <canvas id="main-filter-canvas"></canvas>
     </div>
+    
     <canvas id="temp-canvas" class="hidden-canvas"></canvas>
+    <canvas id="ai-canvas" class="hidden-canvas"></canvas>
+
 
     <img id="logo-image" src="obr-logo.png" alt="Logo OBR">
 
@@ -706,7 +700,9 @@
 </div> 
 
     <script>
+        // 📍 SOLUCIÓN GOOGLE SHEETS (PUNTO 1)
         const SHEETDB_URL = "https://sheetdb.io/api/v1/9xzfnke69kkej"; 
+        
         let isRunning = false;
         let currentFilter = 'none'; 
         let scanSpeed = 0; 
@@ -716,15 +712,16 @@
         const mainFilterCanvas = document.getElementById('main-filter-canvas');
         const mainFilterCtx = mainFilterCanvas.getContext('2d', { willReadFrequently: true });
 
-        const tempCanvas = document.getElementById('temp-canvas');
+        // 📍 SOLUCIÓN LIENZO (PUNTO 2)
+        const tempCanvas = document.getElementById('temp-canvas'); // Para filtros
         const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+        const aiCanvas = document.getElementById('ai-canvas'); // Para IA
+        const aiCtx = aiCanvas.getContext('2d', { willReadFrequently: true });
         
         const detectorPanel = document.getElementById('p-unified');
-        const sensorPanel = document.getElementById('p-unified'); // Ambos apuntan al mismo panel
+        const sensorPanel = document.getElementById('p-unified');
         
         const segments = [1,2,3,4,5,6,7,8,9,10].map(i => document.getElementById('seg-'+i));
-        const vuL = null; // No existe en el nuevo diseño
-        const vuR = null; // No existe en el nuevo diseño
         
         const micLed = document.getElementById('mic-led');
         const magLed = document.getElementById('mag-led');
@@ -742,7 +739,7 @@
         let currentTemp = 19.8;
         
         let proximitySensor; 
-        let emfValue = 0; // Ahora controlado por proximidad
+        let emfValue = 0;
         let emfSimInterval = null;
         let visualLoopInterval; 
 
@@ -750,17 +747,43 @@
         let latestPoses = []; 
         let isDetectingPose = false; 
         
-        let autoModeDelay = 5000; 
+        // 📍 SOLUCIÓN LÓGICA SPIRIT BOX (PUNTO 6)
+        let spiritBoxState = "OFF"; // Estados: OFF, SCANNING, LISTENING, SPEAKING
+        let spiritBoxTimeout = null; // Temporizador para el micrófono
         
         let uiHideTimeout;
-        let uiVisible = false; // UI oculta por defecto
+        let uiVisible = false;
+
+        // 📍 SOLUCIÓN ZOOM (PUNTO 5)
+        let zoom = 1.0;
+        let maxZoom = 5.0;
+        let initialPinchDist = 0;
+        let lastPan = { x: 0, y: 0 };
+        let currentPan = { x: 0, y: 0 };
+        let isPinching = false;
+        let isPanning = false;
 
         async function startCamera() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 } },
+                // 📍 SOLUCIÓN CÁMARA MAX-RES (PUNTO 3)
+                const constraints = {
+                    video: {
+                        facingMode: { ideal: "environment" },
+                        width: { ideal: 4096 },
+                        height: { ideal: 2160 }
+                    },
                     audio: false
-                });
+                };
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                // 📍 SOLUCIÓN ENFOQUE (PUNTO 4)
+                const track = stream.getVideoTracks()[0];
+                if (track && typeof track.applyConstraints === 'function') {
+                    track.applyConstraints({
+                        advanced: [{ focusMode: 'continuous' }]
+                    }).catch(e => console.warn("No se pudo aplicar 'focusMode: continuous'", e));
+                }
+                
                 videoBg.srcObject = stream;
                 videoBg.onloadedmetadata = () => {
                     resizeAllCanvas(); 
@@ -772,22 +795,27 @@
                     }
                     drawLoop(); 
                 };
-            } catch (e) { console.log("Error camara", e); }
+            } catch (e) { console.log("Error de cámara", e); }
         }
         
+        // 📍 SOLUCIÓN LIENZO (PUNTO 2)
         function resizeAllCanvas() {
             const viewArea = document.getElementById('main-view-area');
             const w = viewArea.clientWidth; 
             const h = viewArea.clientHeight; 
             
+            // Lienzo principal (visual)
             mainFilterCanvas.width = w;
             mainFilterCanvas.height = h;
             
-            /* * 📍 SOLUCIÓN PUNTO 3:
-             * Se fija el lienzo de IA a un tamaño pequeño y rápido (640x480)
-            */
-            tempCanvas.width = 640;
-            tempCanvas.height = 480;
+            // Lienzo de filtros (copia de visual)
+            tempCanvas.width = w;
+            tempCanvas.height = h;
+
+            // Lienzo de IA (pequeño, pero con la MISMA PROPORCIÓN que la pantalla)
+            const aiWidth = 640;
+            aiCanvas.width = aiWidth;
+            aiCanvas.height = (aiWidth / w) * h; // Mantiene el aspect ratio
             
             if(energyCanvas && !document.getElementById('p-unified').classList.contains('hidden')) {
                 resizeEnergyCanvas();
@@ -808,7 +836,8 @@
             }
         }
 
-        function drawVideoWithCover(ctx, video) {
+        // 📍 SOLUCIÓN ZOOM (PUNTO 5) - Función de dibujo actualizada
+        function drawVideoWithCover(ctx, video, z, pan) {
             const canvasW = ctx.canvas.width;
             const canvasH = ctx.canvas.height;
             const videoW = video.videoWidth;
@@ -816,24 +845,43 @@
             
             if (!videoW || !videoH) return; 
 
-            const canvasAspect = canvasW / canvasH;
+            // Calcula el aspect ratio
             const videoAspect = videoW / videoH;
+            const canvasAspect = canvasW / canvasH;
 
+            // Calcula las dimensiones de la fuente (lo que "cortamos" del video)
+            let sWidth = videoW / z;
+            let sHeight = videoH / z;
+            
+            // Centra el corte y aplica el paneo
+            let sx = (videoW - sWidth) / 2 + pan.x;
+            let sy = (videoH - sHeight) / 2 + pan.y;
+
+            // Limita el paneo para que no se salga de los bordes
+            sx = Math.max(0, Math.min(sx, videoW - sWidth));
+            sy = Math.max(0, Math.min(sy, videoH - sHeight));
+            currentPan.x = sx - (videoW - sWidth) / 2; // Actualiza el paneo real
+            currentPan.y = sy - (videoH - sHeight) / 2;
+
+            // Dibuja en el destino (el canvas)
             let drawW, drawH, drawX, drawY;
 
             if (videoAspect > canvasAspect) {
+                // El video es más ancho que el canvas (letterbox arriba/abajo)
                 drawH = canvasH;
                 drawW = canvasH * videoAspect;
                 drawX = (canvasW - drawW) / 2;
                 drawY = 0;
             } else {
+                // El video es más alto que el canvas (pillarbox lados)
                 drawW = canvasW;
                 drawH = canvasW / videoAspect;
                 drawX = 0;
                 drawY = (canvasH - drawH) / 2;
             }
             
-            ctx.drawImage(video, drawX, drawY, drawW, drawH);
+            // Dibuja la imagen con zoom y paneo
+            ctx.drawImage(video, sx, sy, sWidth, sHeight, drawX, drawY, drawW, drawH);
         }
 
         
@@ -850,7 +898,8 @@
                 if (currentFilter === 'sls') {
                     kinectBanner.style.display = 'block';
                     
-                    drawVideoWithCover(mainFilterCtx, videoBg);
+                    // 📍 SOLUCIÓN ZOOM (PUNTO 5)
+                    drawVideoWithCover(mainFilterCtx, videoBg, zoom, currentPan);
                     
                     if (latestPoses) {
                         drawAllSkeletons(latestPoses); 
@@ -860,7 +909,11 @@
                     kinectBanner.style.display = 'none';
                     
                     if (currentFilter === 'relief') {
-                        drawVideoWithCover(tempCtx, videoBg);
+                        // 📍 SOLUCIÓN ZOOM (PUNTO 5) y LIENZO (PUNTO 2)
+                        // Dibuja en el temp-canvas (tamaño completo)
+                        drawVideoWithCover(tempCtx, videoBg, zoom, currentPan);
+                        
+                        // Procesa el temp-canvas
                         let frame = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
                         let data = frame.data;
                         let copy = new Uint8ClampedArray(data);
@@ -876,17 +929,19 @@
                                 
                                 let diff = Math.sqrt(hpx*hpx + vpx*vpx);
                                 if (diff > 30) { 
-                                    data[i] = diff; data[i+1] = 255; data[i+2] = 255; // Cian
+                                    data[i] = diff; data[i+1] = 255; data[i+2] = 255;
                                 } else {
-                                    data[i] = 10; data[i+1] = 10; data[i+2] = 10; // Negro
+                                    data[i] = 10; data[i+1] = 10; data[i+2] = 10;
                                 }
                             }
                         }
                         tempCtx.putImageData(frame, 0, 0);
+                        // Dibuja el resultado en el canvas principal
                         mainFilterCtx.drawImage(tempCanvas, 0, 0, w, h);
 
                     } else if (currentFilter === 'night-vision') {
-                        drawVideoWithCover(mainFilterCtx, videoBg);
+                        // 📍 SOLUCIÓN ZOOM (PUNTO 5)
+                        drawVideoWithCover(mainFilterCtx, videoBg, zoom, currentPan);
                         let frame = mainFilterCtx.getImageData(0, 0, w, h);
                         let data = frame.data;
                         
@@ -916,29 +971,34 @@
                         mainFilterCtx.putImageData(frame, 0, 0);
                     
                     } else if (currentFilter === 'none') {
-                        // El canvas se queda transparente
+                        // 📍 SOLUCIÓN ZOOM (PUNTO 5)
+                        // Aún si no hay filtro, dibujamos el video con zoom
+                        drawVideoWithCover(mainFilterCtx, videoBg, zoom, currentPan);
                     }
                 }
             }
             requestAnimationFrame(drawLoop);
         }
         
-        // SOLUCIÓN 1: Bucle de detección de IA (OPTIMIZADO)
+        // 📍 SOLUCIÓN LIENZO (PUNTO 2)
         async function detectPoseLoop() {
             while (true) {
                 if (currentFilter === 'sls' && poseDetector && videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
                     
                     if (!isDetectingPose) {
                         isDetectingPose = true;
-                        drawVideoWithCover(tempCtx, videoBg);
                         
-                        const poses = await poseDetector.estimatePoses(tempCanvas); 
+                        // Dibuja el video en el LIENZO DE IA (pequeño)
+                        drawVideoWithCover(aiCtx, videoBg, zoom, currentPan);
+                        
+                        // Estima poses desde el LIENZO DE IA
+                        const poses = await poseDetector.estimatePoses(aiCanvas); 
                         
                         latestPoses = poses; 
                         isDetectingPose = false;
                     }
                     
-                    await new Promise(r => setTimeout(r, 10)); // Pequeña pausa
+                    await new Promise(r => setTimeout(r, 10));
                 } else {
                     latestPoses = []; 
                     await new Promise(r => setTimeout(r, 100));
@@ -957,6 +1017,7 @@
             ['right_hip', 'right_knee'], ['right_knee', 'right_ankle']
         ];
         
+        // 📍 SOLUCIÓN LIENZO (PUNTO 2)
         function drawAllSkeletons(poses) {
             const ctx = mainFilterCtx; 
             
@@ -965,12 +1026,9 @@
             ctx.lineWidth = 2.5;
             ctx.filter = 'drop-shadow(0 0 4px #39FF14)';
 
-            /* * 📍 SOLUCIÓN PUNTO 3 (Parte 2):
-             * Se calcula el factor de escala entre el lienzo de IA (tempCanvas)
-             * y el lienzo de dibujo (mainFilterCanvas)
-            */
-            const scaleX = mainFilterCanvas.width / tempCanvas.width;
-            const scaleY = mainFilterCanvas.height / tempCanvas.height;
+            // Escala los puntos desde el lienzo de IA (aiCanvas) al lienzo principal (mainFilterCanvas)
+            const scaleX = mainFilterCanvas.width / aiCanvas.width;
+            const scaleY = mainFilterCanvas.height / aiCanvas.height;
 
             poses.forEach(pose => {
                 if (pose.score > confidenceThreshold) {
@@ -987,6 +1045,7 @@
                 const keypoint = keypoints[i];
                 if (keypoint.score > confidenceThreshold) {
                     ctx.beginPath();
+                    // Multiplica por la escala para "estirar" los puntos al lienzo principal
                     ctx.arc(keypoint.x * scaleX, keypoint.y * scaleY, 4, 0, 2 * Math.PI); 
                     ctx.fill();
                 }
@@ -1017,16 +1076,14 @@
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             
             if (currentFilter === f) {
-                currentFilter = 'none'; // Desactivar
+                currentFilter = 'none';
             } else {
-                currentFilter = f; // Activar
+                currentFilter = f;
                 const targetBtn = event ? event.target : document.querySelector(`.filter-btn[onclick="setFilter('${f}')"]`);
                 if(targetBtn) targetBtn.classList.add('active');
             }
-            // No llamar a showControls() aquí, handleUITap se encargará
         }
 
-        // --- AUDIO (V5.26) ---
         function initAudio() {
             if (audioCtx) return;
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1090,25 +1147,19 @@
             return curve;
         }
 
-        // --- SENSORES ---
         function initSensor() {
-            // Sensor de Proximidad
             if ('ProximitySensor' in window) {
                 try {
                     proximitySensor = new ProximitySensor();
                     proximitySensor.onreading = () => {
-                        // sensor.value es la distancia en cm.
-                        // Cerca (ej. 0-5cm) = 100% energía. Lejos (ej. 10cm+) = 0% energía.
-                        const maxDist = 10; // 10cm para 0%
-                        const minDist = 2;  // 2cm o menos para 100%
-                        
+                        const maxDist = 10;
+                        const minDist = 2;  
                         let dist = proximitySensor.value;
                         if (dist <= minDist) {
                             emfValue = 100;
                         } else if (dist >= maxDist) {
                             emfValue = 0;
                         } else {
-                            // Calcular porcentaje inverso
                             emfValue = 100 * (1 - (dist - minDist) / (maxDist - minDist));
                         }
                         if (proxLed) proxLed.classList.add('active-sensor');
@@ -1131,18 +1182,13 @@
                 startEmfSimulation(); 
             }
 
-            // Brújula (Magnetómetro)
             if ('AbsoluteOrientationSensor' in window) {
                 try {
                     const compassNeedle = document.getElementById('compass-needle');
                     let orientationSensor = new AbsoluteOrientationSensor({ frequency: 10 });
-
                     orientationSensor.onreading = () => {
                         let q = orientationSensor.quaternion;
-                        // Convertir quaternión a ángulo Z (yaw)
                         let yaw = Math.atan2(2 * (q[0] * q[1] + q[2] * q[3]), 1 - 2 * (q[1] * q[1] + q[2] * q[2])) * (180 / Math.PI);
-                        
-                        // Usamos 'yaw' (giro) como nuestra dirección
                         compassNeedle.style.transform = `translateX(-50%) rotate(${-yaw}deg)`;
                         if (magLed) magLed.classList.add('active-sensor');
                     };
@@ -1182,13 +1228,11 @@
             if (visualLoopInterval) clearInterval(visualLoopInterval); 
             visualLoopInterval = setInterval(() => {
                 let intensity = emfValue; 
-                
                 let ledIntensity = Math.floor(intensity / 10); 
                 updateLEDs(ledIntensity);
                 updateEnergyGraph(intensity); 
 
                 if(isRunning) {
-                    // Actualizar el medidor VU (ahora usa la misma energía)
                     document.getElementById('main-needle').style.transform = `translateX(-50%) rotate(${-45 + (intensity/100)*90}deg)`;
                 }
             }, 150); 
@@ -1200,58 +1244,62 @@
             }
         }
 
-        // --- SPIRIT BOX (V5.26) ---
+        // --- SPIRIT BOX (Lógica de Puntos 1 y 6) ---
+        
         const pwr = document.getElementById('knob-power');
         pwr.addEventListener('click', () => {
             if(!audioCtx) initAudio();
             isRunning = !isRunning;
             
             if(isRunning) {
+                // --- Encender ---
                 pwr.style.transform = 'rotate(0deg)';
                 pwr.style.boxShadow = '0 0 15px var(--neon-cyan)';
                 detectorPanel.classList.add('retro-lit'); 
                 
-                if(audioCtx.state === 'suspended') audioCtx.resume();
+                if(audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                    
+                    /* * 📍 SOLUCIÓN 'VOZ BLOQUEADA EN IOS':
+                     * Desbloquea la síntesis de voz en el primer toque.
+                    */
+                    const silentUtterance = new SpeechS_ynthesisUtterance(" ");
+                    silentUtterance.volume = 0;
+                    window.speechSynthesis.speak(silentUtterance);
+                }
+                
+                // Activa el sonido de barrido
                 lfoGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime+0.5);
                 radioGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime+0.5); 
 
-                /* * 📍 SOLUCIÓN PUNTOS 1 y 2:
-                 * Forzamos la activación de sensores y micrófono en el primer 'click'
-                */
-                // 1. Forzamos la activación de sensores (si no lo están ya)
-                // Esto pedirá permiso al usuario en iOS la primera vez
-                if (!proximitySensor && !emfSimInterval) { // Solo si no está ya activo o simulando
+                // Pedir permisos de sensores en el primer toque
+                if (!proximitySensor && !emfSimInterval) {
                     initSensor(); 
                 }
 
-                // 2. Forzamos el primer arranque del micrófono
-                // Esto pedirá permiso de micrófono en iOS
-                if (recognition && !isRecognizing) {
-                    try {
-                        recognition.start();
-                    } catch(e) {
-                        console.warn("Primer intento de mic fallido, se reintentará.");
-                    }
-                }
-                // --- FIN DE LA SOLUCIÓN ---
-                
-                startAutoMode();
+                // Iniciar la lógica del Spirit Box
+                spiritBoxState = "SCANNING";
+                runSpiritBoxLoop(); // Inicia el ciclo
                 
             } else {
+                // --- Apagar ---
                 pwr.style.transform = 'rotate(-135deg)';
                 pwr.style.boxShadow = 'none';
                 detectorPanel.classList.remove('retro-lit');
                 
+                // Apaga el sonido de barrido
                 lfoGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.1);
                 radioGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.1); 
                 
-                isRecognizing = false;
+                // Cancela todo
+                spiritBoxState = "OFF";
+                if (spiritBoxTimeout) clearTimeout(spiritBoxTimeout);
+                if (isRecognizing) recognition.abort();
                 window.speechSynthesis.cancel();
-                autoModeDelay = 5000; 
-            }
-            if (isRunning) {
-            } else {
-                stopVisualLoop(); 
+                
+                isSpeaking = false;
+                isRecognizing = false;
+                if(micLed) micLed.classList.remove('active-mic');
             }
         });
 
@@ -1275,11 +1323,12 @@
             }
         }
 
+        // 📍 SOLUCIÓN GOOGLE SHEETS (PUNTO 1)
         async function loadSheetData() {
             try {
                 let [ra, rp] = await Promise.all([
-                    fetch(`${SHEETDB_URL}?sheet=AUTOMATICO`), 
-                    fetch(`${SHEETDB_URL}?sheet=PROGRAMADO`)
+                    fetch(`${SHEETDB_URL}?sheet=Automatico`), // Nombre corregido
+                    fetch(`${SHEETDB_URL}?sheet=programado`)  // Nombre corregido
                 ]);
                 let ja = await ra.json(); automaticoData = ja.map(r=>r.TEXTO||r.texto).filter(t=>t);
                 let jp = await rp.json();
@@ -1288,33 +1337,42 @@
                     let res=r.RESPUESTA||r.respuesta;
                     if(p&&res) programadoData.set(p,res);
                 });
-                console.log("Datos cargados:", automaticoData.length, programadoData.size);
+                console.log("Datos cargados: Automatico", automaticoData.length, "Programado", programadoData.size);
             } catch(e){ 
-                console.error("Error datos", e); 
+                console.error("Error cargando datos de SheetDB", e); 
             } finally {
                 hideLoadingScreen();
             }
         }
-        
-        // loadSheetData(); // Movido a window.onload
 
+        // 📍 SOLUCIÓN LÓGICA SPIRIT BOX (PUNTO 6)
         function speak(text) {
+            if (!text) return;
+            spiritBoxState = "SPEAKING";
             isSpeaking = true;
             
+            // Baja el sonido de barrido mientras habla
             lfoGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime+0.1); 
             radioGain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime+0.1);
             
             const u = new SpeechSynthesisUtterance(text);
             u.lang = 'es-MX'; 
             u.volume = 1.0; 
-            u.pitch = 0.9; 
-            u.rate = 1.1; 
+            u.pitch = 0.5; // Voz más grave (neutra)
+            u.rate = 0.9;  // Un poco más lento
             
             u.onend = () => {
                 isSpeaking = false;
+                // Sube el sonido de barrido
                 lfoGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime+0.2);
-                lfo.frequency.linearRampToValueAtTime([5,12,20][scanSpeed], audioCtx.currentTime + 0.2);
                 radioGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime+0.2);
+                
+                // Vuelve a escanear/escuchar
+                spiritBoxState = "SCANNING";
+                if (isRunning) {
+                    // Espera 2 segundos antes de volver a escuchar
+                    setTimeout(runSpiritBoxLoop, 2000);
+                }
             };
             window.speechSynthesis.speak(u);
             
@@ -1323,59 +1381,85 @@
             setTimeout(() => sensorPanel.classList.remove('alert'), 500);
         }
 
-        function startAutoMode() {
-            if(!isRunning) return;
-            let randomTime = 1000 + Math.random() * (autoModeDelay - 1000);
+        // 📍 SOLUCIÓN LÓGICA SPIRIT BOX (PUNTO 6) - Nueva función principal
+        function runSpiritBoxLoop() {
+            // Si está apagado o ya está hablando, no hagas nada
+            if (!isRunning || spiritBoxState === "SPEAKING") return;
+
+            // Inicia el estado de "ESCUCHANDO"
+            spiritBoxState = "LISTENING";
+            if(micLed) micLed.classList.add('active-mic');
             
-            setTimeout(() => {
-                if(isRunning && !isSpeaking && automaticoData.length>0 && Math.random()>0.5) {
-                    speak(automaticoData[Math.floor(Math.random()*automaticoData.length)]);
+            try {
+                if (!isRecognizing) recognition.start();
+            } catch(e) {
+                console.warn("Error al iniciar recognition", e);
+                if(micLed) micLed.classList.remove('active-mic');
+                // Si falla, vuelve a intentar el ciclo después de un rato
+                if (isRunning) setTimeout(runSpiritBoxLoop, 2000);
+                return;
+            }
+
+            // Inicia un temporizador. Si no oye nada en 5 seg, habla automáticamente.
+            spiritBoxTimeout = setTimeout(() => {
+                if (spiritBoxState !== "LISTENING") return; // Ya se recibió un comando
+                
+                console.log("Timeout: No se detectó comando de voz.");
+                if (isRecognizing) recognition.abort(); // Detiene el micrófono
+                if(micLed) micLed.classList.remove('active-mic');
+                isRecognizing = false;
+
+                // Habla con una respuesta AUTOMÁTICA
+                if (automaticoData.length > 0) {
+                    speak(automaticoData[Math.floor(Math.random() * automaticoData.length)]);
                 }
-                startAutoMode();
-            }, randomTime);
+            }, 5000); // 5 segundos de espera
         }
 
+        // 📍 SOLUCIÓN LÓGICA SPIRIT BOX (PUNTO 6)
         function initSpeechRec() {
-            if(!SpeechRecognition) return;
+            if(!SpeechRecognition) {
+                console.error("SpeechRecognition no soportado por este navegador.");
+                return;
+            }
             recognition = new SpeechRecognition(); 
             recognition.lang = 'es-MX'; 
-            recognition.continuous = false;
+            recognition.continuous = false; // Queremos que pare después de hablar
+
             recognition.onstart = () => { 
                 isRecognizing = true;
                 if(micLed) micLed.classList.add('active-mic'); 
             };
             
-            // SOLUCIÓN 1: CORREGIR EL ERROR DEL MICRÓFONO
             recognition.onend = () => { 
                 isRecognizing = false;
                 if(micLed) micLed.classList.remove('active-mic'); 
-                // Vuelve a comprobar si debe seguir escuchando
-                if (isRunning) {
-                    persistentMicCheck();
-                }
+                // No reiniciar automáticamente. El runSpiritBoxLoop lo controla.
             };
             
-            recognition.onerror = () => {
+            recognition.onerror = (e) => {
                 isRecognizing = false;
                 if(micLed) micLed.classList.remove('active-mic');
+                console.warn("Error de Recognition:", e.error);
             };
+
+            // ¡Comando detectado!
             recognition.onresult = (e) => {
-                autoModeDelay = 1500; // Hacer automático más frecuente
+                if (spiritBoxTimeout) clearTimeout(spiritBoxTimeout); // Cancela el timeout
                 
                 let t = e.results[0][0].transcript.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-                if(programadoData.has(t)) speak(programadoData.get(t));
+                console.log("Comando detectado:", t);
+
+                if (programadoData.has(t)) {
+                    // 1. Responde con PROGRAMADO
+                    speak(programadoData.get(t));
+                } else {
+                    // 2. Responde con AUTOMATICO
+                    if (automaticoData.length > 0) {
+                        speak(automaticoData[Math.floor(Math.random() * automaticoData.length)]);
+                    }
+                }
             };
-        }
-        
-        function persistentMicCheck(){ 
-            if(recognition && isRunning && !isRecognizing && !isSpeaking) {
-                try { 
-                    recognition.start(); 
-                } catch(e) { 
-                    isRecognizing = false; 
-                    if(micLed) micLed.classList.remove('active-mic');
-                } 
-            }
         }
 
         function updateLEDs(intensity) { 
@@ -1450,9 +1534,8 @@
             currentTemp += (Math.random()*0.04 - 0.02); 
             document.getElementById('temp-val').innerText = currentTemp.toFixed(1)+"°C";
         }
-        setInterval(updateSensorReadings, 2000);
 
-        // --- UI Lógica Actualizada ---
+        // --- UI Lógica y Eventos de Zoom/Pan ---
         
         const menuContainer = document.getElementById('menu-container');
         const filterControls = document.getElementById('filter-controls-container');
@@ -1462,18 +1545,11 @@
         function showControls() {
             filterControls.style.opacity = '1';
             menuContainer.style.opacity = '1';
-            
-            /* * 📍 SOLUCIÓN PUNTO 4:
-             * Nos aseguramos de quitar la clase 'visible'
-            */
             logoImage.classList.remove('visible');
             logoImage.classList.add('hiding'); 
-            
             followContainer.classList.add('hiding');
-
             filterControls.style.pointerEvents = 'auto';
             menuContainer.style.pointerEvents = 'auto';
-            
             clearTimeout(uiHideTimeout);
             uiHideTimeout = setTimeout(hideControls, 4000); 
             uiVisible = true;
@@ -1482,13 +1558,8 @@
         function hideControls() {
             filterControls.style.opacity = '0';
             menuContainer.style.opacity = '0';
-            
-            /* * 📍 SOLUCIÓN PUNTO 4:
-             * Nos aseguramos de quitar la clase 'hiding'
-            */
             logoImage.classList.remove('hiding'); 
             logoImage.classList.add('visible'); 
-
             filterControls.style.pointerEvents = 'none';
             menuContainer.style.pointerEvents = 'none';
             uiVisible = false;
@@ -1513,8 +1584,10 @@
             }
         });
 
-
         function handleUITap(event) {
+            // No hacer nada si estamos haciendo zoom o paneo
+            if (isPinching || isPanning) return;
+
             if (!event.target.closest('.panel') && !event.target.closest('#btn-ver') && !event.target.closest('.filter-btn')) {
                 if (uiVisible) {
                     hideControls(); 
@@ -1532,18 +1605,15 @@
             menu.classList.toggle('visible');
             clearTimeout(mT);
             if(menu.classList.contains('visible')) mT = setTimeout(()=>menu.classList.remove('visible'), 5000);
-            // showControls() es llamado por el handleUITap
         }
         
         function checkPanelState() {
             const p1 = document.getElementById('p-unified').classList.contains('hidden');
-            
             if (!p1) { 
                 document.body.classList.add('panels-active');
             } else {
                 document.body.classList.remove('panels-active');
             }
-            
             setTimeout(resizeAllCanvas, 500);
         }
 
@@ -1552,25 +1622,16 @@
             const btn = document.querySelector(`.menu-item[onclick="togglePanel('${id}')"]`);
             p.classList.toggle('hidden');
             if(btn) btn.classList.toggle('active');
-            
             checkPanelState(); 
-            
             menu.classList.remove('visible');
-            
             if(id === 'p-unified' && !p.classList.contains('hidden')) resizeEnergyCanvas();
-            // showControls() es llamado por el handleUITap
         }
-        
-        // SOLUCIÓN 1: Bucle de detección de IA re-agregado
-        // (Nota: Esta función estaba duplicada en tu código original, la dejo una sola vez)
-        // async function detectPoseLoop() { ... } // Ya está definida arriba
 
         const followSteps = document.querySelectorAll('.follow-step');
         let followAnimationRunning = false;
         
         async function runFollowAnimation() {
             if (uiVisible || followAnimationRunning) return; 
-
             followAnimationRunning = true;
             followContainer.classList.remove('hiding'); 
             followContainer.style.opacity = '1';
@@ -1612,26 +1673,72 @@
             followAnimationRunning = false;
         }
 
+        // 📍 SOLUCIÓN ZOOM (PUNTO 5) - Event Listeners
+        const appUI = document.getElementById('app-ui');
+        
+        function getPinchDist(e) {
+            const t1 = e.touches[0];
+            const t2 = e.touches[1];
+            return Math.sqrt(Math.pow(t1.clientX - t2.clientX, 2) + Math.pow(t1.clientY - t2.clientY, 2));
+        }
+        
+        function getPanCenter(e) {
+            return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }
+
+        appUI.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                isPinching = true;
+                isPanning = false; // Prioritiza el pinch
+                initialPinchDist = getPinchDist(e);
+            } else if (e.touches.length === 1 && zoom > 1) {
+                isPinching = false;
+                isPanning = true;
+                lastPan = getPanCenter(e);
+            }
+        });
+
+        appUI.addEventListener('touchmove', (e) => {
+            e.preventDefault(); // Previene el scroll de la página
+
+            if (isPinching && e.touches.length === 2) {
+                const newPinchDist = getPinchDist(e);
+                const zoomFactor = newPinchDist / initialPinchDist;
+                
+                let newZoom = zoom * zoomFactor;
+                newZoom = Math.max(1.0, Math.min(newZoom, maxZoom)); // Limita el zoom
+
+                zoom = newZoom;
+                initialPinchDist = newPinchDist; // Actualiza la base del pinch
+
+            } else if (isPanning && e.touches.length === 1) {
+                const newPan = getPanCenter(e);
+                const deltaX = (newPan.x - lastPan.x);
+                const deltaY = (newPan.y - lastPan.y);
+                
+                // Mapea el paneo de pantalla al paneo de video (inverso)
+                // Esto es complejo y depende del aspect ratio, una aprox. simple:
+                const panSensibility = 2.0 / zoom; 
+                currentPan.x -= deltaX * panSensibility;
+                currentPan.y -= deltaY * panSensibility;
+
+                lastPan = newPan;
+            }
+        });
+
+        appUI.addEventListener('touchend', (e) => {
+            if (e.touches.length < 2) isPinching = false;
+            if (e.touches.length < 1) isPanning = false;
+        });
+
 
         window.onload = () => {
             startCamera();
-            
-            /* * 📍 SOLUCIÓN PUNTO 1 (PARTE 2):
-             * No inicies los sensores aquí. 
-             * Se iniciarán cuando el usuario presione el botón de "Encender".
-            */
-            // initSensor(); // <- MOVIMOS ESTO AL CLICK DEL BOTÓN
-            
             startVisualLoop(); 
             initMLModel(); 
-            
             detectPoseLoop(); 
             
-            // setInterval(updateSensorReadings, 2000); // Esto ya estaba duplicado
-            setInterval(persistentMicCheck, 1000); 
-            
-            // SOLUCIÓN 3: Iniciar temporizador (30 segundos)
-            // AQUÍ PUEDES CAMBIAR EL TIEMPO (30000 = 30 segundos)
+            setInterval(updateSensorReadings, 2000); 
             setInterval(runFollowAnimation, 30000); 
             
             document.getElementById('p-unified').classList.add('hidden');
