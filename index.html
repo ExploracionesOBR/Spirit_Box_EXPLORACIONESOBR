@@ -130,16 +130,15 @@
             margin: 5px; 
         }
         
-        /* SOLUCIÓN 1: Ajuste de altura de paneles */
         #p-env {
-            height: 250px; /* Altura fija para el contenido */
-            flex-shrink: 0; /* No encoger */
+            height: 250px; 
+            flex-shrink: 0; 
             max-height: none;
         }
         
         #p-detector {
-            flex-grow: 1; /* Ocupa el resto */
-            min-height: 280px; /* Mínimo para que quepa */
+            flex-grow: 1; 
+            min-height: 280px; 
             max-height: none;
         }
 
@@ -197,7 +196,6 @@
             opacity: 0; 
             transform: scale(0);
             transition: opacity 0.3s ease-out, transform 0.3s ease-out;
-            /* SOLUCIÓN 2: Animación de efectos */
             animation: logo-effects 7s infinite linear; 
         }
         #logo-image.pop-in {
@@ -210,7 +208,6 @@
             50% { transform: scale(1.2); }
             100% { transform: scale(1); opacity: 1; }
         }
-        /* SOLUCIÓN 2: Animación de Glitch/Blur */
         @keyframes logo-effects {
             0%, 90% { transform: scale(1); opacity: 1; filter: none; }
             /* Glitch */
@@ -435,15 +432,16 @@
         /* SOLUCIÓN 3: Contenedor "Síguenos" */
         #follow-container {
             position: fixed;
-            top: 50%;
+            bottom: 80px; /* Movido a la parte baja */
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translateX(-50%); /* Solo centrado horizontal */
             z-index: 200;
             pointer-events: none;
-            opacity: 0; /* Oculto por defecto */
+            opacity: 0; 
+            width: 100%;
         }
         .follow-step {
-            display: none; /* Ocultar todos los pasos */
+            display: none; 
             color: var(--neon-cyan);
             font-size: 1.5rem;
             font-family: 'Orbitron', sans-serif;
@@ -541,6 +539,7 @@
     <canvas id="temp-canvas" class="hidden-canvas"></canvas>
 
     <img id="logo-image" src="obr-logo.png" alt="Logo OBR">
+
 
     <div id="kinect-banner">KINEC ACTIVO <span class="led-red">🔴</span></div>
     
@@ -641,6 +640,7 @@
 </div> 
 
     <script>
+        // SOLUCIÓN 1: URL de SheetDB Corregida
         const SHEETDB_URL = "https://sheetdb.io/api/v1/9xzfnke69kkej"; 
         let isRunning = false;
         let currentFilter = 'none'; 
@@ -861,14 +861,13 @@
             requestAnimationFrame(drawLoop);
         }
         
-        // SOLUCIÓN 1: Bucle de detección de IA (RE-AGREGADO Y CORREGIDO)
+        // SOLUCIÓN 1: Bucle de detección de IA (RE-AGREGADO)
         async function detectPoseLoop() {
             while (true) {
                 if (currentFilter === 'sls' && poseDetector && videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
                     
                     drawVideoWithCover(tempCtx, videoBg);
                     
-                    // SOLUCIÓN 1 (Error 2): Usar tempCanvas (el elemento) no tempCtx
                     const poses = await poseDetector.estimatePoses(tempCanvas); 
                     
                     latestPoses = poses; 
@@ -1326,7 +1325,6 @@
         const menuContainer = document.getElementById('menu-container');
         const filterControls = document.getElementById('filter-controls-container');
         const logoImage = document.getElementById('logo-image');
-        const headerTitle = document.querySelector('.header-title');
         
         function showUI() {
             filterControls.style.opacity = '1';
