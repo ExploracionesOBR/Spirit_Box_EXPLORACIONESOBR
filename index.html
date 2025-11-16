@@ -192,6 +192,8 @@
             z-index: 100; 
             opacity: 1; 
             transition: opacity 0.5s ease-in-out;
+            /* SOLUCIÓN 2: Forzar 1 línea */
+            white-space: nowrap;
         }
         
         #kinect-banner {
@@ -206,16 +208,23 @@
             text-shadow: 0 0 5px var(--neon-green), 0 0 10px #000;
             display: none; 
             pointer-events: none;
+        }
+        /* SOLUCIÓN 3: Emoji Kinec animado */
+        #kinect-banner .led-red {
             animation: pulseGlow 1.5s infinite ease-in-out;
+            text-shadow: 0 0 8px var(--alert-red), 0 0 10px #000;
         }
-        #kinect-banner::before {
-            content: '::';
-            color: var(--alert-red);
-            margin-right: 10px;
+
+        /* SOLUCIÓN 3: Emoji Título animado */
+        .header-title .led-green {
+            animation: pulseGlow 2.0s infinite ease-in-out;
+            color: var(--neon-green);
+            text-shadow: 0 0 8px var(--neon-green), 0 0 10px #000;
         }
+
         @keyframes pulseGlow {
-            0%, 100% { opacity: 0.6; text-shadow: 0 0 5px var(--neon-green), 0 0 10px #000; }
-            50% { opacity: 1.0; text-shadow: 0 0 15px var(--neon-green), 0 0 10px #000; }
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1.0; }
         }
 
 
@@ -355,6 +364,25 @@
             box-shadow: 0 0 20px #fff;
         }
 
+        /* SOLUCIÓN 4: Pantalla de Carga */
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan);
+            animation: pulseGlow 2s infinite ease-in-out;
+        }
+
 
         @media (max-width: 768px) and (orientation: portrait) {
             #side-panel-container {
@@ -401,15 +429,19 @@
 
 <div id="app-ui" onclick="handleUITap(event)">
 
+    <div id="loading-overlay">
+        SINCRONIZANDO GUIONES...
+    </div>
+
     <div id="main-view-area">
         <video id="bg-camera-feed" playsinline autoplay muted></video>
         <canvas id="main-filter-canvas"></canvas>
     </div>
     <canvas id="temp-canvas" class="hidden-canvas"></canvas>
 
-    <div class="header-title">EXPLORACIONES OBR | EQUIPO ACTIVO 🟢</div>
+    <div class="header-title">EXPLORACIONES OBR | EQUIPO ACTIVO <span class="led-green">🟢</span></div>
 
-    <div id="kinect-banner">KINEC ACTIVO 🔴</div>
+    <div id="kinect-banner">KINEC ACTIVO <span class="led-red">🔴</span></div>
 
     <div id="side-panel-container">
         
@@ -537,14 +569,11 @@
         let emfSimInterval = null;
         let visualLoopInterval; 
 
-        // SOLUCIÓN 1: Variables de IA (V5.23) restauradas
         let poseDetector; 
-        let latestPoses = []; // Variable para guardar la última detección
-        // SOLUCIÓN 1: 'isDetectingPose' NO se usa en esta versión
+        let latestPoses = []; 
         
         let autoModeDelay = 5000; 
         
-        // SOLUCIÓN 3: Variable para el temporizador de la UI
         let uiHideTimeout;
 
         async function startCamera() {
@@ -627,25 +656,21 @@
 
                 mainFilterCtx.clearRect(0, 0, w, h);
                 
-                // SOLUCIÓN 2: Controlar visibilidad del banner y título
                 const kinectBanner = document.getElementById('kinect-banner');
                 const headerTitle = document.querySelector('.header-title');
                 
                 if (currentFilter === 'sls') {
                     kinectBanner.style.display = 'block';
-                    headerTitle.style.opacity = '0'; // Ocultar título principal
+                    headerTitle.style.opacity = '0'; 
                     
                     drawVideoWithCover(tempCtx, videoBg);
                     
                     if(poseDetector) {
-                        // SOLUCIÓN 1: Corregido a tempCanvas
                         const poses = await poseDetector.estimatePoses(tempCanvas); 
                         latestPoses = poses; 
                     }
                     
                     drawVideoWithCover(mainFilterCtx, videoBg);
-                    
-                    // SOLUCIÓN 2: Tinte verde ELIMINADO
                     
                     if (latestPoses) {
                         drawAllSkeletons(latestPoses); 
@@ -656,7 +681,6 @@
                     // La opacidad del título es controlada por la función showUI()
                     
                     if (currentFilter === 'relief') {
-                        // SOLUCIÓN 3: Corregido para no "marcar todo"
                         drawVideoWithCover(tempCtx, videoBg);
                         let frame = tempCtx.getImageData(0, 0, w, h);
                         let data = frame.data;
@@ -681,7 +705,6 @@
                         }
                         mainFilterCtx.putImageData(frame, 0, 0);
 
-                    // SOLUCIÓN 1: Nuevo filtro 'night-vision'
                     } else if (currentFilter === 'night-vision') {
                         drawVideoWithCover(mainFilterCtx, videoBg);
                         let frame = mainFilterCtx.getImageData(0, 0, w, h);
@@ -693,14 +716,12 @@
                             data[i+1] = l * 1.2; // Verde
                             data[i+2] = 0; // Azul
 
-                            // Scanlines
                             let y = Math.floor((i / 4) / w);
                             if (y % 4 === 0) {
-                                data[i+1] *= 0.8; // Oscurecer
+                                data[i+1] *= 0.8; 
                             }
                         }
                         
-                        // Viñeta
                         for (let y = 0; y < h; y++) {
                             for (let x = 0; x < w; x++) {
                                 let i = (y * w + x) * 4;
@@ -729,7 +750,7 @@
                     
                     drawVideoWithCover(tempCtx, videoBg);
                     
-                    // SOLUCIÓN 1 (Error 2): Usar tempCanvas (el elemento) no tempCtx
+                    // SOLUCIÓN 1: Corregido a tempCanvas
                     const poses = await poseDetector.estimatePoses(tempCanvas); 
                     
                     latestPoses = poses; 
@@ -1022,9 +1043,9 @@
         function speak(text) {
             isSpeaking = true;
             
-            // Voz más fuerte, Tono neutro
-            lfoGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime+0.1); 
-            radioGain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime+0.1);
+            lfoGain.gain.linearRampToValueAtTime(0.03, audioCtx.currentTime+0.1); 
+            lfo.frequency.linearRampToValueAtTime(15, audioCtx.currentTime + 0.1);
+            radioGain.gain.linearRampToValueAtTime(0.005, audioCtx.currentTime+0.1);
             
             const u = new SpeechSynthesisUtterance(text);
             u.lang = 'es-MX'; 
@@ -1171,7 +1192,6 @@
 
         // --- UI Lógica Actualizada ---
         
-        // SOLUCIÓN 3: Lógica de UI auto-ocultable
         const menuContainer = document.getElementById('menu-container');
         const filterControls = document.getElementById('filter-controls-container');
         const headerTitle = document.querySelector('.header-title');
@@ -1179,14 +1199,14 @@
         function showUI() {
             filterControls.style.opacity = '1';
             menuContainer.style.opacity = '1';
-            if (currentFilter !== 'sls') { // No mostrar si el banner kinect está activo
+            if (currentFilter !== 'sls') { 
                 headerTitle.style.opacity = '1';
             }
             filterControls.style.pointerEvents = 'auto';
             menuContainer.style.pointerEvents = 'auto';
             
             clearTimeout(uiHideTimeout);
-            uiHideTimeout = setTimeout(hideUI, 4000); // Ocultar después de 4 seg
+            uiHideTimeout = setTimeout(hideUI, 4000); 
         }
 
         function hideUI() {
@@ -1198,7 +1218,6 @@
         }
 
         function handleUITap(event) {
-            // Si el clic NO es en un panel, mostrar la UI
             if (!event.target.closest('.panel')) {
                 showUI();
             }
@@ -1210,7 +1229,7 @@
             menu.classList.toggle('visible');
             clearTimeout(mT);
             if(menu.classList.contains('visible')) mT = setTimeout(()=>menu.classList.remove('visible'), 5000);
-            showUI(); // Resetear el timer al usar el menú
+            showUI(); 
         }
         document.getElementById('btn-ver').addEventListener('click', toggleMenu);
         
@@ -1236,7 +1255,7 @@
             menu.classList.remove('visible');
             
             if(id === 'p-env' && !p.classList.contains('hidden')) resizeEnergyCanvas();
-            showUI(); // Resetear el timer
+            showUI(); 
         }
         
         // SOLUCIÓN 1: Bucle de detección de IA re-agregado
@@ -1246,7 +1265,7 @@
                     
                     drawVideoWithCover(tempCtx, videoBg);
                     
-                    // SOLUCIÓN 1 (Error 2): Usar tempCanvas (el elemento) no tempCtx
+                    // SOLUCIÓN 1: Corregido a tempCanvas
                     const poses = await poseDetector.estimatePoses(tempCanvas); 
                     
                     latestPoses = poses; 
@@ -1264,9 +1283,9 @@
             startCamera();
             initSensor(); 
             startVisualLoop(); 
-            initMLModel(); // SOLUCIÓN 1: Iniciar el modelo de IA
+            initMLModel(); 
             
-            // SOLUCIÓN 1 (Error 1): Iniciar el bucle de detección de IA
+            // SOLUCIÓN 1: Iniciar el bucle de detección de IA
             detectPoseLoop(); 
             
             setInterval(updateSensorReadings, 2000); 
@@ -1278,7 +1297,6 @@
             document.querySelector('#m-env').classList.remove('active');
             checkPanelState();
             
-            // SOLUCIÓN 3: Mostrar UI al inicio y empezar temporizador
             showUI();
         };
         
