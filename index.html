@@ -18,11 +18,12 @@
 
     <style>
         :root {
-            --neon-blue: #0088FF; 
-            --neon-cyan: #00FFFF;
-            --panel-bg: #1a1a1a; 
+            /* SOLUCIÓN: Nuevo tema retro */
+            --neon-cyan: #FFB000; /* Ámbar */
+            --neon-blue: #FF8C00; /* Naranja */
             --neon-green: #39FF14; 
             --alert-red: #FF3333;
+            --panel-bg: #1a1a1a; 
             --amber-light: rgba(255, 176, 0, 0.1);
             --led-blue: #0055FF;
             --led-yellow: #FFCC00;
@@ -112,7 +113,7 @@
             width: calc(100% - var(--panel-width));
         }
 
-
+        /* SOLUCIÓN: Panel Unificado */
         .panel {
             background: repeating-linear-gradient(135deg, #1a1a1a, #1a1a1a 10px, #222 10px, #222 12px);
             border: 1px solid #444;
@@ -128,20 +129,12 @@
             transition: box-shadow 0.3s ease;
             pointer-events: auto;
             margin: 5px; 
+            /* Ocupar todo el alto */
+            flex-grow: 1;
+            max-height: 98vh; /* Máxima altura */
+            overflow-y: auto; /* Scroll si es necesario */
         }
         
-        #p-env {
-            height: 250px; 
-            flex-shrink: 0; 
-            max-height: none;
-        }
-        
-        #p-detector {
-            flex-grow: 1; 
-            min-height: 280px; 
-            max-height: none;
-        }
-
         .panel.alert {
             box-shadow: inset 0 0 20px #000, 0 5px 15px rgba(0,0,0,0.8), 0 0 20px var(--alert-red);
             border-color: var(--alert-red);
@@ -165,13 +158,13 @@
         .panel.hidden { display: none; }
 
         .panel-header {
-            font-size: 0.6rem; 
+            font-size: 0.7rem; /* Un poco más grande */
             text-align: center; 
             margin-bottom: 5px; 
-            color: #888;
+            color: #ccc;
             text-shadow: 0 -1px 0 #000; 
             border-bottom: 2px groove #333; 
-            padding: 2px 0; 
+            padding: 4px 0; 
             text-transform: uppercase; 
             letter-spacing: 1px; 
             background: rgba(0,0,0,0.3);
@@ -193,19 +186,17 @@
             height: 60px;
             z-index: 100;
             pointer-events: none;
-            /* SOLUCIÓN 1: Oculto por defecto, 'visible' lo enciende */
-            opacity: 0; 
-            transform: scale(0);
+            opacity: 1; 
+            transform: scale(1);
             transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+            animation: logo-effects 7s infinite linear; 
         }
         #logo-image.visible {
             transform: scale(1);
             opacity: 1;
-            /* SOLUCIÓN 1: La animación se reinicia al añadir la clase */
             animation: popIn 0.3s ease-out forwards, logo-effects 7s infinite linear 0.3s;
         }
         #logo-image.hiding {
-            /* SOLUCIÓN 1: Forzar la animación de salida */
             animation: waterDrop 0.5s ease-out forwards;
         }
 
@@ -330,8 +321,8 @@
 
         #btn-ver {
             width: 55px; height: 55px;
-            border-radius: 50%; border: 2px solid #00aaaa;
-            background: radial-gradient(#004444, #002222); color: #00ffff;
+            border-radius: 50%; border: 2px solid var(--neon-cyan);
+            background: radial-gradient(#004444, #002222); color: var(--neon-cyan);
             font-weight: bold; 
             font-size: 0.8rem; 
             display: flex; justify-content: center;
@@ -339,7 +330,7 @@
         }
         #menu-tools {
             background: rgba(10,15,20,0.95);
-            border: 1px solid #00aaaa; border-radius: 8px; padding: 5px;
+            border: 1px solid var(--neon-cyan); border-radius: 8px; padding: 5px;
             display: none;
             position: absolute;
             bottom: 65px; 
@@ -350,9 +341,9 @@
             cursor: pointer; font-size: 0.7rem;
         }
         .menu-item.active { 
-            color: #00ffff; 
-            text-shadow: 0 0 5px #00ffff; 
-            background: rgba(0, 255, 255, 0.1);
+            color: var(--neon-cyan); 
+            text-shadow: 0 0 5px var(--neon-cyan); 
+            background: rgba(255, 176, 0, 0.1);
         }
 
         #filter-controls-container {
@@ -443,7 +434,7 @@
             transform: translateX(-50%); 
             z-index: 200;
             pointer-events: none;
-            opacity: 1; /* SOLUCIÓN 1: Visible por defecto */
+            opacity: 1; 
             width: 100%;
             transition: opacity 0.5s ease-out;
         }
@@ -478,6 +469,51 @@
         @keyframes fadeIn { 0% { opacity: 0; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
         @keyframes fadeOut { 0% { opacity: 1; } 100% { opacity: 0; } }
 
+        /* SOLUCIÓN: Nuevos estilos de Brújula */
+        #compass-container {
+            width: 150px;
+            height: 150px;
+            margin: 10px auto;
+            background: radial-gradient(circle, #222, #000);
+            border-radius: 50%;
+            border: 2px solid #555;
+            box-shadow: inset 0 0 15px #000;
+            position: relative;
+        }
+        #compass-needle {
+            width: 2px;
+            height: 80%;
+            background: #ff5500;
+            position: absolute;
+            top: 10%;
+            left: 50%;
+            transform: translateX(-50%) rotate(0deg);
+            transform-origin: center center;
+            transition: transform 0.5s cubic-bezier(0.2, 1.5, 0.5, 1);
+            box-shadow: 0 0 5px #ff5500;
+        }
+        #compass-needle::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -5px;
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 12px solid #ff5500;
+        }
+        .compass-label {
+            position: absolute;
+            font-size: 0.8rem;
+            color: #aaa;
+            font-weight: bold;
+        }
+        .n { top: 5px; left: 50%; transform: translateX(-50%); }
+        .s { bottom: 5px; left: 50%; transform: translateX(-50%); }
+        .e { top: 50%; right: 10px; transform: translateY(-50%); }
+        .w { top: 50%; left: 10px; transform: translateY(-50%); }
+
 
         @media (max-width: 768px) and (orientation: portrait) {
             #side-panel-container {
@@ -508,7 +544,6 @@
                 width: 100%;
                 filter: brightness(0.4);
             }
-            /* SOLUCIÓN 4: Corrección filtro en vertical */
             body.panels-active #main-filter-canvas {
                 left: 0 !important;
                 width: 100% !important;
@@ -525,6 +560,11 @@
                 :root { --panel-width: 240px; }
                 #p-env { height: 250px; flex-shrink: 0; flex-grow: 0; }
                 #p-detector { flex-grow: 1; height: auto; }
+
+                body.panels-active #main-filter-canvas {
+                    left: var(--panel-width) !important;
+                    width: calc(100% - var(--panel-width)) !important;
+                }
             }
         }
     </style>
@@ -565,55 +605,59 @@
 
     <div id="side-panel-container">
         
-        <div class="panel" id="p-env">
+        <div class="panel" id="p-unified">
             <div class="panel-header">
-                SENSORES
-                <div class="status-led" id="sensor-led" title="Sensor EMF Real Activo"></div>
-            </div>
-            
-            <div class="env-content">
-                <div class="temp-readout" id="temp-val">19.8°C</div>
-                <div class="temp-label-small">TEMP AMBIENTE 🌡️</div>
-                
-                <div class="energy-container">
-                    <div class="energy-label" style="margin-top:10px;">ENERGIA DEL CAMPO 🚥</div>
-                    <div class="led-bar">
-                        <div class="led-segment" id="seg-1"></div>
-                        <div class="led-segment" id="seg-2"></div>
-                        <div class="led-segment" id="seg-3"></div>
-                        <div class="led-segment" id="seg-4"></div>
-                        <div class="led-segment" id="seg-5"></div>
-                        <div class="led-segment" id="seg-6"></div>
-                        <div class="led-segment" id="seg-7"></div>
-                        <div class="led-segment" id="seg-8"></div>
-                        <div class="led-segment" id="seg-9"></div>
-                        <div class="led-segment" id="seg-10"></div>
-                    </div>
-                    <div class="energy-graph-box">
-                        <canvas id="energy-canvas"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="panel" id="p-detector">
-            <div class="panel-header">
-                SPIRIT BOX 🎙️
+                UNIDAD DE CAMPO OBR
                 <div class="status-led" id="mic-led" title="Micrófono Escuchando"></div>
+                <div class="status-led" id="mag-led" title="Brújula Activa" style="right: 25px; background: #333;"></div>
+                <div class="status-led" id="prox-led" title="Sensor Proximidad Activo" style="right: 42px; background: #333;"></div>
             </div>
             
-            <div class="emf-container">
-                <div class="vu-section">
-                    <div class="vu-box"><div id="vu-l" class="vu-bar-fill"></div></div>
-                    <div class="vu-box"><div id="vu-r" class="vu-bar-fill"></div></div>
+            <div class="panel-header" style="font-size: 0.6rem; color: #888; margin-top: 5px;">SENSORES</div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div id="compass-container">
+                    <div class="compass-label n">N</div>
+                    <div class="compass-label s">S</div>
+                    <div class="compass-label e">E</div>
+                    <div class="compass-label w">W</div>
+                    <div id="compass-needle"></div>
                 </div>
-                <div class="meter-section">
+                <div style="flex-grow: 1; margin-left: 10px;">
+                    <div class="temp-readout" id="temp-val" style="font-size: 2rem;">19.8°C</div>
+                    <div class="temp-label-small">TEMP AMBIENTE 🌡️</div>
+                </div>
+            </div>
+
+            <div class="energy-container">
+                <div class="energy-label">ENERGIA (PROXIMIDAD) 🚥</div>
+                <div class="led-bar">
+                    <div class="led-segment" id="seg-1"></div>
+                    <div class="led-segment" id="seg-2"></div>
+                    <div class="led-segment" id="seg-3"></div>
+                    <div class="led-segment" id="seg-4"></div>
+                    <div class="led-segment" id="seg-5"></div>
+                    <div class="led-segment" id="seg-6"></div>
+                    <div class="led-segment" id="seg-7"></div>
+                    <div class="led-segment" id="seg-8"></div>
+                    <div class="led-segment" id="seg-9"></div>
+                    <div class="led-segment" id="seg-10"></div>
+                </div>
+                <div class="energy-graph-box" style="min-height: 60px;">
+                    <canvas id="energy-canvas"></canvas>
+                </div>
+            </div>
+
+            <div class="panel-header" style="font-size: 0.6rem; color: #888; margin-top: 15px;">SPIRIT BOX 🎙️</div>
+            
+            <div class="emf-container" style="margin-top: 10px;">
+                <div class="meter-section" style="min-height: 80px;">
                     <div class="meter-freqs">
                         <span>| 50</span><span>| 100</span><span>| 500</span><span>| 1k</span><span>| 10k |</span>
                     </div>
                     <div id="main-needle"></div>
                 </div>
-                <div class="knobs-section">
+                <div class.knobs-section">
                     <div style="text-align:center">
                         <div class="knob-circle" id="knob-power" style="transform: rotate(-135deg);"><div class="knob-indicator"></div></div>
                         <div class="knob-label">ENCENDER</div>
@@ -640,8 +684,7 @@
 
     <div id="menu-container">
         <div id="menu-tools">
-            <div class="menu-item active" id="m-detector" onclick="togglePanel('p-detector')">SPIRIT BOX</div>
-            <div class="menu-item active" id="m-env" onclick="togglePanel('p-env')">SENSORES</div>
+            <div class="menu-item active" id="m-unified" onclick="togglePanel('p-unified')">PANEL DE MANDO</div>
         </div>
         <div id="btn-ver" onclick="toggleMenu()">MENU</div>
     </div>
@@ -662,15 +705,16 @@
         const tempCanvas = document.getElementById('temp-canvas');
         const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
         
-        const envContent = document.getElementById('env-content-box');
-        const detectorPanel = document.getElementById('p-detector');
-        const sensorPanel = document.getElementById('p-env'); 
+        const detectorPanel = document.getElementById('p-unified');
+        const sensorPanel = document.getElementById('p-unified'); // Ambos apuntan al mismo panel
+        
         const segments = [1,2,3,4,5,6,7,8,9,10].map(i => document.getElementById('seg-'+i));
-        const vuL = document.getElementById('vu-l');
-        const vuR = document.getElementById('vu-r');
+        const vuL = null; // No existe en el nuevo diseño
+        const vuR = null; // No existe en el nuevo diseño
         
         const micLed = document.getElementById('mic-led');
-        const sensorLed = document.getElementById('sensor-led');
+        const magLed = document.getElementById('mag-led');
+        const proxLed = document.getElementById('prox-led');
         
         let energyHistory = new Array(50).fill(0);
         let energyCanvas, energyCtx;
@@ -683,8 +727,8 @@
         let automaticoData = [];
         let currentTemp = 19.8;
         
-        let magnetometer; 
-        let emfValue = 0; // Valor 0-100
+        let proximitySensor; 
+        let emfValue = 0; // Ahora controlado por proximidad
         let emfSimInterval = null;
         let visualLoopInterval; 
 
@@ -695,7 +739,7 @@
         let autoModeDelay = 5000; 
         
         let uiHideTimeout;
-        let uiVisible = false; // SOLUCIÓN 1: UI oculta por defecto
+        let uiVisible = false; // UI oculta por defecto
 
         async function startCamera() {
             try {
@@ -728,7 +772,7 @@
             tempCanvas.width = window.innerWidth;
             tempCanvas.height = window.innerHeight;
             
-            if(energyCanvas && !document.getElementById('p-env').classList.contains('hidden')) {
+            if(energyCanvas && !document.getElementById('p-unified').classList.contains('hidden')) {
                 resizeEnergyCanvas();
             }
         }
@@ -862,7 +906,7 @@
             requestAnimationFrame(drawLoop);
         }
         
-        // SOLUCIÓN 1: Bucle de detección de IA (RE-AGREGADO)
+        // SOLUCIÓN 1: Bucle de detección de IA (OPTIMIZADO)
         async function detectPoseLoop() {
             while (true) {
                 if (currentFilter === 'sls' && poseDetector && videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
@@ -871,7 +915,6 @@
                         isDetectingPose = true;
                         drawVideoWithCover(tempCtx, videoBg);
                         
-                        // SOLUCIÓN 1: Corregido a tempCanvas
                         const poses = await poseDetector.estimatePoses(tempCanvas); 
                         
                         latestPoses = poses; 
@@ -1028,33 +1071,73 @@
 
         // --- SENSORES ---
         function initSensor() {
-            if (emfSimInterval) clearInterval(emfSimInterval); 
-            
-            if ('Magnetometer' in window) {
+            // Sensor de Proximidad
+            if ('ProximitySensor' in window) {
                 try {
-                    magnetometer = new Magnetometer({ frequency: 5 }); 
-                    magnetometer.onreading = () => {
-                        let strength = Math.sqrt(magnetometer.x**2 + magnetometer.y**2 + magnetometer.z**2);
-                        emfValue = Math.min(100, (strength - 40) * 0.5); 
-                        if (emfValue < 0) emfValue = 0;
-                        if(sensorLed) sensorLed.classList.add('active-sensor'); 
+                    proximitySensor = new ProximitySensor();
+                    proximitySensor.onreading = () => {
+                        // sensor.value es la distancia en cm.
+                        // Cerca (ej. 0-5cm) = 100% energía. Lejos (ej. 10cm+) = 0% energía.
+                        const maxDist = 10; // 10cm para 0%
+                        const minDist = 2;  // 2cm o menos para 100%
+                        
+                        let dist = proximitySensor.value;
+                        if (dist <= minDist) {
+                            emfValue = 100;
+                        } else if (dist >= maxDist) {
+                            emfValue = 0;
+                        } else {
+                            // Calcular porcentaje inverso
+                            emfValue = 100 * (1 - (dist - minDist) / (maxDist - minDist));
+                        }
+                        if (proxLed) proxLed.classList.add('active-sensor');
                     };
-                    magnetometer.onerror = (e) => {
-                        console.warn("Error de Magnetómetro:", e.error.name, "Iniciando simulador.");
-                        if(sensorLed) sensorLed.classList.remove('active-sensor'); 
+                    proximitySensor.onerror = (e) => {
+                        console.warn("Error de Proximidad:", e.error.name, "Iniciando simulador.");
+                        if(proxLed) proxLed.classList.remove('active-sensor'); 
                         startEmfSimulation(); 
                     };
-                    magnetometer.start();
-                    console.log("Sensor EMF (Magnetómetro) activado.");
+                    proximitySensor.start();
+                    console.log("Sensor de Proximidad activado.");
                 } catch(e) {
-                    console.warn("No se pudo iniciar Magnetómetro. Iniciando simulador.");
-                    if(sensorLed) sensorLed.classList.remove('active-sensor');
+                    console.warn("Sensor de Proximidad no soportado. Iniciando simulador.");
+                    if(proxLed) proxLed.classList.remove('active-sensor');
                     startEmfSimulation(); 
                 }
             } else {
-                console.warn("Magnetómetro no soportado. Iniciando simulador.");
-                if(sensorLed) sensorLed.classList.remove('active-sensor');
+                console.warn("Sensor de Proximidad no soportado. Iniciando simulador.");
+                if(proxLed) proxLed.classList.remove('active-sensor');
                 startEmfSimulation(); 
+            }
+
+            // Brújula (Magnetómetro)
+            if ('AbsoluteOrientationSensor' in window) {
+                try {
+                    const compassNeedle = document.getElementById('compass-needle');
+                    let orientationSensor = new AbsoluteOrientationSensor({ frequency: 10 });
+
+                    orientationSensor.onreading = () => {
+                        let q = orientationSensor.quaternion;
+                        // Convertir quaternión a ángulo Z (yaw)
+                        let yaw = Math.atan2(2 * (q[0] * q[1] + q[2] * q[3]), 1 - 2 * (q[1] * q[1] + q[2] * q[2])) * (180 / Math.PI);
+                        
+                        // Usamos 'yaw' (giro) como nuestra dirección
+                        compassNeedle.style.transform = `translateX(-50%) rotate(${-yaw}deg)`;
+                        if (magLed) magLed.classList.add('active-sensor');
+                    };
+                    orientationSensor.onerror = (e) => {
+                        console.warn("Error de Brújula:", e.error.name);
+                        if (magLed) magLed.classList.remove('active-sensor');
+                    };
+                    orientationSensor.start();
+                    console.log("Brújula (OrientationSensor) activada.");
+                } catch (e) {
+                    console.warn("Brújula (OrientationSensor) no soportada.");
+                    if (magLed) magLed.classList.remove('active-sensor');
+                }
+            } else {
+                console.warn("Brújula (OrientationSensor) no soportada.");
+                if (magLed) magLed.classList.remove('active-sensor');
             }
         }
         
@@ -1066,11 +1149,11 @@
         }
         
         function stopSensor() {
-            if (magnetometer) magnetometer.stop();
+            if (proximitySensor) proximitySensor.stop();
             if (emfSimInterval) clearInterval(emfSimInterval);
             emfSimInterval = null;
             emfValue = 0;
-            if(sensorLed) sensorLed.classList.remove('active-sensor');
+            if(proxLed) proxLed.classList.remove('active-sensor');
         }
 
         
@@ -1084,9 +1167,8 @@
                 updateEnergyGraph(intensity); 
 
                 if(isRunning) {
+                    // Actualizar el medidor VU (ahora usa la misma energía)
                     document.getElementById('main-needle').style.transform = `translateX(-50%) rotate(${-45 + (intensity/100)*90}deg)`;
-                    vuL.style.width = (intensity*0.6)+'%'; 
-                    vuR.style.width = (intensity*0.6)+'%';
                 }
             }, 150); 
         }
@@ -1094,8 +1176,6 @@
         function stopVisualLoop() {
             if (!isRunning) {
                 document.getElementById('main-needle').style.transform = `translateX(-50%) rotate(-45deg)`;
-                vuL.style.width = '0%'; 
-                vuR.style.width = '0%';
             }
         }
 
@@ -1224,9 +1304,14 @@
                 if(micLed) micLed.classList.add('active-mic'); 
             };
             
+            // SOLUCIÓN 1: CORREGIR EL ERROR DEL MICRÓFONO
             recognition.onend = () => { 
                 isRecognizing = false;
                 if(micLed) micLed.classList.remove('active-mic'); 
+                // Vuelve a comprobar si debe seguir escuchando
+                if (isRunning) {
+                    persistentMicCheck();
+                }
             };
             
             recognition.onerror = () => {
@@ -1234,7 +1319,7 @@
                 if(micLed) micLed.classList.remove('active-mic');
             };
             recognition.onresult = (e) => {
-                autoModeDelay = 2000; 
+                autoModeDelay = 1500; // Hacer automático más frecuente
                 
                 let t = e.results[0][0].transcript.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
                 if(programadoData.has(t)) speak(programadoData.get(t));
@@ -1337,11 +1422,9 @@
             filterControls.style.opacity = '1';
             menuContainer.style.opacity = '1';
             
-            // SOLUCIÓN 1: Ocultar Logo con waterDrop
             logoImage.classList.remove('visible');
             logoImage.classList.add('hiding'); 
             
-            // SOLUCIÓN 1: Ocultar "Síguenos" con waterDrop
             followContainer.classList.add('hiding');
 
             filterControls.style.pointerEvents = 'auto';
@@ -1356,7 +1439,6 @@
             filterControls.style.opacity = '0';
             menuContainer.style.opacity = '0';
             
-            // SOLUCIÓN 1: Mostrar Logo con popIn
             logoImage.classList.remove('hiding'); 
             logoImage.classList.add('visible'); 
 
@@ -1365,16 +1447,16 @@
             uiVisible = false;
         }
 
-        // SOLUCIÓN 1: Limpiar clase de animación 'hiding'
         logoImage.addEventListener('animationend', (e) => {
             if (e.animationName === 'waterDrop') {
                 logoImage.classList.remove('hiding');
+                logoImage.style.opacity = '0'; 
+                logoImage.style.transform = 'scale(0)';
             }
         });
         followContainer.addEventListener('animationend', (e) => {
             if (e.animationName === 'waterDrop') {
                 followContainer.classList.remove('hiding');
-                // Ocultar todos los pasos internos
                 followSteps.forEach(s => {
                     s.style.display = 'none';
                     s.classList.remove('fade-in', 'fade-out', 'water-drop');
@@ -1386,7 +1468,6 @@
 
 
         function handleUITap(event) {
-            // SOLUCIÓN 1: Lógica de toque de pantalla
             if (!event.target.closest('.panel') && !event.target.closest('#btn-ver') && !event.target.closest('.filter-btn')) {
                 if (uiVisible) {
                     hideControls(); 
@@ -1394,7 +1475,6 @@
                     showControls(); 
                 }
             } else {
-                // Si se toca un botón, solo resetear el timer
                 showControls();
             }
         }
@@ -1409,10 +1489,9 @@
         }
         
         function checkPanelState() {
-            const p1 = document.getElementById('p-detector').classList.contains('hidden');
-            const p2 = document.getElementById('p-env').classList.contains('hidden');
+            const p1 = document.getElementById('p-unified').classList.contains('hidden');
             
-            if (!p1 || !p2) { 
+            if (!p1) { 
                 document.body.classList.add('panels-active');
             } else {
                 document.body.classList.remove('panels-active');
@@ -1431,7 +1510,7 @@
             
             menu.classList.remove('visible');
             
-            if(id === 'p-env' && !p.classList.contains('hidden')) resizeEnergyCanvas();
+            if(id === 'p-unified' && !p.classList.contains('hidden')) resizeEnergyCanvas();
             // showControls() es llamado por el handleUITap
         }
         
@@ -1458,31 +1537,27 @@
             }
         }
 
-        // SOLUCIÓN 3: Lógica de animación "Síguenos"
         const followSteps = document.querySelectorAll('.follow-step');
         let followAnimationRunning = false;
         
         async function runFollowAnimation() {
-            // Solo ejecutar si la UI está oculta
             if (uiVisible || followAnimationRunning) return; 
 
             followAnimationRunning = true;
-            followContainer.classList.remove('hiding'); // Asegurarse de que no esté oculto
+            followContainer.classList.remove('hiding'); 
             followContainer.style.opacity = '1';
             
-            // Paso 1: "SÍGUENOS EN"
             const text = document.getElementById('follow-text');
             text.style.display = 'block';
             text.classList.add('fade-in');
             await new Promise(r => setTimeout(r, 2500)); 
-            if(uiVisible) { followContainer.classList.add('hiding'); return; } // Comprobar si la UI apareció
+            if(uiVisible) { followContainer.classList.add('hiding'); return; } 
             text.classList.remove('fade-in');
             text.classList.add('water-drop'); 
             await new Promise(r => setTimeout(r, 500));
             text.style.display = 'none';
             text.classList.remove('water-drop');
             
-            // Paso 2: Iconos
             const icons = document.getElementById('follow-icons');
             icons.style.display = 'flex';
             icons.classList.add('fade-in');
@@ -1494,7 +1569,6 @@
             icons.style.display = 'none';
             icons.classList.remove('fade-out');
 
-            // Paso 3: Handle
             const handle = document.getElementById('follow-handle');
             handle.style.display = 'block';
             handle.classList.add('fade-in');
@@ -1526,13 +1600,10 @@
             // AQUÍ PUEDES CAMBIAR EL TIEMPO (30000 = 30 segundos)
             setInterval(runFollowAnimation, 30000); 
             
-            document.getElementById('p-detector').classList.add('hidden');
-            document.getElementById('p-env').classList.add('hidden');
-            document.querySelector('#m-detector').classList.remove('active');
-            document.querySelector('#m-env').classList.remove('active');
+            document.getElementById('p-unified').classList.add('hidden');
+            document.querySelector('#m-unified').classList.remove('active');
             checkPanelState();
             
-            // SOLUCIÓN 1: Iniciar con la UI oculta y el logo visible
             hideControls();
             
             loadSheetData();
