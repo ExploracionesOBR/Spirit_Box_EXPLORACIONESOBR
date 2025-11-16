@@ -193,9 +193,10 @@
             height: 60px;
             z-index: 100;
             pointer-events: none;
-            opacity: 0; 
-            transform: scale(0);
+            opacity: 1; /* SOLUCIÓN 4: Visible por defecto */
+            transform: scale(1);
             transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+            animation: logo-effects 7s infinite linear; 
         }
         #logo-image.visible {
             transform: scale(1);
@@ -213,14 +214,11 @@
         }
         @keyframes logo-effects {
             0%, 90% { transform: scale(1); opacity: 1; filter: none; }
-            /* Glitch */
             91% { transform: scale(1.1) translateX(-5px); opacity: 0.8; filter: drop-shadow(2px 0 red) drop-shadow(-2px 0 blue); }
             92% { transform: scale(0.9) translateX(5px); opacity: 1; filter: drop-shadow(-2px 0 red) drop-shadow(2px 0 blue); }
             93% { transform: scale(1); opacity: 1; filter: none; }
-            /* Blur */
             94% { transform: scale(1); opacity: 0.5; filter: blur(2px); }
             95% { transform: scale(1); opacity: 1; filter: none; }
-            /* Jump */
             96% { transform: scale(1) translateY(-3px); }
             97% { transform: scale(1) translateY(3px); }
             98%, 100% { transform: scale(1) translateY(0); }
@@ -444,11 +442,11 @@
             transform: translateX(-50%); /* Solo centrado horizontal */
             z-index: 200;
             pointer-events: none;
-            opacity: 0; 
+            opacity: 1; /* SOLUCIÓN 4: Visible por defecto */
             width: 100%;
             transition: opacity 0.5s ease-out;
         }
-        /* SOLUCIÓN 1: Ocultar con waterDrop */
+        /* SOLUCIÓN 4: Ocultar con waterDrop */
         #follow-container.hiding {
             animation: waterDrop 0.5s ease-out forwards;
         }
@@ -700,7 +698,7 @@
         let autoModeDelay = 5000; 
         
         let uiHideTimeout;
-        let uiVisible = true; 
+        let uiVisible = false; // SOLUCIÓN 4: UI oculta por defecto
 
         async function startCamera() {
             try {
@@ -876,7 +874,6 @@
                         isDetectingPose = true;
                         drawVideoWithCover(tempCtx, videoBg);
                         
-                        // SOLUCIÓN 1: Corregido a tempCanvas
                         const poses = await poseDetector.estimatePoses(tempCanvas); 
                         
                         latestPoses = poses; 
@@ -964,7 +961,7 @@
                 const targetBtn = event ? event.target : document.querySelector(`.filter-btn[onclick="setFilter('${f}')"]`);
                 if(targetBtn) targetBtn.classList.add('active');
             }
-            showUI(); 
+            // No llamar a showUI() aquí, handleUITap se encargará
         }
 
         // --- AUDIO (V5.26) ---
@@ -1337,30 +1334,33 @@
         const filterControls = document.getElementById('filter-controls-container');
         const logoImage = document.getElementById('logo-image');
         
-        function showUI() {
+        function showControls() {
             filterControls.style.opacity = '1';
             menuContainer.style.opacity = '1';
-            
-            // SOLUCIÓN 2: Lógica de animación Pop-in
-            logoImage.classList.remove('hiding'); 
-            logoImage.classList.add('visible'); 
-
-            filterControls.style.pointerEvents = 'auto';
-            menuContainer.style.pointerEvents = 'auto';
-            
-            clearTimeout(uiHideTimeout);
-            uiHideTimeout = setTimeout(hideUI, 4000); 
-            uiVisible = true;
-        }
-
-        function hideUI() {
-            filterControls.style.opacity = '0';
-            menuContainer.style.opacity = '0';
             
             // SOLUCIÓN 2: Lógica de animación Pop-out (burbuja)
             logoImage.classList.remove('visible');
             logoImage.classList.add('hiding');
             
+            // SOLUCIÓN 2: Ocultar "Síguenos" con burbuja
+            followContainer.classList.add('hiding');
+
+            filterControls.style.pointerEvents = 'auto';
+            menuContainer.style.pointerEvents = 'auto';
+            
+            clearTimeout(uiHideTimeout);
+            uiHideTimeout = setTimeout(hideControls, 4000); 
+            uiVisible = true;
+        }
+
+        function hideControls() {
+            filterControls.style.opacity = '0';
+            menuContainer.style.opacity = '0';
+            
+            // SOLUCIÓN 2: Lógica de animación Pop-in
+            logoImage.classList.remove('hiding'); 
+            logoImage.classList.add('visible'); 
+
             filterControls.style.pointerEvents = 'none';
             menuContainer.style.pointerEvents = 'none';
             uiVisible = false;
@@ -1378,13 +1378,13 @@
             // SOLUCIÓN 2: Lógica de toque de pantalla
             if (!event.target.closest('.panel') && !event.target.closest('#btn-ver') && !event.target.closest('.filter-btn')) {
                 if (uiVisible) {
-                    hideUI(); // Si está visible, ocultarla con burbuja
+                    hideControls(); // Si está visible, ocultarla
                 } else {
-                    showUI(); // Si está oculta, mostrarla con pop-in
+                    showControls(); // Si está oculta, mostrarla
                 }
             } else {
                 // Si se toca un botón, solo resetear el timer
-                showUI();
+                showControls();
             }
         }
 
@@ -1450,20 +1450,23 @@
         // SOLUCIÓN 3: Lógica de animación "Síguenos"
         const followContainer = document.getElementById('follow-container');
         const followSteps = document.querySelectorAll('.follow-step');
+        let followAnimationRunning = false;
         
         async function runFollowAnimation() {
             // Solo ejecutar si la UI está oculta
-            if (uiVisible) return; 
+            if (uiVisible || followAnimationRunning) return; 
 
+            followAnimationRunning = true;
             followContainer.style.opacity = '1';
             
             // Paso 1: "SÍGUENOS EN"
             const text = document.getElementById('follow-text');
             text.style.display = 'block';
             text.classList.add('fade-in');
-            await new Promise(r => setTimeout(r, 2500)); // Esperar 2.5s
+            await new Promise(r => setTimeout(r, 2500)); 
+            if(uiVisible) { followAnimationRunning = false; return; } // Comprobar si la UI apareció
             text.classList.remove('fade-in');
-            text.classList.add('water-drop'); // Animación de gota
+            text.classList.add('water-drop'); 
             await new Promise(r => setTimeout(r, 500));
             text.style.display = 'none';
             text.classList.remove('water-drop');
@@ -1472,7 +1475,8 @@
             const icons = document.getElementById('follow-icons');
             icons.style.display = 'flex';
             icons.classList.add('fade-in');
-            await new Promise(r => setTimeout(r, 2500)); // Esperar 2.5s
+            await new Promise(r => setTimeout(r, 2500)); 
+            if(uiVisible) { followAnimationRunning = false; return; } 
             icons.classList.remove('fade-in');
             icons.classList.add('fade-out');
             await new Promise(r => setTimeout(r, 1000));
@@ -1483,7 +1487,8 @@
             const handle = document.getElementById('follow-handle');
             handle.style.display = 'block';
             handle.classList.add('fade-in');
-            await new Promise(r => setTimeout(r, 2500)); // Esperar 2.5s
+            await new Promise(r => setTimeout(r, 2500)); 
+            if(uiVisible) { followAnimationRunning = false; return; } 
             handle.classList.remove('fade-in');
             handle.classList.add('fade-out');
             await new Promise(r => setTimeout(r, 1000));
@@ -1491,7 +1496,22 @@
             handle.classList.remove('fade-out');
 
             followContainer.style.opacity = '0';
+            followAnimationRunning = false;
         }
+
+        // Limpiar animación de "Síguenos" si se interrumpe
+        followContainer.addEventListener('animationend', (e) => {
+            if (e.animationName === 'waterDrop') {
+                followContainer.classList.remove('hiding');
+                // Ocultar todos los pasos internos
+                followSteps.forEach(s => {
+                    s.style.display = 'none';
+                    s.classList.remove('fade-in', 'fade-out', 'water-drop');
+                });
+                followContainer.style.opacity = '0';
+                followAnimationRunning = false;
+            }
+        });
 
 
         window.onload = () => {
@@ -1500,14 +1520,14 @@
             startVisualLoop(); 
             initMLModel(); 
             
-            // SOLUCIÓN 1: Iniciar el bucle de detección de IA
             detectPoseLoop(); 
             
             setInterval(updateSensorReadings, 2000); 
             setInterval(persistentMicCheck, 1000); 
             
-            // SOLUCIÓN 3: Iniciar temporizador de "Síguenos" (40 segundos)
-            setInterval(runFollowAnimation, 40000); 
+            // SOLUCIÓN 3: Iniciar temporizador (30 segundos)
+            // AQUÍ PUEDES CAMBIAR EL TIEMPO (30000 = 30 segundos)
+            setInterval(runFollowAnimation, 30000); 
             
             document.getElementById('p-detector').classList.add('hidden');
             document.getElementById('p-env').classList.add('hidden');
@@ -1515,7 +1535,8 @@
             document.querySelector('#m-env').classList.remove('active');
             checkPanelState();
             
-            showUI();
+            // SOLUCIÓN 4: Iniciar con la UI oculta y el logo visible
+            hideControls();
             
             loadSheetData();
         };
