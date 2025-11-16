@@ -1,5 +1,677 @@
-<script>
-        // 📍 SOLUCIÓN GOOGLE SHEETS (PUNTO 1)
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <link rel="apple-touch-icon" href="obr-logo.png">
+
+    <title>DETECTOR-OBR</title> <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+
+    <style>
+        :root {
+            /* 📍 TEMA REDISEÑADO: Verde "Tech" */
+            --neon-green: #39FF14; 
+            --alert-red: #FF3333;
+            --sim-orange: #FFB000;
+            --panel-bg: #0A0F0A; /* Fondo de panel muy oscuro */
+            --border-color: rgba(57, 255, 20, 0.3); /* Borde verde translúcido */
+            --text-color: #E0E0E0;
+            --text-dim: #777;
+            
+            --panel-width: 280px; 
+        }
+        
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background-color: #000;
+            color: var(--neon-green);
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #app-ui {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            touch-action: none;
+        }
+
+        #main-view-area {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            pointer-events: auto;
+            z-index: 5;
+        }
+
+        #bg-camera-feed {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; 
+            z-index: 1;
+            filter: brightness(1.0);
+            transform: scaleX(1); 
+        }
+        
+        #main-filter-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%; 
+            height: 100%; 
+            z-index: 2; 
+            pointer-events: none; 
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        
+        body.panels-active #main-filter-canvas {
+            left: var(--panel-width);
+            width: calc(100% - var(--panel-width));
+        }
+
+        .hidden-canvas { display: none; }
+
+        #side-panel-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--panel-width);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            z-index: 20;
+            pointer-events: none; 
+            transform: translateX(calc(var(--panel-width) * -1));
+            transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            padding-top: env(safe-area-inset-top);
+            box-sizing: border-box; 
+        }
+
+        body.panels-active #side-panel-container {
+            transform: translateX(0);
+        }
+        body.panels-active #main-view-area {
+            left: var(--panel-width);
+            width: calc(100% - var(--panel-width));
+        }
+
+        /* 📍 PANEL REDISEÑADO */
+        .panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.2) inset;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            padding: 8px;
+            pointer-events: auto;
+            margin: 5px; 
+            flex-grow: 1;
+            max-height: 98vh;
+            overflow-y: auto;
+            gap: 8px; /* Espacio entre secciones */
+        }
+        
+        .panel.alert {
+            border-color: var(--alert-red);
+            box-shadow: 0 0 15px var(--alert-red) inset;
+        }
+
+        /* 📍 SECCIONES DE PANEL REDISEÑADAS */
+        .panel-header-main {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            text-align: center;
+            color: var(--neon-green);
+            text-shadow: 0 0 5px var(--neon-green);
+            border: 1px solid var(--border-color);
+            padding: 4px 0;
+            border-radius: 4px;
+            background: rgba(57, 255, 20, 0.05);
+            letter-spacing: 1px;
+        }
+        
+        .panel-section {
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 4px;
+        }
+        
+        /* 📍 NUEVA LÓGICA DE LEDS DE ESTADO */
+        .sensor-status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 5px;
+            text-align: center;
+        }
+        .status-light-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.6rem;
+        }
+        .status-light-group .emoji {
+            font-size: 1.2rem;
+            line-height: 1;
+        }
+        .status-led-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #222;
+            border: 1px solid #444;
+            margin-bottom: 4px;
+            transition: all 0.3s;
+        }
+        .status-light-group[data-status="connected"] .status-led-indicator {
+            background-color: var(--neon-green);
+            box-shadow: 0 0 8px var(--neon-green);
+            animation: pulseGlow 1.5s infinite;
+        }
+        .status-light-group[data-status="simulated"] .status-led-indicator {
+            background-color: var(--sim-orange);
+            box-shadow: 0 0 8px var(--sim-orange);
+            animation: pulseGlow 2s infinite;
+        }
+        .status-light-group[data-status="unavailable"] .status-led-indicator {
+            background-color: var(--alert-red);
+            box-shadow: 0 0 8px var(--alert-red);
+        }
+        .status-light-group[data-status="off"] .status-led-indicator {
+            background-color: #333;
+        }
+        
+        .status-light-group span {
+            color: var(--text-dim);
+        }
+        .status-light-group[data-status="connected"] span { color: var(--neon-green); }
+        .status-light-group[data-status="simulated"] span { color: var(--sim-orange); }
+        .status-light-group[data-status="unavailable"] span { color: var(--alert-red); }
+
+        /* 📍 NUEVOS DIALES Y MEDIDORES */
+        .dials-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr 1fr;
+            gap: 10px;
+            align-items: center;
+            justify-items: center;
+            padding: 10px 0;
+        }
+        
+        .dial-container {
+            position: relative;
+            width: 70px;
+            height: 70px;
+            background: radial-gradient(circle, #111, #000);
+            border-radius: 50%;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 0 5px rgba(57, 255, 20, 0.3) inset;
+        }
+        .dial-needle {
+            width: 2px;
+            height: 40%;
+            background: var(--neon-green);
+            box-shadow: 0 0 5px var(--neon-green);
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform-origin: bottom center;
+            transform: translateX(-50%) rotate(-45deg);
+            transition: transform 0.5s cubic-bezier(0.2, 1.5, 0.5, 1);
+        }
+        .dial-label {
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+            text-align: center;
+        }
+        
+        #detector-dial-container {
+            width: 100px;
+            height: 100px;
+        }
+        #detector-dial-needle {
+            height: 45%;
+            background: var(--alert-red);
+            box-shadow: 0 0 8px var(--alert-red);
+            transform: translateX(-50%) rotate(-60deg);
+        }
+        
+        #temp-readout {
+            text-align: center;
+        }
+        #temp-val {
+            font-size: 1.8rem;
+            font-family: 'Orbitron', sans-serif;
+            color: var(--neon-green);
+            line-height: 1;
+        }
+        .temp-label {
+            font-size: 0.6rem;
+            color: var(--text-dim);
+        }
+        
+        /* 📍 SPIRIT BOX REDISEÑADO */
+        .spirit-box-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            align-items: center;
+        }
+        .knob-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .knob-label {
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+        .knob-circle {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            border: 2px solid var(--border-color);
+            position: relative;
+            cursor: pointer;
+            background: radial-gradient(circle, #222, #000);
+            box-shadow: 0 3px 5px #000, 0 0 5px rgba(57, 255, 20, 0.3) inset;
+            transition: all 0.3s;
+        }
+        .knob-circle.active {
+            border-color: var(--neon-green);
+            box-shadow: 0 3px 5px #000, 0 0 10px var(--neon-green) inset, 0 0 10px var(--neon-green);
+        }
+        .knob-indicator {
+            position: absolute;
+            top: 6px;
+            left: 50%;
+            width: 3px;
+            height: 15px;
+            background: var(--neon-green);
+            transform: translateX(-50%);
+            border-radius: 2px;
+            box-shadow: 0 0 5px var(--neon-green);
+        }
+        #pwr-knob-indicator {
+            height: 8px;
+            width: 8px;
+            border-radius: 50%;
+            top: 8px;
+            background: var(--alert-red);
+            box-shadow: 0 0 5px var(--alert-red);
+        }
+        #pwr-knob.active #pwr-knob-indicator {
+            background: var(--neon-green);
+            box-shadow: 0 0 8px var(--neon-green);
+        }
+
+        #activity-graph-container {
+            width: 100%;
+            height: 55px;
+            background: #000;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        #energy-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 📍 AJUSTES CSS FALTANTES (colores, etc) */
+        input[type=range] {
+            flex-grow: 1; -webkit-appearance: none; height: 15px; 
+            background: #111; border: 1px solid var(--border-color);
+            border-radius: 10px; overflow: hidden;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 25px; height: 25px;
+            background: #444; border: 1px solid #666;
+            border-radius: 50%;
+            box-shadow: -100vw 0 0 100vw var(--neon-green); /* Color de relleno */
+            cursor: pointer;
+        }
+
+        #logo-image {
+            position: fixed; top: 20px; right: 20px;
+            width: 60px; height: 60px; z-index: 100;
+            pointer-events: none; opacity: 1; 
+            transform: scale(1);
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+            animation: logo-effects 7s infinite linear; 
+        }
+        #logo-image.visible {
+            transform: scale(1); opacity: 1;
+            animation: popIn 0.3s ease-out forwards, logo-effects 7s infinite linear 0.3s;
+        }
+        #logo-image.hiding {
+            animation: waterDrop 0.5s ease-out forwards;
+        }
+
+        @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes logo-effects { 0%, 90% { transform: scale(1); opacity: 1; filter: none; } 91% { transform: scale(1.1) translateX(-5px); opacity: 0.8; filter: drop-shadow(2px 0 red) drop-shadow(-2px 0 blue); } 92% { transform: scale(0.9) translateX(5px); opacity: 1; filter: drop-shadow(-2px 0 red) drop-shadow(2px 0 blue); } 93% { transform: scale(1); opacity: 1; filter: none; } 94% { transform: scale(1); opacity: 0.5; filter: blur(2px); } 95% { transform: scale(1); opacity: 1; filter: none; } 96% { transform: scale(1) translateY(-3px); } 97% { transform: scale(1) translateY(3px); } 98%, 100% { transform: scale(1) translateY(0); } }
+        @keyframes waterDrop { 0% { opacity: 1; transform: scale(1); filter: blur(0); } 100% { opacity: 0; transform: scale(2.5); filter: blur(5px); } }
+
+        
+        #kinect-banner {
+            position: fixed; top: 20px; left: 20px;
+            z-index: 100; font-family: 'Orbitron', sans-serif;
+            font-size: 1.0rem; font-weight: 700;
+            color: var(--neon-green);
+            text-shadow: 0 0 5px var(--neon-green), 0 0 10px #000;
+            display: none; pointer-events: none;
+        }
+        #kinect-banner .led-red {
+            animation: pulseGlow 1.5s infinite ease-in-out;
+            text-shadow: 0 0 8px var(--alert-red), 0 0 10px #000;
+        }
+
+        @keyframes pulseGlow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1.0; } }
+
+        #filter-controls-container {
+            position: fixed; top: 50%; right: 15px;
+            transform: translateY(-50%);
+            display: flex; flex-direction: column;
+            gap: 10px; z-index: 100;
+            pointer-events: auto; opacity: 1;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .filter-btn {
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            background: rgba(0, 50, 50, 0.7);
+            border: 2px solid var(--neon-green); /* Color de borde actualizado */
+            color: var(--neon-green); /* Color de texto actualizado */
+            font-family: 'Share Tech Mono', monospace;
+            font-weight: bold; cursor: pointer;
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
+            transition: all 0.2s;
+        }
+        .filter-btn:active {
+            background: var(--neon-green); color: #000;
+        }
+        .filter-btn.active {
+            background: var(--neon-green); color: #000;
+            box-shadow: 0 0 20px #fff;
+        }
+
+        #loading-overlay {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #000; z-index: 9999;
+            display: flex; justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s ease-out;
+        }
+        #loading-content { text-align: center; }
+        #loading-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            color: var(--neon-green); /* Color actualizado */
+            text-shadow: 0 0 10px var(--neon-green);
+            animation: pulseGlow 2s infinite ease-in-out;
+        }
+        #loading-bar-container {
+            width: 250px; height: 10px;
+            border: 1px solid var(--neon-green); /* Color actualizado */
+            border-radius: 5px; margin-top: 15px;
+            overflow: hidden;
+            background: rgba(0, 50, 50, 0.3);
+        }
+        #loading-bar {
+            width: 100%; height: 100%;
+            background-color: var(--neon-green); /* Color actualizado */
+            animation: loading-shimmer 2s infinite linear;
+            background-image: linear-gradient(90deg, var(--neon-green) 0%, #fff 50%, var(--neon-green) 100%);
+            background-size: 200% 100%;
+        }
+        @keyframes loading-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        #follow-container {
+            position: fixed; bottom: 80px; left: 50%;
+            transform: translateX(-50%); 
+            z-index: 200; pointer-events: none;
+            opacity: 1; width: 100%;
+            transition: opacity 0.5s ease-out;
+        }
+        #follow-container.hiding {
+            animation: waterDrop 0.5s ease-out forwards;
+        }
+        .follow-step {
+            display: none; 
+            color: var(--neon-green); /* Color actualizado */
+            font-size: 1.5rem;
+            font-family: 'Orbitron', sans-serif;
+            text-shadow: 0 0 10px var(--neon-green);
+            text-align: center; opacity: 0;
+        }
+        #follow-icons {
+            display: none; align-items: center;
+            justify-content: center;
+        }
+        #follow-icons svg {
+            width: 50px; height: 50px;
+            margin: 0 15px;
+            fill: var(--neon-green); /* Color actualizado */
+            filter: drop-shadow(0 0 5px var(--neon-green));
+        }
+        
+        .fade-in { animation: fadeIn 1s ease-out forwards; }
+        .fade-out { animation: fadeOut 1s ease-out forwards; }
+        .water-drop { animation: waterDrop 0.5s ease-out forwards; }
+        
+        @keyframes fadeIn { 0% { opacity: 0; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
+        @keyframes fadeOut { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+        /* --- MODO MÓVIL VERTICAL (PORTRAIT) --- */
+        @media (max-width: 768px) and (orientation: portrait) {
+            #side-panel-container {
+                flex-direction: row; 
+                bottom: 0; top: auto; left: 0;
+                width: 100vw; height: auto; 
+                max-height: 50vh; 
+                transform: translateY(100%); 
+                overflow-x: auto;
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+            .panel {
+                width: 280px; 
+                flex-shrink: 0;
+                height: auto; 
+                max-height: 50vh;
+            }
+
+            body.panels-active #side-panel-container { transform: translateY(0); }
+            body.panels-active #main-view-area {
+                left: 0; width: 100%;
+                filter: brightness(0.4);
+            }
+            body.panels-active #main-filter-canvas {
+                left: 0 !important; width: 100% !important;
+            }
+            
+            #filter-controls-container { right: 10px; }
+            .filter-btn { width: 45px; height: 45px; }
+            
+            #kinect-banner { left: 10px; top: 10px; font-size: 0.8rem;}
+            #logo-image { width: 50px; height: 50px; top: 15px; right: 15px;}
+        }
+
+        /* 📍 SOLUCIÓN PANEL HORIZONTAL (PUNTO 7) */
+        @media (max-width: 768px) and (orientation: landscape) {
+            :root { --panel-width: 260px; }
+
+            #side-panel-container {
+                height: 100vh;
+                padding-top: env(safe-area-inset-top);
+                padding-bottom: env(safe-area-inset-bottom);
+                box-sizing: border-box;
+            }
+            
+            .panel {
+                height: 100%;
+                flex-grow: 1;
+                flex-shrink: 0;
+                margin: 0;
+                border-radius: 0;
+                border-right: 1px solid var(--border-color);
+            }
+
+            body.panels-active #main-filter-canvas {
+                left: var(--panel-width) !important;
+                width: calc(100% - var(--panel-width)) !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="app-ui"> 
+
+    <div id="loading-overlay">
+        <div id="loading-content">
+            <div id="loading-text">SINCRONIZANDO GUIONES...</div>
+            <div id="loading-bar-container">
+                <div id="loading-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-view-area" onclick="handleUITap(event)">
+        <video id="bg-camera-feed" playsinline autoplay muted></video>
+        <canvas id="main-filter-canvas"></canvas>
+    </div>
+    
+    <canvas id="temp-canvas" class="hidden-canvas"></canvas>
+    <canvas id="ai-canvas" class="hidden-canvas"></canvas>
+
+    <img id="logo-image" src="obr-logo.png" alt="Logo OBR">
+
+    <div id="kinect-banner">KINEC ACTIVO <span class="led-red">🔴</span></div>
+    
+    <div id="follow-container">
+        <div id="follow-text" class="follow-step">SÍGUENOS EN</div>
+        <div id="follow-icons" class="follow-step">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M448 209.9a210.1 210.1 0 0 1 -122.8-39.3V349.4A162.6 162.6 0 1 1 185 188.3V277.2a74.6 74.6 0 1 0 52.2 71.2V0l88 0a121.2 121.2 0 0 0 122.8 122.1v87.8z"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path d="M549.7 124.1c-6.3-23.7-24.8-42.3-48.3-48.6C458.8 64 288 64 288 64S117.2 64 74.6 75.5c-23.5 6.3-42 24.9-48.3 48.6-11.4 42.9-11.4 132.3-11.4 132.3s0 89.4 11.4 132.3c6.3 23.7 24.8 42.3 48.3 48.6C117.2 448 288 448 288 448s170.8 0 213.4-11.5c23.5-6.3 42-24.9 48.3-48.6 11.4-42.9 11.4-132.3 11.4-132.3s0-89.4-11.4-132.3zM232 341.5V170.5l145.2 85.5-145.2 85.5z"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M504 256C504 119 393 8 256 8S8 119 8 256c0 123.8 90.7 226.4 209.3 245V327.7h-63V256h63v-54.6c0-62.2 37-96.5 93.7-96.5 27.1 0 55.5 4.8 55.5 4.8v61h-31.3c-30.8 0-40.4 19.1-40.4 38.7V256h68.8l-11 71.7h-57.8V501C413.3 482.4 504 379.8 504 256z"/></svg>
+        </div>
+        <div id="follow-handle" class="follow-step">@EXPLORACIONESOBR</div>
+    </div>
+
+
+    <div id="side-panel-container">
+        
+        <div class="panel" id="p-unified">
+            <div class="panel-header-main">PANEL DE MANDO</div>
+            
+            <div class="panel-section">
+                <div class="section-title">Estado de Sensores</div>
+                <div class="sensor-status-grid">
+                    <div class="status-light-group" id="mic-status" data-status="off">
+                        <div class="status-led-indicator"></div>
+                        <div class="emoji">🎙️</div>
+                        <span>MIC</span>
+                    </div>
+                    <div class="status-light-group" id="mag-status" data-status="off">
+                        <div class="status-led-indicator"></div>
+                        <div class="emoji">🧭</div>
+                        <span>MAG</span>
+                    </div>
+                    <div class="status-light-group" id="prox-status" data-status="off">
+                        <div class="status-led-indicator"></div>
+                        <div class="emoji">⚡</div>
+                        <span>EMF</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Lecturas de Campo</div>
+                <div class="dials-grid">
+                    <div id="mag-dial-container" class="dial-container">
+                        <div id="compass-needle" class="dial-needle" style="transform: translateX(-50%) rotate(0deg);"></div>
+                    </div>
+                    <div id="detector-dial-container" class="dial-container">
+                        <div id="main-needle" class="dial-needle" style="transform: translateX(-50%) rotate(-60deg);"></div>
+                    </div>
+                    <div id="temp-readout">
+                        <div id="temp-val">--.-°C</div>
+                        <div class="temp-label">AMBIENTE</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Spirit Box</div>
+                <div class="spirit-box-grid">
+                    <div class="knob-container">
+                        <div class="knob-circle" id="knob-power">
+                            <div id="pwr-knob-indicator" class="knob-indicator" style="transform: rotate(135deg);"></div>
+                        </div>
+                        <div class="knob-label">ENCENDER</div>
+                    </div>
+                    <div class="knob-container">
+                        <div class="knob-circle" id="knob-scan">
+                            <div class="knob-indicator" style="transform: rotate(135deg);"></div>
+                        </div>
+                        <div class="knob-label">FRECUENCIA</div>
+                    </div>
+                    <div id="activity-graph-container">
+                        <canvas id="energy-canvas"></canvas>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div class="knob-label">VOL</div>
+                        <input type="range" min="0" max="100" value="80" id="vol-slider">
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        </div>
+
+    <div id="filter-controls-container">
+        <button class="filter-btn" onclick="setFilter('night-vision')">VNO</button>
+        <button class="filter-btn" onclick="setFilter('sls')">SLS</button>
+        <button class="filter-btn" onclick="setFilter('relief')">RLV</button>
+        <button class="filter-btn" id="btn-panel" onclick="togglePanel('p-unified')">PAN</button>
+    </div>
+
+    </div> 
+
+    <script>
         const SHEETDB_URL = "https://sheetdb.io/api/v1/9xzfnke69kkej"; 
         
         let isRunning = false;
@@ -11,20 +683,18 @@
         const mainFilterCanvas = document.getElementById('main-filter-canvas');
         const mainFilterCtx = mainFilterCanvas.getContext('2d', { willReadFrequently: true });
 
-        // 📍 SOLUCIÓN LIENZO (PUNTO 2)
-        const tempCanvas = document.getElementById('temp-canvas'); // Para filtros
+        const tempCanvas = document.getElementById('temp-canvas');
         const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
-        const aiCanvas = document.getElementById('ai-canvas'); // Para IA
+        const aiCanvas = document.getElementById('ai-canvas');
         const aiCtx = aiCanvas.getContext('2d', { willReadFrequently: true });
         
         const detectorPanel = document.getElementById('p-unified');
         const sensorPanel = document.getElementById('p-unified');
         
-        const segments = [1,2,3,4,5,6,7,8,9,10].map(i => document.getElementById('seg-'+i));
-        
-        const micLed = document.getElementById('mic-led');
-        const magLed = document.getElementById('mag-led');
-        const proxLed = document.getElementById('prox-led');
+        // 📍 IDs de LED de estado
+        const micStatus = document.getElementById('mic-status');
+        const magStatus = document.getElementById('mag-status');
+        const proxStatus = document.getElementById('prox-status');
         
         let energyHistory = new Array(50).fill(0);
         let energyCanvas, energyCtx;
@@ -46,14 +716,12 @@
         let latestPoses = []; 
         let isDetectingPose = false; 
         
-        // 📍 SOLUCIÓN LÓGICA SPIRIT BOX (PUNTO 6)
-        let spiritBoxState = "OFF"; // Estados: OFF, SCANNING, LISTENING, SPEAKING
-        let spiritBoxTimeout = null; // Temporizador para el micrófono
+        let spiritBoxState = "OFF";
+        let spiritBoxTimeout = null;
         
         let uiHideTimeout;
         let uiVisible = false;
 
-        // 📍 SOLUCIÓN ZOOM (PUNTO 5)
         let zoom = 1.0;
         let maxZoom = 5.0;
         let initialPinchDist = 0;
@@ -64,7 +732,6 @@
 
         async function startCamera() {
             try {
-                // 📍 SOLUCIÓN CÁMARA MAX-RES (PUNTO 3)
                 const constraints = {
                     video: {
                         facingMode: { ideal: "environment" },
@@ -75,7 +742,6 @@
                 };
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 
-                // 📍 SOLUCIÓN ENFOQUE (PUNTO 4)
                 const track = stream.getVideoTracks()[0];
                 if (track && typeof track.applyConstraints === 'function') {
                     track.applyConstraints({
@@ -86,7 +752,6 @@
                 videoBg.srcObject = stream;
                 videoBg.onloadedmetadata = () => {
                     resizeAllCanvas(); 
-
                     energyCanvas = document.getElementById('energy-canvas');
                     if (energyCanvas) { 
                         energyCtx = energyCanvas.getContext('2d');
@@ -97,24 +762,20 @@
             } catch (e) { console.log("Error de cámara", e); }
         }
         
-        // 📍 SOLUCIÓN LIENZO (PUNTO 2)
         function resizeAllCanvas() {
             const viewArea = document.getElementById('main-view-area');
             const w = viewArea.clientWidth; 
             const h = viewArea.clientHeight; 
             
-            // Lienzo principal (visual)
             mainFilterCanvas.width = w;
             mainFilterCanvas.height = h;
             
-            // Lienzo de filtros (copia de visual)
             tempCanvas.width = w;
             tempCanvas.height = h;
 
-            // Lienzo de IA (pequeño, pero con la MISMA PROPORCIÓN que la pantalla)
             const aiWidth = 640;
             aiCanvas.width = aiWidth;
-            aiCanvas.height = (aiWidth / w) * h; // Mantiene el aspect ratio
+            aiCanvas.height = (aiWidth / w) * h;
             
             if(energyCanvas && !document.getElementById('p-unified').classList.contains('hidden')) {
                 resizeEnergyCanvas();
@@ -135,7 +796,6 @@
             }
         }
 
-        // 📍 SOLUCIÓN ZOOM (PUNTO 5) - Función de dibujo actualizada
         function drawVideoWithCover(ctx, video, z, pan) {
             const canvasW = ctx.canvas.width;
             const canvasH = ctx.canvas.height;
@@ -144,42 +804,34 @@
             
             if (!videoW || !videoH) return; 
 
-            // Calcula el aspect ratio
             const videoAspect = videoW / videoH;
             const canvasAspect = canvasW / canvasH;
 
-            // Calcula las dimensiones de la fuente (lo que "cortamos" del video)
             let sWidth = videoW / z;
             let sHeight = videoH / z;
             
-            // Centra el corte y aplica el paneo
             let sx = (videoW - sWidth) / 2 + pan.x;
             let sy = (videoH - sHeight) / 2 + pan.y;
 
-            // Limita el paneo para que no se salga de los bordes
             sx = Math.max(0, Math.min(sx, videoW - sWidth));
             sy = Math.max(0, Math.min(sy, videoH - sHeight));
-            currentPan.x = sx - (videoW - sWidth) / 2; // Actualiza el paneo real
+            currentPan.x = sx - (videoW - sWidth) / 2;
             currentPan.y = sy - (videoH - sHeight) / 2;
 
-            // Dibuja en el destino (el canvas)
             let drawW, drawH, drawX, drawY;
 
             if (videoAspect > canvasAspect) {
-                // El video es más ancho que el canvas (letterbox arriba/abajo)
                 drawH = canvasH;
                 drawW = canvasH * videoAspect;
                 drawX = (canvasW - drawW) / 2;
                 drawY = 0;
             } else {
-                // El video es más alto que el canvas (pillarbox lados)
                 drawW = canvasW;
                 drawH = canvasW / videoAspect;
                 drawX = 0;
                 drawY = (canvasH - drawH) / 2;
             }
             
-            // Dibuja la imagen con zoom y paneo
             ctx.drawImage(video, sx, sy, sWidth, sHeight, drawX, drawY, drawW, drawH);
         }
 
@@ -196,23 +848,14 @@
                 
                 if (currentFilter === 'sls') {
                     kinectBanner.style.display = 'block';
-                    
-                    // 📍 SOLUCIÓN ZOOM (PUNTO 5)
                     drawVideoWithCover(mainFilterCtx, videoBg, zoom, currentPan);
-                    
                     if (latestPoses) {
                         drawAllSkeletons(latestPoses); 
                     }
-                
                 } else {
                     kinectBanner.style.display = 'none';
-                    
                     if (currentFilter === 'relief') {
-                        // 📍 SOLUCIÓN ZOOM (PUNTO 5) y LIENZO (PUNTO 2)
-                        // Dibuja en el temp-canvas (tamaño completo)
                         drawVideoWithCover(tempCtx, videoBg, zoom, currentPan);
-                        
-                        // Procesa el temp-canvas
                         let frame = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
                         let data = frame.data;
                         let copy = new Uint8ClampedArray(data);
@@ -235,27 +878,20 @@
                             }
                         }
                         tempCtx.putImageData(frame, 0, 0);
-                        // Dibuja el resultado en el canvas principal
                         mainFilterCtx.drawImage(tempCanvas, 0, 0, w, h);
 
                     } else if (currentFilter === 'night-vision') {
-                        // 📍 SOLUCIÓN ZOOM (PUNTO 5)
                         drawVideoWithCover(mainFilterCtx, videoBg, zoom, currentPan);
                         let frame = mainFilterCtx.getImageData(0, 0, w, h);
                         let data = frame.data;
-                        
                         for (let i = 0; i < data.length; i += 4) {
                             let l = (data[i] * 0.3) + (data[i+1] * 0.59) + (data[i+2] * 0.11);
                             data[i] = 0; 
                             data[i+1] = l * 1.2; 
                             data[i+2] = 0; 
-
                             let y = Math.floor((i / 4) / w);
-                            if (y % 4 === 0) {
-                                data[i+1] *= 0.8; 
-                            }
+                            if (y % 4 === 0) { data[i+1] *= 0.8; }
                         }
-                        
                         for (let y = 0; y < h; y++) {
                             for (let x = 0; x < w; x++) {
                                 let i = (y * w + x) * 4;
@@ -266,12 +902,9 @@
                                 data[i+1] *= factor;
                             }
                         }
-                        
                         mainFilterCtx.putImageData(frame, 0, 0);
                     
                     } else if (currentFilter === 'none') {
-                        // 📍 SOLUCIÓN ZOOM (PUNTO 5)
-                        // Aún si no hay filtro, dibujamos el video con zoom
                         drawVideoWithCover(mainFilterCtx, videoBg, zoom, currentPan);
                     }
                 }
@@ -279,24 +912,16 @@
             requestAnimationFrame(drawLoop);
         }
         
-        // 📍 SOLUCIÓN LIENZO (PUNTO 2)
         async function detectPoseLoop() {
             while (true) {
                 if (currentFilter === 'sls' && poseDetector && videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
-                    
                     if (!isDetectingPose) {
                         isDetectingPose = true;
-                        
-                        // Dibuja el video en el LIENZO DE IA (pequeño)
                         drawVideoWithCover(aiCtx, videoBg, zoom, currentPan);
-                        
-                        // Estima poses desde el LIENZO DE IA
                         const poses = await poseDetector.estimatePoses(aiCanvas); 
-                        
                         latestPoses = poses; 
                         isDetectingPose = false;
                     }
-                    
                     await new Promise(r => setTimeout(r, 10));
                 } else {
                     latestPoses = []; 
@@ -304,7 +929,6 @@
                 }
             }
         }
-
 
         const confidenceThreshold = 0.3; 
         const skeletonMap = [
@@ -316,16 +940,13 @@
             ['right_hip', 'right_knee'], ['right_knee', 'right_ankle']
         ];
         
-        // 📍 SOLUCIÓN LIENZO (PUNTO 2)
         function drawAllSkeletons(poses) {
             const ctx = mainFilterCtx; 
-            
-            ctx.strokeStyle = '#39FF14'; 
-            ctx.fillStyle = '#FF3333';   
+            ctx.strokeStyle = var(--neon-green); 
+            ctx.fillStyle = var(--alert-red);   
             ctx.lineWidth = 2.5;
-            ctx.filter = 'drop-shadow(0 0 4px #39FF14)';
+            ctx.filter = 'drop-shadow(0 0 4px var(--neon-green))';
 
-            // Escala los puntos desde el lienzo de IA (aiCanvas) al lienzo principal (mainFilterCanvas)
             const scaleX = mainFilterCanvas.width / aiCanvas.width;
             const scaleY = mainFilterCanvas.height / aiCanvas.height;
 
@@ -344,7 +965,6 @@
                 const keypoint = keypoints[i];
                 if (keypoint.score > confidenceThreshold) {
                     ctx.beginPath();
-                    // Multiplica por la escala para "estirar" los puntos al lienzo principal
                     ctx.arc(keypoint.x * scaleX, keypoint.y * scaleY, 4, 0, 2 * Math.PI); 
                     ctx.fill();
                 }
@@ -380,6 +1000,18 @@
                 currentFilter = f;
                 const targetBtn = event ? event.target : document.querySelector(`.filter-btn[onclick="setFilter('${f}')"]`);
                 if(targetBtn) targetBtn.classList.add('active');
+            }
+        }
+
+        // 📍 NUEVA FUNCIÓN DE ESTADO DE LED
+        function setSensorStatus(sensorName, status) { // status: "connected", "simulated", "unavailable", "off"
+            let el;
+            if (sensorName === 'mic') el = micStatus;
+            else if (sensorName === 'mag') el = magStatus;
+            else if (sensorName === 'prox') el = proxStatus;
+            
+            if (el) {
+                el.dataset.status = status;
             }
         }
 
@@ -446,41 +1078,39 @@
             return curve;
         }
 
+        // 📍 LÓGICA DE LEDS AÑADIDA A SENSORES
         function initSensor() {
+            // Proximidad (EMF)
             if ('ProximitySensor' in window) {
                 try {
                     proximitySensor = new ProximitySensor();
                     proximitySensor.onreading = () => {
-                        const maxDist = 10;
-                        const minDist = 2;  
+                        const maxDist = 10, minDist = 2;  
                         let dist = proximitySensor.value;
-                        if (dist <= minDist) {
-                            emfValue = 100;
-                        } else if (dist >= maxDist) {
-                            emfValue = 0;
-                        } else {
-                            emfValue = 100 * (1 - (dist - minDist) / (maxDist - minDist));
-                        }
-                        if (proxLed) proxLed.classList.add('active-sensor');
+                        if (dist <= minDist) emfValue = 100;
+                        else if (dist >= maxDist) emfValue = 0;
+                        else emfValue = 100 * (1 - (dist - minDist) / (maxDist - minDist));
+                        
+                        setSensorStatus('prox', 'connected');
                     };
                     proximitySensor.onerror = (e) => {
-                        console.warn("Error de Proximidad:", e.error.name, "Iniciando simulador.");
-                        if(proxLed) proxLed.classList.remove('active-sensor'); 
+                        console.warn("Proximidad no disponible:", e.error.name, "Iniciando simulador.");
+                        setSensorStatus('prox', 'simulated');
                         startEmfSimulation(); 
                     };
                     proximitySensor.start();
-                    console.log("Sensor de Proximidad activado.");
                 } catch(e) {
-                    console.warn("Sensor de Proximidad no soportado. Iniciando simulador.");
-                    if(proxLed) proxLed.classList.remove('active-sensor');
+                    console.warn("Sensor de Proximidad falló. Iniciando simulador.");
+                    setSensorStatus('prox', 'simulated');
                     startEmfSimulation(); 
                 }
             } else {
                 console.warn("Sensor de Proximidad no soportado. Iniciando simulador.");
-                if(proxLed) proxLed.classList.remove('active-sensor');
+                setSensorStatus('prox', 'simulated');
                 startEmfSimulation(); 
             }
 
+            // Brújula (MAG)
             if ('AbsoluteOrientationSensor' in window) {
                 try {
                     const compassNeedle = document.getElementById('compass-needle');
@@ -489,21 +1119,20 @@
                         let q = orientationSensor.quaternion;
                         let yaw = Math.atan2(2 * (q[0] * q[1] + q[2] * q[3]), 1 - 2 * (q[1] * q[1] + q[2] * q[2])) * (180 / Math.PI);
                         compassNeedle.style.transform = `translateX(-50%) rotate(${-yaw}deg)`;
-                        if (magLed) magLed.classList.add('active-sensor');
+                        setSensorStatus('mag', 'connected');
                     };
                     orientationSensor.onerror = (e) => {
                         console.warn("Error de Brújula:", e.error.name);
-                        if (magLed) magLed.classList.remove('active-sensor');
+                        setSensorStatus('mag', 'unavailable');
                     };
                     orientationSensor.start();
-                    console.log("Brújula (OrientationSensor) activada.");
                 } catch (e) {
-                    console.warn("Brújula (OrientationSensor) no soportada.");
-                    if (magLed) magLed.classList.remove('active-sensor');
+                    console.warn("Brújula no soportada.");
+                    setSensorStatus('mag', 'unavailable');
                 }
             } else {
-                console.warn("Brújula (OrientationSensor) no soportada.");
-                if (magLed) magLed.classList.remove('active-sensor');
+                console.warn("Brújula no soportada.");
+                setSensorStatus('mag', 'unavailable');
             }
         }
         
@@ -519,7 +1148,8 @@
             if (emfSimInterval) clearInterval(emfSimInterval);
             emfSimInterval = null;
             emfValue = 0;
-            if(proxLed) proxLed.classList.remove('active-sensor');
+            setSensorStatus('prox', 'off');
+            setSensorStatus('mag', 'off');
         }
 
         
@@ -527,70 +1157,62 @@
             if (visualLoopInterval) clearInterval(visualLoopInterval); 
             visualLoopInterval = setInterval(() => {
                 let intensity = emfValue; 
-                let ledIntensity = Math.floor(intensity / 10); 
-                updateLEDs(ledIntensity);
-                updateEnergyGraph(intensity); 
-
-                if(isRunning) {
-                    document.getElementById('main-needle').style.transform = `translateX(-50%) rotate(${-45 + (intensity/100)*90}deg)`;
+                
+                // Actualiza el dial detector (antes main-needle)
+                const needle = document.getElementById('main-needle');
+                if (needle) {
+                    needle.style.transform = `translateX(-50%) rotate(${-60 + (intensity/100)*120}deg)`;
                 }
+                
+                // Actualiza el gráfico de actividad
+                updateEnergyGraph(intensity); 
             }, 150); 
         }
         
         function stopVisualLoop() {
-            if (!isRunning) {
-                document.getElementById('main-needle').style.transform = `translateX(-50%) rotate(-45deg)`;
+            const needle = document.getElementById('main-needle');
+            if (needle) {
+                needle.style.transform = `translateX(-50%) rotate(-60deg)`;
             }
         }
 
-        // --- SPIRIT BOX (Lógica de Puntos 1 y 6) ---
+        // --- SPIRIT BOX ---
         
         const pwr = document.getElementById('knob-power');
         pwr.addEventListener('click', () => {
             if(!audioCtx) initAudio();
             isRunning = !isRunning;
             
+            pwr.classList.toggle('active', isRunning); // Activa el brillo del knob
+            
             if(isRunning) {
                 // --- Encender ---
                 pwr.style.transform = 'rotate(0deg)';
-                pwr.style.boxShadow = '0 0 15px var(--neon-cyan)';
-                detectorPanel.classList.add('retro-lit'); 
                 
                 if(audioCtx.state === 'suspended') {
                     audioCtx.resume();
-                    
-                    /* * 📍 SOLUCIÓN 'VOZ BLOQUEADA EN IOS':
-                     * Desbloquea la síntesis de voz en el primer toque.
-                    */
                     const silentUtterance = new SpeechSynthesisUtterance(" ");
                     silentUtterance.volume = 0;
                     window.speechSynthesis.speak(silentUtterance);
                 }
                 
-                // Activa el sonido de barrido
                 lfoGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime+0.5);
                 radioGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime+0.5); 
 
-                // Pedir permisos de sensores en el primer toque
                 if (!proximitySensor && !emfSimInterval) {
                     initSensor(); 
                 }
 
-                // Iniciar la lógica del Spirit Box
                 spiritBoxState = "SCANNING";
-                runSpiritBoxLoop(); // Inicia el ciclo
+                runSpiritBoxLoop();
                 
             } else {
                 // --- Apagar ---
-                pwr.style.transform = 'rotate(-135deg)';
-                pwr.style.boxShadow = 'none';
-                detectorPanel.classList.remove('retro-lit');
+                pwr.style.transform = 'rotate(135deg)';
                 
-                // Apaga el sonido de barrido
                 lfoGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.1);
                 radioGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.1); 
                 
-                // Cancela todo
                 spiritBoxState = "OFF";
                 if (spiritBoxTimeout) clearTimeout(spiritBoxTimeout);
                 if (isRecognizing) recognition.abort();
@@ -598,13 +1220,14 @@
                 
                 isSpeaking = false;
                 isRecognizing = false;
-                if(micLed) micLed.classList.remove('active-mic');
+                setSensorStatus('mic', 'off');
+                stopSensor();
             }
         });
 
         document.getElementById('knob-scan').addEventListener('click', function() {
             scanSpeed = (scanSpeed+1)%3;
-            this.style.transform = `rotate(${-135 + scanSpeed*135}deg)`;
+            this.style.transform = `rotate(${-135 + scanSpeed*135}deg)`; // 0, 135, 270
             if(lfo) lfo.frequency.linearRampToValueAtTime([5,12,20][scanSpeed], audioCtx.currentTime+0.1);
         });
 
@@ -622,12 +1245,11 @@
             }
         }
 
-        // 📍 SOLUCIÓN GOOGLE SHEETS (PUNTO 1)
         async function loadSheetData() {
             try {
                 let [ra, rp] = await Promise.all([
-                    fetch(`${SHEETDB_URL}?sheet=Automatico`), // Nombre corregido
-                    fetch(`${SHEETDB_URL}?sheet=programado`)  // Nombre corregido
+                    fetch(`${SHEETDB_URL}?sheet=Automatico`),
+                    fetch(`${SHEETDB_URL}?sheet=programado`)
                 ]);
                 let ja = await ra.json(); automaticoData = ja.map(r=>r.TEXTO||r.texto).filter(t=>t);
                 let jp = await rp.json();
@@ -644,32 +1266,27 @@
             }
         }
 
-        // 📍 SOLUCIÓN LÓGICA SPIRIT BOX (PUNTO 6)
         function speak(text) {
             if (!text) return;
             spiritBoxState = "SPEAKING";
             isSpeaking = true;
             
-            // Baja el sonido de barrido mientras habla
             lfoGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime+0.1); 
             radioGain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime+0.1);
             
             const u = new SpeechSynthesisUtterance(text);
             u.lang = 'es-MX'; 
             u.volume = 1.0; 
-            u.pitch = 0.5; // Voz más grave (neutra)
-            u.rate = 0.9;  // Un poco más lento
+            u.pitch = 0.5;
+            u.rate = 0.9;
             
             u.onend = () => {
                 isSpeaking = false;
-                // Sube el sonido de barrido
                 lfoGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime+0.2);
                 radioGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime+0.2);
                 
-                // Vuelve a escanear/escuchar
                 spiritBoxState = "SCANNING";
                 if (isRunning) {
-                    // Espera 2 segundos antes de volver a escuchar
                     setTimeout(runSpiritBoxLoop, 2000);
                 }
             };
@@ -680,96 +1297,72 @@
             setTimeout(() => sensorPanel.classList.remove('alert'), 500);
         }
 
-        // 📍 SOLUCIÓN LÓGICA SPIRIT BOX (PUNTO 6) - Nueva función principal
         function runSpiritBoxLoop() {
-            // Si está apagado o ya está hablando, no hagas nada
             if (!isRunning || spiritBoxState === "SPEAKING") return;
-
-            // Inicia el estado de "ESCUCHANDO"
             spiritBoxState = "LISTENING";
-            if(micLed) micLed.classList.add('active-mic');
             
             try {
                 if (!isRecognizing) recognition.start();
             } catch(e) {
                 console.warn("Error al iniciar recognition", e);
-                if(micLed) micLed.classList.remove('active-mic');
-                // Si falla, vuelve a intentar el ciclo después de un rato
+                setSensorStatus('mic', 'unavailable');
                 if (isRunning) setTimeout(runSpiritBoxLoop, 2000);
                 return;
             }
 
-            // Inicia un temporizador. Si no oye nada en 5 seg, habla automáticamente.
             spiritBoxTimeout = setTimeout(() => {
-                if (spiritBoxState !== "LISTENING") return; // Ya se recibió un comando
+                if (spiritBoxState !== "LISTENING") return; 
                 
                 console.log("Timeout: No se detectó comando de voz.");
-                if (isRecognizing) recognition.abort(); // Detiene el micrófono
-                if(micLed) micLed.classList.remove('active-mic');
+                if (isRecognizing) recognition.abort();
                 isRecognizing = false;
 
-                // Habla con una respuesta AUTOMÁTICA
                 if (automaticoData.length > 0) {
                     speak(automaticoData[Math.floor(Math.random() * automaticoData.length)]);
                 }
-            }, 5000); // 5 segundos de espera
+            }, 5000);
         }
 
-        // 📍 SOLUCIÓN LÓGICA SPIRIT BOX (PUNTO 6)
         function initSpeechRec() {
             if(!SpeechRecognition) {
-                console.error("SpeechRecognition no soportado por este navegador.");
+                console.error("SpeechRecognition no soportado.");
+                setSensorStatus('mic', 'unavailable');
                 return;
             }
             recognition = new SpeechRecognition(); 
             recognition.lang = 'es-MX'; 
-            recognition.continuous = false; // Queremos que pare después de hablar
+            recognition.continuous = false;
 
             recognition.onstart = () => { 
                 isRecognizing = true;
-                if(micLed) micLed.classList.add('active-mic'); 
+                setSensorStatus('mic', 'connected');
             };
             
             recognition.onend = () => { 
                 isRecognizing = false;
-                if(micLed) micLed.classList.remove('active-mic'); 
-                // No reiniciar automáticamente. El runSpiritBoxLoop lo controla.
+                setSensorStatus('mic', 'off'); // Se apaga temporalmente
             };
             
             recognition.onerror = (e) => {
                 isRecognizing = false;
-                if(micLed) micLed.classList.remove('active-mic');
+                setSensorStatus('mic', 'unavailable');
                 console.warn("Error de Recognition:", e.error);
             };
 
-            // ¡Comando detectado!
             recognition.onresult = (e) => {
-                if (spiritBoxTimeout) clearTimeout(spiritBoxTimeout); // Cancela el timeout
+                if (spiritBoxTimeout) clearTimeout(spiritBoxTimeout); 
                 
                 let t = e.results[0][0].transcript.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
                 console.log("Comando detectado:", t);
 
                 if (programadoData.has(t)) {
-                    // 1. Responde con PROGRAMADO
                     speak(programadoData.get(t));
                 } else {
-                    // 2. Responde con AUTOMATICO
                     if (automaticoData.length > 0) {
                         speak(automaticoData[Math.floor(Math.random() * automaticoData.length)]);
                     }
                 }
             };
-        }
-
-        function updateLEDs(intensity) { 
-            segments.forEach((seg, i) => { 
-                seg.className = 'led-segment';
-                if (i < intensity) {
-                    if (i < 3) seg.classList.add('active-blue');
-                    else if (i < 7) seg.classList.add('active-yellow');
-                    else seg.classList.add('active-red');
-                }
-            });
         }
 
         function updateEnergyGraph(value) {
@@ -791,8 +1384,8 @@
             let step = w / energyHistory.length;
 
             energyCtx.beginPath();
-            energyCtx.strokeStyle = 'var(--neon-cyan)';
-            energyCtx.lineWidth = 1;
+            energyCtx.strokeStyle = 'var(--neon-green)';
+            energyCtx.lineWidth = 1.5;
             energyCtx.moveTo(0, h - (energyHistory[0] / 100 * h));
             for(let i=1; i<energyHistory.length; i++) {
                 energyCtx.lineTo(i * step, h - (energyHistory[i] / 100 * h));
@@ -801,13 +1394,12 @@
             
             energyCtx.beginPath();
             energyCtx.strokeStyle = 'var(--alert-red)';
-            energyCtx.lineWidth = 2; 
+            energyCtx.lineWidth = 1; 
             let inPeak = false;
             for(let i=0; i<energyHistory.length; i++) {
                 let val = energyHistory[i];
                 let y = h - (val / 100 * h);
-                
-                if (val > 70) { 
+                if (val > 80) { 
                     if (!inPeak) {
                         energyCtx.moveTo(i * step, y);
                         inPeak = true;
@@ -836,23 +1428,16 @@
 
         // --- UI Lógica y Eventos de Zoom/Pan ---
         
-        const menuContainer = document.getElementById('menu-container'); // Sigue siendo null, pero está bien
         const filterControls = document.getElementById('filter-controls-container');
         const logoImage = document.getElementById('logo-image');
         const followContainer = document.getElementById('follow-container');
         
         function showControls() {
             filterControls.style.opacity = '1';
-            // menuContainer ya no existe, esta línea se ignora si es null
-            if (menuContainer) menuContainer.style.opacity = '1';
-            
             logoImage.classList.remove('visible');
             logoImage.classList.add('hiding'); 
-            
             followContainer.classList.add('hiding');
             filterControls.style.pointerEvents = 'auto';
-            if (menuContainer) menuContainer.style.pointerEvents = 'auto';
-            
             clearTimeout(uiHideTimeout);
             uiHideTimeout = setTimeout(hideControls, 4000); 
             uiVisible = true;
@@ -860,18 +1445,13 @@
 
         function hideControls() {
             filterControls.style.opacity = '0';
-            if (menuContainer) menuContainer.style.opacity = '0';
-            
             logoImage.classList.remove('hiding'); 
             logoImage.classList.add('visible'); 
-
             filterControls.style.pointerEvents = 'none';
-            if (menuContainer) menuContainer.style.pointerEvents = 'none';
             uiVisible = false;
         }
 
-        // 📍 SOLUCIÓN LOGO (PUNTO 2) - EL LISTENER FUE ELIMINADO
-        // logoImage.addEventListener('animationend', ... )
+        // 📍 LOGO LISTENER ELIMINADO
         
         followContainer.addEventListener('animationend', (e) => {
             if (e.animationName === 'waterDrop') {
@@ -887,8 +1467,6 @@
 
         function handleUITap(event) {
             if (isPinching || isPanning) return;
-
-            // 📍 SOLUCIÓN BOTÓN MENÚ (PUNTO 1) - Se quita la referencia a #btn-ver
             if (!event.target.closest('.panel') && !event.target.closest('.filter-btn')) {
                 if (uiVisible) {
                     hideControls(); 
@@ -896,11 +1474,10 @@
                     showControls(); 
                 }
             } else {
+                // Si el toque es en un botón, solo reinicia el temporizador
                 showControls();
             }
         }
-
-        // 📍 SOLUCIÓN BOTÓN MENÚ (PUNTO 1) - toggleMenu() ELIMINADO
         
         function checkPanelState() {
             const p1 = document.getElementById('p-unified').classList.contains('hidden');
@@ -912,15 +1489,13 @@
             setTimeout(resizeAllCanvas, 500);
         }
 
-        // 📍 SOLUCIÓN BOTÓN MENÚ (PUNTO 1) - togglePanel() ACTUALIZADO
+        // 📍 togglePanel() ACTUALIZADO
         function togglePanel(id) {
             const p = document.getElementById(id);
-            // Busca el nuevo botón por su ID
             const btn = document.getElementById('btn-panel');
             
             p.classList.toggle('hidden');
             
-            // Añade o quita la clase 'active' al botón 'PAN'
             if (btn) {
                 btn.classList.toggle('active', !p.classList.contains('hidden'));
             }
@@ -942,43 +1517,33 @@
             followContainer.style.opacity = '1';
             
             const text = document.getElementById('follow-text');
-            text.style.display = 'block';
-            text.classList.add('fade-in');
+            text.style.display = 'block'; text.classList.add('fade-in');
             await new Promise(r => setTimeout(r, 2500)); 
             if(uiVisible) { followContainer.classList.add('hiding'); return; } 
-            text.classList.remove('fade-in');
-            text.classList.add('water-drop'); 
+            text.classList.remove('fade-in'); text.classList.add('water-drop'); 
             await new Promise(r => setTimeout(r, 500));
-            text.style.display = 'none';
-            text.classList.remove('water-drop');
+            text.style.display = 'none'; text.classList.remove('water-drop');
             
             const icons = document.getElementById('follow-icons');
-            icons.style.display = 'flex';
-            icons.classList.add('fade-in');
+            icons.style.display = 'flex'; icons.classList.add('fade-in');
             await new Promise(r => setTimeout(r, 2500)); 
             if(uiVisible) { followContainer.classList.add('hiding'); return; } 
-            icons.classList.remove('fade-in');
-            icons.classList.add('fade-out');
+            icons.classList.remove('fade-in'); icons.classList.add('fade-out');
             await new Promise(r => setTimeout(r, 1000));
-            icons.style.display = 'none';
-            icons.classList.remove('fade-out');
+            icons.style.display = 'none'; icons.classList.remove('fade-out');
 
             const handle = document.getElementById('follow-handle');
-            handle.style.display = 'block';
-            handle.classList.add('fade-in');
+            handle.style.display = 'block'; handle.classList.add('fade-in');
             await new Promise(r => setTimeout(r, 2500)); 
             if(uiVisible) { followContainer.classList.add('hiding'); return; } 
-            handle.classList.remove('fade-in');
-            handle.classList.add('fade-out');
+            handle.classList.remove('fade-in'); handle.classList.add('fade-out');
             await new Promise(r => setTimeout(r, 1000));
-            handle.style.display = 'none';
-            handle.classList.remove('fade-out');
+            handle.style.display = 'none'; handle.classList.remove('fade-out');
 
             followContainer.style.opacity = '0';
             followAnimationRunning = false;
         }
 
-        // 📍 SOLUCIÓN ZOOM (PUNTO 5) - Event Listeners
         const appUI = document.getElementById('app-ui');
         
         function getPinchDist(e) {
@@ -994,7 +1559,7 @@
         appUI.addEventListener('touchstart', (e) => {
             if (e.touches.length === 2) {
                 isPinching = true;
-                isPanning = false; // Prioritiza el pinch
+                isPanning = false;
                 initialPinchDist = getPinchDist(e);
             } else if (e.touches.length === 1 && zoom > 1) {
                 isPinching = false;
@@ -1004,30 +1569,23 @@
         });
 
         appUI.addEventListener('touchmove', (e) => {
-            // No prevenir el scroll si estamos tocando un panel
             if (!e.target.closest('.panel')) {
                 e.preventDefault(); 
             }
-
             if (isPinching && e.touches.length === 2) {
                 const newPinchDist = getPinchDist(e);
                 const zoomFactor = newPinchDist / initialPinchDist;
-                
                 let newZoom = zoom * zoomFactor;
-                newZoom = Math.max(1.0, Math.min(newZoom, maxZoom)); // Limita el zoom
-
+                newZoom = Math.max(1.0, Math.min(newZoom, maxZoom));
                 zoom = newZoom;
-                initialPinchDist = newPinchDist; // Actualiza la base del pinch
-
+                initialPinchDist = newPinchDist;
             } else if (isPanning && e.touches.length === 1) {
                 const newPan = getPanCenter(e);
                 const deltaX = (newPan.x - lastPan.x);
                 const deltaY = (newPan.y - lastPan.y);
-                
                 const panSensibility = 2.0 / zoom; 
                 currentPan.x -= deltaX * panSensibility;
                 currentPan.y -= deltaY * panSensibility;
-
                 lastPan = newPan;
             }
         });
@@ -1047,8 +1605,7 @@
             setInterval(updateSensorReadings, 2000); 
             setInterval(runFollowAnimation, 30000); 
             
-            // 📍 SOLUCIÓN BOTÓN MENÚ (PUNTO 1) - Configuración inicial actualizada
-            // Configura el estado inicial del panel
+            // 📍 CONFIGURACIÓN INICIAL ACTUALIZADA
             document.getElementById('p-unified').classList.add('hidden');
             const panelBtn = document.getElementById('btn-panel');
             if (panelBtn) {
@@ -1065,3 +1622,5 @@
             resizeAllCanvas(); 
         };
     </script>
+</body>
+</html>
