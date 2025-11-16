@@ -1,705 +1,4 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <link rel="apple-touch-icon" href="obr-logo.png">
-
-    <title>DETECTOR-OBR</title> <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-    
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
-
-    <style>
-        :root {
-            --neon-cyan: #FFB000; /* Ámbar */
-            --neon-blue: #FF8C00; /* Naranja */
-            --neon-green: #39FF14; 
-            --alert-red: #FF3333;
-            --panel-bg: #1a1a1a; 
-            --amber-light: rgba(255, 176, 0, 0.1);
-            --led-blue: #0055FF;
-            --led-yellow: #FFCC00;
-            
-            --panel-width: 280px; 
-        }
-        
-        body {
-            font-family: 'Share+Tech+Mono', monospace;
-            background-color: #000;
-            color: var(--neon-cyan);
-            overflow: hidden;
-            width: 100vw;
-            height: 100vh;
-        }
-
-        #app-ui {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            /* 📍 SOLUCIÓN ZOOM (PUNTO 5): Desactivar toques por defecto en iOS */
-            touch-action: none;
-        }
-
-        #main-view-area {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            pointer-events: auto;
-            z-index: 5;
-        }
-
-        #bg-camera-feed {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover; 
-            z-index: 1;
-            filter: brightness(1.0);
-            transform: scaleX(1); 
-        }
-        
-        #main-filter-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%; 
-            height: 100%; 
-            z-index: 2; 
-            pointer-events: none; 
-            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-        
-        body.panels-active #main-filter-canvas {
-            left: var(--panel-width);
-            width: calc(100% - var(--panel-width));
-        }
-
-        .hidden-canvas { display: none; }
-
-        #side-panel-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: var(--panel-width);
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            z-index: 20;
-            pointer-events: none; 
-            transform: translateX(calc(var(--panel-width) * -1));
-            transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            padding-top: env(safe-area-inset-top);
-            box-sizing: border-box; 
-        }
-
-        body.panels-active #side-panel-container {
-            transform: translateX(0);
-        }
-        body.panels-active #main-view-area {
-            left: var(--panel-width);
-            width: calc(100% - var(--panel-width));
-        }
-
-        .panel {
-            background: repeating-linear-gradient(135deg, #1a1a1a, #1a1a1a 10px, #222 10px, #222 12px);
-            border: 1px solid #444;
-            border-top: 1px solid #666;
-            border-bottom: 1px solid #000;
-            border-radius: 8px;
-            box-shadow: inset 0 0 20px #000, 0 5px 15px rgba(0,0,0,0.8);
-            display: flex;
-            flex-direction: column;
-            padding: 8px;
-            position: relative;
-            overflow: hidden;
-            transition: box-shadow 0.3s ease;
-            pointer-events: auto;
-            margin: 5px; 
-            flex-grow: 1;
-            max-height: 98vh; /* Máxima altura */
-            overflow-y: auto; /* Scroll si es necesario */
-        }
-        
-        .panel.alert {
-            box-shadow: inset 0 0 20px #000, 0 5px 15px rgba(0,0,0,0.8), 0 0 20px var(--alert-red);
-            border-color: var(--alert-red);
-        }
-        
-        .panel::before, .panel::after {
-            content: ''; position: absolute; top: 5px; width: 6px; height: 6px;
-            background: radial-gradient(circle, #555, #111);
-            border-radius: 50%; box-shadow: 0 1px 0 rgba(255,255,255,0.2);
-        }
-        .panel::before { left: 5px; }
-        .panel::after { right: 5px; }
-
-        #p-detector.retro-lit::before {
-            content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
-            background: radial-gradient(circle at center, var(--amber-light), transparent 80%);
-            pointer-events: none; z-index: 0; animation: flicker 0.1s infinite;
-        }
-        @keyframes flicker { 0% { opacity: 0.95; } 100% { opacity: 1; } }
-        
-        .panel.hidden { display: none; }
-
-        .panel-header {
-            font-size: 0.7rem;
-            text-align: center; 
-            margin-bottom: 5px; 
-            color: #ccc;
-            text-shadow: 0 -1px 0 #000; 
-            border-bottom: 2px groove #333; 
-            padding: 4px 0; 
-            text-transform: uppercase; 
-            letter-spacing: 1px; 
-            background: rgba(0,0,0,0.3);
-            border-radius: 4px; 
-            z-index: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative; 
-        }
-
-        .header-title { display: none; }
-        
-        #logo-image {
-            position: fixed;
-            top: 20px; 
-            right: 20px;
-            width: 60px;
-            height: 60px;
-            z-index: 100;
-            pointer-events: none;
-            opacity: 1; 
-            transform: scale(1);
-            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
-            animation: logo-effects 7s infinite linear; 
-        }
-        #logo-image.visible {
-            transform: scale(1);
-            opacity: 1;
-            animation: popIn 0.3s ease-out forwards, logo-effects 7s infinite linear 0.3s;
-        }
-        #logo-image.hiding {
-            animation: waterDrop 0.5s ease-out forwards;
-        }
-
-        @keyframes popIn {
-            0% { transform: scale(0); opacity: 0; }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        @keyframes logo-effects {
-            0%, 90% { transform: scale(1); opacity: 1; filter: none; }
-            91% { transform: scale(1.1) translateX(-5px); opacity: 0.8; filter: drop-shadow(2px 0 red) drop-shadow(-2px 0 blue); }
-            92% { transform: scale(0.9) translateX(5px); opacity: 1; filter: drop-shadow(-2px 0 red) drop-shadow(2px 0 blue); }
-            93% { transform: scale(1); opacity: 1; filter: none; }
-            94% { transform: scale(1); opacity: 0.5; filter: blur(2px); }
-            95% { transform: scale(1); opacity: 1; filter: none; }
-            96% { transform: scale(1) translateY(-3px); }
-            97% { transform: scale(1) translateY(3px); }
-            98%, 100% { transform: scale(1) translateY(0); }
-        }
-        @keyframes waterDrop { 
-            0% { opacity: 1; transform: scale(1); filter: blur(0); } 
-            100% { opacity: 0; transform: scale(2.5); filter: blur(5px); } 
-        }
-
-        
-        #kinect-banner {
-            position: fixed;
-            top: 20px; 
-            left: 20px;
-            z-index: 100;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.0rem;
-            font-weight: 700;
-            color: var(--neon-green);
-            text-shadow: 0 0 5px var(--neon-green), 0 0 10px #000;
-            display: none; 
-            pointer-events: none;
-        }
-        #kinect-banner .led-red {
-            animation: pulseGlow 1.5s infinite ease-in-out;
-            text-shadow: 0 0 8px var(--alert-red), 0 0 10px #000;
-        }
-
-        @keyframes pulseGlow {
-            0%, 100% { opacity: 0.6; }
-            50% { opacity: 1.0; }
-        }
-
-
-        /* --- Estilos Paneles --- */
-        .emf-container, .env-content {
-            display: flex; flex-direction: column; height: 100%; justify-content: space-between; z-index: 1;
-        }
-        .meter-section { flex-grow: 1; position: relative; background: radial-gradient(circle at 50% 100%, #222, #000); border: 1px solid #333; border-radius: 4px; margin-bottom: 5px; box-shadow: inset 0 0 10px #000; }
-        .meter-freqs { position: absolute; top: 5px; left: 0; width: 100%; text-align: center; font-size: 0.45rem; color: #555; z-index: 1; display: flex; justify-content: space-between; padding: 0 10px; }
-        #main-needle { width: 2px; height: 85%; background: #ff5500; position: absolute; bottom: 0; left: 50%; transform-origin: bottom center; transform: rotate(-45deg); transition: transform 0.1s cubic-bezier(0.2, 1.5, 0.5, 1); box-shadow: 0 0 5px #ff5500; z-index: 2; }
-        .knobs-section { display: flex; justify-content: space-around; margin-bottom: 5px; }
-        .knob-circle { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #555; position: relative; margin: 0 auto 2px auto; cursor: pointer; background: conic-gradient(#222, #000, #222); box-shadow: 0 3px 5px #000; }
-        .knob-circle::after { content:''; position:absolute; top:0; left:0; width:100%; height:100%; border-radius:50%; background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent); }
-        .knob-indicator { position: absolute; top: 4px; left: 50%; width: 2px; height: 15px; background: #ff5500; transform: translateX(-50%); }
-        .knob-label { font-size: 0.6rem; color: #aaa; text-align: center; text-shadow: 0 1px 0 #000; }
-        .volume-slider-container { width: 100%; display: flex; align-items: center; gap: 8px; padding: 5px 0; }
-        input[type=range] { flex-grow: 1; -webkit-appearance: none; height: 25px; background: #111; border: 1px solid #333; border-radius: 10px; overflow: hidden; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 35px; height: 35px; background: #444; border: 1px solid #666; border-radius: 50%; box-shadow: -100vw 0 0 100vw var(--neon-cyan); cursor: pointer; }
-        
-        .temp-readout { font-size: 2.5rem; font-weight: bold; color: var(--neon-cyan); text-shadow: 0 0 15px rgba(0,255,255,0.3); background: rgba(0,0,0,0.5); padding: 10px 15px; border: 2px solid #333; border-left: 4px solid var(--neon-cyan); border-radius: 0 10px 10px 0; font-family: 'Share Tech Mono', monospace; transition: all 0.5s ease; text-align: center; }
-        .temp-label-small { font-size: 0.6rem; color: #666; margin-top: 5px; text-align: center; }
-        .energy-container { width: 100%; display: flex; flex-direction: column; align-items: center; height: auto; opacity: 1; flex-grow: 1; margin-top: 5px; transform: scaleY(1); }
-        .led-bar { display: flex; gap: 3px; margin-bottom: 5px; background: #000; padding: 4px; border-radius: 4px; border: 1px solid #333; }
-        .led-segment { width: 8px; height: 15px; background-color: #111; border: 1px solid #222; transition: background-color 0.1s; }
-        .led-segment.active-blue { background-color: var(--led-blue); box-shadow: 0 0 10px var(--led-blue); }
-        .led-segment.active-yellow { background-color: var(--led-yellow); box-shadow: 0 0 10px var(--led-yellow); }
-        .led-segment.active-red { background-color: var(--alert-red); box-shadow: 0 0 15px var(--alert-red); }
-        .energy-label { font-size: 0.6rem; color: #aaa; margin-bottom: 5px; letter-spacing: 1px; }
-        .energy-graph-box { width: 100%; height: 100%; flex-grow: 1; background: #000; border: 1px inset #333; border-radius: 5px; overflow: hidden; margin-top: 5px; min-height: 50px; }
-        #energy-canvas { width: 100%; height: 100%; }
-
-        .status-led {
-            width: 10px; height: 10px; 
-            background-color: #333;
-            border: 1px solid #000;
-            border-radius: 50%;
-            transition: all 0.2s;
-            box-shadow: inset 0 0 3px #000;
-            position: absolute;
-            right: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-        
-        .status-led.active-mic {
-            background-color: var(--alert-red);
-            box-shadow: 0 0 8px var(--alert-red), 0 0 15px var(--alert-red);
-            animation: pulse 1s infinite;
-        }
-        .status-led.active-sensor {
-            background-color: var(--alert-red);
-            box-shadow: 0 0 8px var(--alert-red), 0 0 15px var(--alert-red);
-        }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-
-        #menu-container {
-            position: fixed;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 101;
-            pointer-events: auto;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            opacity: 1;
-            transition: opacity 0.5s ease-in-out;
-        }
-
-        #btn-ver {
-            width: 55px; height: 55px;
-            border-radius: 50%; border: 2px solid var(--neon-cyan);
-            background: radial-gradient(#004444, #002222); color: var(--neon-cyan);
-            font-weight: bold; 
-            font-size: 0.8rem; 
-            display: flex; justify-content: center;
-            align-items: center; cursor: pointer; box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
-        }
-        #menu-tools {
-            background: rgba(10,15,20,0.95);
-            border: 1px solid var(--neon-cyan); border-radius: 8px; padding: 5px;
-            display: none;
-            position: absolute;
-            bottom: 65px; 
-        }
-        #menu-tools.visible { display: block; }
-        .menu-item {
-            padding: 10px 20px; color: #aaa; border-bottom: 1px solid #333;
-            cursor: pointer; font-size: 0.7rem;
-        }
-        .menu-item.active { 
-            color: var(--neon-cyan); 
-            text-shadow: 0 0 5px var(--neon-cyan); 
-            background: rgba(255, 176, 0, 0.1);
-        }
-
-        #filter-controls-container {
-            position: fixed;
-            top: 50%;
-            right: 15px;
-            transform: translateY(-50%);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 100;
-            pointer-events: auto;
-            opacity: 1;
-            transition: opacity 0.5s ease-in-out;
-        }
-        .filter-btn {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: rgba(0, 50, 50, 0.7);
-            border: 2px solid var(--neon-cyan);
-            color: var(--neon-cyan);
-            font-family: 'Share Tech Mono', monospace;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-            transition: all 0.2s;
-        }
-        .filter-btn:active {
-            background: var(--neon-cyan);
-            color: #000;
-        }
-        .filter-btn.active {
-            background: var(--neon-cyan);
-            color: #000;
-            box-shadow: 0 0 20px #fff;
-        }
-
-        #loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #000;
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: opacity 0.5s ease-out;
-        }
-        #loading-content {
-            text-align: center;
-        }
-        #loading-text {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.2rem;
-            color: var(--neon-cyan);
-            text-shadow: 0 0 10px var(--neon-cyan);
-            animation: pulseGlow 2s infinite ease-in-out;
-        }
-        #loading-bar-container {
-            width: 250px;
-            height: 10px;
-            border: 1px solid var(--neon-cyan);
-            border-radius: 5px;
-            margin-top: 15px;
-            overflow: hidden;
-            background: rgba(0, 50, 50, 0.3);
-        }
-        #loading-bar {
-            width: 100%;
-            height: 100%;
-            background-color: var(--neon-cyan);
-            animation: loading-shimmer 2s infinite linear;
-            background-image: linear-gradient(90deg, var(--neon-cyan) 0%, #fff 50%, var(--neon-cyan) 100%);
-            background-size: 200% 100%;
-        }
-        @keyframes loading-shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-
-        #follow-container {
-            position: fixed;
-            bottom: 80px; 
-            left: 50%;
-            transform: translateX(-50%); 
-            z-index: 200;
-            pointer-events: none;
-            opacity: 1; 
-            width: 100%;
-            transition: opacity 0.5s ease-out;
-        }
-        #follow-container.hiding {
-            animation: waterDrop 0.5s ease-out forwards;
-        }
-        .follow-step {
-            display: none; 
-            color: var(--neon-cyan);
-            font-size: 1.5rem;
-            font-family: 'Orbitron', sans-serif;
-            text-shadow: 0 0 10px var(--neon-cyan);
-            text-align: center;
-            opacity: 0;
-        }
-        #follow-icons {
-            display: none;
-            align-items: center;
-            justify-content: center;
-        }
-        #follow-icons svg {
-            width: 50px; height: 50px;
-            margin: 0 15px;
-            fill: var(--neon-cyan);
-            filter: drop-shadow(0 0 5px var(--neon-cyan));
-        }
-        
-        .fade-in { animation: fadeIn 1s ease-out forwards; }
-        .fade-out { animation: fadeOut 1s ease-out forwards; }
-        .water-drop { animation: waterDrop 0.5s ease-out forwards; }
-        
-        @keyframes fadeIn { 0% { opacity: 0; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
-        @keyframes fadeOut { 0% { opacity: 1; } 100% { opacity: 0; } }
-
-        #compass-container {
-            width: 150px;
-            height: 150px;
-            margin: 10px auto;
-            background: radial-gradient(circle, #222, #000);
-            border-radius: 50%;
-            border: 2px solid #555;
-            box-shadow: inset 0 0 15px #000;
-            position: relative;
-        }
-        #compass-needle {
-            width: 2px;
-            height: 80%;
-            background: #ff5500;
-            position: absolute;
-            top: 10%;
-            left: 50%;
-            transform: translateX(-50%) rotate(0deg);
-            transform-origin: center center;
-            transition: transform 0.5s cubic-bezier(0.2, 1.5, 0.5, 1);
-            box-shadow: 0 0 5px #ff5500;
-        }
-        #compass-needle::before {
-            content: '';
-            position: absolute;
-            top: -10px;
-            left: -5px;
-            width: 0;
-            height: 0;
-            border-left: 6px solid transparent;
-            border-right: 6px solid transparent;
-            border-bottom: 12px solid #ff5500;
-        }
-        .compass-label {
-            position: absolute;
-            font-size: 0.8rem;
-            color: #aaa;
-            font-weight: bold;
-        }
-        .n { top: 5px; left: 50%; transform: translateX(-50%); }
-        .s { bottom: 5px; left: 50%; transform: translateX(-50%); }
-        .e { top: 50%; right: 10px; transform: translateY(-50%); }
-        .w { top: 50%; left: 10px; transform: translateY(-50%); }
-
-
-        /* --- MODO MÓVIL VERTICAL (PORTRAIT) --- */
-        @media (max-width: 768px) and (orientation: portrait) {
-            #side-panel-container {
-                flex-direction: row; 
-                bottom: 0;
-                top: auto;
-                left: 0;
-                width: 100vw;
-                height: auto; 
-                max-height: 50vh; 
-                transform: translateY(100%); 
-                overflow-x: auto;
-                padding-bottom: env(safe-area-inset-bottom);
-            }
-            .panel {
-                width: 280px; 
-                flex-shrink: 0;
-                height: auto; 
-                max-height: 50vh;
-            }
-
-            body.panels-active #side-panel-container {
-                transform: translateY(0);
-            }
-            body.panels-active #main-view-area {
-                left: 0;
-                width: 100%;
-                filter: brightness(0.4);
-            }
-            body.panels-active #main-filter-canvas {
-                left: 0 !important;
-                width: 100% !important;
-            }
-            
-            #filter-controls-container { right: 10px; }
-            .filter-btn { width: 45px; height: 45px; }
-            
-            #menu-container { left: 50%; transform: translateX(-50%); }
-            #kinect-banner { left: 10px; top: 10px; font-size: 0.8rem;}
-            #logo-image { width: 50px; height: 50px; top: 15px; right: 15px;}
-        }
-
-        /* 📍 SOLUCIÓN PANEL HORIZONTAL (PUNTO 7) */
-        @media (max-width: 768px) and (orientation: landscape) {
-            :root { --panel-width: 260px; }
-
-            /* Forzamos el CONTENEDOR a ser 100% alto y respetar notches */
-            #side-panel-container {
-                height: 100vh;
-                padding-top: env(safe-area-inset-top);
-                padding-bottom: env(safe-area-inset-bottom);
-                box-sizing: border-box;
-            }
-            
-            /* Forzamos el PANEL a llenar el contenedor al 100% */
-            #p-unified {
-                height: 100%;
-                flex-grow: 1;
-                flex-shrink: 0;
-                margin: 0; /* Sin márgenes */
-                border-radius: 0; /* Sin bordes redondeados */
-                border-right: 1px solid #444; /* Borde separador */
-            }
-
-            body.panels-active #main-filter-canvas {
-                left: var(--panel-width) !important;
-                width: calc(100% - var(--panel-width)) !important;
-            }
-        }
-    </style>
-</head>
-<body>
-
-<div id="app-ui"> <div id="loading-overlay">
-        <div id="loading-content">
-            <div id="loading-text">SINCRONIZANDO GUIONES...</div>
-            <div id="loading-bar-container">
-                <div id="loading-bar"></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="main-view-area" onclick="handleUITap(event)">
-        <video id="bg-camera-feed" playsinline autoplay muted></video>
-        <canvas id="main-filter-canvas"></canvas>
-    </div>
-    
-    <canvas id="temp-canvas" class="hidden-canvas"></canvas>
-    <canvas id="ai-canvas" class="hidden-canvas"></canvas>
-
-
-    <img id="logo-image" src="obr-logo.png" alt="Logo OBR">
-
-    <div id="kinect-banner">KINEC ACTIVO <span class="led-red">🔴</span></div>
-    
-    <div id="follow-container">
-        <div id="follow-text" class="follow-step">SÍGUENOS EN</div>
-        <div id="follow-icons" class="follow-step">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M448 209.9a210.1 210.1 0 0 1 -122.8-39.3V349.4A162.6 162.6 0 1 1 185 188.3V277.2a74.6 74.6 0 1 0 52.2 71.2V0l88 0a121.2 121.2 0 0 0 122.8 122.1v87.8z"/></svg>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path d="M549.7 124.1c-6.3-23.7-24.8-42.3-48.3-48.6C458.8 64 288 64 288 64S117.2 64 74.6 75.5c-23.5 6.3-42 24.9-48.3 48.6-11.4 42.9-11.4 132.3-11.4 132.3s0 89.4 11.4 132.3c6.3 23.7 24.8 42.3 48.3 48.6C117.2 448 288 448 288 448s170.8 0 213.4-11.5c23.5-6.3 42-24.9 48.3-48.6 11.4-42.9 11.4-132.3 11.4-132.3s0-89.4-11.4-132.3zM232 341.5V170.5l145.2 85.5-145.2 85.5z"/></svg>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M504 256C504 119 393 8 256 8S8 119 8 256c0 123.8 90.7 226.4 209.3 245V327.7h-63V256h63v-54.6c0-62.2 37-96.5 93.7-96.5 27.1 0 55.5 4.8 55.5 4.8v61h-31.3c-30.8 0-40.4 19.1-40.4 38.7V256h68.8l-11 71.7h-57.8V501C413.3 482.4 504 379.8 504 256z"/></svg>
-        </div>
-        <div id="follow-handle" class="follow-step">@EXPLORACIONESOBR</div>
-    </div>
-
-
-    <div id="side-panel-container">
-        
-        <div class="panel" id="p-unified">
-            <div class="panel-header">
-                UNIDAD DE CAMPO OBR
-                <div class="status-led" id="mic-led" title="Micrófono Escuchando"></div>
-                <div class="status-led" id="mag-led" title="Brújula Activa" style="right: 25px; background: #333;"></div>
-                <div class="status-led" id="prox-led" title="Sensor Proximidad Activo" style="right: 42px; background: #333;"></div>
-            </div>
-            
-            <div class="panel-header" style="font-size: 0.6rem; color: #888; margin-top: 5px;">SENSORES</div>
-            
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <div id="compass-container">
-                    <div class="compass-label n">N</div>
-                    <div class="compass-label s">S</div>
-                    <div class="compass-label e">E</div>
-                    <div class="compass-label w">W</div>
-                    <div id="compass-needle"></div>
-                </div>
-                <div style="flex-grow: 1; margin-left: 10px;">
-                    <div class="temp-readout" id="temp-val" style="font-size: 2rem;">19.8°C</div>
-                    <div class="temp-label-small">TEMP AMBIENTE 🌡️</div>
-                </div>
-            </div>
-
-            <div class="energy-container">
-                <div class="energy-label">ENERGIA (PROXIMIDAD) 🚥</div>
-                <div class="led-bar">
-                    <div class="led-segment" id="seg-1"></div>
-                    <div class="led-segment" id="seg-2"></div>
-                    <div class="led-segment" id="seg-3"></div>
-                    <div class="led-segment" id="seg-4"></div>
-                    <div class="led-segment" id="seg-5"></div>
-                    <div class="led-segment" id="seg-6"></div>
-                    <div class="led-segment" id="seg-7"></div>
-                    <div class="led-segment" id="seg-8"></div>
-                    <div class="led-segment" id="seg-9"></div>
-                    <div class="led-segment" id="seg-10"></div>
-                </div>
-                <div class="energy-graph-box" style="min-height: 60px;">
-                    <canvas id="energy-canvas"></canvas>
-                </div>
-            </div>
-
-            <div class="panel-header" style="font-size: 0.6rem; color: #888; margin-top: 15px;">SPIRIT BOX 🎙️</div>
-            
-            <div class="emf-container" style="margin-top: 10px;">
-                <div class="meter-section" style="min-height: 80px;">
-                    <div class="meter-freqs">
-                        <span>| 50</span><span>| 100</span><span>| 500</span><span>| 1k</span><span>| 10k |</span>
-                    </div>
-                    <div id="main-needle"></div>
-                </div>
-                <div class="knobs-section">
-                    <div style="text-align:center">
-                        <div class="knob-circle" id="knob-power" style="transform: rotate(-135deg);"><div class="knob-indicator"></div></div>
-                        <div class="knob-label">ENCENDER</div>
-                    </div>
-                    <div style="text-align:center">
-                        <div class="knob-circle" id="knob-scan" style="transform: rotate(-135deg);"><div class="knob-indicator"></div></div>
-                        <div class="knob-label">FRECUENCIA</div>
-                    </div>
-                </div>
-                <div class="volume-slider-container">
-                    <div class="knob-label">VOL</div>
-                    <input type="range" min="0" max="100" value="80" id="vol-slider">
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <div id="filter-controls-container">
-        <button class="filter-btn" onclick="setFilter('night-vision')">VNO</button>
-        <button class="filter-btn" onclick="setFilter('sls')">SLS</button>
-        <button class="filter-btn" onclick="setFilter('relief')">RLV</button>
-    </div>
-
-    <div id="menu-container">
-        <div id="menu-tools">
-            <div class="menu-item active" id="m-unified" onclick="togglePanel('p-unified')">PANEL DE MANDO</div>
-        </div>
-        <div id="btn-ver" onclick="toggleMenu()">MENU</div>
-    </div>
-
-</div> 
-
-    <script>
+<script>
         // 📍 SOLUCIÓN GOOGLE SHEETS (PUNTO 1)
         const SHEETDB_URL = "https://sheetdb.io/api/v1/9xzfnke69kkej"; 
         
@@ -1263,7 +562,7 @@
                     /* * 📍 SOLUCIÓN 'VOZ BLOQUEADA EN IOS':
                      * Desbloquea la síntesis de voz en el primer toque.
                     */
-                    const silentUtterance = new SpeechS_ynthesisUtterance(" ");
+                    const silentUtterance = new SpeechSynthesisUtterance(" ");
                     silentUtterance.volume = 0;
                     window.speechSynthesis.speak(silentUtterance);
                 }
@@ -1537,19 +836,23 @@
 
         // --- UI Lógica y Eventos de Zoom/Pan ---
         
-        const menuContainer = document.getElementById('menu-container');
+        const menuContainer = document.getElementById('menu-container'); // Sigue siendo null, pero está bien
         const filterControls = document.getElementById('filter-controls-container');
         const logoImage = document.getElementById('logo-image');
         const followContainer = document.getElementById('follow-container');
         
         function showControls() {
             filterControls.style.opacity = '1';
-            menuContainer.style.opacity = '1';
+            // menuContainer ya no existe, esta línea se ignora si es null
+            if (menuContainer) menuContainer.style.opacity = '1';
+            
             logoImage.classList.remove('visible');
             logoImage.classList.add('hiding'); 
+            
             followContainer.classList.add('hiding');
             filterControls.style.pointerEvents = 'auto';
-            menuContainer.style.pointerEvents = 'auto';
+            if (menuContainer) menuContainer.style.pointerEvents = 'auto';
+            
             clearTimeout(uiHideTimeout);
             uiHideTimeout = setTimeout(hideControls, 4000); 
             uiVisible = true;
@@ -1557,21 +860,19 @@
 
         function hideControls() {
             filterControls.style.opacity = '0';
-            menuContainer.style.opacity = '0';
+            if (menuContainer) menuContainer.style.opacity = '0';
+            
             logoImage.classList.remove('hiding'); 
             logoImage.classList.add('visible'); 
+
             filterControls.style.pointerEvents = 'none';
-            menuContainer.style.pointerEvents = 'none';
+            if (menuContainer) menuContainer.style.pointerEvents = 'none';
             uiVisible = false;
         }
 
-        logoImage.addEventListener('animationend', (e) => {
-            if (e.animationName === 'waterDrop') {
-                logoImage.classList.remove('hiding');
-                logoImage.style.opacity = '0'; 
-                logoImage.style.transform = 'scale(0)';
-            }
-        });
+        // 📍 SOLUCIÓN LOGO (PUNTO 2) - EL LISTENER FUE ELIMINADO
+        // logoImage.addEventListener('animationend', ... )
+        
         followContainer.addEventListener('animationend', (e) => {
             if (e.animationName === 'waterDrop') {
                 followContainer.classList.remove('hiding');
@@ -1585,10 +886,10 @@
         });
 
         function handleUITap(event) {
-            // No hacer nada si estamos haciendo zoom o paneo
             if (isPinching || isPanning) return;
 
-            if (!event.target.closest('.panel') && !event.target.closest('#btn-ver') && !event.target.closest('.filter-btn')) {
+            // 📍 SOLUCIÓN BOTÓN MENÚ (PUNTO 1) - Se quita la referencia a #btn-ver
+            if (!event.target.closest('.panel') && !event.target.closest('.filter-btn')) {
                 if (uiVisible) {
                     hideControls(); 
                 } else {
@@ -1599,13 +900,7 @@
             }
         }
 
-        const menu = document.getElementById('menu-tools');
-        let mT;
-        function toggleMenu() {
-            menu.classList.toggle('visible');
-            clearTimeout(mT);
-            if(menu.classList.contains('visible')) mT = setTimeout(()=>menu.classList.remove('visible'), 5000);
-        }
+        // 📍 SOLUCIÓN BOTÓN MENÚ (PUNTO 1) - toggleMenu() ELIMINADO
         
         function checkPanelState() {
             const p1 = document.getElementById('p-unified').classList.contains('hidden');
@@ -1617,14 +912,24 @@
             setTimeout(resizeAllCanvas, 500);
         }
 
+        // 📍 SOLUCIÓN BOTÓN MENÚ (PUNTO 1) - togglePanel() ACTUALIZADO
         function togglePanel(id) {
             const p = document.getElementById(id);
-            const btn = document.querySelector(`.menu-item[onclick="togglePanel('${id}')"]`);
+            // Busca el nuevo botón por su ID
+            const btn = document.getElementById('btn-panel');
+            
             p.classList.toggle('hidden');
-            if(btn) btn.classList.toggle('active');
+            
+            // Añade o quita la clase 'active' al botón 'PAN'
+            if (btn) {
+                btn.classList.toggle('active', !p.classList.contains('hidden'));
+            }
+            
             checkPanelState(); 
-            menu.classList.remove('visible');
-            if(id === 'p-unified' && !p.classList.contains('hidden')) resizeEnergyCanvas();
+            
+            if(id === 'p-unified' && !p.classList.contains('hidden')) {
+                resizeEnergyCanvas();
+            }
         }
 
         const followSteps = document.querySelectorAll('.follow-step');
@@ -1699,7 +1004,10 @@
         });
 
         appUI.addEventListener('touchmove', (e) => {
-            e.preventDefault(); // Previene el scroll de la página
+            // No prevenir el scroll si estamos tocando un panel
+            if (!e.target.closest('.panel')) {
+                e.preventDefault(); 
+            }
 
             if (isPinching && e.touches.length === 2) {
                 const newPinchDist = getPinchDist(e);
@@ -1716,8 +1024,6 @@
                 const deltaX = (newPan.x - lastPan.x);
                 const deltaY = (newPan.y - lastPan.y);
                 
-                // Mapea el paneo de pantalla al paneo de video (inverso)
-                // Esto es complejo y depende del aspect ratio, una aprox. simple:
                 const panSensibility = 2.0 / zoom; 
                 currentPan.x -= deltaX * panSensibility;
                 currentPan.y -= deltaY * panSensibility;
@@ -1741,8 +1047,13 @@
             setInterval(updateSensorReadings, 2000); 
             setInterval(runFollowAnimation, 30000); 
             
+            // 📍 SOLUCIÓN BOTÓN MENÚ (PUNTO 1) - Configuración inicial actualizada
+            // Configura el estado inicial del panel
             document.getElementById('p-unified').classList.add('hidden');
-            document.querySelector('#m-unified').classList.remove('active');
+            const panelBtn = document.getElementById('btn-panel');
+            if (panelBtn) {
+                panelBtn.classList.remove('active');
+            }
             checkPanelState();
             
             hideControls();
@@ -1754,5 +1065,3 @@
             resizeAllCanvas(); 
         };
     </script>
-</body>
-</html>
