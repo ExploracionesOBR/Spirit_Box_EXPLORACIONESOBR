@@ -136,6 +136,7 @@
         #p-env {
             height: 38%; /* Reducido para dejar espacio */
             max-height: none;
+            flex-shrink: 0; /* No encoger */
         }
         
         #p-detector {
@@ -185,31 +186,36 @@
             position: relative; 
         }
 
-        .header-title {
+        /* SOLUCIÓN 4: Título de texto eliminado, reemplazado por logo */
+        .header-title { display: none; }
+        
+        /* SOLUCIÓN 4: Estilos del Logo */
+        #logo-image {
             position: fixed;
-            top: 15px; /* Ajustado para PWA */
-            left: 50%;
-            transform: translateX(-50%);
-            width: auto;
-            text-align: center;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.9rem;
-            font-weight: 700;
-            color: rgba(0, 255, 255, 0.8);
-            text-shadow: 0 0 5px var(--neon-cyan);
-            letter-spacing: 3px;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
-            padding: 15px 30px;
-            pointer-events: none; /* No clickeable */
-            z-index: 100; 
-            opacity: 1; 
-            transition: opacity 0.5s ease-in-out;
-            white-space: nowrap;
+            top: 20px; /* Ajustado para PWA */
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 1;
+            transform: scale(1);
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
         }
+        /* Animación de "pop" (invertida) */
+        #logo-image.pop {
+            animation: popOut 0.3s ease-out forwards;
+        }
+        @keyframes popOut {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.5; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
         
         #kinect-banner {
             position: fixed;
-            top: 20px; /* Ajustado para PWA */
+            top: 20px; 
             left: 20px;
             z-index: 100;
             font-family: 'Orbitron', sans-serif;
@@ -223,12 +229,6 @@
         #kinect-banner .led-red {
             animation: pulseGlow 1.5s infinite ease-in-out;
             text-shadow: 0 0 8px var(--alert-red), 0 0 10px #000;
-        }
-
-        .header-title .led-green {
-            animation: pulseGlow 2.0s infinite ease-in-out;
-            color: var(--neon-green);
-            text-shadow: 0 0 8px var(--neon-green), 0 0 10px #000;
         }
 
         @keyframes pulseGlow {
@@ -373,7 +373,6 @@
             box-shadow: 0 0 20px #fff;
         }
 
-        /* Pantalla de Carga */
         #loading-overlay {
             position: fixed;
             top: 0;
@@ -457,7 +456,7 @@
             
             @media (max-width: 768px) and (orientation: landscape) {
                 :root { --panel-width: 240px; }
-                /* Ajustar altura de paneles en landscape de móvil */
+                /* SOLUCIÓN 2: Ajustar altura de paneles en landscape de móvil */
                 #p-env { height: 38%; }
                 #p-detector { height: 58%; }
             }
@@ -483,7 +482,8 @@
     </div>
     <canvas id="temp-canvas" class="hidden-canvas"></canvas>
 
-    <div class="header-title">EXPLORACIONES OBR | EQUIPO ACTIVO <span class="led-green">🟢</span></div>
+    <img id="logo-image" src="obr-logo.png" alt="Logo OBR">
+
 
     <div id="kinect-banner">KINEC ACTIVO <span class="led-red">🔴</span></div>
 
@@ -557,7 +557,7 @@
     </div>
 
     <div id="filter-controls-container">
-        <button class="filter-btn" onclick="setFilter('night-vision')">VNO</button>
+        <button classD="filter-btn" onclick="setFilter('night-vision')">VNO</button>
         <button class="filter-btn" onclick="setFilter('sls')">SLS</button>
         <button class="filter-btn" onclick="setFilter('relief')">RLV</button>
     </div>
@@ -640,11 +640,10 @@
             } catch (e) { console.log("Error camara", e); }
         }
         
-        // SOLUCIÓN 3: Lógica de redimensión de canvas
         function resizeAllCanvas() {
             const viewArea = document.getElementById('main-view-area');
-            const w = viewArea.clientWidth; // Obtener el ancho real del contenedor
-            const h = viewArea.clientHeight; // Obtener la altura real del contenedor
+            const w = viewArea.clientWidth; 
+            const h = viewArea.clientHeight; 
             
             mainFilterCanvas.width = w;
             mainFilterCanvas.height = h;
@@ -653,7 +652,6 @@
             tempCanvas.width = window.innerWidth;
             tempCanvas.height = window.innerHeight;
             
-            // Redimensionar el canvas de energía si está visible
             if(energyCanvas && !document.getElementById('p-env').classList.contains('hidden')) {
                 resizeEnergyCanvas();
             }
@@ -715,19 +713,20 @@
                 
                 if (currentFilter === 'sls') {
                     kinectBanner.style.display = 'block';
-                    headerTitle.style.opacity = '0'; 
                     
-                    // SOLUCIÓN 3: Dibujar en canvas temporal (full-screen)
+                    // 1. Dibujar video en canvas temporal (full-screen)
                     drawVideoWithCover(tempCtx, videoBg);
                     
+                    // 2. Ejecutar detección (LENTO)
                     if(poseDetector) {
                         const poses = await poseDetector.estimatePoses(tempCanvas); 
                         latestPoses = poses; 
                     }
                     
-                    // SOLUCIÓN 3: Dibujar video en canvas principal (potencialmente encogido)
+                    // 3. Dibujar video en canvas principal (potencialmente encogido)
                     drawVideoWithCover(mainFilterCtx, videoBg);
                     
+                    // 4. Dibujar esqueletos (el último resultado guardado)
                     if (latestPoses) {
                         drawAllSkeletons(latestPoses); 
                     }
@@ -736,7 +735,10 @@
                     kinectBanner.style.display = 'none';
                     
                     if (currentFilter === 'relief') {
+                        // 1. Dibujar en canvas temporal (full-screen)
                         drawVideoWithCover(tempCtx, videoBg);
+                        
+                        // 2. Obtener y procesar datos
                         let frame = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
                         let data = frame.data;
                         let copy = new Uint8ClampedArray(data);
@@ -758,7 +760,7 @@
                                 }
                             }
                         }
-                        // SOLUCIÓN 3: Dibujar la imagen procesada en el canvas principal
+                        // 3. Poner datos procesados en canvas temporal y dibujarlos en el principal
                         tempCtx.putImageData(frame, 0, 0);
                         mainFilterCtx.drawImage(tempCanvas, 0, 0, w, h);
 
@@ -800,7 +802,7 @@
             requestAnimationFrame(drawLoop);
         }
         
-        // Bucle de detección de IA
+        // SOLUCIÓN 1: Bucle de detección de IA (RE-AGREGADO)
         async function detectPoseLoop() {
             while (true) {
                 if (currentFilter === 'sls' && poseDetector && videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
@@ -1264,14 +1266,19 @@
         
         const menuContainer = document.getElementById('menu-container');
         const filterControls = document.getElementById('filter-controls-container');
-        const headerTitle = document.querySelector('.header-title');
+        const logoImage = document.getElementById('logo-image');
         
         function showUI() {
             filterControls.style.opacity = '1';
             menuContainer.style.opacity = '1';
             if (currentFilter !== 'sls') { 
-                headerTitle.style.opacity = '1';
+                // No aplica, el título de texto fue eliminado
             }
+            // Animación Pop-out del Logo
+            logoImage.style.transform = 'scale(0.9)';
+            logoImage.style.opacity = '0';
+            logoImage.classList.add('pop'); // Añadir clase para futura animación si se desea
+
             filterControls.style.pointerEvents = 'auto';
             menuContainer.style.pointerEvents = 'auto';
             
@@ -1282,13 +1289,18 @@
         function hideUI() {
             filterControls.style.opacity = '0';
             menuContainer.style.opacity = '0';
-            headerTitle.style.opacity = '0';
+            // Animación Pop-in del Logo
+            logoImage.style.transform = 'scale(1)';
+            logoImage.style.opacity = '1';
+            logoImage.classList.remove('pop');
+
             filterControls.style.pointerEvents = 'none';
             menuContainer.style.pointerEvents = 'none';
         }
 
         function handleUITap(event) {
-            if (!event.target.closest('.panel')) {
+            // Si el clic NO es en un panel, mostrar la UI
+            if (!event.target.closest('.panel') && !event.target.closest('#btn-ver') && !event.target.closest('.filter-btn')) {
                 showUI();
             }
         }
@@ -1301,7 +1313,7 @@
             if(menu.classList.contains('visible')) mT = setTimeout(()=>menu.classList.remove('visible'), 5000);
             showUI(); 
         }
-        // SOLUCIÓN 1: 'onclick' reparado en el HTML
+        // document.getElementById('btn-ver').addEventListener('click', toggleMenu); // El HTML ya tiene onclick
         
         function checkPanelState() {
             const p1 = document.getElementById('p-detector').classList.contains('hidden');
@@ -1313,8 +1325,6 @@
                 document.body.classList.remove('panels-active');
             }
             
-            // SOLUCIÓN 3: Redimensionar canvas al cambiar paneles
-            // Esperar a que termine la animación CSS (500ms)
             setTimeout(resizeAllCanvas, 500);
         }
 
@@ -1339,7 +1349,6 @@
                     
                     drawVideoWithCover(tempCtx, videoBg);
                     
-                    // SOLUCIÓN 1 (Error 2): Usar tempCanvas (el elemento) no tempCtx
                     const poses = await poseDetector.estimatePoses(tempCanvas); 
                     
                     latestPoses = poses; 
@@ -1359,7 +1368,7 @@
             startVisualLoop(); 
             initMLModel(); 
             
-            // SOLUCIÓN 1 (Error 1): Iniciar el bucle de detección de IA
+            // SOLUCIÓN 1: Iniciar el bucle de detección de IA
             detectPoseLoop(); 
             
             setInterval(updateSensorReadings, 2000); 
