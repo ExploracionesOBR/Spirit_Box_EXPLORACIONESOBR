@@ -101,9 +101,8 @@
             pointer-events: none; 
             transform: translateX(calc(var(--panel-width) * -1));
             transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            /* SOLUCIÓN 2: Añadir padding para la barra de estado de iOS */
             padding-top: env(safe-area-inset-top);
-            box-sizing: border-box; /* Asegura que el padding no aumente la altura */
+            box-sizing: border-box; 
         }
 
         body.panels-active #side-panel-container {
@@ -134,14 +133,14 @@
         
         /* SOLUCIÓN 2: Ajuste de altura de paneles */
         #p-env {
-            height: 38%; /* Reducido para dejar espacio */
+            height: 38%; 
             max-height: none;
-            flex-shrink: 0; /* No encoger */
+            flex-shrink: 0; 
         }
         
         #p-detector {
-            height: 58%; /* Reducido para dejar espacio */
-            flex-grow: 0; /* Desactivar flex-grow */
+            height: 58%; 
+            flex-grow: 0; 
             max-height: none;
         }
 
@@ -186,30 +185,31 @@
             position: relative; 
         }
 
-        /* SOLUCIÓN 4: Título de texto eliminado, reemplazado por logo */
         .header-title { display: none; }
         
         /* SOLUCIÓN 4: Estilos del Logo */
         #logo-image {
             position: fixed;
-            top: 20px; /* Ajustado para PWA */
+            top: 20px; 
             right: 20px;
             width: 60px;
             height: 60px;
             z-index: 100;
             pointer-events: none;
-            opacity: 1;
-            transform: scale(1);
+            opacity: 0; /* Oculto por defecto */
+            transform: scale(0);
             transition: opacity 0.3s ease-out, transform 0.3s ease-out;
         }
-        /* Animación de "pop" (invertida) */
-        #logo-image.pop {
-            animation: popOut 0.3s ease-out forwards;
+        /* Animación de "pop" */
+        #logo-image.pop-in {
+            transform: scale(1);
+            opacity: 1;
+            animation: popIn 0.3s ease-out forwards;
         }
-        @keyframes popOut {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.2); opacity: 0.5; }
-            100% { transform: scale(0); opacity: 0; }
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
         }
 
         
@@ -373,6 +373,7 @@
             box-shadow: 0 0 20px #fff;
         }
 
+        /* Pantalla de Carga */
         #loading-overlay {
             position: fixed;
             top: 0;
@@ -453,6 +454,7 @@
             
             #menu-container { left: 50%; transform: translateX(-50%); }
             #kinect-banner { left: 10px; top: 10px; font-size: 0.8rem;}
+            #logo-image { width: 50px; height: 50px; top: 15px; right: 15px;}
             
             @media (max-width: 768px) and (orientation: landscape) {
                 :root { --panel-width: 240px; }
@@ -557,7 +559,7 @@
     </div>
 
     <div id="filter-controls-container">
-        <button classD="filter-btn" onclick="setFilter('night-vision')">VNO</button>
+        <button class="filter-btn" onclick="setFilter('night-vision')">VNO</button>
         <button class="filter-btn" onclick="setFilter('sls')">SLS</button>
         <button class="filter-btn" onclick="setFilter('relief')">RLV</button>
     </div>
@@ -640,6 +642,7 @@
             } catch (e) { console.log("Error camara", e); }
         }
         
+        // SOLUCIÓN 3: Lógica de redimensión de canvas
         function resizeAllCanvas() {
             const viewArea = document.getElementById('main-view-area');
             const w = viewArea.clientWidth; 
@@ -709,7 +712,6 @@
                 mainFilterCtx.clearRect(0, 0, w, h);
                 
                 const kinectBanner = document.getElementById('kinect-banner');
-                const headerTitle = document.querySelector('.header-title');
                 
                 if (currentFilter === 'sls') {
                     kinectBanner.style.display = 'block';
@@ -1271,13 +1273,12 @@
         function showUI() {
             filterControls.style.opacity = '1';
             menuContainer.style.opacity = '1';
-            if (currentFilter !== 'sls') { 
-                // No aplica, el título de texto fue eliminado
-            }
-            // Animación Pop-out del Logo
-            logoImage.style.transform = 'scale(0.9)';
-            logoImage.style.opacity = '0';
-            logoImage.classList.add('pop'); // Añadir clase para futura animación si se desea
+            
+            logoImage.style.opacity = '1';
+            logoImage.style.transform = 'scale(1)';
+            logoImage.classList.remove('pop-in'); // Reset animation
+            void logoImage.offsetWidth; // Trigger reflow
+            logoImage.classList.add('pop-in'); // Add class to play animation
 
             filterControls.style.pointerEvents = 'auto';
             menuContainer.style.pointerEvents = 'auto';
@@ -1289,18 +1290,16 @@
         function hideUI() {
             filterControls.style.opacity = '0';
             menuContainer.style.opacity = '0';
-            // Animación Pop-in del Logo
-            logoImage.style.transform = 'scale(1)';
-            logoImage.style.opacity = '1';
-            logoImage.classList.remove('pop');
+            logoImage.style.opacity = '0';
+            logoImage.style.transform = 'scale(0)';
+            logoImage.classList.remove('pop-in'); // Preparar para la próxima vez
 
             filterControls.style.pointerEvents = 'none';
             menuContainer.style.pointerEvents = 'none';
         }
 
         function handleUITap(event) {
-            // Si el clic NO es en un panel, mostrar la UI
-            if (!event.target.closest('.panel') && !event.target.closest('#btn-ver') && !event.target.closest('.filter-btn')) {
+            if (!event.target.closest('.panel')) {
                 showUI();
             }
         }
@@ -1313,7 +1312,6 @@
             if(menu.classList.contains('visible')) mT = setTimeout(()=>menu.classList.remove('visible'), 5000);
             showUI(); 
         }
-        // document.getElementById('btn-ver').addEventListener('click', toggleMenu); // El HTML ya tiene onclick
         
         function checkPanelState() {
             const p1 = document.getElementById('p-detector').classList.contains('hidden');
@@ -1382,7 +1380,6 @@
             
             showUI();
             
-            // SOLUCIÓN 4: Cargar datos al final
             loadSheetData();
         };
         
