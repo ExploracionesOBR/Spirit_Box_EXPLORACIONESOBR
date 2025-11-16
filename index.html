@@ -74,14 +74,13 @@
             position: absolute;
             top: 0;
             left: 0;
-            width: 100%; /* El JS ajustará esto */
-            height: 100%; /* El JS ajustará esto */
+            width: 100%; 
+            height: 100%; 
             z-index: 2; 
             pointer-events: none; 
             transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
         
-        /* SOLUCIÓN 3: El canvas se mueve y encoge con el área de visión */
         body.panels-active #main-filter-canvas {
             left: var(--panel-width);
             width: calc(100% - var(--panel-width));
@@ -131,16 +130,16 @@
             margin: 5px; 
         }
         
-        /* SOLUCIÓN 2: Ajuste de altura de paneles */
+        /* SOLUCIÓN 1: Ajuste de altura de paneles */
         #p-env {
-            height: 38%; 
+            height: 250px; /* Altura fija para el contenido */
+            flex-shrink: 0; /* No encoger */
             max-height: none;
-            flex-shrink: 0; 
         }
         
         #p-detector {
-            height: 58%; 
-            flex-grow: 0; 
+            flex-grow: 1; /* Ocupa el resto */
+            min-height: 280px; /* Mínimo para que quepa */
             max-height: none;
         }
 
@@ -187,7 +186,6 @@
 
         .header-title { display: none; }
         
-        /* SOLUCIÓN 4: Estilos del Logo */
         #logo-image {
             position: fixed;
             top: 20px; 
@@ -196,20 +194,36 @@
             height: 60px;
             z-index: 100;
             pointer-events: none;
-            opacity: 0; /* Oculto por defecto */
+            opacity: 0; 
             transform: scale(0);
             transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+            /* SOLUCIÓN 2: Animación de efectos */
+            animation: logo-effects 7s infinite linear; 
         }
-        /* Animación de "pop" */
         #logo-image.pop-in {
             transform: scale(1);
             opacity: 1;
-            animation: popIn 0.3s ease-out forwards;
+            animation: popIn 0.3s ease-out forwards, logo-effects 7s infinite linear 0.3s;
         }
         @keyframes popIn {
             0% { transform: scale(0); opacity: 0; }
             50% { transform: scale(1.2); }
             100% { transform: scale(1); opacity: 1; }
+        }
+        /* SOLUCIÓN 2: Animación de Glitch/Blur */
+        @keyframes logo-effects {
+            0%, 90% { transform: scale(1); opacity: 1; filter: none; }
+            /* Glitch */
+            91% { transform: scale(1.1) translateX(-5px); opacity: 0.8; filter: drop-shadow(2px 0 red) drop-shadow(-2px 0 blue); }
+            92% { transform: scale(0.9) translateX(5px); opacity: 1; filter: drop-shadow(-2px 0 red) drop-shadow(2px 0 blue); }
+            93% { transform: scale(1); opacity: 1; filter: none; }
+            /* Blur */
+            94% { transform: scale(1); opacity: 0.5; filter: blur(2px); }
+            95% { transform: scale(1); opacity: 1; filter: none; }
+            /* Jump */
+            96% { transform: scale(1) translateY(-3px); }
+            97% { transform: scale(1) translateY(3px); }
+            98%, 100% { transform: scale(1) translateY(0); }
         }
 
         
@@ -373,7 +387,6 @@
             box-shadow: 0 0 20px #fff;
         }
 
-        /* Pantalla de Carga */
         #loading-overlay {
             position: fixed;
             top: 0;
@@ -419,6 +432,49 @@
             100% { background-position: -200% 0; }
         }
 
+        /* SOLUCIÓN 3: Contenedor "Síguenos" */
+        #follow-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 200;
+            pointer-events: none;
+            opacity: 0; /* Oculto por defecto */
+        }
+        .follow-step {
+            display: none; /* Ocultar todos los pasos */
+            color: var(--neon-cyan);
+            font-size: 1.5rem;
+            font-family: 'Orbitron', sans-serif;
+            text-shadow: 0 0 10px var(--neon-cyan);
+            text-align: center;
+            opacity: 0;
+        }
+        #follow-icons {
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        #follow-icons svg {
+            width: 50px; height: 50px;
+            margin: 0 15px;
+            fill: var(--neon-cyan);
+            filter: drop-shadow(0 0 5px var(--neon-cyan));
+        }
+        
+        /* Animaciones "Síguenos" */
+        .fade-in { animation: fadeIn 1s ease-out forwards; }
+        .fade-out { animation: fadeOut 1s ease-out forwards; }
+        .water-drop { animation: waterDrop 0.5s ease-out forwards; }
+        
+        @keyframes fadeIn { 0% { opacity: 0; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
+        @keyframes fadeOut { 0% { opacity: 1; } 100% { opacity: 0; } }
+        @keyframes waterDrop { 
+            0% { opacity: 1; transform: scale(1); filter: blur(0); } 
+            100% { opacity: 0; transform: scale(2.5); filter: blur(5px); } 
+        }
+
 
         @media (max-width: 768px) and (orientation: portrait) {
             #side-panel-container {
@@ -458,9 +514,9 @@
             
             @media (max-width: 768px) and (orientation: landscape) {
                 :root { --panel-width: 240px; }
-                /* SOLUCIÓN 2: Ajustar altura de paneles en landscape de móvil */
-                #p-env { height: 38%; }
-                #p-detector { height: 58%; }
+                /* SOLUCIÓN 1: Ajustar altura de paneles en landscape de móvil */
+                #p-env { height: 250px; flex-shrink: 0; flex-grow: 0; }
+                #p-detector { flex-grow: 1; height: auto; }
             }
         }
     </style>
@@ -486,8 +542,18 @@
 
     <img id="logo-image" src="obr-logo.png" alt="Logo OBR">
 
-
     <div id="kinect-banner">KINEC ACTIVO <span class="led-red">🔴</span></div>
+    
+    <div id="follow-container">
+        <div id="follow-text" class="follow-step">SÍGUENOS EN</div>
+        <div id="follow-icons" class="follow-step">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M448 209.9a210.1 210.1 0 0 1 -122.8-39.3V349.4A162.6 162.6 0 1 1 185 188.3V277.2a74.6 74.6 0 1 0 52.2 71.2V0l88 0a121.2 121.2 0 0 0 122.8 122.1v87.8z"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path d="M549.7 124.1c-6.3-23.7-24.8-42.3-48.3-48.6C458.8 64 288 64 288 64S117.2 64 74.6 75.5c-23.5 6.3-42 24.9-48.3 48.6-11.4 42.9-11.4 132.3-11.4 132.3s0 89.4 11.4 132.3c6.3 23.7 24.8 42.3 48.3 48.6C117.2 448 288 448 288 448s170.8 0 213.4-11.5c23.5-6.3 42-24.9 48.3-48.6 11.4-42.9 11.4-132.3 11.4-132.3s0-89.4-11.4-132.3zM232 341.5V170.5l145.2 85.5-145.2 85.5z"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M504 256C504 119 393 8 256 8S8 119 8 256c0 123.8 90.7 226.4 209.3 245V327.7h-63V256h63v-54.6c0-62.2 37-96.5 93.7-96.5 27.1 0 55.5 4.8 55.5 4.8v61h-31.3c-30.8 0-40.4 19.1-40.4 38.7V256h68.8l-11 71.7h-57.8V501C413.3 482.4 504 379.8 504 256z"/></svg>
+        </div>
+        <div id="follow-handle" class="follow-step">@EXPLORACIONESOBR</div>
+    </div>
+
 
     <div id="side-panel-container">
         
@@ -575,7 +641,6 @@
 </div> 
 
     <script>
-        // SOLUCIÓN 2: URL de SheetDB Corregida
         const SHEETDB_URL = "https://sheetdb.io/api/v1/9xzfnke69kkej"; 
         let isRunning = false;
         let currentFilter = 'none'; 
@@ -617,6 +682,7 @@
 
         let poseDetector; 
         let latestPoses = []; 
+        let isDetectingPose = false; // Para optimización
         
         let autoModeDelay = 5000; 
         
@@ -716,19 +782,10 @@
                 if (currentFilter === 'sls') {
                     kinectBanner.style.display = 'block';
                     
-                    // 1. Dibujar video en canvas temporal (full-screen)
-                    drawVideoWithCover(tempCtx, videoBg);
-                    
-                    // 2. Ejecutar detección (LENTO)
-                    if(poseDetector) {
-                        const poses = await poseDetector.estimatePoses(tempCanvas); 
-                        latestPoses = poses; 
-                    }
-                    
-                    // 3. Dibujar video en canvas principal (potencialmente encogido)
+                    // 1. Dibujar video en canvas principal (potencialmente encogido)
                     drawVideoWithCover(mainFilterCtx, videoBg);
                     
-                    // 4. Dibujar esqueletos (el último resultado guardado)
+                    // 2. Dibujar esqueletos (el último resultado guardado)
                     if (latestPoses) {
                         drawAllSkeletons(latestPoses); 
                     }
@@ -804,13 +861,14 @@
             requestAnimationFrame(drawLoop);
         }
         
-        // SOLUCIÓN 1: Bucle de detección de IA (RE-AGREGADO)
+        // SOLUCIÓN 1: Bucle de detección de IA (RE-AGREGADO Y CORREGIDO)
         async function detectPoseLoop() {
             while (true) {
                 if (currentFilter === 'sls' && poseDetector && videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
                     
                     drawVideoWithCover(tempCtx, videoBg);
                     
+                    // SOLUCIÓN 1 (Error 2): Usar tempCanvas (el elemento) no tempCtx
                     const poses = await poseDetector.estimatePoses(tempCanvas); 
                     
                     latestPoses = poses; 
@@ -842,7 +900,6 @@
             ctx.lineWidth = 2.5;
             ctx.filter = 'drop-shadow(0 0 4px #39FF14)';
 
-            // SOLUCIÓN 3: Escalar coordenadas del canvas temporal al principal
             const scaleX = mainFilterCanvas.width / tempCanvas.width;
             const scaleY = mainFilterCanvas.height / tempCanvas.height;
 
@@ -1269,6 +1326,7 @@
         const menuContainer = document.getElementById('menu-container');
         const filterControls = document.getElementById('filter-controls-container');
         const logoImage = document.getElementById('logo-image');
+        const headerTitle = document.querySelector('.header-title');
         
         function showUI() {
             filterControls.style.opacity = '1';
