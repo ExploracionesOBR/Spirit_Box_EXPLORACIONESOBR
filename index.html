@@ -17,15 +17,13 @@
 
     <style>
         :root {
-            /* 📍 TEMA REDISEÑADO: Verde "Tech" */
             --neon-green: #39FF14; 
             --alert-red: #FF3333;
             --sim-orange: #FFB000;
-            --panel-bg: #0A0F0A; /* Fondo de panel muy oscuro */
-            --border-color: rgba(57, 255, 20, 0.3); /* Borde verde translúcido */
+            --panel-bg: #0A0F0A;
+            --border-color: rgba(57, 255, 20, 0.3);
             --text-color: #E0E0E0;
             --text-dim: #777;
-            
             --panel-width: 280px; 
         }
         
@@ -111,7 +109,6 @@
             width: calc(100% - var(--panel-width));
         }
 
-        /* 📍 PANEL REDISEÑADO */
         .panel {
             background-color: var(--panel-bg);
             border: 1px solid var(--border-color);
@@ -125,7 +122,7 @@
             flex-grow: 1;
             max-height: 98vh;
             overflow-y: auto;
-            gap: 8px; /* Espacio entre secciones */
+            gap: 8px;
         }
         
         .panel.alert {
@@ -133,7 +130,6 @@
             box-shadow: 0 0 15px var(--alert-red) inset;
         }
 
-        /* 📍 SECCIONES DE PANEL REDISEÑADAS */
         .panel-header-main {
             font-family: 'Orbitron', sans-serif;
             font-size: 0.8rem;
@@ -167,7 +163,6 @@
             padding-bottom: 4px;
         }
         
-        /* 📍 NUEVA LÓGICA DE LEDS DE ESTADO */
         .sensor-status-grid {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
@@ -218,7 +213,6 @@
         .status-light-group[data-status="simulated"] span { color: var(--sim-orange); }
         .status-light-group[data-status="unavailable"] span { color: var(--alert-red); }
 
-        /* 📍 NUEVOS DIALES Y MEDIDORES */
         .dials-grid {
             display: grid;
             grid-template-columns: 1fr 1.5fr 1fr;
@@ -281,7 +275,6 @@
             color: var(--text-dim);
         }
         
-        /* 📍 SPIRIT BOX REDISEÑADO */
         .spirit-box-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -350,7 +343,6 @@
             height: 100%;
         }
 
-        /* 📍 AJUSTES CSS FALTANTES (colores, etc) */
         input[type=range] {
             flex-grow: 1; -webkit-appearance: none; height: 15px; 
             background: #111; border: 1px solid var(--border-color);
@@ -360,7 +352,7 @@
             -webkit-appearance: none; width: 25px; height: 25px;
             background: #444; border: 1px solid #666;
             border-radius: 50%;
-            box-shadow: -100vw 0 0 100vw var(--neon-green); /* Color de relleno */
+            box-shadow: -100vw 0 0 100vw var(--neon-green);
             cursor: pointer;
         }
 
@@ -412,8 +404,8 @@
             width: 50px; height: 50px;
             border-radius: 50%;
             background: rgba(0, 50, 50, 0.7);
-            border: 2px solid var(--neon-green); /* Color de borde actualizado */
-            color: var(--neon-green); /* Color de texto actualizado */
+            border: 2px solid var(--neon-green);
+            color: var(--neon-green);
             font-family: 'Share Tech Mono', monospace;
             font-weight: bold; cursor: pointer;
             box-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
@@ -439,24 +431,30 @@
         #loading-text {
             font-family: 'Orbitron', sans-serif;
             font-size: 1.2rem;
-            color: var(--neon-green); /* Color actualizado */
+            color: var(--neon-green);
             text-shadow: 0 0 10px var(--neon-green);
             animation: pulseGlow 2s infinite ease-in-out;
+            transition: all 0.3s; /* Para suavizar cambio de texto */
         }
         #loading-bar-container {
             width: 250px; height: 10px;
-            border: 1px solid var(--neon-green); /* Color actualizado */
+            border: 1px solid var(--neon-green);
             border-radius: 5px; margin-top: 15px;
             overflow: hidden;
             background: rgba(0, 50, 50, 0.3);
         }
+        
+        /* 📍 CSS ACTUALIZADO (PUNTO 1) */
         #loading-bar {
-            width: 100%; height: 100%;
-            background-color: var(--neon-green); /* Color actualizado */
+            width: 0%; /* Inicia en 0% */
+            height: 100%;
+            background-color: var(--neon-green);
+            transition: width 0.4s ease-out; /* Animación de progreso */
             animation: loading-shimmer 2s infinite linear;
             background-image: linear-gradient(90deg, var(--neon-green) 0%, #fff 50%, var(--neon-green) 100%);
             background-size: 200% 100%;
         }
+        
         @keyframes loading-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
         #follow-container {
@@ -471,7 +469,7 @@
         }
         .follow-step {
             display: none; 
-            color: var(--neon-green); /* Color actualizado */
+            color: var(--neon-green);
             font-size: 1.5rem;
             font-family: 'Orbitron', sans-serif;
             text-shadow: 0 0 10px var(--neon-green);
@@ -484,7 +482,7 @@
         #follow-icons svg {
             width: 50px; height: 50px;
             margin: 0 15px;
-            fill: var(--neon-green); /* Color actualizado */
+            fill: var(--neon-green);
             filter: drop-shadow(0 0 5px var(--neon-green));
         }
         
@@ -669,7 +667,7 @@
         <button class="filter-btn" id="btn-panel" onclick="togglePanel('p-unified')">PAN</button>
     </div>
 
-    </div> 
+</div> 
 
     <script>
         const SHEETDB_URL = "https://sheetdb.io/api/v1/9xzfnke69kkej"; 
@@ -691,7 +689,6 @@
         const detectorPanel = document.getElementById('p-unified');
         const sensorPanel = document.getElementById('p-unified');
         
-        // 📍 IDs de LED de estado
         const micStatus = document.getElementById('mic-status');
         const magStatus = document.getElementById('mag-status');
         const proxStatus = document.getElementById('prox-status');
@@ -992,7 +989,12 @@
         }
         
         function setFilter(f) {
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            // Desactiva todos los botones de filtro
+            document.querySelectorAll('.filter-btn').forEach(b => {
+                if (b.id !== 'btn-panel') { // No toques el botón del panel
+                    b.classList.remove('active');
+                }
+            });
             
             if (currentFilter === f) {
                 currentFilter = 'none';
@@ -1003,7 +1005,6 @@
             }
         }
 
-        // 📍 NUEVA FUNCIÓN DE ESTADO DE LED
         function setSensorStatus(sensorName, status) { // status: "connected", "simulated", "unavailable", "off"
             let el;
             if (sensorName === 'mic') el = micStatus;
@@ -1078,7 +1079,6 @@
             return curve;
         }
 
-        // 📍 LÓGICA DE LEDS AÑADIDA A SENSORES
         function initSensor() {
             // Proximidad (EMF)
             if ('ProximitySensor' in window) {
@@ -1158,13 +1158,11 @@
             visualLoopInterval = setInterval(() => {
                 let intensity = emfValue; 
                 
-                // Actualiza el dial detector (antes main-needle)
                 const needle = document.getElementById('main-needle');
                 if (needle) {
                     needle.style.transform = `translateX(-50%) rotate(${-60 + (intensity/100)*120}deg)`;
                 }
                 
-                // Actualiza el gráfico de actividad
                 updateEnergyGraph(intensity); 
             }, 150); 
         }
@@ -1183,7 +1181,7 @@
             if(!audioCtx) initAudio();
             isRunning = !isRunning;
             
-            pwr.classList.toggle('active', isRunning); // Activa el brillo del knob
+            pwr.classList.toggle('active', isRunning);
             
             if(isRunning) {
                 // --- Encender ---
@@ -1227,7 +1225,7 @@
 
         document.getElementById('knob-scan').addEventListener('click', function() {
             scanSpeed = (scanSpeed+1)%3;
-            this.style.transform = `rotate(${-135 + scanSpeed*135}deg)`; // 0, 135, 270
+            this.style.transform = `rotate(${-135 + scanSpeed*135}deg)`;
             if(lfo) lfo.frequency.linearRampToValueAtTime([5,12,20][scanSpeed], audioCtx.currentTime+0.1);
         });
 
@@ -1244,25 +1242,50 @@
                 }, 500); 
             }
         }
+        
+        // 📍 SCRIPT DE CARGA ACTUALIZADO (PUNTO 1 Y 2)
+        const loadingText = document.getElementById('loading-text');
+        const loadingBar = document.getElementById('loading-bar');
+        
+        function updateLoadingProgress(percent, text) {
+            if (loadingBar) loadingBar.style.width = percent + '%';
+            if (loadingText) loadingText.innerText = `${text} [ ${percent}% ]`;
+        }
 
         async function loadSheetData() {
             try {
-                let [ra, rp] = await Promise.all([
-                    fetch(`${SHEETDB_URL}?sheet=Automatico`),
-                    fetch(`${SHEETDB_URL}?sheet=programado`)
-                ]);
-                let ja = await ra.json(); automaticoData = ja.map(r=>r.TEXTO||r.texto).filter(t=>t);
+                updateLoadingProgress(10, "CONECTANDO CON SERVIDOR");
+                
+                const fetchAutomatico = fetch(`${SHEETDB_URL}?sheet=Automatico`);
+                updateLoadingProgress(30, "CARGANDO DATOS [AUTO]");
+                
+                const fetchProgramado = fetch(`${SHEETDB_URL}?sheet=programado`);
+                updateLoadingProgress(50, "CARGANDO DATOS [PROG]");
+
+                let [ra, rp] = await Promise.all([fetchAutomatico, fetchProgramado]);
+                updateLoadingProgress(70, "PROCESANDO RESPUESTAS");
+
+                let ja = await ra.json(); 
+                automaticoData = ja.map(r=>r.TEXTO||r.texto).filter(t=>t);
+                
                 let jp = await rp.json();
                 jp.forEach(r=>{
                     let p=(r.PREGUNTA||r.pregunta||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
                     let res=r.RESPUESTA||r.respuesta;
                     if(p&&res) programadoData.set(p,res);
                 });
-                console.log("Datos cargados: Automatico", automaticoData.length, "Programado", programadoData.size);
+                
+                updateLoadingProgress(100, "SINCRONIZACIÓN COMPLETA");
+                
+                // 📍 CONSOLE LOG DISFRAZADO (PUNTO 2)
+                console.log(`%c[SISTEMA OBR] Sincronización completa: ${automaticoData.length} SENSORES AUTOMÁTICOS ACTIVOS | ${programadoData.size} SENSORES PROGRAMADOS CONECTADOS.`, "color: #39FF14; font-weight: bold;");
+
             } catch(e){ 
                 console.error("Error cargando datos de SheetDB", e); 
+                updateLoadingProgress(100, "ERROR DE SINCRONIZACIÓN");
             } finally {
-                hideLoadingScreen();
+                // Pequeña pausa para que se vea el 100%
+                setTimeout(hideLoadingScreen, 500); 
             }
         }
 
@@ -1340,7 +1363,7 @@
             
             recognition.onend = () => { 
                 isRecognizing = false;
-                setSensorStatus('mic', 'off'); // Se apaga temporalmente
+                setSensorStatus('mic', 'off');
             };
             
             recognition.onerror = (e) => {
@@ -1450,8 +1473,6 @@
             filterControls.style.pointerEvents = 'none';
             uiVisible = false;
         }
-
-        // 📍 LOGO LISTENER ELIMINADO
         
         followContainer.addEventListener('animationend', (e) => {
             if (e.animationName === 'waterDrop') {
@@ -1474,7 +1495,6 @@
                     showControls(); 
                 }
             } else {
-                // Si el toque es en un botón, solo reinicia el temporizador
                 showControls();
             }
         }
@@ -1489,7 +1509,6 @@
             setTimeout(resizeAllCanvas, 500);
         }
 
-        // 📍 togglePanel() ACTUALIZADO
         function togglePanel(id) {
             const p = document.getElementById(id);
             const btn = document.getElementById('btn-panel');
@@ -1605,7 +1624,6 @@
             setInterval(updateSensorReadings, 2000); 
             setInterval(runFollowAnimation, 30000); 
             
-            // 📍 CONFIGURACIÓN INICIAL ACTUALIZADA
             document.getElementById('p-unified').classList.add('hidden');
             const panelBtn = document.getElementById('btn-panel');
             if (panelBtn) {
