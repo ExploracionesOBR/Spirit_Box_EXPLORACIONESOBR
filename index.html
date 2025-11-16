@@ -74,12 +74,19 @@
             position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
+            width: 100%; /* El JS ajustará esto */
+            height: 100%; /* El JS ajustará esto */
             z-index: 2; 
             pointer-events: none; 
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
         
+        /* SOLUCIÓN 3: El canvas se mueve y encoge con el área de visión */
+        body.panels-active #main-filter-canvas {
+            left: var(--panel-width);
+            width: calc(100% - var(--panel-width));
+        }
+
         .hidden-canvas { display: none; }
 
         #side-panel-container {
@@ -94,6 +101,9 @@
             pointer-events: none; 
             transform: translateX(calc(var(--panel-width) * -1));
             transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            /* SOLUCIÓN 2: Añadir padding para la barra de estado de iOS */
+            padding-top: env(safe-area-inset-top);
+            box-sizing: border-box; /* Asegura que el padding no aumente la altura */
         }
 
         body.panels-active #side-panel-container {
@@ -122,14 +132,16 @@
             margin: 5px; 
         }
         
+        /* SOLUCIÓN 2: Ajuste de altura de paneles */
         #p-env {
-            flex-basis: 40%; 
-            max-height: 40vh;
+            height: 38%; /* Reducido para dejar espacio */
+            max-height: none;
         }
         
         #p-detector {
-            flex-grow: 1; 
-            max-height: 58vh;
+            height: 58%; /* Reducido para dejar espacio */
+            flex-grow: 0; /* Desactivar flex-grow */
+            max-height: none;
         }
 
         .panel.alert {
@@ -175,7 +187,7 @@
 
         .header-title {
             position: fixed;
-            top: 15px; 
+            top: 15px; /* Ajustado para PWA */
             left: 50%;
             transform: translateX(-50%);
             width: auto;
@@ -188,17 +200,16 @@
             letter-spacing: 3px;
             background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
             padding: 15px 30px;
-            pointer-events: none; 
+            pointer-events: none; /* No clickeable */
             z-index: 100; 
             opacity: 1; 
             transition: opacity 0.5s ease-in-out;
-            /* SOLUCIÓN 2: Forzar 1 línea */
             white-space: nowrap;
         }
         
         #kinect-banner {
             position: fixed;
-            top: 20px; 
+            top: 20px; /* Ajustado para PWA */
             left: 20px;
             z-index: 100;
             font-family: 'Orbitron', sans-serif;
@@ -208,15 +219,12 @@
             text-shadow: 0 0 5px var(--neon-green), 0 0 10px #000;
             display: none; 
             pointer-events: none;
-            /* SOLUCIÓN 3: Emoji Kinec animado (sombra) */
-            /* La animación de pulso ahora es para el emoji */
         }
         #kinect-banner .led-red {
             animation: pulseGlow 1.5s infinite ease-in-out;
             text-shadow: 0 0 8px var(--alert-red), 0 0 10px #000;
         }
 
-        /* SOLUCIÓN 3: Emoji Título animado */
         .header-title .led-green {
             animation: pulseGlow 2.0s infinite ease-in-out;
             color: var(--neon-green);
@@ -365,7 +373,7 @@
             box-shadow: 0 0 20px #fff;
         }
 
-        /* SOLUCIÓN 4: Pantalla de Carga */
+        /* Pantalla de Carga */
         #loading-overlay {
             position: fixed;
             top: 0;
@@ -429,8 +437,8 @@
                 flex-shrink: 0;
                 height: 280px;
             }
-            #p-env { max-height: 100%; flex-basis: auto; }
-            #p-detector { max-height: 100%; flex-basis: auto; }
+            #p-env { max-height: 100%; flex-basis: auto; height: 100%;}
+            #p-detector { max-height: 100%; flex-basis: auto; height: 100%;}
 
             body.panels-active #side-panel-container {
                 transform: translateY(0);
@@ -449,6 +457,9 @@
             
             @media (max-width: 768px) and (orientation: landscape) {
                 :root { --panel-width: 240px; }
+                /* Ajustar altura de paneles en landscape de móvil */
+                #p-env { height: 38%; }
+                #p-detector { height: 58%; }
             }
         }
     </style>
@@ -629,13 +640,23 @@
             } catch (e) { console.log("Error camara", e); }
         }
         
+        // SOLUCIÓN 3: Lógica de redimensión de canvas
         function resizeAllCanvas() {
-            const w = window.innerWidth;
-            const h = window.innerHeight;
+            const viewArea = document.getElementById('main-view-area');
+            const w = viewArea.clientWidth; // Obtener el ancho real del contenedor
+            const h = viewArea.clientHeight; // Obtener la altura real del contenedor
+            
             mainFilterCanvas.width = w;
             mainFilterCanvas.height = h;
-            tempCanvas.width = w;
-            tempCanvas.height = h;
+            
+            // El canvas temporal SIEMPRE es full-screen para el análisis de video
+            tempCanvas.width = window.innerWidth;
+            tempCanvas.height = window.innerHeight;
+            
+            // Redimensionar el canvas de energía si está visible
+            if(energyCanvas && !document.getElementById('p-env').classList.contains('hidden')) {
+                resizeEnergyCanvas();
+            }
         }
 
         async function initMLModel() {
@@ -696,6 +717,7 @@
                     kinectBanner.style.display = 'block';
                     headerTitle.style.opacity = '0'; 
                     
+                    // SOLUCIÓN 3: Dibujar en canvas temporal (full-screen)
                     drawVideoWithCover(tempCtx, videoBg);
                     
                     if(poseDetector) {
@@ -703,6 +725,7 @@
                         latestPoses = poses; 
                     }
                     
+                    // SOLUCIÓN 3: Dibujar video en canvas principal (potencialmente encogido)
                     drawVideoWithCover(mainFilterCtx, videoBg);
                     
                     if (latestPoses) {
@@ -711,22 +734,21 @@
                 
                 } else {
                     kinectBanner.style.display = 'none';
-                    // La opacidad del título es controlada por la función showUI()
                     
                     if (currentFilter === 'relief') {
                         drawVideoWithCover(tempCtx, videoBg);
-                        let frame = tempCtx.getImageData(0, 0, w, h);
+                        let frame = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
                         let data = frame.data;
                         let copy = new Uint8ClampedArray(data);
                         
-                        for (let y = 1; y < h - 1; y++) {
-                            for (let x = 1; x < w - 1; x++) {
-                                let i = (y * w + x) * 4;
-                                let hpx = -copy[((y-1)*w+(x-1))*4] + copy[((y-1)*w+(x+1))*4]
-                                      -2*copy[(y*w+(x-1))*4] + 2*copy[(y*w+(x+1))*4]
-                                      -copy[((y+1)*w+(x-1))*4] + copy[((y+1)*w+(x+1))*4];
-                                let vpx = -copy[((y-1)*w+(x-1))*4] - 2*copy[((y-1)*w+x)*4] - copy[((y-1)*w+(x+1))*4]
-                                      +copy[((y+1)*w+(x-1))*4] + 2*copy[((y+1)*w+x)*4] + copy[((y+1)*w+(x+1))*4];
+                        for (let y = 1; y < tempCanvas.height - 1; y++) {
+                            for (let x = 1; x < tempCanvas.width - 1; x++) {
+                                let i = (y * tempCanvas.width + x) * 4;
+                                let hpx = -copy[((y-1)*tempCanvas.width+(x-1))*4] + copy[((y-1)*tempCanvas.width+(x+1))*4]
+                                      -2*copy[(y*tempCanvas.width+(x-1))*4] + 2*copy[(y*tempCanvas.width+(x+1))*4]
+                                      -copy[((y+1)*tempCanvas.width+(x-1))*4] + copy[((y+1)*tempCanvas.width+(x+1))*4];
+                                let vpx = -copy[((y-1)*tempCanvas.width+(x-1))*4] - 2*copy[((y-1)*tempCanvas.width+x)*4] - copy[((y-1)*tempCanvas.width+(x+1))*4]
+                                      +copy[((y+1)*tempCanvas.width+(x-1))*4] + 2*copy[((y+1)*tempCanvas.width+x)*4] + copy[((y+1)*tempCanvas.width+(x+1))*4];
                                 
                                 let diff = Math.sqrt(hpx*hpx + vpx*vpx);
                                 if (diff > 30) { 
@@ -736,7 +758,9 @@
                                 }
                             }
                         }
-                        mainFilterCtx.putImageData(frame, 0, 0);
+                        // SOLUCIÓN 3: Dibujar la imagen procesada en el canvas principal
+                        tempCtx.putImageData(frame, 0, 0);
+                        mainFilterCtx.drawImage(tempCanvas, 0, 0, w, h);
 
                     } else if (currentFilter === 'night-vision') {
                         drawVideoWithCover(mainFilterCtx, videoBg);
@@ -744,10 +768,10 @@
                         let data = frame.data;
                         
                         for (let i = 0; i < data.length; i += 4) {
-                            let l = (data[i] * 0.3) + (data[i+1] * 0.59) + (data[i+2] * 0.11); // Luminosidad
-                            data[i] = 0; // Rojo
-                            data[i+1] = l * 1.2; // Verde
-                            data[i+2] = 0; // Azul
+                            let l = (data[i] * 0.3) + (data[i+1] * 0.59) + (data[i+2] * 0.11);
+                            data[i] = 0; 
+                            data[i+1] = l * 1.2; 
+                            data[i+2] = 0; 
 
                             let y = Math.floor((i / 4) / w);
                             if (y % 4 === 0) {
@@ -776,14 +800,13 @@
             requestAnimationFrame(drawLoop);
         }
         
-        // SOLUCIÓN 1: Bucle de detección de IA (RE-AGREGADO)
+        // Bucle de detección de IA
         async function detectPoseLoop() {
             while (true) {
                 if (currentFilter === 'sls' && poseDetector && videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
                     
                     drawVideoWithCover(tempCtx, videoBg);
                     
-                    // SOLUCIÓN 1 (Error 2): Usar tempCanvas (el elemento) no tempCtx
                     const poses = await poseDetector.estimatePoses(tempCanvas); 
                     
                     latestPoses = poses; 
@@ -815,6 +838,7 @@
             ctx.lineWidth = 2.5;
             ctx.filter = 'drop-shadow(0 0 4px #39FF14)';
 
+            // SOLUCIÓN 3: Escalar coordenadas del canvas temporal al principal
             const scaleX = mainFilterCanvas.width / tempCanvas.width;
             const scaleY = mainFilterCanvas.height / tempCanvas.height;
 
@@ -869,7 +893,7 @@
                 const targetBtn = event ? event.target : document.querySelector(`.filter-btn[onclick="setFilter('${f}')"]`);
                 if(targetBtn) targetBtn.classList.add('active');
             }
-            showUI(); // Resetear timer de UI
+            showUI(); 
         }
 
         // --- AUDIO (V5.26) ---
@@ -1054,7 +1078,6 @@
             if(masterGain) masterGain.gain.value = e.target.value/100;
         });
 
-        // SOLUCIÓN 4: Pantalla de Carga
         function hideLoadingScreen() {
             const overlay = document.getElementById('loading-overlay');
             if (overlay) {
@@ -1082,7 +1105,6 @@
             } catch(e){ 
                 console.error("Error datos", e); 
             } finally {
-                // Ocultar la pantalla de carga si o si
                 hideLoadingScreen();
             }
         }
@@ -1092,9 +1114,8 @@
         function speak(text) {
             isSpeaking = true;
             
-            lfoGain.gain.linearRampToValueAtTime(0.03, audioCtx.currentTime+0.1); 
-            lfo.frequency.linearRampToValueAtTime(15, audioCtx.currentTime + 0.1);
-            radioGain.gain.linearRampToValueAtTime(0.005, audioCtx.currentTime+0.1);
+            lfoGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime+0.1); 
+            radioGain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime+0.1);
             
             const u = new SpeechSynthesisUtterance(text);
             u.lang = 'es-MX'; 
@@ -1291,6 +1312,10 @@
             } else {
                 document.body.classList.remove('panels-active');
             }
+            
+            // SOLUCIÓN 3: Redimensionar canvas al cambiar paneles
+            // Esperar a que termine la animación CSS (500ms)
+            setTimeout(resizeAllCanvas, 500);
         }
 
         function togglePanel(id) {
@@ -1354,10 +1379,6 @@
         
         window.onresize = () => {
             resizeAllCanvas(); 
-            
-            if(energyCanvas && !document.getElementById('p-env').classList.contains('hidden')) {
-                resizeEnergyCanvas();
-            }
         };
     </script>
 </body>
