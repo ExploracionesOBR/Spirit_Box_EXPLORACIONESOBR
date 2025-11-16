@@ -193,7 +193,7 @@
             height: 60px;
             z-index: 100;
             pointer-events: none;
-            opacity: 1; /* SOLUCIÓN 4: Visible por defecto */
+            opacity: 1; /* SOLUCIÓN 1: Visible por defecto */
             transform: scale(1);
             transition: opacity 0.3s ease-out, transform 0.3s ease-out;
             animation: logo-effects 7s infinite linear; 
@@ -442,11 +442,11 @@
             transform: translateX(-50%); /* Solo centrado horizontal */
             z-index: 200;
             pointer-events: none;
-            opacity: 1; /* SOLUCIÓN 4: Visible por defecto */
+            opacity: 1; /* SOLUCIÓN 1: Visible por defecto */
             width: 100%;
             transition: opacity 0.5s ease-out;
         }
-        /* SOLUCIÓN 4: Ocultar con waterDrop */
+        /* SOLUCIÓN 1: Ocultar con waterDrop */
         #follow-container.hiding {
             animation: waterDrop 0.5s ease-out forwards;
         }
@@ -698,7 +698,7 @@
         let autoModeDelay = 5000; 
         
         let uiHideTimeout;
-        let uiVisible = false; // SOLUCIÓN 4: UI oculta por defecto
+        let uiVisible = false; // SOLUCIÓN 1: UI oculta por defecto
 
         async function startCamera() {
             try {
@@ -1333,16 +1333,17 @@
         const menuContainer = document.getElementById('menu-container');
         const filterControls = document.getElementById('filter-controls-container');
         const logoImage = document.getElementById('logo-image');
+        const followContainer = document.getElementById('follow-container');
         
         function showControls() {
             filterControls.style.opacity = '1';
             menuContainer.style.opacity = '1';
             
-            // SOLUCIÓN 2: Lógica de animación Pop-out (burbuja)
+            // SOLUCIÓN 1: Ocultar Logo con waterDrop
             logoImage.classList.remove('visible');
-            logoImage.classList.add('hiding');
+            logoImage.classList.add('hiding'); 
             
-            // SOLUCIÓN 2: Ocultar "Síguenos" con burbuja
+            // SOLUCIÓN 1: Ocultar "Síguenos" con waterDrop
             followContainer.classList.add('hiding');
 
             filterControls.style.pointerEvents = 'auto';
@@ -1357,7 +1358,7 @@
             filterControls.style.opacity = '0';
             menuContainer.style.opacity = '0';
             
-            // SOLUCIÓN 2: Lógica de animación Pop-in
+            // SOLUCIÓN 1: Mostrar Logo con popIn
             logoImage.classList.remove('hiding'); 
             logoImage.classList.add('visible'); 
 
@@ -1366,24 +1367,34 @@
             uiVisible = false;
         }
 
-        // SOLUCIÓN 2: Limpiar clase de animación 'hiding'
+        // Limpiar clases de animación 'hiding'
         logoImage.addEventListener('animationend', (e) => {
             if (e.animationName === 'waterDrop') {
                 logoImage.classList.remove('hiding');
             }
         });
+        followContainer.addEventListener('animationend', (e) => {
+            if (e.animationName === 'waterDrop') {
+                followContainer.classList.remove('hiding');
+                // Ocultar todos los pasos internos
+                followSteps.forEach(s => {
+                    s.style.display = 'none';
+                    s.classList.remove('fade-in', 'fade-out', 'water-drop');
+                });
+                followContainer.style.opacity = '0';
+                followAnimationRunning = false;
+            }
+        });
 
 
         function handleUITap(event) {
-            // SOLUCIÓN 2: Lógica de toque de pantalla
             if (!event.target.closest('.panel') && !event.target.closest('#btn-ver') && !event.target.closest('.filter-btn')) {
                 if (uiVisible) {
-                    hideControls(); // Si está visible, ocultarla
+                    hideControls(); 
                 } else {
-                    showControls(); // Si está oculta, mostrarla
+                    showControls(); 
                 }
             } else {
-                // Si se toca un botón, solo resetear el timer
                 showControls();
             }
         }
@@ -1394,7 +1405,7 @@
             menu.classList.toggle('visible');
             clearTimeout(mT);
             if(menu.classList.contains('visible')) mT = setTimeout(()=>menu.classList.remove('visible'), 5000);
-            // showUI() es llamado por el handleUITap
+            // showControls() es llamado por el handleUITap
         }
         
         function checkPanelState() {
@@ -1421,7 +1432,7 @@
             menu.classList.remove('visible');
             
             if(id === 'p-env' && !p.classList.contains('hidden')) resizeEnergyCanvas();
-            // showUI() es llamado por el handleUITap
+            // showControls() es llamado por el handleUITap
         }
         
         // SOLUCIÓN 1: Bucle de detección de IA re-agregado
@@ -1448,7 +1459,6 @@
         }
 
         // SOLUCIÓN 3: Lógica de animación "Síguenos"
-        const followContainer = document.getElementById('follow-container');
         const followSteps = document.querySelectorAll('.follow-step');
         let followAnimationRunning = false;
         
@@ -1457,6 +1467,7 @@
             if (uiVisible || followAnimationRunning) return; 
 
             followAnimationRunning = true;
+            followContainer.classList.remove('hiding'); // Asegurarse de que no esté oculto
             followContainer.style.opacity = '1';
             
             // Paso 1: "SÍGUENOS EN"
@@ -1464,7 +1475,7 @@
             text.style.display = 'block';
             text.classList.add('fade-in');
             await new Promise(r => setTimeout(r, 2500)); 
-            if(uiVisible) { followAnimationRunning = false; return; } // Comprobar si la UI apareció
+            if(uiVisible) { followContainer.classList.add('hiding'); return; } // Comprobar si la UI apareció
             text.classList.remove('fade-in');
             text.classList.add('water-drop'); 
             await new Promise(r => setTimeout(r, 500));
@@ -1476,7 +1487,7 @@
             icons.style.display = 'flex';
             icons.classList.add('fade-in');
             await new Promise(r => setTimeout(r, 2500)); 
-            if(uiVisible) { followAnimationRunning = false; return; } 
+            if(uiVisible) { followContainer.classList.add('hiding'); return; } 
             icons.classList.remove('fade-in');
             icons.classList.add('fade-out');
             await new Promise(r => setTimeout(r, 1000));
@@ -1488,7 +1499,7 @@
             handle.style.display = 'block';
             handle.classList.add('fade-in');
             await new Promise(r => setTimeout(r, 2500)); 
-            if(uiVisible) { followAnimationRunning = false; return; } 
+            if(uiVisible) { followContainer.classList.add('hiding'); return; } 
             handle.classList.remove('fade-in');
             handle.classList.add('fade-out');
             await new Promise(r => setTimeout(r, 1000));
@@ -1498,20 +1509,6 @@
             followContainer.style.opacity = '0';
             followAnimationRunning = false;
         }
-
-        // Limpiar animación de "Síguenos" si se interrumpe
-        followContainer.addEventListener('animationend', (e) => {
-            if (e.animationName === 'waterDrop') {
-                followContainer.classList.remove('hiding');
-                // Ocultar todos los pasos internos
-                followSteps.forEach(s => {
-                    s.style.display = 'none';
-                    s.classList.remove('fade-in', 'fade-out', 'water-drop');
-                });
-                followContainer.style.opacity = '0';
-                followAnimationRunning = false;
-            }
-        });
 
 
         window.onload = () => {
@@ -1535,7 +1532,7 @@
             document.querySelector('#m-env').classList.remove('active');
             checkPanelState();
             
-            // SOLUCIÓN 4: Iniciar con la UI oculta y el logo visible
+            // SOLUCIÓN 1: Iniciar con la UI oculta y el logo visible
             hideControls();
             
             loadSheetData();
