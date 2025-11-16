@@ -515,6 +515,11 @@
         .w { top: 50%; left: 10px; transform: translateY(-50%); }
 
 
+        /* * 📍 SOLUCIÓN CSS PUNTO 5:
+         * Se corrigió el CSS anidado. 'portrait' y 'landscape' ahora están separados.
+        */
+
+        /* --- MODO MÓVIL VERTICAL (PORTRAIT) --- */
         @media (max-width: 768px) and (orientation: portrait) {
             #side-panel-container {
                 flex-direction: row; 
@@ -522,19 +527,20 @@
                 top: auto;
                 left: 0;
                 width: 100vw;
-                height: auto;
-                max-height: 50vh;
+                height: auto; /* Altura automática basada en el contenido */
+                max-height: 50vh; /* Máximo 50% de la pantalla */
                 transform: translateY(100%); 
-                overflow-x: auto;
+                overflow-x: auto; /* Scroll horizontal si los paneles no caben */
+                padding-bottom: env(safe-area-inset-bottom);
             }
             .panel {
                 width: 280px; 
                 flex-shrink: 0;
-                /* SOLUCIÓN 2: Altura reducida en móvil */
-                height: 240px; 
+                /* El panel unificado ahora controla su propia altura */
+                height: auto; 
+                max-height: 50vh; /* Asegura que no sea más alto que el contenedor */
             }
-            #p-env { max-height: 100%; flex-basis: auto; height: 100%;}
-            #p-detector { max-height: 100%; flex-basis: auto; height: 100%;}
+            /* Eliminamos reglas viejas de #p-env y #p-detector */
 
             body.panels-active #side-panel-container {
                 transform: translateY(0);
@@ -542,7 +548,7 @@
             body.panels-active #main-view-area {
                 left: 0;
                 width: 100%;
-                filter: brightness(0.4);
+                filter: brightness(0.4); /* Mantenemos el desenfoque de fondo */
             }
             body.panels-active #main-filter-canvas {
                 left: 0 !important;
@@ -555,16 +561,24 @@
             #menu-container { left: 50%; transform: translateX(-50%); }
             #kinect-banner { left: 10px; top: 10px; font-size: 0.8rem;}
             #logo-image { width: 50px; height: 50px; top: 15px; right: 15px;}
-            
-            @media (max-width: 768px) and (orientation: landscape) {
-                :root { --panel-width: 240px; }
-                #p-env { height: 250px; flex-shrink: 0; flex-grow: 0; }
-                #p-detector { flex-grow: 1; height: auto; }
+        }
 
-                body.panels-active #main-filter-canvas {
-                    left: var(--panel-width) !important;
-                    width: calc(100% - var(--panel-width)) !important;
-                }
+        /* --- MODO MÓVIL HORIZONTAL (LANDSCAPE) --- */
+        /* (Este bloque ahora está SEPARADO y al nivel correcto) */
+        @media (max-width: 768px) and (orientation: landscape) {
+            :root { --panel-width: 260px; } /* Un poco más ancho para landscape */
+
+            /* Forzamos el panel unificado a ocupar toda la altura */
+            #p-unified {
+                height: 98vh; /* Ocupa casi toda la altura */
+                flex-grow: 1;
+                flex-shrink: 0;
+            }
+
+            /* Hereda los estilos de escritorio para el movimiento del panel */
+            body.panels-active #main-filter-canvas {
+                left: var(--panel-width) !important;
+                width: calc(100% - var(--panel-width)) !important;
             }
         }
     </style>
@@ -657,7 +671,7 @@
                     </div>
                     <div id="main-needle"></div>
                 </div>
-                <div class.knobs-section">
+                <div class="knobs-section">
                     <div style="text-align:center">
                         <div class="knob-circle" id="knob-power" style="transform: rotate(-135deg);"><div class="knob-indicator"></div></div>
                         <div class="knob-label">ENCENDER</div>
@@ -769,8 +783,11 @@
             mainFilterCanvas.width = w;
             mainFilterCanvas.height = h;
             
-            tempCanvas.width = window.innerWidth;
-            tempCanvas.height = window.innerHeight;
+            /* * 📍 SOLUCIÓN PUNTO 3:
+             * Se fija el lienzo de IA a un tamaño pequeño y rápido (640x480)
+            */
+            tempCanvas.width = 640;
+            tempCanvas.height = 480;
             
             if(energyCanvas && !document.getElementById('p-unified').classList.contains('hidden')) {
                 resizeEnergyCanvas();
@@ -852,10 +869,10 @@
                             for (let x = 1; x < tempCanvas.width - 1; x++) {
                                 let i = (y * tempCanvas.width + x) * 4;
                                 let hpx = -copy[((y-1)*tempCanvas.width+(x-1))*4] + copy[((y-1)*tempCanvas.width+(x+1))*4]
-                                      -2*copy[(y*tempCanvas.width+(x-1))*4] + 2*copy[(y*tempCanvas.width+(x+1))*4]
-                                      -copy[((y+1)*tempCanvas.width+(x-1))*4] + copy[((y+1)*tempCanvas.width+(x+1))*4];
+                                        -2*copy[(y*tempCanvas.width+(x-1))*4] + 2*copy[(y*tempCanvas.width+(x+1))*4]
+                                        -copy[((y+1)*tempCanvas.width+(x-1))*4] + copy[((y+1)*tempCanvas.width+(x+1))*4];
                                 let vpx = -copy[((y-1)*tempCanvas.width+(x-1))*4] - 2*copy[((y-1)*tempCanvas.width+x)*4] - copy[((y-1)*tempCanvas.width+(x+1))*4]
-                                      +copy[((y+1)*tempCanvas.width+(x-1))*4] + 2*copy[((y+1)*tempCanvas.width+x)*4] + copy[((y+1)*tempCanvas.width+(x+1))*4];
+                                        +copy[((y+1)*tempCanvas.width+(x-1))*4] + 2*copy[((y+1)*tempCanvas.width+x)*4] + copy[((y+1)*tempCanvas.width+(x+1))*4];
                                 
                                 let diff = Math.sqrt(hpx*hpx + vpx*vpx);
                                 if (diff > 30) { 
@@ -948,6 +965,10 @@
             ctx.lineWidth = 2.5;
             ctx.filter = 'drop-shadow(0 0 4px #39FF14)';
 
+            /* * 📍 SOLUCIÓN PUNTO 3 (Parte 2):
+             * Se calcula el factor de escala entre el lienzo de IA (tempCanvas)
+             * y el lienzo de dibujo (mainFilterCanvas)
+            */
             const scaleX = mainFilterCanvas.width / tempCanvas.width;
             const scaleY = mainFilterCanvas.height / tempCanvas.height;
 
@@ -1193,6 +1214,26 @@
                 if(audioCtx.state === 'suspended') audioCtx.resume();
                 lfoGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime+0.5);
                 radioGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime+0.5); 
+
+                /* * 📍 SOLUCIÓN PUNTOS 1 y 2:
+                 * Forzamos la activación de sensores y micrófono en el primer 'click'
+                */
+                // 1. Forzamos la activación de sensores (si no lo están ya)
+                // Esto pedirá permiso al usuario en iOS la primera vez
+                if (!proximitySensor && !emfSimInterval) { // Solo si no está ya activo o simulando
+                    initSensor(); 
+                }
+
+                // 2. Forzamos el primer arranque del micrófono
+                // Esto pedirá permiso de micrófono en iOS
+                if (recognition && !isRecognizing) {
+                    try {
+                        recognition.start();
+                    } catch(e) {
+                        console.warn("Primer intento de mic fallido, se reintentará.");
+                    }
+                }
+                // --- FIN DE LA SOLUCIÓN ---
                 
                 startAutoMode();
                 
@@ -1422,6 +1463,9 @@
             filterControls.style.opacity = '1';
             menuContainer.style.opacity = '1';
             
+            /* * 📍 SOLUCIÓN PUNTO 4:
+             * Nos aseguramos de quitar la clase 'visible'
+            */
             logoImage.classList.remove('visible');
             logoImage.classList.add('hiding'); 
             
@@ -1439,6 +1483,9 @@
             filterControls.style.opacity = '0';
             menuContainer.style.opacity = '0';
             
+            /* * 📍 SOLUCIÓN PUNTO 4:
+             * Nos aseguramos de quitar la clase 'hiding'
+            */
             logoImage.classList.remove('hiding'); 
             logoImage.classList.add('visible'); 
 
@@ -1515,27 +1562,8 @@
         }
         
         // SOLUCIÓN 1: Bucle de detección de IA re-agregado
-        async function detectPoseLoop() {
-            while (true) {
-                if (currentFilter === 'sls' && poseDetector && videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
-                    
-                    if (!isDetectingPose) {
-                        isDetectingPose = true;
-                        drawVideoWithCover(tempCtx, videoBg);
-                        
-                        const poses = await poseDetector.estimatePoses(tempCanvas); 
-                        
-                        latestPoses = poses; 
-                        isDetectingPose = false;
-                    }
-                    
-                    await new Promise(r => setTimeout(r, 10)); // Pequeña pausa
-                } else {
-                    latestPoses = []; 
-                    await new Promise(r => setTimeout(r, 100));
-                }
-            }
-        }
+        // (Nota: Esta función estaba duplicada en tu código original, la dejo una sola vez)
+        // async function detectPoseLoop() { ... } // Ya está definida arriba
 
         const followSteps = document.querySelectorAll('.follow-step');
         let followAnimationRunning = false;
@@ -1587,13 +1615,19 @@
 
         window.onload = () => {
             startCamera();
-            initSensor(); 
+            
+            /* * 📍 SOLUCIÓN PUNTO 1 (PARTE 2):
+             * No inicies los sensores aquí. 
+             * Se iniciarán cuando el usuario presione el botón de "Encender".
+            */
+            // initSensor(); // <- MOVIMOS ESTO AL CLICK DEL BOTÓN
+            
             startVisualLoop(); 
             initMLModel(); 
             
             detectPoseLoop(); 
             
-            setInterval(updateSensorReadings, 2000); 
+            // setInterval(updateSensorReadings, 2000); // Esto ya estaba duplicado
             setInterval(persistentMicCheck, 1000); 
             
             // SOLUCIÓN 3: Iniciar temporizador (30 segundos)
