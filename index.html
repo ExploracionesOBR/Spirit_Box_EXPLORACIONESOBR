@@ -11,7 +11,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <link rel="apple-touch-icon" href="obr-logo.png">
 
-    <title>DETECTOR-OBR</title> <script src="https://cdn.tailwindcss.com"></script>
+    <title>DETECTOR-OBR</title> 
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
@@ -24,12 +25,12 @@
             --neon-green: #39FF14; 
             --alert-red: #FF3333;
             --sim-orange: #FFB000;
-            --sensor-blue: #00BFFF; /* Azul para sensor de respaldo */
+            --sensor-blue: #00BFFF;
             --panel-bg: #0A0F0A;
             --border-color: rgba(57, 255, 20, 0.3);
             --text-color: #E0E0E0;
             --text-dim: #777;
-            --panel-width-landscape: 240px; /* Ancho en horizontal */
+            --panel-width-landscape: 240px; 
         }
         
         body {
@@ -58,22 +59,23 @@
             transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             pointer-events: auto;
             z-index: 5;
-            background: #000; /* Fondo negro por si el video tarda */
+            background: #000;
         }
 
-        /* 📍 SOLUCIÓN CÁMARA ESTIRADA (PUNTO 4) */
+        /* 📍 SOLUCIÓN CÁMARA ESTIRADA (PUNTO 6) */
         #bg-camera-feed {
             position: absolute;
             top: 50%;
             left: 50%;
-            min-width: 100%; /* Asegura que cubra */
-            min-height: 100%; /* Asegura que cubra */
+            min-width: 100%; 
+            min-height: 100%; 
             width: auto;
             height: auto;
             object-fit: cover; 
-            transform: translate(-50%, -50%) scaleX(1);
+            transform: translate(-50%, -50%);
             z-index: 1;
             transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            opacity: 1;
         }
         
         #main-filter-canvas {
@@ -93,7 +95,9 @@
         }
 
         .hidden-canvas { display: none; }
+        .hidden { display: none !important; }
 
+        /* --- Panel y Controles (Rediseño P1) --- */
         #side-panel-container {
             position: fixed;
             display: flex;
@@ -109,17 +113,18 @@
             pointer-events: auto;
         }
 
+        /* Panel Rediseñado (P1) */
         .panel {
             background-color: var(--panel-bg);
             border: 1px solid var(--border-color);
             box-shadow: 0 0 10px rgba(57, 255, 20, 0.2) inset;
             display: flex;
             flex-direction: column;
-            padding: 8px;
+            padding: 6px; /* Más compacto */
             pointer-events: auto;
             flex-grow: 1;
             overflow-y: auto;
-            gap: 8px;
+            gap: 6px; /* Más compacto */
         }
         
         .panel.alert {
@@ -138,12 +143,13 @@
             border-radius: 4px;
             background: rgba(57, 255, 20, 0.05);
             letter-spacing: 1px;
+            flex-shrink: 0;
         }
         
         .panel-section {
             border: 1px solid var(--border-color);
             border-radius: 4px;
-            padding: 8px;
+            padding: 6px; /* Más compacto */
             background: rgba(0, 0, 0, 0.2);
             display: flex;
             flex-direction: column;
@@ -154,10 +160,10 @@
             font-size: 0.6rem;
             color: var(--text-dim);
             text-transform: uppercase;
-            margin-bottom: 8px;
+            margin-bottom: 6px; /* Más compacto */
             text-align: center;
             border-bottom: 1px solid var(--border-color);
-            padding-bottom: 4px;
+            padding-bottom: 3px; /* Más compacto */
         }
         
         .sensor-status-grid {
@@ -190,13 +196,11 @@
             box-shadow: 0 0 8px var(--neon-green);
             animation: pulseGlow 1.5s infinite;
         }
-        
         .status-light-group[data-status="fallback"] .status-led-indicator {
             background-color: var(--sensor-blue);
             box-shadow: 0 0 8px var(--sensor-blue);
             animation: pulseGlow 1.5s infinite;
         }
-        
         .status-light-group[data-status="simulated"] .status-led-indicator {
             background-color: var(--sim-orange);
             box-shadow: 0 0 8px var(--sim-orange);
@@ -210,21 +214,20 @@
             background-color: #333;
         }
         
-        .status-light-group span {
-            color: var(--text-dim);
-        }
+        .status-light-group span { color: var(--text-dim); }
         .status-light-group[data-status="connected"] span { color: var(--neon-green); }
         .status-light-group[data-status="fallback"] span { color: var(--sensor-blue); }
         .status-light-group[data-status="simulated"] span { color: var(--sim-orange); }
         .status-light-group[data-status="unavailable"] span { color: var(--alert-red); }
 
+        /* Lecturas de Campo (Rediseño P1) */
         .dials-grid {
             display: grid;
             grid-template-columns: 1fr 1.5fr 1fr;
             gap: 10px;
             align-items: center;
             justify-items: center;
-            padding: 10px 0;
+            padding: 5px 0; /* Más compacto */
         }
         
         .dial-container {
@@ -266,9 +269,7 @@
             transform: translateX(-50%) rotate(-60deg);
         }
         
-        #temp-readout {
-            text-align: center;
-        }
+        #temp-readout { text-align: center; }
         #temp-val {
             font-size: 1.8rem;
             font-family: 'Orbitron', sans-serif;
@@ -280,6 +281,7 @@
             color: var(--text-dim);
         }
         
+        /* Spirit Box (Compacto P1) */
         .spirit-box-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -379,29 +381,78 @@
             cursor: pointer;
         }
 
-        #logo-image {
-            position: fixed; top: 20px; right: 20px;
-            width: 60px; height: 60px; z-index: 100;
-            pointer-events: none; opacity: 1; 
+        /* --- UI Persistente (Logo, Linterna, Stats) --- */
+        .persistent-ui {
+            position: fixed;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 1;
             transform: scale(1);
             transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+        }
+
+        #logo-image {
+            top: 20px; right: 20px;
+            width: 60px; height: 60px;
             animation: logo-effects 7s infinite linear; 
         }
+
+        /* 📍 NUEVO: Botón Linterna (P9) */
+        #btn-torch {
+            position: fixed;
+            top: 20px; left: 20px;
+            width: 50px; height: 50px;
+            z-index: 100;
+            background: rgba(0, 50, 50, 0.7);
+            border: 2px solid var(--neon-green);
+            color: var(--neon-green);
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
+            transition: all 0.2s;
+            pointer-events: auto; /* Siempre clickeable */
+            opacity: 1;
+            transform: scale(1);
+        }
+        #btn-torch svg {
+            width: 24px; height: 24px;
+            margin: auto;
+            fill: currentColor;
+        }
+        #btn-torch:active, #btn-torch.active {
+            background: var(--neon-green);
+            color: #000;
+            box-shadow: 0 0 20px #fff;
+        }
+
+        /* 📍 NUEVO: Stats de Cámara (P6) */
+        #cam-stats-display {
+            bottom: 15px; right: 15px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--neon-green);
+            text-shadow: 0 0 3px var(--neon-green), 0 0 5px #000;
+            padding: 2px 5px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 3px;
+        }
+
+        /* Lógica de ocultar UI (P10) */
         #logo-image.visible {
             transform: scale(1); opacity: 1;
             animation: popIn 0.3s ease-out forwards, logo-effects 7s infinite linear 0.3s;
         }
-        #logo-image.hiding {
+        #logo-image.hiding, #btn-torch.hiding, #cam-stats-display.hiding {
             animation: waterDrop 0.5s ease-out forwards;
         }
 
         @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 1; } }
         @keyframes logo-effects { 0%, 90% { transform: scale(1); opacity: 1; filter: none; } 91% { transform: scale(1.1) translateX(-5px); opacity: 0.8; filter: drop-shadow(2px 0 red) drop-shadow(-2px 0 blue); } 92% { transform: scale(0.9) translateX(5px); opacity: 1; filter: drop-shadow(-2px 0 red) drop-shadow(2px 0 blue); } 93% { transform: scale(1); opacity: 1; filter: none; } 94% { transform: scale(1); opacity: 0.5; filter: blur(2px); } 95% { transform: scale(1); opacity: 1; filter: none; } 96% { transform: scale(1) translateY(-3px); } 97% { transform: scale(1) translateY(3px); } 98%, 100% { transform: scale(1) translateY(0); } }
         @keyframes waterDrop { 0% { opacity: 1; transform: scale(1); filter: blur(0); } 100% { opacity: 0; transform: scale(2.5); filter: blur(5px); } }
-
         
         #kinect-banner {
-            position: fixed; top: 20px; left: 20px;
+            position: fixed; top: 20px; left: 50%;
+            transform: translateX(-50%);
             z-index: 100; font-family: 'Orbitron', sans-serif;
             font-size: 1.0rem; font-weight: 700;
             color: var(--neon-green);
@@ -442,6 +493,7 @@
             box-shadow: 0 0 20px #fff;
         }
 
+        /* --- Loading y Follow (Sin cambios) --- */
         #loading-overlay {
             position: fixed; top: 0; left: 0;
             width: 100%; height: 100%;
@@ -466,17 +518,14 @@
             overflow: hidden;
             background: rgba(0, 50, 50, 0.3);
         }
-        
         #loading-bar {
-            width: 0%;
-            height: 100%;
+            width: 0%; height: 100%;
             background-color: var(--neon-green);
             transition: width 0.4s ease-out;
             animation: loading-shimmer 2s infinite linear;
             background-image: linear-gradient(90deg, var(--neon-green) 0%, #fff 50%, var(--neon-green) 100%);
             background-size: 200% 100%;
         }
-        
         @keyframes loading-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
         #follow-container {
@@ -515,7 +564,7 @@
         @keyframes fadeIn { 0% { opacity: 0; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
         @keyframes fadeOut { 0% { opacity: 1; } 100% { opacity: 0; } }
 
-        /* 📍 SOLUCIÓN CSS HORIZONTAL/VERTICAL (PUNTO 2 Y 4) */
+        /* --- 📍 CSS Horizontal/Vertical (PUNTO 2 Y 5) --- */
         
         /* --- MODO MÓVIL VERTICAL (PORTRAIT) --- */
         @media (max-aspect-ratio: 1/1) {
@@ -534,27 +583,43 @@
                 border: none;
             }
 
-            /* Cámara Flotante (PiP) */
+            /* 📍 NUEVO: Slot para PiP (P5) */
+            #pip-placeholder-section {
+                display: block; /* Solo visible en vertical */
+                order: -1; /* Ponerlo justo debajo del header */
+            }
+            #pip-placeholder {
+                width: 100%;
+                height: 140px; 
+                background: #050505;
+                border: 1px dashed var(--border-color);
+                border-radius: 4px;
+            }
+
+            /* 📍 Cámara Flotante (PiP) (P5) */
             body.panels-active #main-view-area {
-                width: 120px;
-                height: 180px;
-                top: calc(env(safe-area-inset-top) + 60px); /* Debajo del header del panel */
-                right: 15px;
-                left: auto;
-                border: 2px solid var(--neon-green);
-                border-radius: 8px;
-                box-shadow: 0 0 15px var(--neon-green);
+                /* Se posiciona exactamente sobre el placeholder */
+                top: calc(env(safe-area-inset-top) + 110px); /* Ajustado manualmente */
+                left: 6px; /* Padding del panel */
+                right: 6px; /* Padding del panel */
+                width: calc(100% - 12px); /* Ancho del placeholder */
+                height: 140px; /* Alto del placeholder */
+                border: 1px solid var(--neon-green);
+                border-radius: 4px;
+                box-shadow: 0 0 10px var(--neon-green);
                 z-index: 25; /* Encima del panel */
-                filter: none;
-                transform: scale(1);
+                filter: none !important;
+                transform: scale(1) !important;
             }
             
             body.panels-active #filter-controls-container {
-                top: calc(env(safe-area-inset-top) + 250px); /* Debajo del PiP */
+                top: calc(env(safe-area-inset-top) + 260px); /* Debajo del PiP */
                 right: 15px;
             }
 
-            body.panels-active #logo-image {
+            body.panels-active #logo-image,
+            body.panels-active #btn-torch,
+            body.panels-active #cam-stats-display {
                 display: none;
             }
         }
@@ -562,6 +627,11 @@
         /* --- MODO MÓVIL HORIZONTAL (LANDSCAPE) --- */
         @media (min-aspect-ratio: 1/1) {
             :root { --panel-width-landscape: 240px; }
+
+            /* 📍 NUEVO: Ocultar slot de PiP (P5) */
+            #pip-placeholder-section {
+                display: none; 
+            }
 
             #side-panel-container {
                 width: var(--panel-width-landscape);
@@ -581,17 +651,14 @@
                 border-right: 1px solid var(--border-color);
             }
 
-            /* Efecto de "enfoque" en el panel */
+            /* 📍 Efecto "enfoque" (PUNTO 2) - Corregido */
             body.panels-active #main-view-area {
                 left: var(--panel-width-landscape);
                 width: calc(100% - var(--panel-width-landscape));
                 height: 100%;
-                filter: brightness(0.6);
-                transform: scale(0.98);
-            }
-
-            body.panels-active #bg-camera-feed {
-                left: 50%;
+                /* Se eliminan 'filter' y 'transform' para que no se opaque */
+                filter: none;
+                transform: none;
             }
         }
     </style>
@@ -617,7 +684,15 @@
     <canvas id="temp-canvas" class="hidden-canvas"></canvas>
     <canvas id="ai-canvas" class="hidden-canvas"></canvas>
 
-    <img id="logo-image" src="obr-logo.png" alt="Logo OBR">
+    <img id="logo-image" src="obr-logo.png" alt="Logo OBR" class="persistent-ui">
+
+    <button id="btn-torch" class="persistent-ui" onclick="toggleTorch(event)">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M342.6 38.6c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L380.7 167H256c-17.7 0-32 14.3-32 32s14.3 32 32 32h124.7l-83.4 83.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l144-144c12.5-12.5 12.5-32.8 0-45.3l-144-144zM160 80c0-17.7-14.3-32-32-32s-32 14.3-32 32v144H64c-17.7 0-32 14.3-32 32s14.3 32 32 32h32v144c0 17.7 14.3 32 32 32s32-14.3 32-32V288h32c17.7 0 32-14.3 32-32s-14.3-32-32-32H160V80z"/></svg>
+    </button>
+    
+    <div id="cam-stats-display" class="persistent-ui">
+        <span id="cam-fps">--</span> FPS / <span id="cam-res">----p</span>
+    </div>
 
     <div id="kinect-banner">KINEC ACTIVO <span class="led-red">🔴</span></div>
     
@@ -631,12 +706,16 @@
         <div id="follow-handle" class="follow-step">@EXPLORACIONESOBR</div>
     </div>
 
-
     <div id="side-panel-container">
         
         <div class="panel" id="p-unified">
             <div class="panel-header-main">PANEL DE MANDO</div>
             
+            <div class="panel-section" id="pip-placeholder-section">
+                <div class="section-title">VISTA DE CÁMARA PIP</div>
+                <div id="pip-placeholder"></div>
+            </div>
+
             <div class="panel-section">
                 <div class="section-title">Estado de Sensores</div>
                 <div class="sensor-status-grid">
@@ -772,7 +851,13 @@
         let energyHistory = new Array(50).fill(0);
         let energyCanvas, energyCtx;
         
-        let audioCtx, masterGain, gainNode, lfo, lfoGain, whiteNoiseNode, radioOsc, radioGain, reverb, reverbGain, distortionNode;
+        // 📍 AUDIO RECONFIGURADO (P11)
+        let audioCtx, masterGain;
+        let audioSource_Fondo1, gain_Fondo1, audioBuffer_Fondo1;
+        let audioSource_Fondo2, gain_Fondo2, audioBuffer_Fondo2;
+        let reverb, reverbGain, distortionNode; // Para la voz
+        let scanTimer = null; // Timer para el scanner
+        
         let isSpeaking = false; 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition, isRecognizing = false;
@@ -806,25 +891,39 @@
         let isPinching = false;
         let isPanning = false;
 
+        // 📍 NUEVO: Variables de Cámara (P6, P9)
+        let videoTrack;
+        let isTorchOn = false;
+        let lastFrameTime = 0;
+        let frameCount = 0;
+        let lastFpsUpdate = 0;
+
         async function startCamera() {
             try {
-                // 📍 SOLUCIÓN CÁMARA (PUNTO 4)
+                // 📍 SOLUCIÓN CÁMARA (P6, P7)
                 const constraints = {
                     video: {
-                        facingMode: { ideal: "environment" },
-                        width: { ideal: 4096 },
+                        facingMode: { ideal: "environment" }, // P7: Forzar trasera
+                        width: { ideal: 4096 },  // P6/P7: Forzar 4K
                         height: { ideal: 2160 },
-                        frameRate: { ideal: 60 } // Pedir 60 FPS
+                        frameRate: { ideal: 60 } // P6/P7: Forzar 60 FPS
                     },
                     audio: false
                 };
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 
-                const track = stream.getVideoTracks()[0];
-                if (track && typeof track.applyConstraints === 'function') {
-                    track.applyConstraints({
+                videoTrack = stream.getVideoTracks()[0]; // P9: Guardar el track
+                
+                if (videoTrack && typeof videoTrack.applyConstraints === 'function') {
+                    videoTrack.applyConstraints({
                         advanced: [{ focusMode: 'continuous' }]
                     }).catch(e => console.warn("No se pudo aplicar 'focusMode: continuous'", e));
+                    
+                    // P9: Verificar si la linterna es soportada
+                    const capabilities = videoTrack.getCapabilities();
+                    if (!capabilities.torch) {
+                        document.getElementById('btn-torch').style.display = 'none';
+                    }
                 }
                 
                 videoBg.srcObject = stream;
@@ -835,6 +934,16 @@
                         energyCtx = energyCanvas.getContext('2d');
                         resizeEnergyCanvas();
                     }
+                    
+                    // P6: Actualizar stats de cámara
+                    try {
+                        const settings = videoTrack.getSettings();
+                        const res = settings.height || videoBg.videoHeight;
+                        document.getElementById('cam-res').innerText = `${res}p`;
+                    } catch(e) {
+                        document.getElementById('cam-res').innerText = `${videoBg.videoHeight}p`;
+                    }
+                    
                     drawLoop(); 
                 };
             } catch (e) { console.log("Error de cámara", e); }
@@ -874,7 +983,7 @@
             }
         }
 
-        // 📍 SOLUCIÓN CÁMARA ESTIRADA (PUNTO 4)
+        // 📍 Dibuja el video en el canvas con 'object-fit: cover'
         function drawVideoWithCover(ctx, video, z, pan) {
             const canvasW = ctx.canvas.width;
             const canvasH = ctx.canvas.height;
@@ -908,6 +1017,19 @@
 
         
         async function drawLoop() {
+            // 📍 Contador de FPS (P6)
+            const now = performance.now();
+            const delta = now - lastFrameTime;
+            lastFrameTime = now;
+            frameCount++;
+        
+            if (now - lastFpsUpdate > 1000) { // Actualizar cada segundo
+                const fps = frameCount;
+                document.getElementById('cam-fps').innerText = fps;
+                frameCount = 0;
+                lastFpsUpdate = now;
+            }
+
             if (videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
                 
                 const w = mainFilterCanvas.width;
@@ -975,14 +1097,13 @@
                         mainFilterCtx.putImageData(frame, 0, 0);
                     
                     } else if (currentFilter === 'none') {
-                        // No se dibuja nada en el canvas
+                        // No se dibuja nada en el canvas, se ve el video de fondo
                     }
                 }
             }
             requestAnimationFrame(drawLoop);
         }
         
-        // 📍 SOLUCIÓN LAG (PUNTO 1)
         async function detectPoseLoop() {
             while (true) {
                 if (currentFilter === 'sls' && poseDetector && videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
@@ -1021,12 +1142,28 @@
             ctx.lineWidth = 2.5;
             ctx.filter = 'drop-shadow(0 0 4px var(--neon-green))';
 
-            const scaleX = mainFilterCanvas.width / videoBg.videoWidth;
-            const scaleY = mainFilterCanvas.height / videoBg.videoHeight;
-            const scale = Math.max(scaleX, scaleY);
+            // Escalar para 'object-fit: cover'
+            const videoW = videoBg.videoWidth;
+            const videoH = videoBg.videoHeight;
+            const canvasW = mainFilterCanvas.width;
+            const canvasH = mainFilterCanvas.height;
             
-            const offsetX = (mainFilterCanvas.width - videoBg.videoWidth * scale) / 2;
-            const offsetY = (mainFilterCanvas.height - videoBg.videoHeight * scale) / 2;
+            const videoAspect = videoW / videoH;
+            const canvasAspect = canvasW / canvasH;
+            
+            let scale, offsetX, offsetY;
+            
+            if (canvasAspect > videoAspect) {
+                // El canvas es más ancho que el video
+                scale = canvasW / videoW;
+                offsetX = 0;
+                offsetY = (canvasH - videoH * scale) / 2;
+            } else {
+                // El canvas es más alto que el video
+                scale = canvasH / videoH;
+                offsetX = (canvasW - videoW * scale) / 2;
+                offsetY = 0;
+            }
 
             poses.forEach(pose => {
                 if (pose.score > confidenceThreshold) {
@@ -1084,6 +1221,7 @@
                 if(targetBtn) targetBtn.classList.add('active');
             }
             
+            // Si el filtro aplica efectos, oculta el video base. Si no (sls, none), lo muestra.
             if (currentFilter === 'relief' || currentFilter === 'night-vision') {
                 videoBg.style.opacity = '0';
             } else {
@@ -1102,54 +1240,123 @@
             }
         }
 
-        function initAudio() {
+        // 📍 NUEVO: Función Linterna (P9, P10)
+        async function toggleTorch(event) {
+            event.stopPropagation(); // P10: Evitar que el clic active la UI
+            
+            if (!videoTrack || typeof videoTrack.applyConstraints !== 'function') {
+                console.log("Linterna no soportada");
+                document.getElementById('btn-torch').style.display = 'none';
+                return;
+            }
+        
+            try {
+                isTorchOn = !isTorchOn;
+                await videoTrack.applyConstraints({
+                    advanced: [{ torch: isTorchOn }]
+                });
+                document.getElementById('btn-torch').classList.toggle('active', isTorchOn);
+            } catch (e) {
+                console.error("Error al activar linterna:", e);
+                isTorchOn = false; 
+                document.getElementById('btn-torch').classList.toggle('active', false);
+                document.getElementById('btn-torch').style.display = 'none';
+            }
+        }
+
+        // 📍 NUEVO: Cargar Audios (P11)
+        async function loadAudio(url) {
+            try {
+                const response = await fetch(url);
+                const arrayBuffer = await response.arrayBuffer();
+                return await audioCtx.decodeAudioData(arrayBuffer);
+            } catch (e) {
+                console.error(`Error cargando audio: ${url}`, e);
+                throw e; // Relanzar el error
+            }
+        }
+
+        // 📍 NUEVO: initAudio con FONDO_1 y FONDO_2 (P11)
+        async function initAudio() {
             if (audioCtx) return;
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             masterGain = audioCtx.createGain();
+            masterGain.connect(audioCtx.destination);
             
-            whiteNoiseNode = audioCtx.createBufferSource();
-            let b = audioCtx.createBuffer(1, audioCtx.sampleRate*2, audioCtx.sampleRate);
-            let d = b.getChannelData(0);
-            for(let i=0;i<d.length;i++) d[i] = Math.random()*2-1;
-            whiteNoiseNode.buffer = b; whiteNoiseNode.loop = true;
-            
-            gainNode = audioCtx.createGain(); gainNode.gain.value = 0;
-            
-            lfo = audioCtx.createOscillator(); lfo.type = 'square'; lfo.frequency.value = 8;
-            lfoGain = audioCtx.createGain(); lfoGain.gain.value = 0.05;
-            lfo.connect(lfoGain).connect(gainNode.gain);
-            
-            whiteNoiseNode.connect(gainNode);
-            gainNode.connect(masterGain);
-
-            radioOsc = audioCtx.createOscillator();
-            radioOsc.type = 'sine';
-            radioOsc.frequency.value = 1000;
-            radioGain = audioCtx.createGain();
-            radioGain.gain.value = 0; 
-            radioOsc.connect(radioGain);
-            radioGain.connect(masterGain);
-
+            // Cargar los nuevos audios
+            try {
+                updateLoadingProgress(55, "CARGANDO AUDIO...");
+                [audioBuffer_Fondo1, audioBuffer_Fondo2] = await Promise.all([
+                    loadAudio('FONDO_1.mp3'),
+                    loadAudio('FONDO_2.mp3')
+                ]);
+                console.log("Audios de fondo cargados.");
+                updateLoadingProgress(65, "AUDIO CARGADO");
+            } catch (e) {
+                console.error("Error al cargar audios de fondo:", e);
+                updateLoadingProgress(65, "ERROR DE AUDIO");
+                return; 
+            }
+        
+            // Configurar Fondo 1 (Estática)
+            gain_Fondo1 = audioCtx.createGain();
+            gain_Fondo1.gain.value = 0; // Empieza apagado
+            gain_Fondo1.connect(masterGain);
+        
+            // Configurar Fondo 2 (Sintonía)
+            gain_Fondo2 = audioCtx.createGain();
+            gain_Fondo2.gain.value = 0; // Empieza apagado
+            gain_Fondo2.connect(masterGain);
+        
+            // Configurar Reverb y Distorsión (para la voz)
             reverbGain = audioCtx.createGain();
-            reverbGain.gain.value = 0;
-            let delay = audioCtx.createDelay(1.0); delay.delayTime.value = 0.4; 
+            reverbGain.gain.value = 0.8; // Más reverb
+            let delay = audioCtx.createDelay(1.0); delay.delayTime.value = 0.5; 
             let fb = audioCtx.createGain(); fb.gain.value = 0.6;
             
             reverbGain.connect(delay);
             delay.connect(fb);
             fb.connect(delay);
-            delay.connect(masterGain);
+            delay.connect(masterGain); // Conectar reverb al master
 
             distortionNode = audioCtx.createWaveShaper();
-            distortionNode.curve = makeDistortionCurve(80);
+            distortionNode.curve = makeDistortionCurve(50); // Distorsión sutil
             distortionNode.oversample = '4x';
             
-            distortionNode.connect(reverbGain);
+            distortionNode.connect(reverbGain); // La distorsión alimenta la reverb
             
-            masterGain.connect(audioCtx.destination);
-
-            radioOsc.start(); whiteNoiseNode.start(); lfo.start();
             initSpeechRec();
+        }
+
+        function playFondo1() {
+            if (!audioBuffer_Fondo1) return;
+            if (audioSource_Fondo1) { try { audioSource_Fondo1.stop(); } catch(e){} }
+            audioSource_Fondo1 = audioCtx.createBufferSource();
+            audioSource_Fondo1.buffer = audioBuffer_Fondo1;
+            audioSource_Fondo1.loop = true;
+            audioSource_Fondo1.connect(gain_Fondo1);
+            audioSource_Fondo1.start();
+        }
+
+        function playFondo2_Fragment() {
+            if (!audioBuffer_Fondo2 || !isRunning || spiritBoxState !== "SCANNING") return;
+            if (audioSource_Fondo2) {
+                try { audioSource_Fondo2.stop(); } catch(e){}
+            }
+            audioSource_Fondo2 = audioCtx.createBufferSource();
+            audioSource_Fondo2.buffer = audioBuffer_Fondo2;
+            audioSource_Fondo2.connect(gain_Fondo2);
+        
+            // P11: Saltar a un punto aleatorio
+            const duration = audioBuffer_Fondo2.duration;
+            const startTime = Math.random() * (duration - 2); // Asegurar que no empiece al final
+            const fragmentDuration = 0.8 + Math.random() * 1.2; // Duración de 0.8 a 2.0 seg
+        
+            audioSource_Fondo2.start(0, startTime, fragmentDuration);
+        
+            // Programar el siguiente fragmento
+            if (scanTimer) clearTimeout(scanTimer);
+            scanTimer = setTimeout(playFondo2_Fragment, fragmentDuration * 1000 + (Math.random() * 300)); // Pausa corta
         }
         
         function makeDistortionCurve(amount) {
@@ -1165,7 +1372,7 @@
             return curve;
         }
 
-        // 📍 SOLUCIÓN SENSORES (PUNTO 3)
+        // 📍 SOLUCIÓN SENSORES (PUNTO 4)
         let sensorPermissionsRequested = false;
         async function requestAllPermissions() {
             if (sensorPermissionsRequested) {
@@ -1315,11 +1522,13 @@
             }
         }
 
-        // --- SPIRIT BOX ---
+        // --- SPIRIT BOX (Lógica P11) ---
         
         const pwr = document.getElementById('knob-power');
-        pwr.addEventListener('click', () => {
-            if(!audioCtx) initAudio();
+        pwr.addEventListener('click', async () => {
+            if(!audioCtx) await initAudio(); // Esperar a que el audio cargue
+            if(!audioCtx) return; // Si falló la carga, no continuar
+
             isRunning = !isRunning;
             
             pwr.classList.toggle('active', isRunning);
@@ -1334,20 +1543,27 @@
                     window.speechSynthesis.speak(silentUtterance);
                 }
                 
-                lfoGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime+0.5);
-                radioGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime+0.5); 
+                // P11: Iniciar audios de fondo
+                playFondo1();
+                gain_Fondo1.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.5); // Estática
+                gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 0.5); // Sintonía
 
-                // 📍 SOLUCIÓN SENSORES (PUNTO 3)
+                // P4: Solicitar sensores
                 requestAllPermissions();
 
                 spiritBoxState = "SCANNING";
-                runSpiritBoxLoop();
+                playFondo2_Fragment(); // Iniciar bucle de sintonía
+                runSpiritBoxLoop(); // Iniciar bucle de escucha
                 
             } else {
                 pwr.style.transform = 'rotate(135deg)';
                 
-                lfoGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.1);
-                radioGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.1); 
+                // P11: Parar audios
+                gain_Fondo1.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+                gain_Fondo2.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+                if (audioSource_Fondo1) { try { audioSource_Fondo1.stop(); } catch(e){} }
+                if (audioSource_Fondo2) { try { audioSource_Fondo2.stop(); } catch(e){} }
+                if (scanTimer) clearTimeout(scanTimer);
                 
                 spiritBoxState = "OFF";
                 if (spiritBoxTimeout) clearTimeout(spiritBoxTimeout);
@@ -1362,9 +1578,10 @@
         });
 
         document.getElementById('knob-scan').addEventListener('click', function() {
+            // Esta perilla ahora es simbólica, pero podemos atarla a la velocidad de sintonía
             scanSpeed = (scanSpeed+1)%3;
             this.style.transform = `rotate(${-135 + scanSpeed*135}deg)`;
-            if(lfo) lfo.frequency.linearRampToValueAtTime([5,12,20][scanSpeed], audioCtx.currentTime+0.1);
+            // (La velocidad real ahora se maneja en playFondo2_Fragment)
         });
 
         document.getElementById('vol-slider').addEventListener('input', (e) => {
@@ -1403,6 +1620,10 @@
                 }
                 
                 const data = await response.json();
+                
+                // Esperar a que el audio termine si aún no lo ha hecho
+                if (!audioCtx) await initAudio(); 
+                
                 updateLoadingProgress(75, "PROCESANDO RESPUESTAS");
 
                 automaticoData = data.automatico.map(r => r.TEXTO).filter(t => t);
@@ -1427,12 +1648,13 @@
             }
         }
 
-        // 📍 FUNCIÓN SPEAK REESCRITA (PUNTO 3 - Efecto PSB7)
+        // 📍 FUNCIÓN SPEAK (PUNTO 3) - Efecto PSB7 mejorado
         function speak(text) {
             if (!text || isSpeaking) return;
             
             spiritBoxState = "SPEAKING";
             isSpeaking = true;
+            if (scanTimer) clearTimeout(scanTimer); // Parar sintonía
             
             const words = text.split(' ');
             let wordIndex = 0;
@@ -1441,10 +1663,12 @@
                 if (wordIndex >= words.length || !isRunning) {
                     isSpeaking = false;
                     spiritBoxState = "SCANNING";
-                    lfoGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 0.2);
-                    radioGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime + 0.2);
+                    gain_Fondo1.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.2); // Subir estática
+                    gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 0.2); // Subir sintonía
+                    
                     if (isRunning) {
-                        setTimeout(runSpiritBoxLoop, 2000);
+                        playFondo2_Fragment(); // Reanudar sintonía
+                        setTimeout(runSpiritBoxLoop, 2000); // Reanudar escucha
                     }
                     return;
                 }
@@ -1457,14 +1681,16 @@
                 u.rate = 0.9 + Math.random() * 0.4; // Velocidad variable
 
                 u.onstart = () => {
-                    lfoGain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime); 
-                    radioGain.gain.linearRampToValueAtTime(0.005, audioCtx.currentTime);
+                    // Bajar fondos para que la voz se oiga
+                    gain_Fondo1.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime); 
+                    gain_Fondo2.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime);
                 };
 
                 u.onend = () => {
                     wordIndex++;
-                    lfoGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime);
-                    radioGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime);
+                    // Subir fondos entre palabras
+                    gain_Fondo1.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime);
+                    gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime);
                     
                     setTimeout(speakWordByWord, 100 + Math.random() * 400); // Pausa aleatoria
                 };
@@ -1483,6 +1709,11 @@
             if (!isRunning || spiritBoxState === "SPEAKING") return;
             spiritBoxState = "LISTENING";
             
+            // P11: Parar el scanner de sintonía para escuchar
+            if (audioSource_Fondo2) { try { audioSource_Fondo2.stop(); } catch(e){} }
+            if (scanTimer) clearTimeout(scanTimer);
+            gain_Fondo2.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+            
             try {
                 if (!isRecognizing) recognition.start();
             } catch(e) {
@@ -1499,10 +1730,23 @@
                 if (isRecognizing) recognition.abort();
                 isRecognizing = false;
 
+                // Reanudar scanner
+                gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 0.2);
+                spiritBoxState = "SCANNING";
+                playFondo2_Fragment(); 
+
                 if (automaticoData.length > 0) {
-                    speak(automaticoData[Math.floor(Math.random() * automaticoData.length)]);
+                    // Hablar después de un breve escaneo
+                    setTimeout(() => {
+                        if (isRunning) {
+                            speak(automaticoData[Math.floor(Math.random() * automaticoData.length)]);
+                        }
+                    }, 1000 + Math.random() * 2000);
+                } else {
+                    // Si no hay nada que decir, simplemente re-iniciar el loop de escucha
+                    setTimeout(runSpiritBoxLoop, 3000);
                 }
-            }, 5000);
+            }, 5000); // 5 segundos para hablar
         }
 
         function initSpeechRec() {
@@ -1602,7 +1846,6 @@
             }
         }
 
-
         function updateSensorReadings() {
             if (!isRunning) {
                 currentTemp += (Math.random()*0.04 - 0.02); 
@@ -1615,12 +1858,16 @@
         const filterControls = document.getElementById('filter-controls-container');
         const logoImage = document.getElementById('logo-image');
         const followContainer = document.getElementById('follow-container');
+        const torchButton = document.getElementById('btn-torch');
+        const camStats = document.getElementById('cam-stats-display');
         
+        // 📍 UI (P10)
         function showControls() {
             filterControls.style.opacity = '1';
-            logoImage.classList.remove('visible');
             logoImage.classList.add('hiding'); 
             followContainer.classList.add('hiding');
+            torchButton.classList.add('hiding'); // Ocultar linterna
+            camStats.classList.add('hiding');    // Ocultar stats
             filterControls.style.pointerEvents = 'auto';
             clearTimeout(uiHideTimeout);
             uiHideTimeout = setTimeout(hideControls, 4000); 
@@ -1631,6 +1878,8 @@
             filterControls.style.opacity = '0';
             logoImage.classList.remove('hiding'); 
             logoImage.classList.add('visible'); 
+            torchButton.classList.remove('hiding'); // Mostrar linterna
+            camStats.classList.remove('hiding');    // Mostrar stats
             filterControls.style.pointerEvents = 'none';
             uiVisible = false;
         }
@@ -1648,10 +1897,14 @@
         });
 
         function handleUITap(event) {
-            // 📍 SOLUCIÓN SENSORES (PUNTO 3)
+            // 📍 SOLUCIÓN SENSORES (PUNTO 4)
             requestAllPermissions();
 
-            if (isPinching || isPanning) return;
+            if (isPinching || isPanning) return; // No hacer nada si es zoom/pan
+            
+            // P10: El botón de linterna maneja su propio clic
+            if (event.target.closest('#btn-torch')) return;
+
             if (!event.target.closest('.panel') && !event.target.closest('.filter-btn')) {
                 if (uiVisible) {
                     hideControls(); 
@@ -1670,7 +1923,8 @@
             } else {
                 document.body.classList.remove('panels-active');
             }
-            resizeAllCanvas(); 
+            // Retrasar el re-cálculo del canvas para dar tiempo a la animación CSS
+            setTimeout(resizeAllCanvas, 500);
         }
 
         function togglePanel(id) {
