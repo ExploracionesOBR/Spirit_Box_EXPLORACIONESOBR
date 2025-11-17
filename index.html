@@ -2,35 +2,40 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <link rel="apple-touch-icon" href="obr-logo.png">
-    <title>DETECTOR-OBR</title>
-    
+
+    <title>DETECTOR-OBR</title> 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
 
+    <!-- 1. PEGA EL CÓDIGO CSS (BLOQUE 1) AQUÍ -->
+    
     <style>
         :root {
     --neon-green: #39FF14; 
     --alert-red: #FF3333;
     --sim-orange: #FFB000;
     --sensor-blue: #00BFFF;
-    --panel-bg: rgba(0, 20, 0, 0.4); /* Fondo de cristal oscuro */
+    --panel-bg: rgba(0, 20, 0, 0.4); 
     --border-color: rgba(57, 255, 20, 0.3);
     --border-strong: rgba(57, 255, 20, 0.7);
     --text-color: #E0E0E0;
     --text-dim: #999;
     
-    /* --- 📍 TAMAÑOS DEL NUEVO HUD --- */
-    --hud-bottom-height: 160px; /* Altura de la barra inferior */
-    --hud-left-width: 100px; /* Ancho de la barra izquierda */
-    --hud-gap: 15px; /* Espacio entre los bordes y las barras */
+    --hud-bottom-height: 160px; 
+    --hud-left-width: 100px; 
+    --hud-gap: 15px; 
     --panel-section-padding: 6px;
 }
 
@@ -41,7 +46,7 @@ body {
     overflow: hidden;
     width: 100vw;
     height: 100vh;
-    display: flex; /* Para el layout principal de la app */
+    display: flex; 
     justify-content: center;
     align-items: center;
 }
@@ -51,10 +56,9 @@ body {
     width: 100%;
     height: 100%;
     display: grid;
-    /* 📍 El diseño de cabina en L se define aquí */
     grid-template-areas:
         "left-panel camera-view"
-        "left-panel bottom-panel"; /* Izquierda ocupa toda la altura */
+        "left-panel bottom-panel"; 
     grid-template-columns: var(--hud-left-width) 1fr;
     grid-template-rows: 1fr var(--hud-bottom-height);
     background-color: #000; 
@@ -77,7 +81,7 @@ body {
     background: var(--panel-bg);
     border-right: 1px solid var(--border-strong);
     box-shadow: 0 0 10px rgba(57, 255, 20, 0.2) inset, 0 0 8px rgba(57, 255, 20, 0.2);
-    border-radius: 0 8px 8px 0; /* Bordes redondeados correctos */
+    border-radius: 0 8px 8px 0; 
     z-index: 20;
     display: flex;
     flex-direction: column;
@@ -103,13 +107,13 @@ body {
     align-items: center;
 }
 
-/* 📍 Efecto de ocultar paneles y flotantes */
-body.ui-hidden #left-panel-container {
+/* 📍 Animación de Ocultar Paneles (P7) */
+body.panels-hidden #left-panel-container {
     transform: translateX(-100%);
     opacity: 0;
     pointer-events: none;
 }
-body.ui-hidden #bottom-panel-container {
+body.panels-hidden #bottom-panel-container {
     transform: translateY(100%);
     opacity: 0;
     pointer-events: none;
@@ -151,26 +155,42 @@ body.ui-hidden #bottom-panel-container {
 .hidden-canvas { display: none; }
 .hidden { display: none !important; }
 
-/* --- Controles Flotantes sobre la cámara (LOGO, LINTERNA, FILTROS) --- */
+/* --- Controles Flotantes (LOGO, LINTERNA, FILTROS) --- */
 #hud-floating-controls {
     position: absolute; 
     top: 0; left: 0; right: 0; bottom: 0;
     z-index: 101; 
     pointer-events: none; 
+    opacity: 0; /* Ocultos por defecto */
+    transition: opacity 0.4s ease-out;
+}
+/* 📍 Lógica de Ocultar/Mostrar (P1) */
+body.ui-visible #hud-floating-controls {
+    opacity: 1;
+    pointer-events: auto; /* Contenedor clickeable */
+}
+
+/* Lógica Inversa: Logo y Síguenos */
+#hud-persistent-elements {
+    position: absolute; 
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 100; 
+    pointer-events: none; 
     opacity: 1;
     transition: opacity 0.4s ease-out;
 }
-body.ui-hidden #hud-floating-controls {
+body.ui-visible #hud-persistent-elements {
     opacity: 0;
     pointer-events: none;
 }
+
 
 #hud-top-logo {
     position: absolute;
     top: var(--hud-gap);
     right: var(--hud-gap);
     width: 60px; height: 60px;
-    pointer-events: auto;
+    pointer-events: none; /* Controlado por el contenedor */
     animation: logo-effects 7s infinite linear; 
 }
 
@@ -185,7 +205,7 @@ body.ui-hidden #hud-floating-controls {
     border-radius: 50%;
     box-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
     transition: all 0.2s;
-    pointer-events: auto;
+    pointer-events: auto; /* Siempre clickeable */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -203,7 +223,7 @@ body.ui-hidden #hud-floating-controls {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    pointer-events: auto;
+    pointer-events: auto; /* Clickeable */
 }
 .filter-btn {
     width: 50px; height: 50px;
@@ -226,7 +246,6 @@ body.ui-hidden #hud-floating-controls {
 /* Animaciones para los elementos flotantes */
 @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 1; } }
 @keyframes logo-effects { 0%, 90% { transform: scale(1) translateY(0); opacity: 1; filter: none; } 91% { transform: scale(1.1) translateX(-5px); opacity: 0.8; filter: drop-shadow(2px 0 red) drop-shadow(-2px 0 blue); } 92% { transform: scale(0.9) translateX(5px); opacity: 1; filter: drop-shadow(-2px 0 red) drop-shadow(2px 0 blue); } 93% { transform: scale(1) translateY(0); opacity: 1; filter: none; } 94% { transform: scale(1) translateY(0); opacity: 0.5; filter: blur(2px); } 95% { transform: scale(1) translateY(0); opacity: 1; filter: none; } 96% { transform: scale(1) translateY(-3px); } 97% { transform: scale(1) translateY(3px); } 98%, 100% { transform: scale(1) translateY(0); } }
-#hud-top-logo.hiding, #hud-torch-button.hiding, #hud-filter-controls.hiding { animation: waterDrop 0.5s ease-out forwards; }
 @keyframes waterDrop { 0% { opacity: 1; transform: scale(1); filter: blur(0); } 100% { opacity: 0; transform: scale(2.5); filter: blur(5px); } }
 @keyframes pulseGlow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1.0; } }
 
@@ -278,7 +297,7 @@ body.ui-hidden #hud-floating-controls {
     text-align: center;
     animation: rec-pulse 1.5s infinite ease-in-out;
     cursor: default;
-    margin-top: 10px; /* Separación del resto */
+    margin-top: 10px; 
 }
 @keyframes rec-pulse { 0%, 100% { opacity: 1; text-shadow: 0 0 8px var(--alert-red); } 50% { opacity: 0.7; text-shadow: 0 0 4px var(--alert-red); } }
 
@@ -288,6 +307,8 @@ body.ui-hidden #hud-floating-controls {
     flex-grow: 1;
     align-items: center;
     gap: 10px;
+    /* 📍 Solución para que las secciones se ajusten */
+    min-width: 0; 
 }
 #bottom-panel-container .section-title {
     writing-mode: vertical-rl; 
@@ -316,7 +337,7 @@ body.ui-hidden #hud-floating-controls {
 .dial-needle { width: 2px; height: 40%; background: var(--neon-green); box-shadow: 0 0 5px var(--neon-green); position: absolute; bottom: 50%; left: 50%; transform-origin: bottom center; transform: translateX(-50%) rotate(-45deg); transition: transform 0.5s cubic-bezier(0.2, 1.5, 0.5, 1); }
 .dial-label { font-size: 0.6rem; color: var(--text-dim); margin-top: 4px; text-align: center; position: absolute; bottom: 5px; left: 0; right: 0; }
 
-#detector-dial-container { width: 90px; height: 90px; } /* Más grande */
+#detector-dial-container { width: 90px; height: 90px; } 
 #detector-dial-needle { height: 45%; background: var(--alert-red); box-shadow: 0 0 8px var(--alert-red); transform: translateX(-50%) rotate(-60deg); }
 
 #temp-readout { text-align: center; }
@@ -327,7 +348,7 @@ body.ui-hidden #hud-floating-controls {
 .spirit-box-content {
     display: grid;
     grid-template-columns: auto 1fr auto; /* Pwr | Actividad | Vol */
-    grid-template-rows: auto auto; /* Knobs arriba, graph/slider abajo */
+    grid-template-rows: auto auto; 
     gap: 8px;
     flex-grow: 1;
     height: 100%;
@@ -341,23 +362,23 @@ body.ui-hidden #hud-floating-controls {
 #pwr-knob.active #pwr-knob-indicator { background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); }
 
 #activity-graph-container {
-    grid-column: 2 / 3; /* Ocupa la columna central */
-    grid-row: 1 / 3; /* Ocupa ambas filas */
+    grid-column: 2 / 3; 
+    grid-row: 1 / 3; 
     height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     background: #000; border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden;
-    min-width: 150px; /* Ancho mínimo para la gráfica */
+    min-width: 150px; 
 }
 #energy-canvas { width: 100%; height: 100%; }
 
 .volume-control-group {
-    grid-column: 3 / 4; /* Columna derecha */
-    grid-row: 1 / 3; /* Ocupa ambas filas */
+    grid-column: 3 / 4; 
+    grid-row: 1 / 3; 
     display: flex;
-    flex-direction: column; /* Vertical */
+    flex-direction: column; 
     align-items: center;
     justify-content: center;
     gap: 8px;
@@ -397,24 +418,21 @@ input[type=range]::-webkit-slider-thumb {
 @keyframes loading-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
 #follow-container { 
-    position: fixed; 
-    /* Se posiciona dentro del main-view-area */
+    position: absolute; /* Dentro de #hud-persistent-elements */
     bottom: var(--hud-gap);
     left: 50%; 
     transform: translateX(-50%); 
-    z-index: 100; /* Debajo de los botones flotantes */
+    z-index: 100; 
     pointer-events: none; 
-    opacity: 0; 
     width: 100%; 
-    transition: opacity 0.5s ease-out; 
+    padding-bottom: 10px;
 }
-#follow-container.visible { opacity: 1; }
 .follow-step { 
     display: none; 
     color: var(--neon-green); 
     font-size: 1.5rem; 
     font-family: 'Orbitron', sans-serif; 
-    text-shadow: 0 0 10px var(--neon-green), 0 0 10px #000; /* Sombra negra para legibilidad */
+    text-shadow: 0 0 10px var(--neon-green), 0 0 10px #000; 
     text-align: center; 
     opacity: 0; 
 }
@@ -433,7 +451,7 @@ input[type=range]::-webkit-slider-thumb {
             "left-panel"
             "camera-view"
             "bottom-panel";
-        grid-template-columns: 1fr; /* Una sola columna */
+        grid-template-columns: 1fr; 
         grid-template-rows: var(--hud-left-width) 1fr var(--hud-bottom-height);
     }
 
@@ -492,7 +510,7 @@ input[type=range]::-webkit-slider-thumb {
         font-size: 0.6rem;
     }
     #bottom-panel-container .dials-grid { 
-        grid-template-columns: 1fr 1.5fr 1fr; /* Mantener 3 columnas */
+        grid-template-columns: 1fr 1.5fr 1fr; 
         width: 100%;
     }
     #detector-dial-container { width: 65px; height: 65px; } 
@@ -504,11 +522,18 @@ input[type=range]::-webkit-slider-thumb {
     }
     #activity-graph-container { grid-column: 1 / 3; grid-row: 1 / 2; height: 60px; } 
     .knob-container:nth-child(1) { grid-column: 1 / 2; grid-row: 2 / 3; }
-    .volume-control-group { grid-column: 2 / 3; grid-row: 2 / 3; flex-direction: row; }
-    input[type
+    .volume-control-group { grid-column: 2 / 3; grid-row: 2 / 3; flex-direction: row; align-items: center; }
+    input[type=range] { transform: rotate(0deg); width: 80px; height: 10px; }
+    #vol-percent { text-align: left; }
+    
+    #follow-container {
+        bottom: calc(var(--hud-bottom-height) + 15px); /* Posición en vertical */
+    }
+}
     </style>
 </head>
 <body>
+    <!-- 2. PEGA EL CÓDIGO HTML (BLOQUE 2) AQUÍ -->
     <div id="loading-overlay">
     <div id="loading-content">
         <div id="loading-text">INICIANDO DETECTOR OBR</div>
@@ -518,8 +543,10 @@ input[type=range]::-webkit-slider-thumb {
     </div>
 </div>
 
+<!-- 📍 Estructura de Cabina en L -->
 <div id="app-ui"> 
 
+    <!-- 📍 Panel Izquierdo -->
     <div id="left-panel-container" onclick="handlePanelClick(event)">
         <div class="panel-section">
             <div class="section-title">SENSORES</div>
@@ -553,23 +580,30 @@ input[type=range]::-webkit-slider-thumb {
         </div>
     </div>
 
+    <!-- 📍 Vista de Cámara (con flotantes dentro) -->
     <div id="main-view-area" onclick="handleUITap(event)">
         <video id="bg-camera-feed" playsinline autoplay muted></video>
         <canvas id="main-filter-canvas"></canvas>
 
-        <div id="hud-floating-controls">
-            <img id="hud-top-logo" src="obr-logo.png" alt="Logo OBR" class="visible">
+        <!-- 📍 Controles Flotantes (Logo, Linterna, Filtros) -->
+        <div id="hud-floating-controls" onclick="handleFloatingControlsClick(event)">
             
             <button id="hud-torch-button" onclick="toggleTorch(event)">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M342.6 38.6c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L380.7 167H256c-17.7 0-32 14.3-32 32s14.3 32 32 32h124.7l-83.4 83.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l144-144c12.5-12.5 12.5-32.8 0-45.3l-144-144zM160 80c0-17.7-14.3-32-32-32s-32 14.3-32 32v144H64c-17.7 0-32 14.3-32 32s14.3 32 32 32h32v144c0 17.7 14.3 32 32 32s32-14.3 32-32V288h32c17.7 0 32-14.3 32-32s-14.3-32-32-32H160V80z"/></svg>
+                <svg xmlns="http://www.w.org/2000/svg" viewBox="0 0 512 512"><path d="M342.6 38.6c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L380.7 167H256c-17.7 0-32 14.3-32 32s14.3 32 32 32h124.7l-83.4 83.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l144-144c12.5-12.5 12.5-32.8 0-45.3l-144-144zM160 80c0-17.7-14.3-32-32-32s-32 14.3-32 32v144H64c-17.7 0-32 14.3-32 32s14.3 32 32 32h32v144c0 17.7 14.3 32 32 32s32-14.3 32-32V288h32c17.7 0 32-14.3 32-32s-14.3-32-32-32H160V80z"/></svg>
             </button>
 
             <div id="hud-filter-controls">
                 <button class="filter-btn" onclick="setFilter('vno')">VNO</button>
                 <button class="filter-btn" onclick="setFilter('sls')">SLS</button>
                 <button class="filter-btn" onclick="setFilter('neg')">NEG</button>
+                <button class="filter-btn" id="btn-panel" onclick="togglePanel(event)">PAN</button>
             </div>
-
+        </div>
+        
+        <!-- 📍 Controles Persistentes (Logo, Síguenos) -->
+        <div id="hud-persistent-elements">
+            <img id="hud-top-logo" src="obr-logo.png" alt="Logo OBR" class="visible">
+            
             <div id="follow-container">
                 <div id="follow-text" class="follow-step">SÍGUENOS EN</div>
                 <div id="follow-icons" class="follow-step">
@@ -582,6 +616,7 @@ input[type=range]::-webkit-slider-thumb {
         </div>
     </div>
 
+    <!-- 📍 Panel Inferior -->
     <div id="bottom-panel-container" onclick="handlePanelClick(event)">
         <div class="panel-section">
             <div class="section-title">LECTURAS</div>
@@ -622,9 +657,15 @@ input[type=range]::-webkit-slider-thumb {
             </div>
         </div>
     </div>
-</div> <canvas id="temp-canvas" class="hidden-canvas"></canvas>
+
+</div> <!-- Fin de #app-ui -->
+
+<canvas id="temp-canvas" class="hidden-canvas"></canvas>
+
+    <!-- 3. PEGA EL CÓDIGO JAVASCRIPT (BLOQUE 3) AQUÍ -->
+
     <script>
-        // 📍 INICIO DE SCRIPT ANTI-CACHÉ
+    // 📍 INICIO DE SCRIPT ANTI-CACHÉ
 (function() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
@@ -645,7 +686,6 @@ input[type=range]::-webkit-slider-thumb {
         });
     }
 })();
-// 📍 FIN DE SCRIPT ANTI-CACHÉ
 
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzOf3crQxBdPylwMTAd34W-nBShN31MkIUtaMdKsZHMZVVniI2HjMesD6DpOlO363T1/exec";
 
@@ -655,11 +695,8 @@ let scanSpeed = 0;
 
 const mainViewArea = document.getElementById('main-view-area');
 const videoBg = document.getElementById('bg-camera-feed');
-
 const mainFilterCanvas = document.getElementById('main-filter-canvas');
-const mainFilterCtx = mainFilterCanvas.getContext('2d', { willReadFrequently: true });
-
-const tempCanvas = document.getElementById('temp-canvas');
+let mainFilterCtx; // Se inicializará después
 
 const micStatus = document.getElementById('mic-status');
 const magStatus = document.getElementById('mag-status');
@@ -694,15 +731,13 @@ let isDetectingPose = false;
 let spiritBoxState = "OFF";
 let spiritBoxTimeout = null;
 
-let uiVisible = true; // El UI está visible al inicio
+let uiVisible = false; // El UI flotante está oculto al inicio
+let uiHideTimeout = null;
 
 let zoom = 1.0;
 let maxZoom = 5.0;
 let initialPinchDist = 0;
-let lastPan = { x: 0, y: 0 };
-let currentPan = { x: 0, y: 0 };
 let isPinching = false;
-let isPanning = false;
 
 let videoTrack;
 let isTorchOn = false;
@@ -738,12 +773,16 @@ async function startCamera() {
         
         videoBg.srcObject = stream;
         videoBg.onloadedmetadata = () => {
-            resizeAllCanvas(); 
+            // Asignar canvas de energía AQUÍ
             energyCanvas = document.getElementById('energy-canvas');
             if (energyCanvas) { 
                 energyCtx = energyCanvas.getContext('2d');
-                resizeEnergyCanvas();
             }
+            
+            // Asignar canvas de filtro AQUÍ
+            mainFilterCtx = mainFilterCanvas.getContext('2d', { willReadFrequently: true });
+            
+            resizeAllCanvas(); 
             
             try {
                 const settings = videoTrack.getSettings();
@@ -755,15 +794,20 @@ async function startCamera() {
             
             drawLoop(); 
         };
-    } catch (e) { console.log("Error de cámara", e); }
+    } catch (e) { 
+        console.error("Error de cámara, la app no puede iniciar", e); 
+        document.getElementById('loading-text').innerText = "ERROR DE CÁMARA";
+    }
 }
 
 function resizeAllCanvas() {
     const w = mainViewArea.clientWidth; 
     const h = mainViewArea.clientHeight; 
     
-    mainFilterCanvas.width = w;
-    mainFilterCanvas.height = h;
+    if (mainFilterCanvas) {
+        mainFilterCanvas.width = w;
+        mainFilterCanvas.height = h;
+    }
     
     if(energyCanvas) {
         resizeEnergyCanvas();
@@ -784,7 +828,7 @@ async function initMLModel() {
     }
 }
 
-// 📍 BUCLE DE DIBUJO OPTIMIZADO (P1, P13)
+// 📍 BUCLE DE DIBUJO OPTIMIZADO
 async function drawLoop() {
     const now = performance.now();
     frameCount++;
@@ -795,8 +839,7 @@ async function drawLoop() {
         lastFpsUpdate = now;
     }
 
-    // Solo dibuja si el canvas de SLS está activo
-    if (mainFilterCanvas.style.display === 'block' && latestPoses) {
+    if (mainFilterCanvas.style.display === 'block' && latestPoses && mainFilterCtx) {
         const w = mainFilterCanvas.width;
         const h = mainFilterCanvas.height;
         mainFilterCtx.clearRect(0, 0, w, h);
@@ -808,7 +851,6 @@ async function drawLoop() {
 
 async function detectPoseLoop() {
     while (true) {
-        // Solo detecta si el filtro SLS está activo
         if (currentFilter === 'sls' && poseDetector && videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
             if (!isDetectingPose) {
                 isDetectingPose = true;
@@ -901,18 +943,19 @@ function drawConnections(keypoints, scale, offsetX, offsetY) {
     });
 }
 
-// 📍 NUEVA LÓGICA DE FILTROS (P1, P13)
 function setFilter(f) {
-    event.stopPropagation(); // Evitar que el clic active el show/hide
+    event.stopPropagation(); 
     document.querySelectorAll('.filter-btn').forEach(b => {
-        b.classList.remove('active');
+        if (b.id !== 'btn-panel') {
+            b.classList.remove('active');
+        }
     });
     
     mainViewArea.classList.remove('filter-vno', 'filter-neg');
     mainFilterCanvas.style.display = 'none';
     
     if (currentFilter === f) {
-        currentFilter = 'none'; // Desactivar
+        currentFilter = 'none'; 
     } else {
         currentFilter = f;
         if (f === 'vno') {
@@ -922,10 +965,12 @@ function setFilter(f) {
         } else if (f === 'sls') {
             mainFilterCanvas.style.display = 'block';
         }
-        // Marcar el botón como activo
         const targetBtn = event ? event.target.closest('.filter-btn') : null;
         if(targetBtn) targetBtn.classList.add('active');
     }
+    
+    // Reiniciar el timer de ocultado
+    resetHideUITimer();
 }
 
 function setSensorStatus(sensorName, status) {
@@ -937,7 +982,7 @@ function setSensorStatus(sensorName, status) {
 }
 
 async function toggleTorch(event) {
-    event.stopPropagation(); // Evitar que el clic active el show/hide
+    event.stopPropagation(); 
     
     if (!videoTrack || typeof videoTrack.applyConstraints !== 'function') {
         document.getElementById('hud-torch-button').style.display = 'none';
@@ -953,6 +998,8 @@ async function toggleTorch(event) {
         document.getElementById('hud-torch-button').classList.toggle('active', false);
         document.getElementById('hud-torch-button').style.display = 'none';
     }
+    
+    resetHideUITimer();
 }
 
 // --- Lógica de Audio (Sin cambios) ---
@@ -1185,6 +1232,7 @@ async function loadSheetData() {
         console.error("Error cargando datos de Google Apps Script", e); 
         updateLoadingProgress(100, "ERROR DE SINCRONIZACIÓN");
     } finally {
+        // 📍 CORRECCIÓN: Asegurarse de ocultar la carga incluso si hay error
         setTimeout(hideLoadingScreen, 500); 
     }
 }
@@ -1284,7 +1332,6 @@ function updateEnergyGraph(value) {
 }
 function resizeEnergyCanvas() {
     if(energyCanvas && energyCanvas.parentElement) {
-        // Asignar dimensiones basadas en el contenedor
         const rect = energyCanvas.parentElement.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0) {
             energyCanvas.width = rect.width;
@@ -1299,15 +1346,16 @@ function updateSensorReadings() {
     }
 }
 
-// --- 📍 LÓGICA DE UI (P5, P14) ---
+// --- 📍 NUEVA LÓGICA DE UI (P5, P14) ---
 
 const followContainer = document.getElementById('follow-container');
 const floatingControls = document.getElementById('hud-floating-controls');
+const persistentElements = document.getElementById('hud-persistent-elements');
 
 // Clic en el fondo de la cámara
 function handleUITap(event) {
     requestAllPermissions(); // Activar sensores en el primer toque
-    if (isPinching || isPanning) return; // No hacer nada si es zoom
+    if (isPinching) return; // No hacer nada si es zoom
     
     if (uiVisible) { hideControls(); } 
     else { showControls(); }
@@ -1316,62 +1364,91 @@ function handleUITap(event) {
 // Clic en los paneles de cabina (para evitar que se cierren)
 function handlePanelClick(event) {
     event.stopPropagation();
+    resetHideUITimer(); // Si tocan el panel, que la UI flotante no desaparezca
+}
+// Clic en los controles flotantes (para evitar que se cierren)
+function handleFloatingControlsClick(event) {
+    event.stopPropagation();
+    resetHideUITimer();
 }
 
 function showControls() {
     document.body.classList.remove('ui-hidden');
-    floatingControls.classList.remove('hiding');
-    followContainer.classList.remove('visible');
     uiVisible = true;
     
-    // Iniciar animación de "Síguenos" solo si la UI está visible y no está el panel
-    setTimeout(() => {
-        if(uiVisible) runFollowAnimation();
-    }, 15000); // Iniciar después de 15 seg
+    // Iniciar el timer para ocultar automáticamente
+    resetHideUITimer();
+    
+    // Ocultar Síguenos
+    followContainer.classList.remove('visible');
+    if (followAnimationRunning) {
+        // Detener animación
+        followSteps.forEach(s => s.classList.remove('fade-in', 'fade-out'));
+        followAnimationRunning = false;
+    }
 }
 
 function hideControls() {
     document.body.classList.add('ui-hidden');
-    floatingControls.classList.add('hiding');
-    followContainer.classList.add('visible'); // Mostrar "Síguenos" cuando la UI se oculta
     uiVisible = false;
+    if (uiHideTimeout) clearTimeout(uiHideTimeout);
+    
+    // Mostrar Síguenos e iniciar animación
+    followContainer.classList.add('visible');
+    runFollowAnimation();
+}
+
+function resetHideUITimer() {
+    if (uiHideTimeout) clearTimeout(uiHideTimeout);
+    uiHideTimeout = setTimeout(hideControls, 4000); // 4 segundos
+}
+
+// Botón del Panel (PAN)
+function togglePanel(event) {
+    event.stopPropagation();
+    const btn = document.getElementById('btn-panel');
+    const isActive = document.body.classList.toggle('panels-hidden');
+    btn.classList.toggle('active', isActive);
+    
+    // Al ocultar/mostrar paneles, redimensionar los canvas internos
+    setTimeout(resizeAllCanvas, 500); // Esperar la animación
+    resetHideUITimer();
 }
 
 // --- Animación "Síguenos" ---
 const followSteps = document.querySelectorAll('.follow-step');
 let followAnimationRunning = false;
 async function runFollowAnimation() {
-    // Solo correr si la UI está visible (paneles ocultos) y no está ya corriendo
-    if (document.body.classList.contains('ui-hidden') || followAnimationRunning) return; 
+    // Solo correr si la UI está oculta y no está ya corriendo
+    if (uiVisible || followAnimationRunning) return; 
     
     followAnimationRunning = true;
-    followContainer.classList.add('visible'); 
+    followContainer.classList.add('visible'); // Asegurarse de que el contenedor esté visible
     
     const text = document.getElementById('follow-text');
-    text.style.display = 'block'; text.classList.add('fade-in');
+    text.style.display = 'block'; text.classList.remove('fade-out'); text.classList.add('fade-in');
     await new Promise(r => setTimeout(r, 2500)); 
-    if(!uiVisible) { followContainer.classList.remove('visible'); followAnimationRunning = false; return; } 
+    if(uiVisible) { followAnimationRunning = false; return; } // Si el usuario tocó la pantalla, abortar
     text.classList.remove('fade-in'); text.classList.add('fade-out'); 
     await new Promise(r => setTimeout(r, 1000));
-    text.style.display = 'none'; text.classList.remove('fade-out');
+    text.style.display = 'none';
     
     const icons = document.getElementById('follow-icons');
-    icons.style.display = 'flex'; icons.classList.add('fade-in');
+    icons.style.display = 'flex'; icons.classList.remove('fade-out'); icons.classList.add('fade-in');
     await new Promise(r => setTimeout(r, 2500)); 
-    if(!uiVisible) { followContainer.classList.remove('visible'); followAnimationRunning = false; return; } 
+    if(uiVisible) { followAnimationRunning = false; return; } 
     icons.classList.remove('fade-in'); icons.classList.add('fade-out');
     await new Promise(r => setTimeout(r, 1000));
-    icons.style.display = 'none'; icons.classList.remove('fade-out');
+    icons.style.display = 'none';
 
     const handle = document.getElementById('follow-handle');
-    handle.style.display = 'block'; handle.classList.add('fade-in');
+    handle.style.display = 'block'; handle.classList.remove('fade-out'); handle.classList.add('fade-in');
     await new Promise(r => setTimeout(r, 2500)); 
-    if(!uiVisible) { followContainer.classList.remove('visible'); followAnimationRunning = false; return; } 
+    if(uiVisible) { followAnimationRunning = false; return; } 
     handle.classList.remove('fade-in'); handle.classList.add('fade-out');
     await new Promise(r => setTimeout(r, 1000));
-    handle.style.display = 'none'; handle.classList.remove('fade-out');
+    handle.style.display = 'none';
 
-    followContainer.classList.remove('visible');
     followAnimationRunning = false;
 }
 
@@ -1381,24 +1458,18 @@ function getPinchDist(e) {
     const t1 = e.touches[0]; const t2 = e.touches[1];
     return Math.sqrt(Math.pow(t1.clientX - t2.clientX, 2) + Math.pow(t1.clientY - t2.clientY, 2));
 }
-function getPanCenter(e) { return { x: e.touches[0].clientX, y: e.touches[0].clientY }; }
 appUI.addEventListener('touchstart', (e) => {
-    // Solo permitir zoom/pan si el toque es en el área de la cámara
     if (!e.target.closest('#main-view-area')) return;
-
     if (e.touches.length === 2) {
-        isPinching = true; isPanning = false;
+        isPinching = true; 
         initialPinchDist = getPinchDist(e);
-    } else if (e.touches.length === 1 && zoom > 1) {
-        isPinching = false; isPanning = true;
-        lastPan = getPanCenter(e);
     }
 });
 appUI.addEventListener('touchmove', (e) => {
     if (!e.target.closest('#main-view-area')) return;
     
     if (isPinching && e.touches.length === 2) {
-        e.preventDefault(); // Prevenir scroll/refresh
+        e.preventDefault(); 
         const newPinchDist = getPinchDist(e);
         const zoomFactor = newPinchDist / initialPinchDist;
         let newZoom = zoom * zoomFactor;
@@ -1407,11 +1478,9 @@ appUI.addEventListener('touchmove', (e) => {
         initialPinchDist = newPinchDist;
         videoBg.style.transform = `translate(-50%, -50%) scale(${zoom})`;
     }
-    // (Panning desactivado por simplicidad, el zoom con scale() centra)
 });
 appUI.addEventListener('touchend', (e) => {
     if (e.touches.length < 2) isPinching = false;
-    if (e.touches.length < 1) isPanning = false;
     if (zoom === 1) {
         videoBg.style.transform = `translate(-50%, -50%) scale(1)`;
     }
@@ -1419,19 +1488,29 @@ appUI.addEventListener('touchend', (e) => {
 
 // --- Carga Inicial ---
 window.onload = () => {
-    startCamera();
-    startVisualLoop(); 
-    initMLModel(); 
-    detectPoseLoop(); 
+    // 📍 CORRECCIÓN: Asegurarse de que todo se ejecute en orden
+    startCamera()
+        .then(() => {
+            // Estas funciones dependen de que la cámara se inicie
+            startVisualLoop(); 
+            initMLModel(); 
+            detectPoseLoop(); 
+            
+            setInterval(updateSensorReadings, 2000); 
+            setInterval(runFollowAnimation, 20000); // Iniciar ciclo de "Síguenos"
+            
+            hideControls(); // Ocultar UI al inicio
+            
+            // Cargar datos de Google Sheets
+            return loadSheetData();
+        })
+        .catch(err => {
+            console.error("Error crítico en la inicialización:", err);
+            document.getElementById('loading-text').innerText = "ERROR AL INICIAR";
+        });
     
-    setInterval(updateSensorReadings, 2000); 
-    // Iniciar animación de "Síguenos" 15s después de cargar
-    setTimeout(runFollowAnimation, 15000); 
-    
-    showControls(); // Mostrar UI al inicio
-    
-    loadSheetData();
-    resizeAllCanvas(); // Asegurar que los canvas tengan tamaño
+    // Redimensionar siempre
+    resizeAllCanvas(); 
 };
 
 window.onresize = () => {
