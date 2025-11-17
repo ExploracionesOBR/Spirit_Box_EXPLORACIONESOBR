@@ -2,7 +2,6 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
@@ -33,10 +32,10 @@
             --text-dim: #999;
             
             /* --- 📍 TAMAÑOS DEL NUEVO HUD --- */
-            --hud-top-height: 80px;
-            --hud-bottom-height: 180px;
-            --hud-left-width: 90px;
-            --hud-right-width: 70px;
+            --hud-bottom-height: 160px; /* Altura de la barra inferior */
+            --hud-left-width: 100px; /* Ancho de la barra izquierda */
+            --hud-gap: 15px; /* Espacio entre los bordes y las barras */
+            --panel-section-padding: 6px;
         }
         
         body {
@@ -46,31 +45,82 @@
             overflow: hidden;
             width: 100vw;
             height: 100vh;
+            display: flex; /* Para el layout principal de la app */
+            justify-content: center;
+            align-items: center;
         }
 
         #app-ui {
-            width: 100%;
-            height: 100%;
             position: relative;
-            touch-action: none;
-        }
-
-        /* 📍 SOLUCIÓN 60 FPS: La cámara y los filtros CSS */
-        #main-view-area {
-            position: fixed;
-            top: 0;
-            left: 0;
             width: 100%;
             height: 100%;
+            display: grid;
+            grid-template-areas:
+                "left-panel camera-view"
+                "bottom-panel bottom-panel";
+            grid-template-columns: var(--hud-left-width) 1fr;
+            grid-template-rows: 1fr var(--hud-bottom-height);
+            background-color: #000; /* Fondo base para asegurar que la cámara no se escape */
+            touch-action: none; /* Desactiva el desplazamiento por defecto en pantallas táctiles */
+        }
+        
+        /* Contenedor de la cámara */
+        #main-view-area {
+            grid-area: camera-view;
+            position: relative; /* Es crucial que sea relative para que los flotantes se posicionen dentro */
             overflow: hidden;
             z-index: 5;
             background: #000;
             transition: filter 0.3s ease-in-out;
         }
         
-        /* 📍 SOLUCIÓN 60 FPS: Filtros acelerados por GPU */
+        /* Paneles de la Cabina en L */
+        #left-panel-container {
+            grid-area: left-panel;
+            background: var(--panel-bg);
+            border-right: 1px solid var(--border-strong);
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.2) inset, 0 0 8px rgba(57, 255, 20, 0.2);
+            border-radius: 0 8px 0 0; /* Bordes redondeados correctos */
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            padding: var(--panel-section-padding);
+            gap: var(--panel-section-padding);
+            transition: transform 0.4s ease-out, opacity 0.4s ease-out;
+            pointer-events: auto;
+        }
+
+        #bottom-panel-container {
+            grid-area: bottom-panel;
+            background: var(--panel-bg);
+            border-top: 1px solid var(--border-strong);
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.2) inset, 0 0 8px rgba(57, 255, 20, 0.2);
+            border-radius: 8px 0 0 0; /* Bordes redondeados correctos */
+            z-index: 20;
+            display: flex;
+            flex-direction: row; /* Horizontal para la barra inferior */
+            padding: var(--panel-section-padding);
+            gap: var(--panel-section-padding);
+            transition: transform 0.4s ease-out, opacity 0.4s ease-out;
+            pointer-events: auto;
+            align-items: center; /* Centrar verticalmente el contenido */
+        }
+
+        /* 📍 Efecto de ocultar paneles y flotantes */
+        body.ui-hidden #left-panel-container {
+            transform: translateX(-100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+        body.ui-hidden #bottom-panel-container {
+            transform: translateY(100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        /* Filtros de la cámara */
         #main-view-area.filter-vno {
-            filter: grayscale(1) contrast(1.8) brightness(1.2) hue-rotate(90deg) saturate(1.5);
+            filter: grayscale(1) contrast(1.5) brightness(1.2) sepia(1) hue-rotate(50deg) saturate(20);
         }
         #main-view-area.filter-neg {
             filter: invert(1) hue-rotate(180deg) brightness(1.1);
@@ -85,11 +135,11 @@
             width: auto;
             height: auto;
             object-fit: cover; 
-            transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%) scale(1);
             z-index: 1;
+            transition: transform 0.3s ease-out;
         }
         
-        /* El canvas SLS se superpone */
         #main-filter-canvas {
             position: absolute;
             top: 0;
@@ -104,64 +154,34 @@
         .hidden-canvas { display: none; }
         .hidden { display: none !important; }
 
-        /* --- 📍 NUEVO: HUD DE CABINA (P14) --- */
-        #hud-container {
-            position: fixed;
+        /* --- Controles Flotantes sobre la cámara (LOGO, LINTERNA, FILTROS) --- */
+        #hud-floating-controls {
+            position: absolute; /* Posicionado absolutamente dentro de #main-view-area */
             top: 0; left: 0; right: 0; bottom: 0;
-            z-index: 100;
-            pointer-events: none; /* El contenedor principal no bloquea clics */
+            z-index: 101; /* Encima del canvas de filtros */
+            pointer-events: none; /* El contenedor no bloquea clics, solo los hijos */
             opacity: 1;
-            transition: opacity 0.5s ease-in-out;
+            transition: opacity 0.4s ease-out;
         }
-        body.ui-hidden #hud-container {
+        body.ui-hidden #hud-floating-controls {
             opacity: 0;
             pointer-events: none;
         }
         
-        /* Base para todas las barras del HUD */
-        .hud-bar {
-            position: absolute;
-            background: var(--panel-bg);
-            border: 1px solid var(--border-color);
-            box-shadow: 0 0 10px rgba(57, 255, 20, 0.2) inset, 0 0 8px rgba(57, 255, 20, 0.2);
-            border-radius: 8px;
-            pointer-events: auto; /* Las barras SÍ bloquean clics */
-            display: flex;
-            flex-direction: column;
-            padding: 10px;
-            gap: 10px;
-            
-            /* 📍 Animación de Panel (P7) */
-            opacity: 0;
-            transform: scale(0.95);
-            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-        
-        /* 📍 Animación de Panel (P7) */
-        body.panel-active .hud-bar {
-            opacity: 1;
-            transform: scale(1);
-        }
-
-        /* --- Controles Persistentes (Visibles con HUD) --- */
-        
         #hud-top-logo {
             position: absolute;
-            top: 15px; right: 15px;
+            top: var(--hud-gap);
+            right: var(--hud-gap);
             width: 60px; height: 60px;
             pointer-events: auto;
-            opacity: 1;
-            transition: opacity 0.3s ease;
+            animation: logo-effects 7s infinite linear; 
         }
-        #hud-top-logo.hiding {
-            animation: waterDrop 0.5s ease-out forwards;
-        }
-        
+
         #hud-torch-button {
             position: absolute;
-            top: 15px; left: 15px;
+            top: var(--hud-gap);
+            left: var(--hud-gap);
             width: 50px; height: 50px;
-            z-index: 101;
             background: rgba(0, 50, 50, 0.7);
             border: 2px solid var(--border-strong);
             color: var(--neon-green);
@@ -181,7 +201,7 @@
         #hud-filter-controls {
             position: absolute;
             top: 50%;
-            right: 15px;
+            right: var(--hud-gap);
             transform: translateY(-50%);
             display: flex;
             flex-direction: column;
@@ -197,69 +217,32 @@
             font-weight: bold; cursor: pointer;
             box-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
             transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
         }
         .filter-btn:active, .filter-btn.active {
             background: var(--neon-green); color: #000; box-shadow: 0 0 20px #fff;
         }
-
-        /* --- Diseño Horizontal (Modo Cabina) --- */
-        @media (min-aspect-ratio: 1/1) {
-            #hud-left-bar {
-                left: 15px; top: 15px; bottom: 15px;
-                width: var(--hud-left-width);
-                transform: translateX(-150px); /* 📍 Animación P7 */
-                justify-content: space-around;
-            }
-            #hud-bottom-bar {
-                left: calc(var(--hud-left-width) + 30px);
-                bottom: 15px;
-                right: 15px;
-                height: var(--hud-bottom-height);
-                transform: translateY(250px); /* 📍 Animación P7 */
-                flex-direction: row;
-                align-items: center;
-            }
-            /* Ocultar barra de filtros si el panel está activo */
-            body.panel-active #hud-filter-controls {
-                transform: translate(150px, -50%);
-                opacity: 0;
-                pointer-events: none;
-            }
-        }
         
-        /* --- Diseño Vertical (Modo Apilado) --- */
-        @media (max-aspect-ratio: 1/1) {
-            #hud-left-bar { /* Se convierte en barra superior */
-                left: 15px; top: 15px; right: 15px;
-                height: var(--hud-top-height);
-                transform: translateY(-150px); /* 📍 Animación P7 */
-                flex-direction: row;
-                align-items: center;
-                padding: 10px 15px;
-            }
-            #hud-bottom-bar {
-                left: 15px; bottom: 15px; right: 15px;
-                height: var(--hud-bottom-height);
-                transform: translateY(250px); /* 📍 Animación P7 */
-                justify-content: space-around;
-            }
-            /* Botón de linterna se mueve */
-            #hud-torch-button { top: calc(var(--hud-top-height) + 30px); }
-            /* Filtros se mueven */
-            #hud-filter-controls { top: calc(var(--hud-top-height) + 100px); }
-            /* Logo se mueve */
-            #hud-top-logo { top: calc(var(--hud-top-height) + 30px); }
-        }
+        /* Animaciones para los elementos flotantes */
+        @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes logo-effects { 0%, 90% { transform: scale(1) translateY(0); opacity: 1; filter: none; } 91% { transform: scale(1.1) translateX(-5px); opacity: 0.8; filter: drop-shadow(2px 0 red) drop-shadow(-2px 0 blue); } 92% { transform: scale(0.9) translateX(5px); opacity: 1; filter: drop-shadow(-2px 0 red) drop-shadow(2px 0 blue); } 93% { transform: scale(1) translateY(0); opacity: 1; filter: none; } 94% { transform: scale(1) translateY(0); opacity: 0.5; filter: blur(2px); } 95% { transform: scale(1) translateY(0); opacity: 1; filter: none; } 96% { transform: scale(1) translateY(-3px); } 97% { transform: scale(1) translateY(3px); } 98%, 100% { transform: scale(1) translateY(0); } }
+        /* WaterDrop para ocultar los flotantes, NO los paneles de cabina */
+        #hud-top-logo.hiding, #hud-torch-button.hiding, #hud-filter-controls.hiding { animation: waterDrop 0.5s ease-out forwards; }
+        @keyframes waterDrop { 0% { opacity: 1; transform: scale(1); filter: blur(0); } 100% { opacity: 0; transform: scale(2.5); filter: blur(5px); } }
+        @keyframes pulseGlow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1.0; } }
 
-        /* --- Elementos del Panel --- */
-        
+        /* --- Diseño de Secciones de Paneles --- */
         .panel-section {
             border: 1px solid var(--border-color);
             border-radius: 4px;
-            padding: 6px;
+            padding: var(--panel-section-padding);
             background: rgba(0, 0, 0, 0.2);
             display: flex;
             flex-direction: column;
+            flex-shrink: 0;
         }
         
         .section-title {
@@ -267,63 +250,30 @@
             font-size: 0.6rem;
             color: var(--text-dim);
             text-transform: uppercase;
-            margin-bottom: 6px;
+            margin-bottom: var(--panel-section-padding);
             text-align: center;
             border-bottom: 1px solid var(--border-color);
             padding-bottom: 3px;
             white-space: nowrap;
         }
 
-        /* Sección Sensores (Barra Izquierda/Superior) */
-        .sensor-status-grid {
-            display: flex;
+        /* Contenido del Panel Izquierdo */
+        #left-panel-container .panel-section { flex-grow: 1; justify-content: space-between; }
+        #left-panel-container .sensor-status-grid {
+            display: flex; /* Cambiado a flex para control vertical */
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
             align-items: center;
-            justify-content: center;
-            flex-grow: 1;
         }
-        @media (max-aspect-ratio: 1/1) { /* Vertical */
-            .sensor-status-grid {
-                flex-direction: row;
-                justify-content: space-around;
-                width: 100%;
-            }
-        }
-        
-        .status-light-group {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            font-size: 0.6rem;
-            color: var(--text-dim);
-            gap: 4px;
-        }
-        .status-led-indicator {
-            width: 12px; height: 12px;
-            border-radius: 50%;
-            background-color: #222;
-            border: 1px solid #444;
-            transition: all 0.3s;
-        }
-        .status-light-group[data-status="connected"] .status-led-indicator {
-            background-color: var(--neon-green); box-shadow: 0 0 8px var(--neon-green);
-            animation: pulseGlow 1.5s infinite;
-        }
-        .status-light-group[data-status="fallback"] .status-led-indicator {
-            background-color: var(--sensor-blue); box-shadow: 0 0 8px var(--sensor-blue);
-            animation: pulseGlow 1.5s infinite;
-        }
-        .status-light-group[data-status="simulated"] .status-led-indicator {
-            background-color: var(--sim-orange); box-shadow: 0 0 8px var(--sim-orange);
-            animation: pulseGlow 2s infinite;
-        }
-        .status-light-group[data-status="unavailable"] .status-led-indicator {
-            background-color: var(--alert-red); box-shadow: 0 0 8px var(--alert-red);
-        }
+        .status-light-group { display: flex; flex-direction: column; align-items: center; font-size: 0.6rem; color: var(--text-dim); gap: 4px; }
+        .status-led-indicator { width: 12px; height: 12px; border-radius: 50%; background-color: #222; border: 1px solid #444; transition: all 0.3s; }
+        .status-light-group[data-status="connected"] .status-led-indicator { background-color: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); animation: pulseGlow 1.5s infinite; }
+        .status-light-group[data-status="fallback"] .status-led-indicator { background-color: var(--sensor-blue); box-shadow: 0 0 8px var(--sensor-blue); animation: pulseGlow 1.5s infinite; }
+        .status-light-group[data-status="simulated"] .status-led-indicator { background-color: var(--sim-orange); box-shadow: 0 0 8px var(--sim-orange); animation: pulseGlow 2s infinite; }
+        .status-light-group[data-status="unavailable"] .status-led-indicator { background-color: var(--alert-red); box-shadow: 0 0 8px var(--alert-red); }
         .status-light-group[data-status="off"] .status-led-indicator { background-color: #333; }
-        
-        /* 📍 NUEVO: REC Light (P8) */
+        .status-light-group .emoji { font-size: 1.2rem; line-height: 1; }
+
         #cam-stats-display {
             font-family: 'Orbitron', sans-serif;
             font-size: 0.7rem;
@@ -332,232 +282,232 @@
             text-align: center;
             animation: rec-pulse 1.5s infinite ease-in-out;
             cursor: default;
+            margin-top: 10px; /* Separación del resto */
         }
-        @keyframes rec-pulse {
-            0%, 100% { opacity: 1; text-shadow: 0 0 8px var(--alert-red); }
-            50% { opacity: 0.7; text-shadow: 0 0 4px var(--alert-red); }
+        @keyframes rec-pulse { 0%, 100% { opacity: 1; text-shadow: 0 0 8px var(--alert-red); } 50% { opacity: 0.7; text-shadow: 0 0 4px var(--alert-red); } }
+
+        /* Contenido del Panel Inferior */
+        #bottom-panel-container .panel-section {
+            flex-direction: row; /* Para poner título y contenido lado a lado */
+            flex-grow: 1;
+            align-items: center;
+            gap: 10px;
         }
+        #bottom-panel-container .section-title {
+            writing-mode: vertical-rl; /* Título vertical */
+            text-orientation: mixed;
+            border-bottom: none;
+            border-right: 1px solid var(--border-color);
+            padding-bottom: 0;
+            padding-right: 3px;
+            font-size: 0.55rem; /* Un poco más pequeño */
+            flex-shrink: 0;
+            height: 100%; /* Ajuste a la altura de la sección */
+            display: flex;
+            align-items: center;
+        }
+
+        /* Lecturas de Campo */
+        .dials-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr; /* 3 columnas para los 3 elementos */
+            gap: 10px;
+            align-items: center;
+            justify-items: center;
+            flex-grow: 1; /* Ocupa el espacio disponible */
+        }
+        .dial-container { position: relative; width: 65px; height: 65px; background: radial-gradient(circle, #111, #000); border-radius: 50%; border: 1px solid var(--border-color); box-shadow: 0 0 5px rgba(57, 255, 20, 0.3) inset; }
+        .dial-needle { width: 2px; height: 40%; background: var(--neon-green); box-shadow: 0 0 5px var(--neon-green); position: absolute; bottom: 50%; left: 50%; transform-origin: bottom center; transform: translateX(-50%) rotate(-45deg); transition: transform 0.5s cubic-bezier(0.2, 1.5, 0.5, 1); }
+        .dial-label { font-size: 0.6rem; color: var(--text-dim); margin-top: 4px; text-align: center; }
+        
+        #detector-dial-container { width: 90px; height: 90px; } /* Más grande */
+        #detector-dial-needle { height: 45%; background: var(--alert-red); box-shadow: 0 0 8px var(--alert-red); transform: translateX(-50%) rotate(-60deg); }
         
         #temp-readout { text-align: center; }
-        #temp-val {
-            font-size: 1.5rem; /* Más pequeño para la barra */
-            font-family: 'Orbitron', sans-serif;
-            color: var(--neon-green);
-            line-height: 1;
-        }
+        #temp-val { font-size: 1.8rem; font-family: 'Orbitron', sans-serif; color: var(--neon-green); line-height: 1; }
         .temp-label { font-size: 0.6rem; color: var(--text-dim); }
 
-        /* Sección Diales (Barra Inferior) */
-        .dials-section {
+        /* Spirit Box */
+        .spirit-box-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr; /* Pwr | Actividad | Vol */
+            grid-template-rows: auto auto; /* Knobs arriba, graph/slider abajo */
+            gap: 8px;
+            flex-grow: 1;
+            height: 100%;
+        }
+        .knob-container { display: flex; flex-direction: column; align-items: center; }
+        .knob-label { font-size: 0.6rem; color: var(--text-dim); margin-top: 4px; }
+        .knob-circle { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--border-color); position: relative; cursor: pointer; background: radial-gradient(circle, #222, #000); box-shadow: 0 3px 5px #000, 0 0 5px rgba(57, 255, 20, 0.3) inset; transition: all 0.3s; }
+        .knob-circle.active { border-color: var(--neon-green); box-shadow: 0 3px 5px #000, 0 0 10px var(--neon-green) inset, 0 0 10px var(--neon-green); }
+        .knob-indicator { position: absolute; top: 6px; left: 50%; width: 3px; height: 15px; background: var(--neon-green); transform: translateX(-50%); border-radius: 2px; box-shadow: 0 0 5px var(--neon-green); }
+        #pwr-knob-indicator { height: 8px; width: 8px; border-radius: 50%; top: 8px; background: var(--alert-red); box-shadow: 0 0 5px var(--alert-red); }
+        #pwr-knob.active #pwr-knob-indicator { background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); }
+
+        #activity-graph-container {
+            grid-column: 2 / 3; /* Ocupa la columna central */
+            grid-row: 1 / 3; /* Ocupa ambas filas */
+            height: 100%;
             display: flex;
-            gap: 15px;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-        }
-        .dial-container {
-            position: relative;
-            width: 70px; height: 70px;
-            background: radial-gradient(circle, #111, #000);
-            border-radius: 50%;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 0 5px rgba(57, 255, 20, 0.3) inset;
-        }
-        .dial-needle {
-            width: 2px; height: 40%;
-            background: var(--neon-green);
-            box-shadow: 0 0 5px var(--neon-green);
-            position: absolute; bottom: 50%; left: 50%;
-            transform-origin: bottom center;
-            transform: translateX(-50%) rotate(-45deg);
-            transition: transform 0.5s cubic-bezier(0.2, 1.5, 0.5, 1);
-        }
-        .dial-label {
-            position: absolute;
-            bottom: 5px; left: 0; right: 0;
-            font-size: 0.6rem; color: var(--text-dim);
-            text-align: center;
-        }
-        
-        #detector-dial-container {
-            width: 110px; height: 110px; /* Más grande */
-        }
-        #detector-dial-needle {
-            height: 45%;
-            background: var(--alert-red);
-            box-shadow: 0 0 8px var(--alert-red);
-            transform: translateX(-50%) rotate(-60deg);
-        }
-        
-        /* Sección Spirit Box (Barra Inferior) */
-        .spirit-box-section {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            flex-grow: 1;
-        }
-        .knob-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .knob-label { font-size: 0.6rem; color: var(--text-dim); margin-top: 4px; }
-        .knob-circle {
-            width: 55px; height: 55px;
-            border-radius: 50%;
-            border: 2px solid var(--border-color);
-            position: relative;
-            cursor: pointer;
-            background: radial-gradient(circle, #222, #000);
-            box-shadow: 0 3px 5px #000, 0 0 5px rgba(57, 255, 20, 0.3) inset;
-            transition: all 0.3s;
-        }
-        .knob-circle.active {
-            border-color: var(--neon-green);
-            box-shadow: 0 3px 5px #000, 0 0 10px var(--neon-green) inset, 0 0 10px var(--neon-green);
-        }
-        .knob-indicator {
-            position: absolute; top: 6px; left: 50%;
-            width: 3px; height: 15px;
-            background: var(--neon-green);
-            transform: translateX(-50%);
-            border-radius: 2px;
-            box-shadow: 0 0 5px var(--neon-green);
-        }
-        #pwr-knob-indicator {
-            height: 8px; width: 8px;
-            border-radius: 50%; top: 8px;
-            background: var(--alert-red);
-            box-shadow: 0 0 5px var(--alert-red);
-        }
-        #pwr-knob.active #pwr-knob-indicator {
-            background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green);
-        }
-
-        .volume-control-group {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
-            flex-grow: 1;
-            max-width: 200px;
-        }
-        .vol-labels {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-        }
-        .vol-label {
-            font-size: 0.6rem;
-            color: var(--text-dim);
-        }
-        #vol-percent { color: var(--neon-green); }
-
-        input[type=range] {
-            flex-grow: 1; width: 100%; -webkit-appearance: none; height: 15px; 
-            background: #111; border: 1px solid var(--border-color);
-            border-radius: 10px; overflow: hidden;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 25px; height: 25px;
-            background: #444; border: 1px solid #666;
-            border-radius: 50%;
-            box-shadow: -100vw 0 0 100vw var(--neon-green);
-            cursor: pointer;
-        }
-
-        /* Gráfica Actividad (Barra Inferior) */
-        #activity-graph-container {
-            width: 100%;
-            flex-grow: 1;
-            height: 55px;
-            background: #000;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            overflow: hidden;
+            background: #000; border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden;
         }
         #energy-canvas { width: 100%; height: 100%; }
-        
-        @keyframes pulseGlow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1.0; } }
 
-        /* --- Loading --- */
-        #loading-overlay {
-            position: fixed; top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: #000; z-index: 9999;
-            display: flex; justify-content: center;
+        .volume-control-group {
+            grid-column: 3 / 4; /* Columna derecha */
+            grid-row: 1 / 3; /* Ocupa ambas filas */
+            display: flex;
+            flex-direction: column; /* Vertical */
             align-items: center;
-            transition: opacity 0.5s ease-out;
-        }
-        #loading-content { text-align: center; }
-        #loading-text {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.2rem;
-            color: var(--neon-green);
-            text-shadow: 0 0 10px var(--neon-green);
-            animation: pulseGlow 2s infinite ease-in-out;
-            transition: all 0.3s;
-        }
-        /* ... (loading bar styles sin cambios) ... */
-        #loading-bar-container {
-            width: 250px; height: 10px;
-            border: 1px solid var(--neon-green);
-            border-radius: 5px; margin-top: 15px;
-            overflow: hidden;
-            background: rgba(0, 50, 50, 0.3);
-        }
-        #loading-bar {
-            width: 0%; height: 100%;
-            background-color: var(--neon-green);
-            transition: width 0.4s ease-out;
-            animation: loading-shimmer 2s infinite linear;
-            background-image: linear-gradient(90deg, var(--neon-green) 0%, #fff 50%, var(--neon-green) 100%);
-            background-size: 200% 100%;
-        }
-        @keyframes loading-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-
-        /* --- 📍 SÍGUENOS (P9) --- */
-        #follow-container {
-            position: fixed;
-            bottom: 30px; /* Más abajo */
-            left: 50%;
-            transform: translateX(-50%); 
-            z-index: 99; /* Detrás del HUD principal */
-            pointer-events: none;
-            opacity: 0; /* Oculto por defecto */
-            width: 100%;
-            transition: opacity 0.5s ease-out;
-        }
-        /* Visible cuando el HUD está oculto */
-        body.ui-hidden #follow-container {
-            opacity: 1;
-        }
-        #follow-container.hiding {
-            animation: waterDrop 0.5s ease-out forwards;
-        }
-        .follow-step {
-            display: none; 
-            color: var(--neon-green);
-            font-size: 1.5rem;
-            font-family: 'Orbitron', sans-serif;
-            text-shadow: 0 0 10px var(--neon-green);
-            text-align: center; opacity: 0;
-        }
-        #follow-icons {
-            display: none; align-items: center;
             justify-content: center;
+            gap: 8px;
+            height: 100%;
         }
-        #follow-icons svg {
-            width: 50px; height: 50px;
-            margin: 0 15px;
-            fill: var(--neon-green);
-            filter: drop-shadow(0 0 5px var(--neon-green));
+        .vol-label { font-size: 0.6rem; color: var(--text-dim); white-space: nowrap; }
+        #vol-percent { font-size: 0.6rem; color: var(--neon-green); width: 30px; text-align: center; }
+        input[type=range] { 
+            -webkit-appearance: none; 
+            width: 10px; /* Ancho muy pequeño para que sea vertical */
+            height: 80px; /* Altura para el rango */
+            background: #111; 
+            border: 1px solid var(--border-color); 
+            border-radius: 10px; 
+            overflow: hidden; 
+            transform: rotate(-90deg); /* Rotar para que sea vertical */
+            transform-origin: center;
+            margin: 0; /* Eliminar margen para centrar */
         }
+        input[type=range]::-webkit-slider-thumb { 
+            -webkit-appearance: none; 
+            width: 20px; /* Ancho del thumb */
+            height: 20px; /* Altura del thumb */
+            background: #444; 
+            border: 1px solid #666; 
+            border-radius: 50%; 
+            box-shadow: -100vw 0 0 100vw var(--neon-green); 
+            cursor: pointer; 
+        }
+
+        /* --- Pantalla de Carga y "Síguenos" --- */
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s ease-out; }
+        #loading-content { text-align: center; }
+        #loading-text { font-family: 'Orbitron', sans-serif; font-size: 1.2rem; color: var(--neon-green); text-shadow: 0 0 10px var(--neon-green); animation: pulseGlow 2s infinite ease-in-out; transition: all 0.3s; }
+        #loading-bar-container { width: 250px; height: 10px; border: 1px solid var(--neon-green); border-radius: 5px; margin-top: 15px; overflow: hidden; background: rgba(0, 50, 50, 0.3); }
+        #loading-bar { width: 0%; height: 100%; background-color: var(--neon-green); transition: width 0.4s ease-out; animation: loading-shimmer 2s infinite linear; background-image: linear-gradient(90deg, var(--neon-green) 0%, #fff 50%, var(--neon-green) 100%); background-size: 200% 100%; }
+        @keyframes loading-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
         
+        #follow-container { 
+            position: fixed; 
+            bottom: var(--hud-bottom-height); /* Encima de la barra inferior */
+            left: 50%; 
+            transform: translateX(-50%); 
+            z-index: 200; 
+            pointer-events: none; 
+            opacity: 0; /* Por defecto oculto */
+            width: 100%; 
+            transition: opacity 0.5s ease-out; 
+            padding-bottom: 20px; /* Espacio para que no toque la barra */
+        }
+        #follow-container.visible { opacity: 1; }
+        .follow-step { 
+            display: none; 
+            color: var(--neon-green); 
+            font-size: 1.5rem; 
+            font-family: 'Orbitron', sans-serif; 
+            text-shadow: 0 0 10px var(--neon-green); 
+            text-align: center; 
+            opacity: 0; 
+        }
+        #follow-icons { display: flex; align-items: center; justify-content: center; gap: 15px; }
+        #follow-icons svg { width: 50px; height: 50px; fill: var(--neon-green); filter: drop-shadow(0 0 5px var(--neon-green)); }
         .fade-in { animation: fadeIn 1s ease-out forwards; }
         .fade-out { animation: fadeOut 1s ease-out forwards; }
-        @keyframes waterDrop { 0% { opacity: 1; transform: scale(1); filter: blur(0); } 100% { opacity: 0; transform: scale(2.5); filter: blur(5px); } }
         @keyframes fadeIn { 0% { opacity: 0; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
         @keyframes fadeOut { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+        /* --- Media Queries para Adaptabilidad --- */
+
+        /* MODO VERTICAL (PORTRAIT) */
+        @media (max-aspect-ratio: 1/1) {
+            #app-ui {
+                grid-template-areas:
+                    "left-panel"
+                    "camera-view"
+                    "bottom-panel";
+                grid-template-columns: 1fr; /* Una sola columna */
+                grid-template-rows: var(--hud-left-width) 1fr var(--hud-bottom-height); /* Altura de la izquierda como superior */
+            }
+
+            #left-panel-container {
+                border-right: none;
+                border-bottom: 1px solid var(--border-strong);
+                border-radius: 0 0 8px 8px; /* Redondeo abajo */
+                width: 100%; /* Ocupa todo el ancho */
+                height: var(--hud-left-width); /* Nueva altura */
+                flex-direction: row; /* Contenido horizontal */
+                justify-content: space-around;
+            }
+
+            #left-panel-container .sensor-status-grid {
+                flex-direction: row; /* Sensores en fila */
+                gap: 20px;
+            }
+
+            #left-panel-container .section-title {
+                margin-bottom: 0;
+                border-bottom: none;
+                border-right: 1px solid var(--border-color);
+                padding-bottom: 0;
+                padding-right: 3px;
+                writing-mode: vertical-rl; /* Título vertical */
+                height: 100%;
+                font-size: 0.55rem;
+            }
+            #left-panel-container .panel-section {
+                flex-grow: 1;
+                flex-direction: row;
+                justify-content: center;
+                align-items: center;
+            }
+
+            #cam-stats-display {
+                margin-top: 0; /* Eliminar margen vertical */
+                margin-left: 10px; /* Margen a la izquierda */
+            }
+
+            #bottom-panel-container {
+                border-top: none;
+                border-radius: 8px 8px 0 0; /* Redondeo arriba */
+                width: 100%;
+                flex-direction: column; /* Contenido vertical */
+                height: var(--hud-bottom-height);
+            }
+            #bottom-panel-container .panel-section { flex-direction: column; flex-grow: 1; }
+            #bottom-panel-container .section-title {
+                writing-mode: horizontal-tb; /* Título horizontal */
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                padding-right: 0;
+                padding-bottom: 3px;
+                font-size: 0.6rem;
+            }
+            #bottom-panel-container .dials-grid { grid-template-columns: 1fr 1fr; } /* 2 columnas para mantener la forma */
+            #detector-dial-container { width: 65px; height: 65px; } /* Ajustar tamaño del dial */
+            #detector-dial-needle { height: 40%; }
+
+            .spirit-box-content {
+                grid-template-columns: 1fr 1fr; /* 2 columnas */
+                grid-template-rows: auto auto auto; /* Mas filas */
+            }
+            #activity-graph-container { grid-column: 1 / 3; grid-row: 2 / 3; } /* Ocupa el centro */
+            .knob-container:first-child { grid-column: 1 / 2; grid-row: 1 / 2; }
+            .volume-control-group { grid-column: 2 / 3; grid-row: 1 / 2; flex-direction: row; }
+            input[type=range] { transform: rotate(0deg); width: 80px; height: 10px; }
+            #vol-percent { text-align: left; }
+        }
     </style>
 </head>
 <body>
@@ -566,957 +516,5 @@
 
     <div id="loading-overlay">
         <div id="loading-content">
-            <div id="loading-text">SINCRONIZANDO GUIONES...</div>
+            <div id="loading-text">INICIANDO DETECTOR OBR</div>
             <div id="loading-bar-container">
-                <div id="loading-bar"></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="main-view-area" onclick="handleUITap(event)">
-        <video id="bg-camera-feed" playsinline autoplay muted></video>
-        <canvas id="main-filter-canvas"></canvas>
-    </div>
-    
-    <canvas id="temp-canvas" class="hidden-canvas"></canvas>
-
-    <div id="hud-container" onclick="handleHUDTap(event)">
-
-        <img id="hud-top-logo" src="obr-logo.png" alt="Logo OBR">
-        
-        <button id="hud-torch-button" onclick="toggleTorch(event)">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M342.6 38.6c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L380.7 167H256c-17.7 0-32 14.3-32 32s14.3 32 32 32h124.7l-83.4 83.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l144-144c12.5-12.5 12.5-32.8 0-45.3l-144-144zM160 80c0-17.7-14.3-32-32-32s-32 14.3-32 32v144H64c-17.7 0-32 14.3-32 32s14.3 32 32 32h32v144c0 17.7 14.3 32 32 32s32-14.3 32-32V288h32c17.7 0 32-14.3 32-32s-14.3-32-32-32H160V80z"/></svg>
-        </button>
-
-        <div id="hud-filter-controls">
-            <button class="filter-btn" onclick="setFilter('vno')">VNO</button>
-            <button class="filter-btn" onclick="setFilter('sls')">SLS</button>
-            <button class="filter-btn" onclick="setFilter('neg')">NEG</button>
-            <button class="filter-btn" id="btn-panel" onclick="togglePanel()">PAN</button>
-        </div>
-
-        <div id="hud-left-bar" class="hud-bar">
-            <div class="panel-section">
-                <div class="section-title">SENSORES</div>
-                <div class="sensor-status-grid">
-                    <div class="status-light-group" id="mic-status" data-status="off">
-                        <div class="status-led-indicator"></div>
-                        <span>MIC</span>
-                    </div>
-                    <div class="status-light-group" id="mag-status" data-status="off">
-                        <div class="status-led-indicator"></div>
-                        <span>MAG</span>
-                    </div>
-                    <div class="status-light-group" id="prox-status" data-status="off">
-                        <div class="status-led-indicator"></div>
-                        <span>EMF</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="panel-section">
-                <div class="section-title">GRABANDO</div>
-                <div id="cam-stats-display">
-                    <span id="cam-fps">--</span> FPS<br>
-                    <span id="cam-res">----</span>p
-                </div>
-            </div>
-            
-            <div class="panel-section">
-                <div class="section-title">AMBIENTE</div>
-                <div id="temp-readout">
-                    <div id="temp-val">--.-°C</div>
-                </div>
-            </div>
-        </div>
-
-        <div id="hud-bottom-bar" class="hud-bar">
-            <div class="dials-section">
-                <div id="mag-dial-container" class="dial-container">
-                    <div id="compass-needle" class="dial-needle" style="transform: translateX(-50%) rotate(0deg);"></div>
-                    <div class="dial-label">BRÚJULA</div>
-                </div>
-                <div id="detector-dial-container" class="dial-container">
-                    <div id="detector-dial-needle" class="dial-needle"></div>
-                    <div class="dial-label">DETECTOR</div>
-                </div>
-            </div>
-            
-            <div id="activity-graph-container" title="Gráfica de Actividad EMF">
-                <canvas id="energy-canvas"></canvas>
-            </div>
-            
-            <div class="spirit-box-section">
-                <div class="knob-container">
-                    <div class="knob-circle" id="knob-power">
-                        <div id="pwr-knob-indicator" class="knob-indicator" style="transform: rotate(135deg);"></div>
-                    </div>
-                    <div class="knob-label">ENCENDER</div>
-                </div>
-                <div class="knob-container">
-                    <div class="knob-circle" id="knob-scan">
-                        <div class="knob-indicator" style="transform: rotate(135deg);"></div>
-                    </div>
-                    <div class="knob-label">FRECUENCIA</div>
-                </div>
-                <div class="volume-control-group">
-                    <div class="vol-labels">
-                        <span class="vol-label">VOLUMEN</span>
-                        <span id="vol-percent" class="vol-label">80%</span>
-                    </div>
-                    <input type="range" min="0" max="100" value="80" id="vol-slider">
-                </div>
-            </div>
-        </div>
-
-    </div> <div id="follow-container">
-        <div id="follow-text" class="follow-step">SÍGUENOS EN</div>
-        <div id="follow-icons" class="follow-step">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M448 209.9a210.1 210.1 0 0 1 -122.8-39.3V349.4A162.6 162.6 0 1 1 185 188.3V277.2a74.6 74.6 0 1 0 52.2 71.2V0l88 0a121.2 121.2 0 0 0 122.8 122.1v87.8z"/></svg>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path d="M549.7 124.1c-6.3-23.7-24.8-42.3-48.3-48.6C458.8 64 288 64 288 64S117.2 64 74.6 75.5c-23.5 6.3-42 24.9-48.3 48.6-11.4 42.9-11.4 132.3-11.4 132.3s0 89.4 11.4 132.3c6.3 23.7 24.8 42.3 48.3 48.6C117.2 448 288 448 288 448s170.8 0 213.4-11.5c23.5-6.3 42-24.9 48.3-48.6 11.4-42.9 11.4-132.3 11.4-132.3s0-89.4-11.4-132.3zM232 341.5V170.5l145.2 85.5-145.2 85.5z"/></svg>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M504 256C504 119 393 8 256 8S8 119 8 256c0 123.8 90.7 226.4 209.3 245V327.7h-63V256h63v-54.6c0-62.2 37-96.5 93.7-96.5 27.1 0 55.5 4.8 55.5 4.8v61h-31.3c-30.8 0-40.4 19.1-40.4 38.7V256h68.8l-11 71.7h-57.8V501C413.3 482.4 504 379.8 504 256z"/></svg>
-        </div>
-        <div id="follow-handle" class="follow-step">@EXPLORACIONESOBR</div>
-    </div>
-
-</div> 
-
-    <script>
-        // ... (Script Anti-Caché sin cambios) ...
-        (function() {
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                    if (registrations.length) {
-                        console.log('[ANTI-CACHE] Des-registrando Service Workers...');
-                        for(let registration of registrations) { registration.unregister(); }
-                        console.log('[ANTI-CACHE] Service Workers eliminados. Recargando...');
-                        location.reload(true);
-                    } else {
-                        console.log('[ANTI-CACHE] No se encontraron Service Workers.');
-                    }
-                });
-            }
-            if (window.caches) {
-                caches.keys().then(function(names) {
-                    for (let name of names) {
-                        console.log('[ANTI-CACHE] Eliminando caché:', name);
-                        caches.delete(name);
-                    }
-                });
-            }
-        })();
-    
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzOf3crQxBdPylwMTAd34W-nBShN31MkIUtaMdKsZHMZVVniI2HjMesD6DpOlO363T1/exec";
-        
-        let isRunning = false;
-        let currentFilter = 'none'; 
-        let scanSpeed = 0; 
-        
-        const mainViewArea = document.getElementById('main-view-area');
-        const videoBg = document.getElementById('bg-camera-feed');
-        
-        const mainFilterCanvas = document.getElementById('main-filter-canvas');
-        const mainFilterCtx = mainFilterCanvas.getContext('2d', { willReadFrequently: true });
-
-        const tempCanvas = document.getElementById('temp-canvas');
-        
-        const micStatus = document.getElementById('mic-status');
-        const magStatus = document.getElementById('mag-status');
-        const proxStatus = document.getElementById('prox-status');
-        
-        let energyHistory = new Array(50).fill(0);
-        let energyCanvas, energyCtx;
-        
-        let audioCtx, masterGain;
-        let audioSource_Fondo1, gain_Fondo1, audioBuffer_Fondo1;
-        let audioSource_Fondo2, gain_Fondo2, audioBuffer_Fondo2;
-        let reverb, reverbGain, distortionNode;
-        let scanTimer = null; 
-        
-        let isSpeaking = false; 
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        let recognition, isRecognizing = false;
-        let programadoData = new Map();
-        let automaticoData = [];
-        let currentTemp = 19.8;
-        
-        let proximitySensor, magnetometer, orientationSensor;
-        
-        let emfValue = 0;
-        let emfSimInterval = null;
-        let visualLoopInterval; 
-
-        let poseDetector; 
-        let latestPoses = []; 
-        let isDetectingPose = false; 
-        
-        let spiritBoxState = "OFF";
-        let spiritBoxTimeout = null;
-        
-        let uiHideTimeout;
-        let uiVisible = true; // El UI está visible al inicio
-
-        let zoom = 1.0;
-        let maxZoom = 5.0;
-        let initialPinchDist = 0;
-        let lastPan = { x: 0, y: 0 };
-        let currentPan = { x: 0, y: 0 };
-        let isPinching = false;
-        let isPanning = false;
-
-        let videoTrack;
-        let isTorchOn = false;
-        let lastFrameTime = 0;
-        let frameCount = 0;
-        let lastFpsUpdate = 0;
-
-        async function startCamera() {
-            try {
-                const constraints = {
-                    video: {
-                        facingMode: { ideal: "environment" },
-                        width: { ideal: 4096 }, 
-                        height: { ideal: 2160 },
-                        frameRate: { ideal: 60 }
-                    },
-                    audio: false
-                };
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
-                
-                videoTrack = stream.getVideoTracks()[0]; 
-                
-                if (videoTrack && typeof videoTrack.applyConstraints === 'function') {
-                    videoTrack.applyConstraints({
-                        advanced: [{ focusMode: 'continuous' }]
-                    }).catch(e => console.warn("No se pudo aplicar 'focusMode: continuous'", e));
-                    
-                    const capabilities = videoTrack.getCapabilities();
-                    if (!capabilities.torch) {
-                        document.getElementById('hud-torch-button').style.display = 'none';
-                    }
-                }
-                
-                videoBg.srcObject = stream;
-                videoBg.onloadedmetadata = () => {
-                    resizeAllCanvas(); 
-                    energyCanvas = document.getElementById('energy-canvas');
-                    if (energyCanvas) { 
-                        energyCtx = energyCanvas.getContext('2d');
-                        resizeEnergyCanvas();
-                    }
-                    
-                    try {
-                        const settings = videoTrack.getSettings();
-                        const res = settings.height || videoBg.videoHeight;
-                        document.getElementById('cam-res').innerText = `${res}`;
-                    } catch(e) {
-                        document.getElementById('cam-res').innerText = `${videoBg.videoHeight}`;
-                    }
-                    
-                    drawLoop(); // Inicia el bucle de dibujo de SLS
-                };
-            } catch (e) { console.log("Error de cámara", e); }
-        }
-        
-        function resizeAllCanvas() {
-            const w = mainViewArea.clientWidth; 
-            const h = mainViewArea.clientHeight; 
-            
-            mainFilterCanvas.width = w;
-            mainFilterCanvas.height = h;
-            
-            if(energyCanvas && document.body.classList.contains('panel-active')) {
-                resizeEnergyCanvas();
-            }
-        }
-
-        async function initMLModel() {
-            try {
-                const model = poseDetection.SupportedModels.MoveNet;
-                const detectorConfig = {
-                    modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING,
-                    maxPoses: 6 
-                };
-                poseDetector = await poseDetection.createDetector(model, detectorConfig);
-                console.log("MoveNet (IA Multi-Pose) cargado.");
-            } catch (e) {
-                console.error("Error al cargar modelo de IA:", e);
-            }
-        }
-        
-        // 📍 BUCLE DE DIBUJO OPTIMIZADO (P1, P13)
-        async function drawLoop() {
-            const now = performance.now();
-            frameCount++;
-            if (now - lastFpsUpdate > 1000) {
-                const fps = frameCount;
-                document.getElementById('cam-fps').innerText = fps;
-                frameCount = 0;
-                lastFpsUpdate = now;
-            }
-
-            // Solo dibuja si el canvas de SLS está activo
-            if (mainFilterCanvas.style.display === 'block' && latestPoses) {
-                const w = mainFilterCanvas.width;
-                const h = mainFilterCanvas.height;
-                mainFilterCtx.clearRect(0, 0, w, h);
-                drawAllSkeletons(latestPoses); 
-            }
-            
-            requestAnimationFrame(drawLoop);
-        }
-        
-        async function detectPoseLoop() {
-            while (true) {
-                // Solo detecta si el filtro SLS está activo
-                if (currentFilter === 'sls' && poseDetector && videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
-                    if (!isDetectingPose) {
-                        isDetectingPose = true;
-                        const poses = await poseDetector.estimatePoses(videoBg); 
-                        latestPoses = poses; 
-                        isDetectingPose = false;
-                    }
-                    await new Promise(r => setTimeout(r, 100)); // 10 FPS
-                } else {
-                    latestPoses = []; 
-                    await new Promise(r => setTimeout(r, 500));
-                }
-            }
-        }
-
-        const confidenceThreshold = 0.3; 
-        const skeletonMap = [
-            ['left_shoulder', 'right_shoulder'], ['left_shoulder', 'left_elbow'],
-            ['left_elbow', 'left_wrist'], ['right_shoulder', 'right_elbow'],
-            ['right_elbow', 'right_wrist'], ['left_shoulder', 'left_hip'],
-            ['right_shoulder', 'right_hip'], ['left_hip', 'right_hip'],
-            ['left_hip', 'left_knee'], ['left_knee', 'left_ankle'],
-            ['right_hip', 'right_knee'], ['right_knee', 'right_ankle']
-        ];
-        
-        // 📍 DIBUJO DE SLS ACTUALIZADO (P13)
-        function drawAllSkeletons(poses) {
-            const ctx = mainFilterCtx; 
-            
-            ctx.strokeStyle = 'var(--neon-green)'; // LÍNEAS VERDES
-            ctx.fillStyle = 'var(--alert-red)';   // PUNTOS ROJOS
-            
-            ctx.lineWidth = 4; // MÁS GRUESAS
-            ctx.filter = 'drop-shadow(0 0 6px var(--neon-green))'; // MÁS BRILLO
-
-            const videoW = videoBg.videoWidth;
-            const videoH = videoBg.videoHeight;
-            const canvasW = mainFilterCanvas.width;
-            const canvasH = mainFilterCanvas.height;
-            
-            const videoAspect = videoW / videoH;
-            const canvasAspect = canvasW / canvasH;
-            
-            let scale, offsetX, offsetY;
-            
-            if (canvasAspect > videoAspect) {
-                scale = canvasW / videoW;
-                offsetX = 0;
-                offsetY = (canvasH - videoH * scale) / 2;
-            } else {
-                scale = canvasH / videoH;
-                offsetX = (canvasW - videoW * scale) / 2;
-                offsetY = 0;
-            }
-
-            poses.forEach(pose => {
-                if (pose.score > confidenceThreshold) {
-                    drawKeypoints(pose.keypoints, scale, offsetX, offsetY);
-                    drawConnections(pose.keypoints, scale, offsetX, offsetY);
-                }
-            });
-            ctx.filter = 'none';
-        }
-
-        function drawKeypoints(keypoints, scale, offsetX, offsetY) {
-            const ctx = mainFilterCtx;
-            for (let i = 0; i < keypoints.length; i++) {
-                const keypoint = keypoints[i];
-                if (keypoint.score > confidenceThreshold) {
-                    ctx.beginPath();
-                    ctx.arc(keypoint.x * scale + offsetX, keypoint.y * scale + offsetY, 5, 0, 2 * Math.PI); // Puntos un poco más grandes
-                    ctx.fill();
-                }
-            }
-        }
-
-        function drawConnections(keypoints, scale, offsetX, offsetY) {
-            const ctx = mainFilterCtx;
-            const keypointMap = new Map();
-            keypoints.forEach(keypoint => keypointMap.set(keypoint.name, keypoint));
-
-            skeletonMap.forEach(connection => {
-                const start = keypointMap.get(connection[0]);
-                const end = keypointMap.get(connection[1]);
-                if (start && end && start.score > confidenceThreshold && end.score > confidenceThreshold) {
-                    ctx.beginPath();
-                    ctx.moveTo(start.x * scale + offsetX, start.y * scale + offsetY);
-                    ctx.lineTo(end.x * scale + offsetX, end.y * scale + offsetY);
-                    ctx.stroke();
-                }
-            });
-        }
-        
-        // 📍 NUEVA LÓGICA DE FILTROS (P1, P13)
-        function setFilter(f) {
-            document.querySelectorAll('.filter-btn').forEach(b => {
-                if (b.id !== 'btn-panel') {
-                    b.classList.remove('active');
-                }
-            });
-            
-            // Limpiar filtros y canvas
-            mainViewArea.classList.remove('filter-vno', 'filter-neg');
-            mainFilterCanvas.style.display = 'none';
-            currentFilter = 'none';
-            
-            const newFilter = f;
-            if (event.target.classList.contains('active')) {
-                event.target.classList.remove('active');
-            } else {
-                if (f === 'vno') {
-                    mainViewArea.classList.add('filter-vno');
-                    currentFilter = 'vno';
-                } else if (f === 'neg') {
-                    mainViewArea.classList.add('filter-neg');
-                    currentFilter = 'neg';
-                } else if (f === 'sls') {
-                    mainFilterCanvas.style.display = 'block'; // Mostrar canvas
-                    currentFilter = 'sls';
-                }
-                event.target.classList.add('active');
-            }
-        }
-
-        function setSensorStatus(sensorName, status) {
-            let el;
-            if (sensorName === 'mic') el = micStatus;
-            else if (sensorName === 'mag') el = magStatus;
-            else if (sensorName === 'prox') el = proxStatus;
-            if (el) el.dataset.status = status;
-        }
-
-        // 📍 Lógica de Linterna (P5)
-        async function toggleTorch(event) {
-            event.stopPropagation(); // Evitar que el clic active el show/hide del UI
-            
-            if (!videoTrack || typeof videoTrack.applyConstraints !== 'function') {
-                document.getElementById('hud-torch-button').style.display = 'none';
-                return;
-            }
-            try {
-                isTorchOn = !isTorchOn;
-                await videoTrack.applyConstraints({ advanced: [{ torch: isTorchOn }] });
-                document.getElementById('hud-torch-button').classList.toggle('active', isTorchOn);
-            } catch (e) {
-                console.error("Error al activar linterna:", e);
-                isTorchOn = false; 
-                document.getElementById('hud-torch-button').classList.toggle('active', false);
-                document.getElementById('hud-torch-button').style.display = 'none';
-            }
-        }
-
-        // --- Lógica de Audio (Sin cambios) ---
-        async function loadAudio(url) {
-            try {
-                const response = await fetch(url);
-                const arrayBuffer = await response.arrayBuffer();
-                return await audioCtx.decodeAudioData(arrayBuffer);
-            } catch (e) { console.error(`Error cargando audio: ${url}`, e); throw e; }
-        }
-
-        async function initAudio() {
-            if (audioCtx) return;
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            masterGain = audioCtx.createGain();
-            masterGain.connect(audioCtx.destination);
-            
-            try {
-                updateLoadingProgress(55, "CARGANDO AUDIO...");
-                [audioBuffer_Fondo1, audioBuffer_Fondo2] = await Promise.all([
-                    loadAudio('FONDO_1.mp3'),
-                    loadAudio('FONDO_2.mp3')
-                ]);
-                updateLoadingProgress(65, "AUDIO CARGADO");
-            } catch (e) {
-                console.error("Error al cargar audios de fondo:", e);
-                updateLoadingProgress(65, "ERROR DE AUDIO");
-                return; 
-            }
-        
-            gain_Fondo1 = audioCtx.createGain(); gain_Fondo1.gain.value = 0;
-            gain_Fondo1.connect(masterGain);
-            gain_Fondo2 = audioCtx.createGain(); gain_Fondo2.gain.value = 0;
-            gain_Fondo2.connect(masterGain);
-        
-            reverbGain = audioCtx.createGain(); reverbGain.gain.value = 0.8;
-            let delay = audioCtx.createDelay(1.0); delay.delayTime.value = 0.5; 
-            let fb = audioCtx.createGain(); fb.gain.value = 0.6;
-            reverbGain.connect(delay); delay.connect(fb); fb.connect(delay);
-            delay.connect(masterGain); 
-
-            distortionNode = audioCtx.createWaveShaper();
-            distortionNode.curve = makeDistortionCurve(50);
-            distortionNode.oversample = '4x';
-            distortionNode.connect(reverbGain);
-            
-            initSpeechRec();
-        }
-        function playFondo1() {
-            if (!audioBuffer_Fondo1) return;
-            if (audioSource_Fondo1) { try { audioSource_Fondo1.stop(); } catch(e){} }
-            audioSource_Fondo1 = audioCtx.createBufferSource();
-            audioSource_Fondo1.buffer = audioBuffer_Fondo1;
-            audioSource_Fondo1.loop = true;
-            audioSource_Fondo1.connect(gain_Fondo1);
-            audioSource_Fondo1.start();
-        }
-        function playFondo2_Fragment() {
-            if (!audioBuffer_Fondo2 || !isRunning || spiritBoxState !== "SCANNING") return;
-            if (audioSource_Fondo2) { try { audioSource_Fondo2.stop(); } catch(e){} }
-            audioSource_Fondo2 = audioCtx.createBufferSource();
-            audioSource_Fondo2.buffer = audioBuffer_Fondo2;
-            audioSource_Fondo2.connect(gain_Fondo2);
-            const duration = audioBuffer_Fondo2.duration;
-            const startTime = Math.random() * (duration - 2);
-            const fragmentDuration = 0.8 + Math.random() * 1.2;
-            audioSource_Fondo2.start(0, startTime, fragmentDuration);
-            if (scanTimer) clearTimeout(scanTimer);
-            scanTimer = setTimeout(playFondo2_Fragment, fragmentDuration * 1000 + (Math.random() * 300));
-        }
-        function makeDistortionCurve(amount) {
-            let k = typeof amount === 'number' ? amount : 50, n_samples = 44100,
-                curve = new Float32Array(n_samples), deg = Math.PI / 180, i = 0, x;
-            for ( ; i < n_samples; ++i ) {
-                x = i * 2 / n_samples - 1;
-                curve[i] = ( 3 + k ) * x * 20 * deg / ( Math.PI + k * Math.abs(x) );
-            }
-            return curve;
-        }
-
-        // --- Lógica de Sensores (Sin cambios) ---
-        let sensorPermissionsRequested = false;
-        async function requestAllPermissions() {
-            if (sensorPermissionsRequested) { initSensor(); return; }
-            sensorPermissionsRequested = true;
-            console.log("Solicitando permisos de sensores...");
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                try {
-                    const status = await DeviceOrientationEvent.requestPermission();
-                    if (status === 'granted') { initSensor(); } 
-                    else { setSensorStatus('mag', 'unavailable'); setSensorStatus('prox', 'simulated'); startEmfSimulation(); }
-                } catch (e) { console.warn("Error permiso orientación", e); initSensor(); }
-            } else { console.log("Permiso orientación no requerido"); initSensor(); }
-        }
-        function initSensor() {
-            if ('AbsoluteOrientationSensor' in window) {
-                try {
-                    orientationSensor = new AbsoluteOrientationSensor({ frequency: 10 });
-                    orientationSensor.onreading = () => {
-                        let q = orientationSensor.quaternion;
-                        let yaw = Math.atan2(2 * (q[0] * q[1] + q[2] * q[3]), 1 - 2 * (q[1] * q[1] + q[2] * q[2])) * (180 / Math.PI);
-                        document.getElementById('compass-needle').style.transform = `translateX(-50%) rotate(${-yaw}deg)`;
-                        setSensorStatus('mag', 'connected');
-                    };
-                    orientationSensor.onerror = (e) => { setSensorStatus('mag', 'unavailable'); };
-                    orientationSensor.start();
-                } catch (e) { setSensorStatus('mag', 'unavailable'); }
-            } else { setSensorStatus('mag', 'unavailable'); }
-
-            if ('Magnetometer' in window) {
-                try {
-                    magnetometer = new Magnetometer({ frequency: 10 });
-                    magnetometer.onreading = () => {
-                        let strength = Math.sqrt(magnetometer.x**2 + magnetometer.y**2 + magnetometer.z**2);
-                        emfValue = Math.min(100, (strength / 100) * 100); 
-                        setSensorStatus('prox', 'connected');
-                    };
-                    magnetometer.onerror = (e) => { initProximitySensor(); };
-                    magnetometer.start();
-                } catch (e) { initProximitySensor(); }
-            } else { initProximitySensor(); }
-        }
-        function initProximitySensor() {
-            if ('ProximitySensor' in window) {
-                try {
-                    proximitySensor = new ProximitySensor();
-                    proximitySensor.onreading = () => {
-                        const maxDist = 10, minDist = 2;  
-                        let dist = proximitySensor.value;
-                        if (dist <= minDist) emfValue = 100;
-                        else if (dist >= maxDist) emfValue = 0;
-                        else emfValue = 100 * (1 - (dist - minDist) / (maxDist - minDist));
-                        setSensorStatus('prox', 'fallback');
-                    };
-                    proximitySensor.onerror = (e) => { setSensorStatus('prox', 'simulated'); startEmfSimulation(); };
-                    proximitySensor.start();
-                } catch(e) { setSensorStatus('prox', 'simulated'); startEmfSimulation(); }
-            } else { setSensorStatus('prox', 'simulated'); startEmfSimulation(); }
-        }
-        function startEmfSimulation() {
-            if (emfSimInterval) return;
-            emfSimInterval = setInterval(() => { emfValue = Math.random() * 100; }, 200);
-        }
-        function stopSensor() {
-            if (proximitySensor) proximitySensor.stop();
-            if (magnetometer) magnetometer.stop();
-            if (orientationSensor) orientationSensor.stop();
-            if (emfSimInterval) clearInterval(emfSimInterval);
-            emfSimInterval = null; emfValue = 0;
-            setSensorStatus('prox', 'off'); setSensorStatus('mag', 'off');
-        }
-        
-        function startVisualLoop() {
-            if (visualLoopInterval) clearInterval(visualLoopInterval); 
-            visualLoopInterval = setInterval(() => {
-                let intensity = emfValue; 
-                const needle = document.getElementById('detector-dial-needle');
-                if (needle) {
-                    needle.style.transform = `translateX(-50%) rotate(${-60 + (intensity/100)*120}deg)`;
-                }
-                updateEnergyGraph(intensity); 
-            }, 150); 
-        }
-
-        // --- Lógica Spirit Box (Sin cambios) ---
-        const pwr = document.getElementById('knob-power');
-        pwr.addEventListener('click', async () => {
-            if(!audioCtx) await initAudio();
-            if(!audioCtx) return; 
-            isRunning = !isRunning;
-            pwr.classList.toggle('active', isRunning);
-            if(isRunning) {
-                pwr.style.transform = 'rotate(0deg)';
-                if(audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                    const silentUtterance = new SpeechSynthesisUtterance(" ");
-                    silentUtterance.volume = 0; window.speechSynthesis.speak(silentUtterance);
-                }
-                playFondo1();
-                gain_Fondo1.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.5);
-                gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 0.5);
-                requestAllPermissions();
-                spiritBoxState = "SCANNING";
-                playFondo2_Fragment();
-                runSpiritBoxLoop();
-            } else {
-                pwr.style.transform = 'rotate(135deg)';
-                gain_Fondo1.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
-                gain_Fondo2.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
-                if (audioSource_Fondo1) { try { audioSource_Fondo1.stop(); } catch(e){} }
-                if (audioSource_Fondo2) { try { audioSource_Fondo2.stop(); } catch(e){} }
-                if (scanTimer) clearTimeout(scanTimer);
-                spiritBoxState = "OFF";
-                if (spiritBoxTimeout) clearTimeout(spiritBoxTimeout);
-                if (isRecognizing) recognition.abort();
-                window.speechSynthesis.cancel();
-                isSpeaking = false; isRecognizing = false;
-                setSensorStatus('mic', 'off');
-                stopSensor();
-            }
-        });
-        document.getElementById('knob-scan').addEventListener('click', function() {
-            scanSpeed = (scanSpeed+1)%3;
-            this.style.transform = `rotate(${-135 + scanSpeed*135}deg)`;
-        });
-        document.getElementById('vol-slider').addEventListener('input', (e) => {
-            const vol = e.target.value;
-            if(masterGain) masterGain.gain.value = vol/100;
-            document.getElementById('vol-percent').innerText = `${vol}%`;
-        });
-        function hideLoadingScreen() {
-            const overlay = document.getElementById('loading-overlay');
-            if (overlay) {
-                overlay.style.opacity = '0';
-                setTimeout(() => { overlay.style.display = 'none'; }, 500); 
-            }
-        }
-        const loadingText = document.getElementById('loading-text');
-        const loadingBar = document.getElementById('loading-bar');
-        function updateLoadingProgress(percent, text) {
-            if (loadingBar) loadingBar.style.width = percent + '%';
-            if (loadingText) loadingText.innerText = `${text} [ ${percent}% ]`;
-        }
-        async function loadSheetData() {
-            try {
-                updateLoadingProgress(25, "CONECTANDO CON API-OBR");
-                const response = await fetch(GOOGLE_SCRIPT_URL);
-                updateLoadingProgress(50, "RECIBIENDO DATOS");
-                if (!response.ok) throw new Error(`Error de red: ${response.statusText}`);
-                const data = await response.json();
-                if (!audioCtx) await initAudio(); 
-                updateLoadingProgress(75, "PROCESANDO RESPUESTAS");
-                automaticoData = data.automatico.map(r => r.TEXTO).filter(t => t);
-                data.programado.forEach(r => {
-                    let p = (r.PREGUNTA || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                    let res = r.RESPUESTA;
-                    if (p && res) { programadoData.set(p, res); }
-                });
-                updateLoadingProgress(100, "SINCRONIZACIÓN COMPLETA");
-                console.log(`%c[SISTEMA OBR] Sincronización completa: ${automaticoData.length} AUTO | ${programadoData.size} PROG.`, "color: #39FF14; font-weight: bold;");
-            } catch (e) { 
-                console.error("Error cargando datos de Google Apps Script", e); 
-                updateLoadingProgress(100, "ERROR DE SINCRONIZACIÓN");
-            } finally {
-                setTimeout(hideLoadingScreen, 500); 
-            }
-        }
-        function speak(text) {
-            if (!text || isSpeaking) return;
-            spiritBoxState = "SPEAKING";
-            isSpeaking = true;
-            if (scanTimer) clearTimeout(scanTimer);
-            const words = text.split(' ');
-            let wordIndex = 0;
-            function speakWordByWord() {
-                if (wordIndex >= words.length || !isRunning) {
-                    isSpeaking = false; spiritBoxState = "SCANNING";
-                    gain_Fondo1.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.2);
-                    gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 0.2);
-                    if (isRunning) { playFondo2_Fragment(); setTimeout(runSpiritBoxLoop, 2000); }
-                    return;
-                }
-                const word = words[wordIndex];
-                const u = new SpeechSynthesisUtterance(word);
-                u.lang = 'es-MX'; u.volume = 1.0;
-                u.pitch = 0.1 + Math.random() * 0.7;
-                u.rate = 0.9 + Math.random() * 0.4;
-                u.onstart = () => {
-                    gain_Fondo1.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime); 
-                    gain_Fondo2.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime);
-                };
-                u.onend = () => {
-                    wordIndex++;
-                    gain_Fondo1.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime);
-                    gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime);
-                    setTimeout(speakWordByWord, 100 + Math.random() * 400);
-                };
-                window.speechSynthesis.speak(u);
-            }
-            speakWordByWord();
-            emfValue = 80 + Math.random() * 20; 
-            // (La alerta visual del panel se ha eliminado ya que el panel no está siempre visible)
-        }
-        function runSpiritBoxLoop() {
-            if (!isRunning || spiritBoxState === "SPEAKING") return;
-            spiritBoxState = "LISTENING";
-            if (audioSource_Fondo2) { try { audioSource_Fondo2.stop(); } catch(e){} }
-            if (scanTimer) clearTimeout(scanTimer);
-            gain_Fondo2.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
-            try { if (!isRecognizing) recognition.start(); } 
-            catch(e) { console.warn("Error recognition", e); setSensorStatus('mic', 'unavailable'); if (isRunning) setTimeout(runSpiritBoxLoop, 2000); return; }
-            spiritBoxTimeout = setTimeout(() => {
-                if (spiritBoxState !== "LISTENING") return; 
-                console.log("Timeout: No se detectó comando.");
-                if (isRecognizing) recognition.abort();
-                isRecognizing = false;
-                gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 0.2);
-                spiritBoxState = "SCANNING";
-                playFondo2_Fragment(); 
-                if (automaticoData.length > 0) {
-                    setTimeout(() => {
-                        if (isRunning) { speak(automaticoData[Math.floor(Math.random() * automaticoData.length)]); }
-                    }, 1000 + Math.random() * 2000);
-                } else { setTimeout(runSpiritBoxLoop, 3000); }
-            }, 5000);
-        }
-        function initSpeechRec() {
-            if(!SpeechRecognition) { setSensorStatus('mic', 'unavailable'); return; }
-            recognition = new SpeechRecognition(); 
-            recognition.lang = 'es-MX'; recognition.continuous = false;
-            recognition.onstart = () => { isRecognizing = true; setSensorStatus('mic', 'connected'); };
-            recognition.onend = () => { isRecognizing = false; setSensorStatus('mic', 'off'); };
-            recognition.onerror = (e) => { isRecognizing = false; setSensorStatus('mic', 'unavailable'); console.warn("Error Rec:", e.error); };
-            recognition.onresult = (e) => {
-                if (spiritBoxTimeout) clearTimeout(spiritBoxTimeout); 
-                let t = e.results[0][0].transcript.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-                console.log("Comando detectado:", t);
-                if (programadoData.has(t)) { speak(programadoData.get(t)); } 
-                else { if (automaticoData.length > 0) { speak(automaticoData[Math.floor(Math.random() * automaticoData.length)]); } }
-            };
-        }
-        function updateEnergyGraph(value) {
-            if (!energyCtx || !energyCanvas) return; 
-            energyHistory.push(value);
-            if (energyHistory.length > 50) energyHistory.shift();
-            let w = energyCanvas.width; let h = energyCanvas.height;
-            if (w === 0 || h === 0) { resizeEnergyCanvas(); w = energyCanvas.width; h = energyCanvas.height; if(w === 0 || h === 0) return; }
-            energyCtx.clearRect(0, 0, w, h);
-            let step = w / energyHistory.length;
-            energyCtx.beginPath(); energyCtx.strokeStyle = 'var(--neon-green)'; energyCtx.lineWidth = 1.5;
-            energyCtx.moveTo(0, h - (energyHistory[0] / 100 * h));
-            for(let i=1; i<energyHistory.length; i++) { energyCtx.lineTo(i * step, h - (energyHistory[i] / 100 * h)); }
-            energyCtx.stroke();
-            energyCtx.beginPath(); energyCtx.strokeStyle = 'var(--alert-red)'; energyCtx.lineWidth = 1; 
-            let inPeak = false;
-            for(let i=0; i<energyHistory.length; i++) {
-                let val = energyHistory[i]; let y = h - (val / 100 * h);
-                if (val > 80) { if (!inPeak) { energyCtx.moveTo(i * step, y); inPeak = true; } else { energyCtx.lineTo(i * step, y); } } 
-                else { inPeak = false; }
-            }
-            energyCtx.stroke(); 
-        }
-        function resizeEnergyCanvas() {
-            if(energyCanvas && energyCanvas.parentElement) {
-                energyCanvas.width = energyCanvas.parentElement.offsetWidth;
-                energyCanvas.height = energyCanvas.parentElement.offsetHeight;
-            }
-        }
-        function updateSensorReadings() {
-            if (!isRunning) {
-                currentTemp += (Math.random()*0.04 - 0.02); 
-                document.getElementById('temp-val').innerText = currentTemp.toFixed(1)+"°C";
-            }
-        }
-
-        // --- 📍 NUEVA LÓGICA DE UI (P5, P14) ---
-        
-        const followContainer = document.getElementById('follow-container');
-        
-        // Clic en el fondo de la cámara
-        function handleUITap(event) {
-            requestAllPermissions(); // Activar sensores en el primer toque
-            if (isPinching || isPanning) return; // No hacer nada si es zoom
-            
-            if (uiVisible) { hideControls(); } 
-            else { showControls(); }
-        }
-
-        // Clic en el HUD (para evitar que se cierre)
-        function handleHUDTap(event) {
-            event.stopPropagation(); // Evita que el clic llegue al fondo
-            
-            // Reiniciar el timer de ocultado
-            if (uiVisible) {
-                clearTimeout(uiHideTimeout);
-                uiHideTimeout = setTimeout(hideControls, 4000); 
-            }
-        }
-
-        function showControls() {
-            document.body.classList.remove('ui-hidden');
-            followContainer.classList.add('hiding');
-            uiVisible = true;
-            clearTimeout(uiHideTimeout);
-            uiHideTimeout = setTimeout(hideControls, 4000); 
-        }
-
-        function hideControls() {
-            document.body.classList.add('ui-hidden');
-            followContainer.classList.remove('hiding'); // Permite que la animación de "follow" se prepare
-            uiVisible = false;
-        }
-        
-        // Botón del Panel
-        function togglePanel() {
-            const btn = document.getElementById('btn-panel');
-            const isActive = document.body.classList.toggle('panel-active');
-            btn.classList.toggle('active', isActive);
-            
-            if (isActive) {
-                resizeEnergyCanvas(); // Dibujar gráfica al abrir
-            }
-        }
-
-        // --- Animación "Síguenos" (P9) ---
-        const followSteps = document.querySelectorAll('.follow-step');
-        let followAnimationRunning = false;
-        
-        async function runFollowAnimation() {
-            if (!document.body.classList.contains('ui-hidden') || followAnimationRunning) return; 
-            followAnimationRunning = true;
-            followContainer.classList.remove('hiding'); 
-            followContainer.style.opacity = '1';
-            
-            const text = document.getElementById('follow-text');
-            text.style.display = 'block'; text.classList.add('fade-in');
-            await new Promise(r => setTimeout(r, 2500)); 
-            if(!document.body.classList.contains('ui-hidden')) { followContainer.classList.add('hiding'); return; } 
-            text.classList.remove('fade-in'); text.classList.add('water-drop'); 
-            await new Promise(r => setTimeout(r, 500));
-            text.style.display = 'none'; text.classList.remove('water-drop');
-            
-            const icons = document.getElementById('follow-icons');
-            icons.style.display = 'flex'; icons.classList.add('fade-in');
-            await new Promise(r => setTimeout(r, 2500)); 
-            if(!document.body.classList.contains('ui-hidden')) { followContainer.classList.add('hiding'); return; } 
-            icons.classList.remove('fade-in'); icons.classList.add('fade-out');
-            await new Promise(r => setTimeout(r, 1000));
-            icons.style.display = 'none'; icons.classList.remove('fade-out');
-
-            const handle = document.getElementById('follow-handle');
-            handle.style.display = 'block'; handle.classList.add('fade-in');
-            await new Promise(r => setTimeout(r, 2500)); 
-            if(!document.body.classList.contains('ui-hidden')) { followContainer.classList.add('hiding'); return; } 
-            handle.classList.remove('fade-in'); handle.classList.add('fade-out');
-            await new Promise(r => setTimeout(r, 1000));
-            handle.style.display = 'none'; handle.classList.remove('fade-out');
-
-            followContainer.style.opacity = '0';
-            followAnimationRunning = false;
-        }
-
-        // --- Lógica de Zoom/Pan (P5) ---
-        const appUI = document.getElementById('app-ui');
-        function getPinchDist(e) {
-            const t1 = e.touches[0]; const t2 = e.touches[1];
-            return Math.sqrt(Math.pow(t1.clientX - t2.clientX, 2) + Math.pow(t1.clientY - t2.clientY, 2));
-        }
-        function getPanCenter(e) { return { x: e.touches[0].clientX, y: e.touches[0].clientY }; }
-        appUI.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 2) {
-                isPinching = true; isPanning = false;
-                initialPinchDist = getPinchDist(e);
-            } else if (e.touches.length === 1 && zoom > 1) {
-                isPinching = false; isPanning = true;
-                lastPan = getPanCenter(e);
-            }
-        });
-        appUI.addEventListener('touchmove', (e) => {
-            if (e.target.closest('#hud-container')) return; // No hacer pan si se toca el HUD
-            e.preventDefault(); 
-            if (isPinching && e.touches.length === 2) {
-                const newPinchDist = getPinchDist(e);
-                const zoomFactor = newPinchDist / initialPinchDist;
-                let newZoom = zoom * zoomFactor;
-                newZoom = Math.max(1.0, Math.min(newZoom, maxZoom));
-                zoom = newZoom;
-                initialPinchDist = newPinchDist;
-                videoBg.style.transform = `translate(-50%, -50%) scale(${zoom})`; // Aplicar zoom con CSS
-            }
-            // (El Panning se ha desactivado para simplificar, el zoom CSS centra automáticamente)
-        });
-        appUI.addEventListener('touchend', (e) => {
-            if (e.touches.length < 2) isPinching = false;
-            if (e.touches.length < 1) isPanning = false;
-            if (zoom === 1) {
-                videoBg.style.transform = `translate(-50%, -50%) scale(1)`; // Reset
-            }
-        });
-
-        // --- Carga Inicial ---
-        window.onload = () => {
-            startCamera();
-            startVisualLoop(); 
-            initMLModel(); 
-            detectPoseLoop(); 
-            
-            setInterval(updateSensorReadings, 2000); 
-            setInterval(runFollowAnimation, 30000); 
-            
-            showControls(); // Mostrar UI al inicio
-            
-            loadSheetData();
-        };
-        
-        window.onresize = () => {
-            resizeAllCanvas(); 
-        };
-    </script>
-</body>
-</html>
