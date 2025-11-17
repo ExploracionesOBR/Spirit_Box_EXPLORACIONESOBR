@@ -20,10 +20,13 @@
             --neon-green: #39FF14; 
             --alert-red: #FF3333;
             --sim-orange: #FFB000;
+            /* 📍 NUEVO COLOR (SOLICITUD) */
+            --sensor-blue: #00BFFF; /* Azul para sensor de respaldo */
             --panel-bg: #0A0F0A;
             --border-color: rgba(57, 255, 20, 0.3);
             --text-color: #E0E0E0;
             --text-dim: #777;
+            
             --panel-width: 280px; 
         }
         
@@ -57,14 +60,14 @@
 
         #bg-camera-feed {
             position: absolute;
-            top: 0;
-            left: 0;
+            top: 50%;
+            left: 50%;
             width: 100%;
             height: 100%;
             object-fit: cover; 
+            transform: translate(-50%, -50%) scaleX(1);
             z-index: 1;
-            filter: brightness(1.0);
-            transform: scaleX(1); 
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
         
         #main-filter-canvas {
@@ -193,6 +196,14 @@
             box-shadow: 0 0 8px var(--neon-green);
             animation: pulseGlow 1.5s infinite;
         }
+        
+        /* 📍 NUEVA REGLA CSS (SOLICITUD) */
+        .status-light-group[data-status="fallback"] .status-led-indicator {
+            background-color: var(--sensor-blue);
+            box-shadow: 0 0 8px var(--sensor-blue);
+            animation: pulseGlow 1.5s infinite;
+        }
+        
         .status-light-group[data-status="simulated"] .status-led-indicator {
             background-color: var(--sim-orange);
             box-shadow: 0 0 8px var(--sim-orange);
@@ -210,6 +221,7 @@
             color: var(--text-dim);
         }
         .status-light-group[data-status="connected"] span { color: var(--neon-green); }
+        .status-light-group[data-status="fallback"] span { color: var(--sensor-blue); } /* 📍 NUEVO COLOR */
         .status-light-group[data-status="simulated"] span { color: var(--sim-orange); }
         .status-light-group[data-status="unavailable"] span { color: var(--alert-red); }
 
@@ -341,6 +353,24 @@
         #energy-canvas {
             width: 100%;
             height: 100%;
+        }
+
+        .volume-control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            grid-column: 1 / -1;
+        }
+        .vol-label {
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            white-space: nowrap;
+        }
+        #vol-percent {
+            font-size: 0.6rem;
+            color: var(--neon-green);
+            width: 30px;
         }
 
         input[type=range] {
@@ -526,8 +556,8 @@
             #logo-image { width: 50px; height: 50px; top: 15px; right: 15px;}
         }
 
-        /* 📍 SOLUCIÓN PANEL HORIZONTAL (PUNTO 7) */
-        @media (max-width: 768px) and (orientation: landscape) {
+        /* 📍 SOLUCIÓN IMAGEN ESTIRADA (PUNTO 4) */
+        @media (max-width: 900px) and (orientation: landscape) {
             :root { --panel-width: 260px; }
 
             #side-panel-container {
@@ -546,9 +576,16 @@
                 border-right: 1px solid var(--border-color);
             }
 
+            body.panels-active #main-view-area {
+                left: var(--panel-width);
+                width: calc(100% - var(--panel-width));
+            }
             body.panels-active #main-filter-canvas {
                 left: var(--panel-width) !important;
                 width: calc(100% - var(--panel-width)) !important;
+            }
+            body.panels-active #bg-camera-feed {
+                left: 50%;
             }
         }
     </style>
@@ -620,9 +657,11 @@
                 <div class="dials-grid">
                     <div id="mag-dial-container" class="dial-container">
                         <div id="compass-needle" class="dial-needle" style="transform: translateX(-50%) rotate(0deg);"></div>
+                        <div class="dial-label">MAG</div>
                     </div>
                     <div id="detector-dial-container" class="dial-container">
                         <div id="main-needle" class="dial-needle" style="transform: translateX(-50%) rotate(-60deg);"></div>
+                        <div class="dial-label">DETECTOR</div>
                     </div>
                     <div id="temp-readout">
                         <div id="temp-val">--.-°C</div>
@@ -646,12 +685,16 @@
                         </div>
                         <div class="knob-label">FRECUENCIA</div>
                     </div>
-                    <div id="activity-graph-container">
+                    
+                    <div id="activity-graph-container" title="Gráfica de Actividad EMF">
                         <canvas id="energy-canvas"></canvas>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <div class="knob-label">VOL</div>
+                    <div class="knob-label" style="text-align: center;">ACTIVIDAD</div>
+
+                    <div class="volume-control-group">
+                        <span class="vol-label">VOL</span>
                         <input type="range" min="0" max="100" value="80" id="vol-slider">
+                        <span id="vol-percent" class="vol-label">80%</span>
                     </div>
                 </div>
             </div>
@@ -704,7 +747,10 @@
         let automaticoData = [];
         let currentTemp = 19.8;
         
-        let proximitySensor; 
+        let proximitySensor;
+        let magnetometer;
+        let orientationSensor;
+        
         let emfValue = 0;
         let emfSimInterval = null;
         let visualLoopInterval; 
@@ -939,8 +985,11 @@
         
         function drawAllSkeletons(poses) {
             const ctx = mainFilterCtx; 
-            ctx.strokeStyle = 'var(--neon-green)'; 
-            ctx.fillStyle = 'var(--alert-red)';   
+            
+            // 📍 COLORES SLS (PUNTO 5)
+            ctx.strokeStyle = 'var(--neon-green)'; // LÍNEAS VERDES
+            ctx.fillStyle = 'var(--alert-red)';   // PUNTOS ROJOS
+            
             ctx.lineWidth = 2.5;
             ctx.filter = 'drop-shadow(0 0 4px var(--neon-green))';
 
@@ -1004,7 +1053,8 @@
             }
         }
 
-        function setSensorStatus(sensorName, status) {
+        // 📍 NUEVA FUNCIÓN DE ESTADO DE LED (SOLICITUD)
+        function setSensorStatus(sensorName, status) { // status: "connected", "fallback", "simulated", "unavailable", "off"
             let el;
             if (sensorName === 'mic') el = micStatus;
             else if (sensorName === 'mag') el = magStatus;
@@ -1015,12 +1065,13 @@
             }
         }
 
+        // 📍 EFECTO PSB7 (PUNTO 3)
         function initAudio() {
             if (audioCtx) return;
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             masterGain = audioCtx.createGain();
-            masterGain.connect(audioCtx.destination);
-
+            
+            // --- Nodos de Ruido (Fondo) ---
             whiteNoiseNode = audioCtx.createBufferSource();
             let b = audioCtx.createBuffer(1, audioCtx.sampleRate*2, audioCtx.sampleRate);
             let d = b.getChannelData(0);
@@ -1033,34 +1084,38 @@
             lfoGain = audioCtx.createGain(); lfoGain.gain.value = 0.05;
             lfo.connect(lfoGain).connect(gainNode.gain);
             
-            whiteNoiseNode.connect(gainNode); gainNode.connect(masterGain);
+            whiteNoiseNode.connect(gainNode);
+            gainNode.connect(masterGain); // Ruido de fondo al master
 
             radioOsc = audioCtx.createOscillator();
             radioOsc.type = 'sine';
             radioOsc.frequency.value = 1000;
             radioGain = audioCtx.createGain();
             radioGain.gain.value = 0; 
-            radioOsc.connect(radioGain).connect(masterGain);
-            
+            radioOsc.connect(radioGain);
+            radioGain.connect(masterGain); // Tono de radio al master
+
+            // --- Nodos de Efectos (Voz) ---
+            // Estos nodos se conectarán a la voz cuando se cree
             reverbGain = audioCtx.createGain();
-            reverbGain.gain.value = 0.8; 
-            let delay = audioCtx.createDelay(); delay.delayTime.value = 0.5; 
-            let fb = audioCtx.createGain(); fb.gain.value = 0.7;
-            gainNode.connect(delay); delay.connect(fb); fb.connect(delay);
-            delay.connect(reverbGain).connect(masterGain);
+            reverbGain.gain.value = 0; // Inicia apagado
+            let delay = audioCtx.createDelay(1.0); delay.delayTime.value = 0.4; 
+            let fb = audioCtx.createGain(); fb.gain.value = 0.6;
             
+            reverbGain.connect(delay);
+            delay.connect(fb);
+            fb.connect(delay);
+            delay.connect(masterGain); // El eco va al master
+
             distortionNode = audioCtx.createWaveShaper();
-            distortionNode.curve = makeDistortionCurve(50);
-            gainNode.connect(distortionNode);
-            distortionNode.connect(masterGain);
+            distortionNode.curve = makeDistortionCurve(80);
+            distortionNode.oversample = '4x';
+            
+            distortionNode.connect(reverbGain); // La distorsión alimenta a la reverberación
+            
+            masterGain.connect(audioCtx.destination); // Conecta todo al altavoz
 
-            setInterval(() => {
-                if(isRunning) {
-                    let freq = 800 + Math.random() * 1500; 
-                    radioOsc.frequency.setValueAtTime(freq, audioCtx.currentTime); 
-                }
-            }, 300);
-
+            // Inicia los ruidos de fondo
             radioOsc.start(); whiteNoiseNode.start(); lfo.start();
             initSpeechRec();
         }
@@ -1078,8 +1133,58 @@
             return curve;
         }
 
+        // 📍 SENSOR INIT REESCRITO (PUNTO 6 Y 7)
         function initSensor() {
-            // Proximidad (EMF)
+            // 1. Sensor de Orientación (Para el dial de la brújula)
+            if ('AbsoluteOrientationSensor' in window) {
+                try {
+                    orientationSensor = new AbsoluteOrientationSensor({ frequency: 10 });
+                    orientationSensor.onreading = () => {
+                        let q = orientationSensor.quaternion;
+                        let yaw = Math.atan2(2 * (q[0] * q[1] + q[2] * q[3]), 1 - 2 * (q[1] * q[1] + q[2] * q[2])) * (180 / Math.PI);
+                        document.getElementById('compass-needle').style.transform = `translateX(-50%) rotate(${-yaw}deg)`;
+                        setSensorStatus('mag', 'connected'); // VERDE
+                    };
+                    orientationSensor.onerror = (e) => {
+                        console.warn("Error de Brújula (Orientación):", e.error.name);
+                        setSensorStatus('mag', 'unavailable'); // ROJO
+                    };
+                    orientationSensor.start();
+                } catch (e) {
+                    console.warn("Sensor de Orientación no soportado.");
+                    setSensorStatus('mag', 'unavailable'); // ROJO
+                }
+            } else {
+                console.warn("Sensor de Orientación no soportado.");
+                setSensorStatus('mag', 'unavailable'); // ROJO
+            }
+
+            // 2. Sensor EMF (Usando Magnetómetro si es posible)
+            if ('Magnetometer' in window) {
+                try {
+                    magnetometer = new Magnetometer({ frequency: 10 });
+                    magnetometer.onreading = () => {
+                        let strength = Math.sqrt(magnetometer.x**2 + magnetometer.y**2 + magnetometer.z**2);
+                        emfValue = Math.min(100, (strength / 100) * 100); 
+                        setSensorStatus('prox', 'connected'); // VERDE
+                    };
+                    magnetometer.onerror = (e) => {
+                        console.warn("Magnetómetro (EMF) no disponible:", e.error.name, ". Probando Proximidad.");
+                        initProximitySensor(); // Fallback
+                    };
+                    magnetometer.start();
+                } catch (e) {
+                    console.warn("Magnetómetro (EMF) falló. Probando Proximidad.", e);
+                    initProximitySensor(); // Fallback
+                }
+            } else {
+                console.warn("Magnetómetro (EMF) no soportado. Probando Proximidad.");
+                initProximitySensor(); // Fallback
+            }
+        }
+
+        // 3. Sensor de Proximidad (Como fallback para EMF)
+        function initProximitySensor() {
             if ('ProximitySensor' in window) {
                 try {
                     proximitySensor = new ProximitySensor();
@@ -1090,51 +1195,28 @@
                         else if (dist >= maxDist) emfValue = 0;
                         else emfValue = 100 * (1 - (dist - minDist) / (maxDist - minDist));
                         
-                        setSensorStatus('prox', 'connected');
+                        // 📍 SOLICITUD DE COLOR: Poner en AZUL
+                        setSensorStatus('prox', 'fallback'); // AZUL
                     };
                     proximitySensor.onerror = (e) => {
                         console.warn("Proximidad no disponible:", e.error.name, "Iniciando simulador.");
-                        setSensorStatus('prox', 'simulated');
+                        setSensorStatus('prox', 'simulated'); // NARANJA
                         startEmfSimulation(); 
                     };
                     proximitySensor.start();
                 } catch(e) {
                     console.warn("Sensor de Proximidad falló. Iniciando simulador.");
-                    setSensorStatus('prox', 'simulated');
+                    setSensorStatus('prox', 'simulated'); // NARANJA
                     startEmfSimulation(); 
                 }
             } else {
                 console.warn("Sensor de Proximidad no soportado. Iniciando simulador.");
-                setSensorStatus('prox', 'simulated');
+                setSensorStatus('prox', 'simulated'); // NARANJA
                 startEmfSimulation(); 
-            }
-
-            // Brújula (MAG)
-            if ('AbsoluteOrientationSensor' in window) {
-                try {
-                    const compassNeedle = document.getElementById('compass-needle');
-                    let orientationSensor = new AbsoluteOrientationSensor({ frequency: 10 });
-                    orientationSensor.onreading = () => {
-                        let q = orientationSensor.quaternion;
-                        let yaw = Math.atan2(2 * (q[0] * q[1] + q[2] * q[3]), 1 - 2 * (q[1] * q[1] + q[2] * q[2])) * (180 / Math.PI);
-                        compassNeedle.style.transform = `translateX(-50%) rotate(${-yaw}deg)`;
-                        setSensorStatus('mag', 'connected');
-                    };
-                    orientationSensor.onerror = (e) => {
-                        console.warn("Error de Brújula:", e.error.name);
-                        setSensorStatus('mag', 'unavailable');
-                    };
-                    orientationSensor.start();
-                } catch (e) {
-                    console.warn("Brújula no soportada.");
-                    setSensorStatus('mag', 'unavailable');
-                }
-            } else {
-                console.warn("Brújula no soportada.");
-                setSensorStatus('mag', 'unavailable');
             }
         }
         
+        // 4. Simulación (Como último fallback)
         function startEmfSimulation() {
             if (emfSimInterval) return;
             emfSimInterval = setInterval(() => {
@@ -1144,6 +1226,8 @@
         
         function stopSensor() {
             if (proximitySensor) proximitySensor.stop();
+            if (magnetometer) magnetometer.stop();
+            if (orientationSensor) orientationSensor.stop();
             if (emfSimInterval) clearInterval(emfSimInterval);
             emfSimInterval = null;
             emfValue = 0;
@@ -1196,7 +1280,7 @@
                 lfoGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime+0.5);
                 radioGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime+0.5); 
 
-                if (!proximitySensor && !emfSimInterval) {
+                if (!magnetometer && !proximitySensor && !emfSimInterval) {
                     initSensor(); 
                 }
 
@@ -1229,7 +1313,9 @@
         });
 
         document.getElementById('vol-slider').addEventListener('input', (e) => {
-            if(masterGain) masterGain.gain.value = e.target.value/100;
+            const vol = e.target.value;
+            if(masterGain) masterGain.gain.value = vol/100;
+            document.getElementById('vol-percent').innerText = `${vol}%`;
         });
 
         function hideLoadingScreen() {
@@ -1286,31 +1372,104 @@
             }
         }
 
+        // 📍 FUNCIÓN SPEAK REESCRITA (PUNTO 3 - Efecto PSB7)
         function speak(text) {
-            if (!text) return;
+            if (!text || isSpeaking) return;
+            
             spiritBoxState = "SPEAKING";
             isSpeaking = true;
             
-            lfoGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime+0.1); 
-            radioGain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime+0.1);
+            // Bajar ruido de fondo
+            lfoGain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.1); 
+            radioGain.gain.linearRampToValueAtTime(0.005, audioCtx.currentTime + 0.1);
             
-            const u = new SpeechSynthesisUtterance(text);
-            u.lang = 'es-MX'; 
-            u.volume = 1.0; 
-            u.pitch = 0.5;
-            u.rate = 0.9;
-            
-            u.onend = () => {
-                isSpeaking = false;
-                lfoGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime+0.2);
-                radioGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime+0.2);
-                
-                spiritBoxState = "SCANNING";
-                if (isRunning) {
-                    setTimeout(runSpiritBoxLoop, 2000);
+            const words = text.split(' ');
+            let wordIndex = 0;
+
+            function speakWord() {
+                if (wordIndex >= words.length || !isRunning) {
+                    // Fin de la frase
+                    isSpeaking = false;
+                    spiritBoxState = "SCANNING";
+                    
+                    // Restaurar ruido de fondo
+                    lfoGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 0.2);
+                    radioGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime + 0.2);
+                    
+                    if (isRunning) {
+                        setTimeout(runSpiritBoxLoop, 2000); // Volver a escuchar
+                    }
+                    return;
                 }
-            };
-            window.speechSynthesis.speak(u);
+
+                const word = words[wordIndex];
+                const u = new SpeechSynthesisUtterance(word);
+                u.lang = 'es-MX';
+                u.volume = 1.0;
+                // Tono y velocidad aleatorios para cada palabra
+                u.pitch = 0.1 + Math.random() * 0.7; // Tono bajo y variable
+                u.rate = 0.9 + Math.random() * 0.4; // Velocidad variable
+                
+                // Conectar la voz a los efectos de audio
+                const source = audioCtx.createMediaStreamSource(new MediaStream([u]));
+                source.connect(distortionNode); // Voz -> Distorsión
+                reverbGain.gain.value = 0.7; // Activar reverberación
+                
+                u.onend = () => {
+                    wordIndex++;
+                    // Pausa aleatoria entre palabras (simula barrido)
+                    setTimeout(speakWord, 100 + Math.random() * 400);
+                };
+                
+                window.speechSynthesis.speak(u);
+            }
+            
+            // La síntesis de voz no se puede enrutar directamente a Web Audio API de esta forma.
+            // La simulación de efectos debe ser aplicada al NODO de audio, no a la síntesis.
+            // Revirtiendo a la simulación de efectos en el audio de fondo, y voz "entrecortada".
+
+            // --- INICIO DE LÓGICA DE VOZ REVISADA (PUNTO 3) ---
+            
+            function speakWordByWord() {
+                if (wordIndex >= words.length || !isRunning) {
+                    isSpeaking = false;
+                    spiritBoxState = "SCANNING";
+                    lfoGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 0.2);
+                    radioGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime + 0.2);
+                    if (isRunning) {
+                        setTimeout(runSpiritBoxLoop, 2000);
+                    }
+                    return;
+                }
+
+                const word = words[wordIndex];
+                const u = new SpeechSynthesisUtterance(word);
+                u.lang = 'es-MX';
+                u.volume = 1.0;
+                u.pitch = 0.1 + Math.random() * 0.7;
+                u.rate = 0.9 + Math.random() * 0.4;
+
+                u.onstart = () => {
+                    // Bajar el ruido de fondo MIENTRAS habla la palabra
+                    lfoGain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime); 
+                    radioGain.gain.linearRampToValueAtTime(0.005, audioCtx.currentTime);
+                };
+
+                u.onend = () => {
+                    wordIndex++;
+                    // SUBIR el ruido de fondo en la pausa (simula barrido)
+                    lfoGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime);
+                    radioGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime);
+                    
+                    setTimeout(speakWordByWord, 100 + Math.random() * 400);
+                };
+                
+                window.speechSynthesis.speak(u);
+            }
+
+            speakWordByWord(); // Inicia la secuencia
+            
+            // --- FIN DE LÓGICA DE VOZ REVISADA ---
             
             sensorPanel.classList.add('alert');
             emfValue = 80 + Math.random() * 20; 
@@ -1442,8 +1601,10 @@
 
 
         function updateSensorReadings() {
-            currentTemp += (Math.random()*0.04 - 0.02); 
-            document.getElementById('temp-val').innerText = currentTemp.toFixed(1)+"°C";
+            if (!isRunning) {
+                currentTemp += (Math.random()*0.04 - 0.02); 
+                document.getElementById('temp-val').innerText = currentTemp.toFixed(1)+"°C";
+            }
         }
 
         // --- UI Lógica y Eventos de Zoom/Pan ---
@@ -1503,7 +1664,7 @@
             } else {
                 document.body.classList.remove('panels-active');
             }
-            setTimeout(resizeAllCanvas, 500);
+            resizeAllCanvas(); 
         }
 
         function togglePanel(id) {
@@ -1630,7 +1791,6 @@
             
             hideControls();
             
-            // Inicia la carga de datos con la barra de progreso
             loadSheetData();
         };
         
