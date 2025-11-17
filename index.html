@@ -23,14 +23,13 @@
             --neon-green: #39FF14;    
             --neon-cyan: #00BFFF; /* Color de la UI en la imagen */
             --alert-red: #FF3333;
-            --sim-orange: #FFB000;
+            --sim-orange: #FFB000; /* Naranja para Fallback */
             --sensor-blue: #00BFFF;
-            --panel-bg: rgba(10, 15, 10, 0.85); /* Fondo semi-transparente */
-            --border-color: rgba(0, 191, 255, 0.3); /* Borde Cyan */
+            --panel-bg: rgba(10, 15, 10, 0.85);
+            --border-color: rgba(0, 191, 255, 0.3);
             --text-color: #E0E0E0;
             --text-dim: #777;
             
-            /* --- 💡 TAMAÑOS DEL NUEVO PANEL L-SHAPE --- */
             --panel-left-width: 110px;
             --panel-bottom-height: 190px;
         }
@@ -38,7 +37,7 @@
         body {
             font-family: 'Share Tech Mono', monospace;
             background-color: #000;
-            color: var(--neon-cyan); /* Color principal cambiado a Cyan */
+            color: var(--neon-cyan);
             overflow: hidden;
             width: 100vw;
             height: 100vh;
@@ -49,30 +48,21 @@
             height: 100%;
             position: relative;
             touch-action: none;
-            /* 💡 USAMOS GRID PARA EL LAYOUT PRINCIPAL */
             display: grid;
             grid-template-rows: 1fr;
             grid-template-columns: 1fr;
         }
 
-        /* --- 💡 ESTILOS DE FILTROS CSS (PUNTO 2 Y 3) --- */
-        #main-view-area.filter-vno #bg-camera-feed {
-            /* Nuevo VNO: usa brillo, contraste y tinte verde */
-            filter: brightness(1.7) contrast(2.1) grayscale(1) sepia(100%) hue-rotate(50deg) saturate(200%);
-        }
+        /* --- 💡 FILTRO CSS (SOLO NEGATIVO) --- */
         #main-view-area.filter-neg #bg-camera-feed {
             filter: invert(1);
         }
-        /* El filtro RLV (Relief) se elimina como CSS, se mantiene en JS si se re-activa */
-
 
         /* --- 💡 NUEVO LAYOUT L-SHAPE (PUNTO 1 Y 9) --- */
-
         .panel-container {
             background-color: var(--panel-bg);
             border: 1px solid var(--border-color);
             box-shadow: 0 0 10px rgba(0, 191, 255, 0.2) inset;
-            z-index: 20;
             pointer-events: auto;
             transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             display: flex;
@@ -85,24 +75,24 @@
             position: fixed;
             left: 0;
             top: 0;
-            bottom: var(--panel-bottom-height);
+            bottom: var(--panel-bottom-height); /* Se detiene donde empieza el panel inferior */
             width: var(--panel-left-width);
             border-right: none;
             border-top: none;
-            /* Animación */
             transform: translateX(-100%);
+            z-index: 21; /* 💡 ARREGLO: Asegura que esté sobre el panel inferior */
         }
 
         #bottom-panel {
             position: fixed;
             bottom: 0;
-            left: 0;
-            right: 0;
+            left: 0; /* Empieza en el borde */
+            right: 0; /* Se estira completo */
             height: var(--panel-bottom-height);
             border-top: none;
             flex-direction: row;
-            /* Animación */
             transform: translateY(100%);
+            z-index: 20; /* 💡 ARREGLO: Debajo del panel izquierdo */
         }
         
         #main-view-area {
@@ -127,43 +117,45 @@
         }
         body.panels-active #main-view-area {
             left: var(--panel-left-width);
-            bottom: var(--panel-bottom-height);
+            top: 0; /* Empieza arriba */
+            bottom: var(--panel-bottom-height); /* Se detiene donde empieza el panel inferior */
             width: calc(100% - var(--panel-left-width));
-            height: calc(100% - var(--panel-bottom-height));
+            height: calc(100% - var(--panel-bottom-height)); /* Ocupa el espacio restante */
         }
 
         /* --- MODO VERTICAL (PORTRAIT) --- */
         @media (max-aspect-ratio: 1/1) {
             :root {
                 --panel-left-width: 100%;
-                --panel-left-height: 110px; /* Nueva variable para vertical */
+                --panel-left-height: 110px;
                 --panel-bottom-height: 220px;
             }
             
             #left-panel {
                 top: 0;
-                bottom: auto;
+                bottom: auto; /* Ya no se ancla abajo */
                 width: 100%;
                 height: var(--panel-left-height);
                 flex-direction: row;
                 align-items: center;
-                transform: translateY(-100%); /* Sale por arriba */
+                transform: translateY(-100%);
+                z-index: 21;
             }
             
             #bottom-panel {
                 height: var(--panel-bottom-height);
+                z-index: 20;
             }
             
             body.panels-active #main-view-area {
                 left: 0;
-                top: var(--panel-left-height); /* Deja espacio para panel superior */
+                top: var(--panel-left-height);
                 bottom: var(--panel-bottom-height);
                 width: 100%;
                 height: calc(100% - var(--panel-left-height) - var(--panel-bottom-height));
             }
         }
         /* --- FIN LAYOUT L-SHAPE --- */
-
 
         #bg-camera-feed {
             position: absolute;
@@ -177,7 +169,7 @@
             transform: translate(-50%, -50%);
             z-index: 1;
             transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            opacity: 1; /* Opacidad 1, los filtros CSS se aplican al video */
+            opacity: 1; 
         }
         
         #main-filter-canvas {
@@ -195,7 +187,6 @@
         .hidden { display: none !important; }
 
         /* --- 💡 NUEVOS ESTILOS DE PANEL (PUNTO 10) --- */
-        /* Contenedores de sección */
         .panel-section {
             border: 1px solid var(--border-color);
             border-radius: 4px;
@@ -224,10 +215,10 @@
             align-items: center;
         }
         #left-panel-stats {
-            margin-top: auto; /* Empuja los stats al fondo */
+            margin-top: auto;
         }
         
-        /* Botones redondos del panel izquierdo (Linterna, MIC, MAG) */
+        /* 💡 ESTILOS LINTERNA (PUNTO 1) */
         .panel-icon-btn {
             width: 60px;
             height: 60px;
@@ -239,7 +230,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 10px rgba(0, 191, 255, 0.5);
+            box-shadow: none; /* Sin resplandor apagada */
             transition: all 0.2s;
             cursor: pointer;
             font-size: 0.6rem;
@@ -248,49 +239,48 @@
             width: 24px; height: 24px;
             fill: currentColor;
         }
-        .panel-icon-btn:active, .panel-icon-btn.active {
+        .panel-icon-btn:active {
             background: var(--neon-cyan);
             color: #000;
-            box-shadow: 0 0 20px #fff;
+        }
+        .panel-icon-btn.active {
+            background: var(--neon-green); /* Verde encendida */
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-green); /* Resplandor verde */
         }
         
-        /* Indicadores de status (para MIC y MAG) */
+        /* 💡 ESTILOS SENSORES (PUNTO 2, 3) */
         .status-indicator {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
+            width: 60px; height: 60px; border-radius: 50%;
             background: rgba(0, 0, 0, 0.5);
             border: 2px solid var(--border-color);
             color: var(--text-dim);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.6rem;
-            transition: all 0.3s;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            font-size: 0.6rem; transition: all 0.3s;
         }
         .status-indicator svg { width: 24px; height: 24px; fill: currentColor; }
         
         .status-indicator[data-status="connected"] {
-            color: var(--neon-green);
+            color: var(--neon-green); /* VERDE */
             border-color: var(--neon-green);
             box-shadow: 0 0 8px var(--neon-green);
             animation: pulseGlow 1.5s infinite;
         }
         .status-indicator[data-status="fallback"] {
-            color: var(--sensor-blue);
-            border-color: var(--sensor-blue);
-            box-shadow: 0 0 8px var(--sensor-blue);
+            color: var(--sim-orange); /* NARANJA */
+            border-color: var(--sim-orange);
+            box-shadow: 0 0 8px var(--sim-orange);
             animation: pulseGlow 1.5s infinite;
         }
         .status-indicator[data-status="simulated"] {
-            color: var(--sim-orange);
-            border-color: var(--sim-orange);
-            box-shadow: 0 0 8px var(--sim-orange);
+            color: var(--alert-red); /* ROJO */
+            border-color: var(--alert-red);
+            box-shadow: 0 0 8px var(--alert-red);
             animation: pulseGlow 2s infinite;
         }
         .status-indicator[data-status="unavailable"] {
-            color: var(--alert-red);
+            color: var(--alert-red); /* ROJO */
             border-color: var(--alert-red);
         }
         .status-indicator[data-status="off"] {
@@ -317,6 +307,7 @@
             grid-template-rows: 1fr auto;
             gap: 10px;
             padding: 10px;
+            padding-left: calc(var(--panel-left-width) + 10px); /* 💡 ARREGLO: Deja espacio para el panel izquierdo */
         }
         
         #bottom-temp { grid-area: 1 / 1; }
@@ -445,7 +436,6 @@
             border: 1px solid var(--border-color);
             border-radius: 10px;
             overflow: hidden;
-            /* Rotar para que sea vertical */
             transform: rotate(-90deg);
         }
         input[type=range]::-webkit-slider-thumb {
@@ -456,12 +446,46 @@
             box-shadow: -100vw 0 0 100vw var(--neon-cyan);
             cursor: pointer;
         }
+        
+        /* Adaptación para modo vertical */
+        @media (max-aspect-ratio: 1/1) {
+            #left-panel {
+                /* Se convierte en panel superior */
+                justify-content: space-around;
+            }
+            #left-panel-stats {
+                margin-top: 0;
+            }
+            #bottom-panel {
+                /* Se reordena para pantallas pequeñas */
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: auto auto auto;
+                padding-left: 10px; /* Reset padding */
+                
+                #bottom-temp { grid-area: 1 / 1; }
+                #bottom-pwr-mag { grid-area: 1 / 2; }
+                #bottom-detector { grid-area: 2 / 1; }
+                #bottom-activity { grid-area: 2 / 2; }
+                #bottom-volume { grid-area: 3 / 1 / span 1 / span 2; }
+            }
+            #detector-dial-container {
+                width: 100px; height: 100px;
+            }
+            /* Volumen en vertical */
+            input[type=range] {
+                transform: rotate(0deg); /* Horizontal en modo vertical */
+                width: 100%;
+            }
+            #bottom-volume {
+                padding: 10px 20px;
+            }
+        }
 
 
         /* --- 💡 UI FLOTANTE (LOGO, BOTONES) (PUNTO 5, 8) --- */
         .persistent-ui {
-            position: absolute; /* Cambiado de fixed a absolute */
-            z-index: 10; /* Debajo de los botones */
+            position: absolute;
+            z-index: 10;
             pointer-events: none;
             opacity: 1;
             transform: scale(1);
@@ -504,11 +528,9 @@
             position: absolute; top: 50%; right: 15px;
             transform: translateY(-50%);
             display: flex; flex-direction: column;
-            gap: 8px; z-index: 20; /* Encima del logo */
+            gap: 8px; z-index: 20;
             pointer-events: auto; opacity: 1;
             transition: opacity 0.5s ease-in-out;
-            
-            /* Barra blanca de la imagen */
             background: rgba(255, 255, 255, 0.15);
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 25px;
@@ -722,9 +744,7 @@
                         for(let registration of registrations) { registration.unregister(); }
                         console.log('[ANTI-CACHE] Service Workers eliminados. Recargando...');
                         location.reload(true);
-                    } else {
-                        console.log('[ANTI-CACHE] No se encontraron Service Workers.');
-                    }
+                    } else { console.log('[ANTI-CACHE] No se encontraron Service Workers.'); }
                 });
             }
             if (window.caches) {
@@ -744,7 +764,7 @@
         let currentFilter = 'none';    
         let scanSpeed = 0;    
         
-        const mainViewArea = document.getElementById('main-view-area'); // 💡
+        const mainViewArea = document.getElementById('main-view-area');
         const videoBg = document.getElementById('bg-camera-feed');
         
         const mainFilterCanvas = document.getElementById('main-filter-canvas');
@@ -855,7 +875,6 @@
         }
         
         function resizeAllCanvas() {
-            // El canvas de filtros ahora se ajusta al área de la cámara
             const w = mainViewArea.clientWidth;    
             const h = mainViewArea.clientHeight;    
             
@@ -869,7 +888,6 @@
             aiCanvas.width = aiWidth;
             aiCanvas.height = (aiWidth / w) * h;
             
-            // Redimensionar canvas de energía si el panel está visible
             if(document.body.classList.contains('panels-active')) {
                 resizeEnergyCanvas();
             }
@@ -889,8 +907,8 @@
             }
         }
 
+        // 💡 VUELVE EL DRAWVIDEOWITHCOVER (PARA VNO)
         function drawVideoWithCover(ctx, video, z, pan) {
-            // (Esta función ya no es necesaria para VNO/NEG, pero se mantiene por si se usa para otros filtros)
             const canvasW = ctx.canvas.width;
             const canvasH = ctx.canvas.height;
             const videoW = video.videoWidth;
@@ -911,17 +929,12 @@
         }
 
         
-        // 💡 BUCLE DE DIBUJO SIMPLIFICADO (PUNTO 2)
-        // Ahora solo maneja el contador de FPS y el filtro SLS.
+        // 💡 BUCLE DE DIBUJO ACTUALIZADO (VNO REVERTIDO)
         async function drawLoop() {
             const now = performance.now();
-            const delta = now - lastFrameTime;
-            lastFrameTime = now;
             frameCount++;
-        
             if (now - lastFpsUpdate > 1000) {
-                const fps = frameCount;
-                document.getElementById('cam-fps').innerText = fps;
+                document.getElementById('cam-fps').innerText = frameCount;
                 frameCount = 0;
                 lastFpsUpdate = now;
             }
@@ -940,11 +953,40 @@
                     }
                 } else {
                     kinectBanner.style.display = 'none';
+                    
+                    // 💡 LÓGICA VNO (REVERTIDA)
+                    if (currentFilter === 'night-vision') {
+                        drawVideoWithCover(mainFilterCtx, videoBg, zoom, currentPan);
+                        let frame = mainFilterCtx.getImageData(0, 0, w, h);
+                        let data = frame.data;
+                        for (let i = 0; i < data.length; i += 4) {
+                            let l = (data[i] * 0.3) + (data[i+1] * 0.59) + (data[i+2] * 0.11);
+                            data[i] = 0;    
+                            data[i+1] = l * 1.2; // Intensidad
+                            data[i+2] = 0;    
+                            let y = Math.floor((i / 4) / w);
+                            if (y % 4 === 0) { data[i+1] *= 0.8; } // Scanlines
+                        }
+                        // Viñeta
+                        for (let y = 0; y < h; y++) {
+                            for (let x = 0; x < w; x++) {
+                                let i = (y * w + x) * 4;
+                                let dx = (x / w) - 0.5;
+                                let dy = (y / h) - 0.5;
+                                let dist = Math.sqrt(dx*dx + dy*dy) * 2;
+                                let factor = Math.max(0, 1.0 - dist * 0.8);
+                                data[i+1] *= factor;
+                            }
+                        }
+                        mainFilterCtx.putImageData(frame, 0, 0);
+                    }
+                    // (Filtro 'negative' y 'none' son manejados por CSS y opacidad)
                 }
             }
             requestAnimationFrame(drawLoop);
         }
         
+        // 💡 BUCLE SLS MÁS RÁPIDO (PUNTO 2)
         async function detectPoseLoop() {
             while (true) {
                 if (currentFilter === 'sls' && poseDetector && videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
@@ -954,7 +996,7 @@
                         latestPoses = poses;    
                         isDetectingPose = false;
                     }
-                    await new Promise(r => setTimeout(r, 100)); // 10 FPS
+                    await new Promise(r => setTimeout(r, 50)); // ANTES 100
                 } else {
                     latestPoses = [];    
                     await new Promise(r => setTimeout(r, 500));
@@ -972,13 +1014,11 @@
             ['right_hip', 'right_knee'], ['right_knee', 'right_ankle']
         ];
         
-        // 💡 FILTRO SLS (PUNTO 4)
         function drawAllSkeletons(poses) {
             const ctx = mainFilterCtx;    
-            ctx.strokeStyle = 'var(--neon-green)'; // LÍNEAS VERDES
-            ctx.fillStyle = 'var(--alert-red)';     // PUNTOS ROJOS
-            
-            ctx.lineWidth = 4; // LÍNEAS GRUESAS
+            ctx.strokeStyle = 'var(--neon-green)';
+            ctx.fillStyle = 'var(--alert-red)';    
+            ctx.lineWidth = 4; // Gruesas
             ctx.filter = 'drop-shadow(0 0 4px var(--neon-green))';
 
             const videoW = videoBg.videoWidth;
@@ -991,15 +1031,10 @@
             let scale, offsetX, offsetY;
             
             if (canvasAspect > videoAspect) {
-                scale = canvasW / videoW;
-                offsetX = 0;
-                offsetY = (canvasH - videoH * scale) / 2;
+                scale = canvasW / videoW; offsetX = 0; offsetY = (canvasH - videoH * scale) / 2;
             } else {
-                scale = canvasH / videoH;
-                offsetX = (canvasW - videoW * scale) / 2;
-                offsetY = 0;
+                scale = canvasH / videoH; offsetX = (canvasW - videoW * scale) / 2; offsetY = 0;
             }
-
             poses.forEach(pose => {
                 if (pose.score > confidenceThreshold) {
                     drawKeypoints(pose.keypoints, scale, offsetX, offsetY);
@@ -1024,9 +1059,7 @@
         function drawConnections(keypoints, scale, offsetX, offsetY) {
             const ctx = mainFilterCtx;
             const keypointMap = new Map();
-            keypoints.forEach(keypoint => {
-                keypointMap.set(keypoint.name, keypoint);
-            });
+            keypoints.forEach(keypoint => { keypointMap.set(keypoint.name, keypoint); });
             skeletonMap.forEach(connection => {
                 const start = keypointMap.get(connection[0]);
                 const end = keypointMap.get(connection[1]);
@@ -1039,8 +1072,7 @@
             });
         }
         
-        // 💡 FUNCIÓN DE FILTROS ACTUALIZADA (PUNTO 2 Y 3)
-        // Ahora cambia clases CSS en lugar de dibujar en canvas (excepto SLS)
+        // 💡 FUNCIÓN SETFILTER (VNO REVERTIDO)
         function setFilter(f) {
             document.querySelectorAll('.filter-btn').forEach(b => {
                 if (b.id !== 'btn-panel') {
@@ -1048,8 +1080,8 @@
                 }
             });
 
-            // Limpiar clases de filtros CSS
-            mainViewArea.classList.remove('filter-vno', 'filter-neg');
+            mainViewArea.classList.remove('filter-neg'); // Limpia filtro CSS
+            videoBg.style.opacity = '1'; // Opacidad normal por defecto
             
             if (currentFilter === f) {
                 currentFilter = 'none';
@@ -1058,43 +1090,33 @@
                 const targetBtn = event ? event.target : document.querySelector(`.filter-btn[onclick="setFilter('${f}')"]`);
                 if(targetBtn) targetBtn.classList.add('active');
 
-                // Aplicar la clase CSS correspondiente
                 if (f === 'night-vision') {
-                    mainViewArea.classList.add('filter-vno');
+                    videoBg.style.opacity = '0'; // Oculta video para que canvas dibuje VNO
                 } else if (f === 'negative') {
-                    mainViewArea.classList.add('filter-neg');
+                    mainViewArea.classList.add('filter-neg'); // Aplica filtro CSS
                 }
-                // 'sls' se maneja en el drawLoop, no necesita clase
+                // 'sls' no necesita nada aquí, se maneja en drawLoop
             }
-            
-            // Ya no es necesario ocultar/mostrar el video, CSS lo maneja
         }
 
         function setSensorStatus(sensorName, status) {
             let el;
             if (sensorName === 'mic') el = micStatus;
-            else if (sensorName === 'prox') el = proxStatus; // Asignado a EMF
+            else if (sensorName === 'prox') el = proxStatus;
             
             if (el) {
                 el.dataset.status = status;
             }
             
-            // Sincronizar MAG (Brújula) con el dial
             if (sensorName === 'mag') {
-                if (status === 'connected') {
-                    // (La lógica de rotación está en initSensor)
-                } else {
-                    // (Manejar error si se desea)
-                }
+                // (Lógica de brújula se maneja en initSensor)
             }
         }
 
         async function toggleTorch(event) {
             event.stopPropagation();
             if (!videoTrack || typeof videoTrack.applyConstraints !== 'function') {
-                console.log("Linterna no soportada");
-                document.getElementById('btn-torch').style.display = 'none';
-                return;
+                document.getElementById('btn-torch').style.display = 'none'; return;
             }
             try {
                 isTorchOn = !isTorchOn;
@@ -1388,7 +1410,7 @@
             energyCtx.clearRect(0, 0, w, h);
             let step = w / energyHistory.length;
             energyCtx.beginPath();
-            energyCtx.strokeStyle = 'var(--neon-cyan)'; // Color de gráfico
+            energyCtx.strokeStyle = 'var(--neon-cyan)';
             energyCtx.lineWidth = 1.5;
             energyCtx.moveTo(0, h - (energyHistory[0] / 100 * h));
             for(let i=1; i<energyHistory.length; i++) { energyCtx.lineTo(i * step, h - (energyHistory[i] / 100 * h)); }
@@ -1421,7 +1443,6 @@
         const filterControls = document.getElementById('filter-controls-container');
         const logoImage = document.getElementById('logo-image');
         const followContainer = document.getElementById('follow-container');
-        // El botón de linterna y stats ahora están en el panel, ya no son flotantes
         
         function showControls() {
             filterControls.style.opacity = '1';
@@ -1439,8 +1460,6 @@
             logoImage.classList.add('visible');    
             filterControls.style.pointerEvents = 'none';
             uiVisible = false;
-            
-            // Asegurarse que el follow container se resetee
             followContainer.classList.remove('hiding');
         }
         
@@ -1457,36 +1476,23 @@
         });
 
         function handleUITap(event) {
-            requestAllPermissions(); // Pedir permisos en el primer toque
+            requestAllPermissions();
             if (isPinching || isPanning) return;
             
-            // Si el toque es en un botón de filtro o panel, resetear el timer
             if (event.target.closest('.filter-btn') || event.target.closest('.panel-container')) {
                 showControls();
                 return;
             }
-
-            // Si el toque es en el área de la cámara
             if (event.target.closest('#main-view-area')) {
-                if (uiVisible) {
-                    hideControls();    
-                } else {
-                    showControls();    
-                }
+                if (uiVisible) { hideControls(); } else { showControls(); }
             }
         }
         
-        // 💡 NUEVA FUNCIÓN PARA TOGGLE DE PANELES (PUNTO 8)
         function togglePanels(event) {
-            event.stopPropagation(); // Evitar que el tap se propague al main-view-area
-            
+            event.stopPropagation();
             document.body.classList.toggle('panels-active');
             document.getElementById('btn-panel').classList.toggle('active');
-            
-            // Retrasar el re-cálculo del canvas para dar tiempo a la animación CSS
             setTimeout(resizeAllCanvas, 500);
-            
-            // Asegurarse de que los controles flotantes se muestren
             showControls();
         }
 
@@ -1535,7 +1541,7 @@
         }
         function getPanCenter(e) { return { x: e.touches[0].clientX, y: e.touches[0].clientY }; }
         appUI.addEventListener('touchstart', (e) => {
-            if (e.target.closest('.panel-container')) return; // No hacer zoom/pan sobre paneles
+            if (e.target.closest('.panel-container')) return;
             if (e.touches.length === 2) { isPinching = true; isPanning = false; initialPinchDist = getPinchDist(e);
             } else if (e.touches.length === 1 && zoom > 1) { isPinching = false; isPanning = true; lastPan = getPanCenter(e); }
         });
@@ -1568,11 +1574,10 @@
             setInterval(updateSensorReadings, 2000);    
             setInterval(runFollowAnimation, 30000);    
             
-            // Paneles empiezan ocultos
             document.body.classList.remove('panels-active');
             document.getElementById('btn-panel').classList.remove('active');
             
-            hideControls(); // UI flotante empieza oculta
+            hideControls();
             loadSheetData();
         };
         
