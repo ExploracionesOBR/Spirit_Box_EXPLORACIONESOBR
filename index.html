@@ -20,14 +20,12 @@
             --neon-green: #39FF14; 
             --alert-red: #FF3333;
             --sim-orange: #FFB000;
-            /* 📍 NUEVO COLOR (SOLICITUD) */
             --sensor-blue: #00BFFF; /* Azul para sensor de respaldo */
             --panel-bg: #0A0F0A;
             --border-color: rgba(57, 255, 20, 0.3);
             --text-color: #E0E0E0;
             --text-dim: #777;
-            
-            --panel-width: 280px; 
+            --panel-width-landscape: 240px; /* Ancho en horizontal */
         }
         
         body {
@@ -53,6 +51,7 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
+            /* 📍 Efecto (Petición 1) */
             transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             pointer-events: auto;
             z-index: 5;
@@ -82,48 +81,36 @@
         }
         
         body.panels-active #main-filter-canvas {
-            left: var(--panel-width);
-            width: calc(100% - var(--panel-width));
+            left: 0 !important;
+            width: 100% !important;
         }
 
         .hidden-canvas { display: none; }
 
         #side-panel-container {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: var(--panel-width);
-            height: 100vh;
             display: flex;
             flex-direction: column;
             z-index: 20;
             pointer-events: none; 
-            transform: translateX(calc(var(--panel-width) * -1));
             transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            padding-top: env(safe-area-inset-top);
             box-sizing: border-box; 
         }
 
         body.panels-active #side-panel-container {
-            transform: translateX(0);
-        }
-        body.panels-active #main-view-area {
-            left: var(--panel-width);
-            width: calc(100% - var(--panel-width));
+            transform: translateX(0) translateY(0); /* Resetea ambas transformaciones */
+            pointer-events: auto;
         }
 
         .panel {
             background-color: var(--panel-bg);
             border: 1px solid var(--border-color);
             box-shadow: 0 0 10px rgba(57, 255, 20, 0.2) inset;
-            border-radius: 8px;
             display: flex;
             flex-direction: column;
             padding: 8px;
             pointer-events: auto;
-            margin: 5px; 
             flex-grow: 1;
-            max-height: 98vh;
             overflow-y: auto;
             gap: 8px;
         }
@@ -197,7 +184,6 @@
             animation: pulseGlow 1.5s infinite;
         }
         
-        /* 📍 NUEVA REGLA CSS (SOLICITUD) */
         .status-light-group[data-status="fallback"] .status-led-indicator {
             background-color: var(--sensor-blue);
             box-shadow: 0 0 8px var(--sensor-blue);
@@ -221,7 +207,7 @@
             color: var(--text-dim);
         }
         .status-light-group[data-status="connected"] span { color: var(--neon-green); }
-        .status-light-group[data-status="fallback"] span { color: var(--sensor-blue); } /* 📍 NUEVO COLOR */
+        .status-light-group[data-status="fallback"] span { color: var(--sensor-blue); }
         .status-light-group[data-status="simulated"] span { color: var(--sim-orange); }
         .status-light-group[data-status="unavailable"] span { color: var(--alert-red); }
 
@@ -522,49 +508,65 @@
         @keyframes fadeIn { 0% { opacity: 0; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
         @keyframes fadeOut { 0% { opacity: 1; } 100% { opacity: 0; } }
 
+        /* * 📍 NUEVA LÓGICA DE CSS (PETICIÓN 2 y 3)
+         * - Panel completo en vertical
+         * - Cámara PiP en vertical
+         * - Efecto de dim/scale en horizontal
+        */
+
         /* --- MODO MÓVIL VERTICAL (PORTRAIT) --- */
-        @media (max-width: 768px) and (orientation: portrait) {
+        @media (orientation: portrait) {
             #side-panel-container {
-                flex-direction: row; 
-                bottom: 0; top: auto; left: 0;
-                width: 100vw; height: auto; 
-                max-height: 50vh; 
-                transform: translateY(100%); 
-                overflow-x: auto;
-                padding-bottom: env(safe-area-inset-bottom);
+                top: 0; left: 0;
+                width: 100vw;
+                height: 100vh;
+                transform: translateY(100%); /* Sale por abajo */
+                padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
             }
             .panel {
-                width: 280px; 
-                flex-shrink: 0;
-                height: auto; 
-                max-height: 50vh;
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                border-radius: 0;
+                border: none;
             }
 
-            body.panels-active #side-panel-container { transform: translateY(0); }
             body.panels-active #main-view-area {
-                left: 0; width: 100%;
-                filter: brightness(0.4);
-            }
-            body.panels-active #main-filter-canvas {
-                left: 0 !important; width: 100% !important;
+                /* Cámara flotante (PiP) */
+                width: 120px;
+                height: 180px;
+                top: calc(env(safe-area-inset-top) + 60px); /* Debajo del header del panel */
+                right: 15px;
+                left: auto;
+                border: 2px solid var(--neon-green);
+                border-radius: 8px;
+                box-shadow: 0 0 15px var(--neon-green);
+                z-index: 25; /* Encima del panel */
+                filter: none;
             }
             
-            #filter-controls-container { right: 10px; }
-            .filter-btn { width: 45px; height: 45px; }
-            
-            #kinect-banner { left: 10px; top: 10px; font-size: 0.8rem;}
-            #logo-image { width: 50px; height: 50px; top: 15px; right: 15px;}
+            /* Controles de filtro se mueven con el PiP */
+            body.panels-active #filter-controls-container {
+                top: calc(env(safe-area-inset-top) + 250px); /* Debajo del PiP */
+                right: 15px;
+            }
+
+            body.panels-active #logo-image {
+                display: none; /* Oculta el logo cuando el panel está activo */
+            }
         }
 
-        /* 📍 SOLUCIÓN IMAGEN ESTIRADA (PUNTO 4) */
-        @media (max-width: 900px) and (orientation: landscape) {
-            :root { --panel-width: 260px; }
+        /* --- MODO MÓVIL HORIZONTAL (LANDSCAPE) --- */
+        @media (orientation: landscape) {
+            :root { --panel-width-landscape: 240px; }
 
             #side-panel-container {
+                width: var(--panel-width-landscape);
                 height: 100vh;
-                padding-top: env(safe-area-inset-top);
-                padding-bottom: env(safe-area-inset-bottom);
-                box-sizing: border-box;
+                top: 0;
+                left: 0;
+                transform: translateX(calc(var(--panel-width-landscape) * -1));
+                padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
             }
             
             .panel {
@@ -577,13 +579,14 @@
             }
 
             body.panels-active #main-view-area {
-                left: var(--panel-width);
-                width: calc(100% - var(--panel-width));
+                left: var(--panel-width-landscape);
+                width: calc(100% - var(--panel-width-landscape));
+                height: 100%;
+                /* 📍 Efecto (Petición 1) */
+                filter: brightness(0.6);
+                transform: scale(0.98);
             }
-            body.panels-active #main-filter-canvas {
-                left: var(--panel-width) !important;
-                width: calc(100% - var(--panel-width)) !important;
-            }
+
             body.panels-active #bg-camera-feed {
                 left: 50%;
             }
@@ -1053,7 +1056,7 @@
             }
         }
 
-        // 📍 NUEVA FUNCIÓN DE ESTADO DE LED (SOLICITUD)
+        // 📍 LÓGICA DE LEDS (SOLICITUD)
         function setSensorStatus(sensorName, status) { // status: "connected", "fallback", "simulated", "unavailable", "off"
             let el;
             if (sensorName === 'mic') el = micStatus;
@@ -1085,7 +1088,7 @@
             lfo.connect(lfoGain).connect(gainNode.gain);
             
             whiteNoiseNode.connect(gainNode);
-            gainNode.connect(masterGain); // Ruido de fondo al master
+            gainNode.connect(masterGain);
 
             radioOsc = audioCtx.createOscillator();
             radioOsc.type = 'sine';
@@ -1093,7 +1096,7 @@
             radioGain = audioCtx.createGain();
             radioGain.gain.value = 0; 
             radioOsc.connect(radioGain);
-            radioGain.connect(masterGain); // Tono de radio al master
+            radioGain.connect(masterGain);
 
             // --- Nodos de Efectos (Voz) ---
             // Estos nodos se conectarán a la voz cuando se cree
@@ -1105,7 +1108,7 @@
             reverbGain.connect(delay);
             delay.connect(fb);
             fb.connect(delay);
-            delay.connect(masterGain); // El eco va al master
+            delay.connect(masterGain);
 
             distortionNode = audioCtx.createWaveShaper();
             distortionNode.curve = makeDistortionCurve(80);
@@ -1113,7 +1116,7 @@
             
             distortionNode.connect(reverbGain); // La distorsión alimenta a la reverberación
             
-            masterGain.connect(audioCtx.destination); // Conecta todo al altavoz
+            masterGain.connect(audioCtx.destination);
 
             // Inicia los ruidos de fondo
             radioOsc.start(); whiteNoiseNode.start(); lfo.start();
@@ -1312,6 +1315,7 @@
             if(lfo) lfo.frequency.linearRampToValueAtTime([5,12,20][scanSpeed], audioCtx.currentTime+0.1);
         });
 
+        // 📍 VOLUMEN % (PUNTO 2)
         document.getElementById('vol-slider').addEventListener('input', (e) => {
             const vol = e.target.value;
             if(masterGain) masterGain.gain.value = vol/100;
@@ -1379,57 +1383,9 @@
             spiritBoxState = "SPEAKING";
             isSpeaking = true;
             
-            // Bajar ruido de fondo
-            lfoGain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.1); 
-            radioGain.gain.linearRampToValueAtTime(0.005, audioCtx.currentTime + 0.1);
-            
             const words = text.split(' ');
             let wordIndex = 0;
 
-            function speakWord() {
-                if (wordIndex >= words.length || !isRunning) {
-                    // Fin de la frase
-                    isSpeaking = false;
-                    spiritBoxState = "SCANNING";
-                    
-                    // Restaurar ruido de fondo
-                    lfoGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 0.2);
-                    radioGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime + 0.2);
-                    
-                    if (isRunning) {
-                        setTimeout(runSpiritBoxLoop, 2000); // Volver a escuchar
-                    }
-                    return;
-                }
-
-                const word = words[wordIndex];
-                const u = new SpeechSynthesisUtterance(word);
-                u.lang = 'es-MX';
-                u.volume = 1.0;
-                // Tono y velocidad aleatorios para cada palabra
-                u.pitch = 0.1 + Math.random() * 0.7; // Tono bajo y variable
-                u.rate = 0.9 + Math.random() * 0.4; // Velocidad variable
-                
-                // Conectar la voz a los efectos de audio
-                const source = audioCtx.createMediaStreamSource(new MediaStream([u]));
-                source.connect(distortionNode); // Voz -> Distorsión
-                reverbGain.gain.value = 0.7; // Activar reverberación
-                
-                u.onend = () => {
-                    wordIndex++;
-                    // Pausa aleatoria entre palabras (simula barrido)
-                    setTimeout(speakWord, 100 + Math.random() * 400);
-                };
-                
-                window.speechSynthesis.speak(u);
-            }
-            
-            // La síntesis de voz no se puede enrutar directamente a Web Audio API de esta forma.
-            // La simulación de efectos debe ser aplicada al NODO de audio, no a la síntesis.
-            // Revirtiendo a la simulación de efectos en el audio de fondo, y voz "entrecortada".
-
-            // --- INICIO DE LÓGICA DE VOZ REVISADA (PUNTO 3) ---
-            
             function speakWordByWord() {
                 if (wordIndex >= words.length || !isRunning) {
                     isSpeaking = false;
@@ -1446,8 +1402,8 @@
                 const u = new SpeechSynthesisUtterance(word);
                 u.lang = 'es-MX';
                 u.volume = 1.0;
-                u.pitch = 0.1 + Math.random() * 0.7;
-                u.rate = 0.9 + Math.random() * 0.4;
+                u.pitch = 0.1 + Math.random() * 0.7; // Tono bajo y variable
+                u.rate = 0.9 + Math.random() * 0.4; // Velocidad variable
 
                 u.onstart = () => {
                     // Bajar el ruido de fondo MIENTRAS habla la palabra
@@ -1461,15 +1417,13 @@
                     lfoGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime);
                     radioGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime);
                     
-                    setTimeout(speakWordByWord, 100 + Math.random() * 400);
+                    setTimeout(speakWordByWord, 100 + Math.random() * 400); // Pausa aleatoria
                 };
                 
                 window.speechSynthesis.speak(u);
             }
 
             speakWordByWord(); // Inicia la secuencia
-            
-            // --- FIN DE LÓGICA DE VOZ REVISADA ---
             
             sensorPanel.classList.add('alert');
             emfValue = 80 + Math.random() * 20; 
