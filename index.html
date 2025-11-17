@@ -434,7 +434,7 @@
             color: var(--neon-green);
             text-shadow: 0 0 10px var(--neon-green);
             animation: pulseGlow 2s infinite ease-in-out;
-            transition: all 0.3s; /* Para suavizar cambio de texto */
+            transition: all 0.3s;
         }
         #loading-bar-container {
             width: 250px; height: 10px;
@@ -444,12 +444,11 @@
             background: rgba(0, 50, 50, 0.3);
         }
         
-        /* 📍 CSS ACTUALIZADO (PUNTO 1) */
         #loading-bar {
-            width: 0%; /* Inicia en 0% */
+            width: 0%;
             height: 100%;
             background-color: var(--neon-green);
-            transition: width 0.4s ease-out; /* Animación de progreso */
+            transition: width 0.4s ease-out;
             animation: loading-shimmer 2s infinite linear;
             background-image: linear-gradient(90deg, var(--neon-green) 0%, #fff 50%, var(--neon-green) 100%);
             background-size: 200% 100%;
@@ -670,7 +669,8 @@
 </div> 
 
     <script>
-        const SHEETDB_URL = "https://sheetdb.io/api/v1/9xzfnke69kkej"; 
+        // 📍 TU NUEVA URL DE GOOGLE APPS SCRIPT
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzOf3crQxBdPylwMTAd34W-nBShN31MkIUtaMdKsZHMZVVniI2HjMesD6DpOlO363T1/exec";
         
         let isRunning = false;
         let currentFilter = 'none'; 
@@ -939,8 +939,8 @@
         
         function drawAllSkeletons(poses) {
             const ctx = mainFilterCtx; 
-            ctx.strokeStyle = var(--neon-green); 
-            ctx.fillStyle = var(--alert-red);   
+            ctx.strokeStyle = 'var(--neon-green)'; 
+            ctx.fillStyle = 'var(--alert-red)';   
             ctx.lineWidth = 2.5;
             ctx.filter = 'drop-shadow(0 0 4px var(--neon-green))';
 
@@ -989,9 +989,8 @@
         }
         
         function setFilter(f) {
-            // Desactiva todos los botones de filtro
             document.querySelectorAll('.filter-btn').forEach(b => {
-                if (b.id !== 'btn-panel') { // No toques el botón del panel
+                if (b.id !== 'btn-panel') {
                     b.classList.remove('active');
                 }
             });
@@ -1005,7 +1004,7 @@
             }
         }
 
-        function setSensorStatus(sensorName, status) { // status: "connected", "simulated", "unavailable", "off"
+        function setSensorStatus(sensorName, status) {
             let el;
             if (sensorName === 'mic') el = micStatus;
             else if (sensorName === 'mag') el = magStatus;
@@ -1243,7 +1242,6 @@
             }
         }
         
-        // 📍 SCRIPT DE CARGA ACTUALIZADO (PUNTO 1 Y 2)
         const loadingText = document.getElementById('loading-text');
         const loadingBar = document.getElementById('loading-bar');
         
@@ -1254,37 +1252,36 @@
 
         async function loadSheetData() {
             try {
-                updateLoadingProgress(10, "CONECTANDO CON SERVIDOR");
+                updateLoadingProgress(25, "CONECTANDO CON API-OBR");
                 
-                const fetchAutomatico = fetch(`${SHEETDB_URL}?sheet=Automatico`);
-                updateLoadingProgress(30, "CARGANDO DATOS [AUTO]");
-                
-                const fetchProgramado = fetch(`${SHEETDB_URL}?sheet=programado`);
-                updateLoadingProgress(50, "CARGANDO DATOS [PROG]");
+                const response = await fetch(GOOGLE_SCRIPT_URL);
+                updateLoadingProgress(50, "RECIBIENDO DATOS");
 
-                let [ra, rp] = await Promise.all([fetchAutomatico, fetchProgramado]);
-                updateLoadingProgress(70, "PROCESANDO RESPUESTAS");
-
-                let ja = await ra.json(); 
-                automaticoData = ja.map(r=>r.TEXTO||r.texto).filter(t=>t);
+                if (!response.ok) {
+                    throw new Error(`Error de red: ${response.statusText}`);
+                }
                 
-                let jp = await rp.json();
-                jp.forEach(r=>{
-                    let p=(r.PREGUNTA||r.pregunta||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-                    let res=r.RESPUESTA||r.respuesta;
-                    if(p&&res) programadoData.set(p,res);
+                const data = await response.json();
+                updateLoadingProgress(75, "PROCESANDO RESPUESTAS");
+
+                automaticoData = data.automatico.map(r => r.TEXTO).filter(t => t);
+                
+                data.programado.forEach(r => {
+                    let p = (r.PREGUNTA || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    let res = r.RESPUESTA;
+                    if (p && res) {
+                        programadoData.set(p, res);
+                    }
                 });
                 
                 updateLoadingProgress(100, "SINCRONIZACIÓN COMPLETA");
                 
-                // 📍 CONSOLE LOG DISFRAZADO (PUNTO 2)
                 console.log(`%c[SISTEMA OBR] Sincronización completa: ${automaticoData.length} SENSORES AUTOMÁTICOS ACTIVOS | ${programadoData.size} SENSORES PROGRAMADOS CONECTADOS.`, "color: #39FF14; font-weight: bold;");
 
-            } catch(e){ 
-                console.error("Error cargando datos de SheetDB", e); 
+            } catch (e) { 
+                console.error("Error cargando datos de Google Apps Script", e); 
                 updateLoadingProgress(100, "ERROR DE SINCRONIZACIÓN");
             } finally {
-                // Pequeña pausa para que se vea el 100%
                 setTimeout(hideLoadingScreen, 500); 
             }
         }
@@ -1633,6 +1630,7 @@
             
             hideControls();
             
+            // Inicia la carga de datos con la barra de progreso
             loadSheetData();
         };
         
