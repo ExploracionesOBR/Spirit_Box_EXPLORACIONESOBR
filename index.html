@@ -58,14 +58,18 @@
             transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             pointer-events: auto;
             z-index: 5;
+            background: #000; /* Fondo negro por si el video tarda */
         }
 
+        /* 📍 SOLUCIÓN CÁMARA ESTIRADA (PUNTO 4) */
         #bg-camera-feed {
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 100%;
-            height: 100%;
+            min-width: 100%; /* Asegura que cubra */
+            min-height: 100%; /* Asegura que cubra */
+            width: auto;
+            height: auto;
             object-fit: cover; 
             transform: translate(-50%, -50%) scaleX(1);
             z-index: 1;
@@ -101,7 +105,7 @@
         }
 
         body.panels-active #side-panel-container {
-            transform: translateX(0) translateY(0); /* Resetea ambas transformaciones */
+            transform: translateX(0) translateY(0);
             pointer-events: auto;
         }
 
@@ -417,7 +421,7 @@
             display: flex; flex-direction: column;
             gap: 10px; z-index: 100;
             pointer-events: auto; opacity: 1;
-            transition: opacity 0.5s ease-in-out, top 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Añadida transición de 'top' */
+            transition: opacity 0.5s ease-in-out, top 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
         .filter-btn {
             width: 50px; height: 50px;
@@ -511,10 +515,10 @@
         @keyframes fadeIn { 0% { opacity: 0; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
         @keyframes fadeOut { 0% { opacity: 1; } 100% { opacity: 0; } }
 
-        /* 📍 NUEVA LÓGICA DE CSS (PETICIÓN 2 y 3) */
-
+        /* 📍 SOLUCIÓN CSS HORIZONTAL/VERTICAL (PUNTO 2 Y 4) */
+        
         /* --- MODO MÓVIL VERTICAL (PORTRAIT) --- */
-        @media (orientation: portrait) {
+        @media (max-aspect-ratio: 1/1) {
             #side-panel-container {
                 top: 0; left: 0;
                 width: 100vw;
@@ -536,28 +540,27 @@
                 height: 180px;
                 top: calc(env(safe-area-inset-top) + 60px); /* Debajo del header del panel */
                 right: 15px;
-                left: auto; /* Anula el 'left' de landscape */
+                left: auto;
                 border: 2px solid var(--neon-green);
                 border-radius: 8px;
                 box-shadow: 0 0 15px var(--neon-green);
                 z-index: 25; /* Encima del panel */
-                filter: none; /* Sin oscurecer */
-                transform: scale(1); /* Sin encoger */
+                filter: none;
+                transform: scale(1);
             }
             
-            /* Controles de filtro se mueven con el PiP */
             body.panels-active #filter-controls-container {
                 top: calc(env(safe-area-inset-top) + 250px); /* Debajo del PiP */
                 right: 15px;
             }
 
             body.panels-active #logo-image {
-                display: none; /* Oculta el logo cuando el panel está activo */
+                display: none;
             }
         }
 
         /* --- MODO MÓVIL HORIZONTAL (LANDSCAPE) --- */
-        @media (orientation: landscape) {
+        @media (min-aspect-ratio: 1/1) {
             :root { --panel-width-landscape: 240px; }
 
             #side-panel-container {
@@ -578,7 +581,7 @@
                 border-right: 1px solid var(--border-color);
             }
 
-            /* 📍 Efecto (Petición 1) */
+            /* Efecto de "enfoque" en el panel */
             body.panels-active #main-view-area {
                 left: var(--panel-width-landscape);
                 width: calc(100% - var(--panel-width-landscape));
@@ -715,7 +718,34 @@
 </div> 
 
     <script>
-        // 📍 TU NUEVA URL DE GOOGLE APPS SCRIPT
+        // 📍 INICIO DE SCRIPT ANTI-CACHÉ (¡NUEVO!)
+        (function() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    if (registrations.length) {
+                        console.log('[ANTI-CACHE] Des-registrando Service Workers...');
+                        for(let registration of registrations) {
+                            registration.unregister();
+                        }
+                        console.log('[ANTI-CACHE] Service Workers eliminados. Recargando...');
+                        location.reload(true); // Forzar recarga
+                    } else {
+                        console.log('[ANTI-CACHE] No se encontraron Service Workers.');
+                    }
+                });
+            }
+            
+            if (window.caches) {
+                caches.keys().then(function(names) {
+                    for (let name of names) {
+                        console.log('[ANTI-CACHE] Eliminando caché:', name);
+                        caches.delete(name);
+                    }
+                });
+            }
+        })();
+        // 📍 FIN DE SCRIPT ANTI-CACHÉ
+    
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzOf3crQxBdPylwMTAd34W-nBShN31MkIUtaMdKsZHMZVVniI2HjMesD6DpOlO363T1/exec";
         
         let isRunning = false;
@@ -778,11 +808,13 @@
 
         async function startCamera() {
             try {
+                // 📍 SOLUCIÓN CÁMARA (PUNTO 4)
                 const constraints = {
                     video: {
                         facingMode: { ideal: "environment" },
                         width: { ideal: 4096 },
-                        height: { ideal: 2160 }
+                        height: { ideal: 2160 },
+                        frameRate: { ideal: 60 } // Pedir 60 FPS
                     },
                     audio: false
                 };
@@ -842,6 +874,7 @@
             }
         }
 
+        // 📍 SOLUCIÓN CÁMARA ESTIRADA (PUNTO 4)
         function drawVideoWithCover(ctx, video, z, pan) {
             const canvasW = ctx.canvas.width;
             const canvasH = ctx.canvas.height;
@@ -856,6 +889,12 @@
             let sWidth = videoW / z;
             let sHeight = videoH / z;
             
+            if (canvasAspect > videoAspect) {
+                sHeight = sWidth / canvasAspect;
+            } else {
+                sWidth = sHeight * canvasAspect;
+            }
+
             let sx = (videoW - sWidth) / 2 + pan.x;
             let sy = (videoH - sHeight) / 2 + pan.y;
 
@@ -864,21 +903,7 @@
             currentPan.x = sx - (videoW - sWidth) / 2;
             currentPan.y = sy - (videoH - sHeight) / 2;
 
-            let drawW, drawH, drawX, drawY;
-
-            if (videoAspect > canvasAspect) {
-                drawH = canvasH;
-                drawW = canvasH * videoAspect;
-                drawX = (canvasW - drawW) / 2;
-                drawY = 0;
-            } else {
-                drawW = canvasW;
-                drawH = canvasW / videoAspect;
-                drawX = 0;
-                drawY = (canvasH - drawH) / 2;
-            }
-            
-            ctx.drawImage(video, sx, sy, sWidth, sHeight, drawX, drawY, drawW, drawH);
+            ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, canvasW, canvasH);
         }
 
         
@@ -894,7 +919,6 @@
                 
                 if (currentFilter === 'sls') {
                     kinectBanner.style.display = 'block';
-                    drawVideoWithCover(mainFilterCtx, videoBg, zoom, currentPan);
                     if (latestPoses) {
                         drawAllSkeletons(latestPoses); 
                     }
@@ -951,27 +975,29 @@
                         mainFilterCtx.putImageData(frame, 0, 0);
                     
                     } else if (currentFilter === 'none') {
-                        drawVideoWithCover(mainFilterCtx, videoBg, zoom, currentPan);
+                        // No se dibuja nada en el canvas
                     }
                 }
             }
             requestAnimationFrame(drawLoop);
         }
         
+        // 📍 SOLUCIÓN LAG (PUNTO 1)
         async function detectPoseLoop() {
             while (true) {
                 if (currentFilter === 'sls' && poseDetector && videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
                     if (!isDetectingPose) {
                         isDetectingPose = true;
-                        drawVideoWithCover(aiCtx, videoBg, zoom, currentPan);
-                        const poses = await poseDetector.estimatePoses(aiCanvas); 
+                        
+                        const poses = await poseDetector.estimatePoses(videoBg); 
                         latestPoses = poses; 
+                        
                         isDetectingPose = false;
                     }
-                    await new Promise(r => setTimeout(r, 10));
+                    await new Promise(r => setTimeout(r, 100)); // 10 FPS
                 } else {
                     latestPoses = []; 
-                    await new Promise(r => setTimeout(r, 100));
+                    await new Promise(r => setTimeout(r, 500));
                 }
             }
         }
@@ -989,38 +1015,41 @@
         function drawAllSkeletons(poses) {
             const ctx = mainFilterCtx; 
             
-            // 📍 COLORES SLS (PUNTO 5)
             ctx.strokeStyle = 'var(--neon-green)'; // LÍNEAS VERDES
             ctx.fillStyle = 'var(--alert-red)';   // PUNTOS ROJOS
             
             ctx.lineWidth = 2.5;
             ctx.filter = 'drop-shadow(0 0 4px var(--neon-green))';
 
-            const scaleX = mainFilterCanvas.width / aiCanvas.width;
-            const scaleY = mainFilterCanvas.height / aiCanvas.height;
+            const scaleX = mainFilterCanvas.width / videoBg.videoWidth;
+            const scaleY = mainFilterCanvas.height / videoBg.videoHeight;
+            const scale = Math.max(scaleX, scaleY);
+            
+            const offsetX = (mainFilterCanvas.width - videoBg.videoWidth * scale) / 2;
+            const offsetY = (mainFilterCanvas.height - videoBg.videoHeight * scale) / 2;
 
             poses.forEach(pose => {
                 if (pose.score > confidenceThreshold) {
-                    drawKeypoints(pose.keypoints, scaleX, scaleY);
-                    drawConnections(pose.keypoints, scaleX, scaleY);
+                    drawKeypoints(pose.keypoints, scale, offsetX, offsetY);
+                    drawConnections(pose.keypoints, scale, offsetX, offsetY);
                 }
             });
             ctx.filter = 'none';
         }
 
-        function drawKeypoints(keypoints, scaleX, scaleY) {
+        function drawKeypoints(keypoints, scale, offsetX, offsetY) {
             const ctx = mainFilterCtx;
             for (let i = 0; i < keypoints.length; i++) {
                 const keypoint = keypoints[i];
                 if (keypoint.score > confidenceThreshold) {
                     ctx.beginPath();
-                    ctx.arc(keypoint.x * scaleX, keypoint.y * scaleY, 4, 0, 2 * Math.PI); 
+                    ctx.arc(keypoint.x * scale + offsetX, keypoint.y * scale + offsetY, 4, 0, 2 * Math.PI); 
                     ctx.fill();
                 }
             }
         }
 
-        function drawConnections(keypoints, scaleX, scaleY) {
+        function drawConnections(keypoints, scale, offsetX, offsetY) {
             const ctx = mainFilterCtx;
             const keypointMap = new Map();
             keypoints.forEach(keypoint => {
@@ -1033,8 +1062,8 @@
 
                 if (start && end && start.score > confidenceThreshold && end.score > confidenceThreshold) {
                     ctx.beginPath();
-                    ctx.moveTo(start.x * scaleX, start.y * scaleY);
-                    ctx.lineTo(end.x * scaleX, end.y * scaleY);
+                    ctx.moveTo(start.x * scale + offsetX, start.y * scale + offsetY);
+                    ctx.lineTo(end.x * scale + offsetX, end.y * scale + offsetY);
                     ctx.stroke();
                 }
             });
@@ -1054,10 +1083,15 @@
                 const targetBtn = event ? event.target : document.querySelector(`.filter-btn[onclick="setFilter('${f}')"]`);
                 if(targetBtn) targetBtn.classList.add('active');
             }
+            
+            if (currentFilter === 'relief' || currentFilter === 'night-vision') {
+                videoBg.style.opacity = '0';
+            } else {
+                videoBg.style.opacity = '1';
+            }
         }
 
-        // 📍 LÓGICA DE LEDS (SOLICITUD)
-        function setSensorStatus(sensorName, status) { // status: "connected", "fallback", "simulated", "unavailable", "off"
+        function setSensorStatus(sensorName, status) {
             let el;
             if (sensorName === 'mic') el = micStatus;
             else if (sensorName === 'mag') el = magStatus;
@@ -1068,13 +1102,11 @@
             }
         }
 
-        // 📍 EFECTO PSB7 (PUNTO 3)
         function initAudio() {
             if (audioCtx) return;
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             masterGain = audioCtx.createGain();
             
-            // --- Nodos de Ruido (Fondo) ---
             whiteNoiseNode = audioCtx.createBufferSource();
             let b = audioCtx.createBuffer(1, audioCtx.sampleRate*2, audioCtx.sampleRate);
             let d = b.getChannelData(0);
@@ -1098,10 +1130,8 @@
             radioOsc.connect(radioGain);
             radioGain.connect(masterGain);
 
-            // --- Nodos de Efectos (Voz) ---
-            // Estos nodos se conectarán a la voz cuando se cree
             reverbGain = audioCtx.createGain();
-            reverbGain.gain.value = 0; // Inicia apagado
+            reverbGain.gain.value = 0;
             let delay = audioCtx.createDelay(1.0); delay.delayTime.value = 0.4; 
             let fb = audioCtx.createGain(); fb.gain.value = 0.6;
             
@@ -1114,11 +1144,10 @@
             distortionNode.curve = makeDistortionCurve(80);
             distortionNode.oversample = '4x';
             
-            distortionNode.connect(reverbGain); // La distorsión alimenta a la reverberación
+            distortionNode.connect(reverbGain);
             
             masterGain.connect(audioCtx.destination);
 
-            // Inicia los ruidos de fondo
             radioOsc.start(); whiteNoiseNode.start(); lfo.start();
             initSpeechRec();
         }
@@ -1136,9 +1165,39 @@
             return curve;
         }
 
-        // 📍 SENSOR INIT REESCRITO (PUNTO 6 Y 7)
+        // 📍 SOLUCIÓN SENSORES (PUNTO 3)
+        let sensorPermissionsRequested = false;
+        async function requestAllPermissions() {
+            if (sensorPermissionsRequested) {
+                initSensor();
+                return;
+            }
+            sensorPermissionsRequested = true;
+            
+            console.log("Solicitando permisos de sensores...");
+            
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const status = await DeviceOrientationEvent.requestPermission();
+                    if (status === 'granted') {
+                        initSensor();
+                    } else {
+                        setSensorStatus('mag', 'unavailable');
+                        setSensorStatus('prox', 'simulated');
+                        startEmfSimulation();
+                    }
+                } catch (e) {
+                    console.warn("Error al pedir permiso de orientación, iniciando sensores de todas formas...", e);
+                    initSensor();
+                }
+            } else {
+                console.log("Permiso de orientación no requerido (ej. Android), iniciando sensores.");
+                initSensor();
+            }
+        }
+        
         function initSensor() {
-            // 1. Sensor de Orientación (Para el dial de la brújula)
+            // 1. Sensor de Orientación (Dial Brújula)
             if ('AbsoluteOrientationSensor' in window) {
                 try {
                     orientationSensor = new AbsoluteOrientationSensor({ frequency: 10 });
@@ -1154,15 +1213,15 @@
                     };
                     orientationSensor.start();
                 } catch (e) {
-                    console.warn("Sensor de Orientación no soportado.");
-                    setSensorStatus('mag', 'unavailable'); // ROJO
+                    console.warn("Sensor de Orientación no soportado.", e);
+                    setSensorStatus('mag', 'unavailable');
                 }
             } else {
                 console.warn("Sensor de Orientación no soportado.");
-                setSensorStatus('mag', 'unavailable'); // ROJO
+                setSensorStatus('mag', 'unavailable');
             }
 
-            // 2. Sensor EMF (Usando Magnetómetro si es posible)
+            // 2. Sensor EMF (Magnetómetro)
             if ('Magnetometer' in window) {
                 try {
                     magnetometer = new Magnetometer({ frequency: 10 });
@@ -1173,20 +1232,19 @@
                     };
                     magnetometer.onerror = (e) => {
                         console.warn("Magnetómetro (EMF) no disponible:", e.error.name, ". Probando Proximidad.");
-                        initProximitySensor(); // Fallback
+                        initProximitySensor();
                     };
                     magnetometer.start();
                 } catch (e) {
                     console.warn("Magnetómetro (EMF) falló. Probando Proximidad.", e);
-                    initProximitySensor(); // Fallback
+                    initProximitySensor();
                 }
             } else {
                 console.warn("Magnetómetro (EMF) no soportado. Probando Proximidad.");
-                initProximitySensor(); // Fallback
+                initProximitySensor();
             }
         }
 
-        // 3. Sensor de Proximidad (Como fallback para EMF)
         function initProximitySensor() {
             if ('ProximitySensor' in window) {
                 try {
@@ -1197,8 +1255,6 @@
                         if (dist <= minDist) emfValue = 100;
                         else if (dist >= maxDist) emfValue = 0;
                         else emfValue = 100 * (1 - (dist - minDist) / (maxDist - minDist));
-                        
-                        // 📍 SOLICITUD DE COLOR: Poner en AZUL
                         setSensorStatus('prox', 'fallback'); // AZUL
                     };
                     proximitySensor.onerror = (e) => {
@@ -1219,7 +1275,6 @@
             }
         }
         
-        // 4. Simulación (Como último fallback)
         function startEmfSimulation() {
             if (emfSimInterval) return;
             emfSimInterval = setInterval(() => {
@@ -1270,7 +1325,6 @@
             pwr.classList.toggle('active', isRunning);
             
             if(isRunning) {
-                // --- Encender ---
                 pwr.style.transform = 'rotate(0deg)';
                 
                 if(audioCtx.state === 'suspended') {
@@ -1283,15 +1337,13 @@
                 lfoGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime+0.5);
                 radioGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime+0.5); 
 
-                if (!magnetometer && !proximitySensor && !emfSimInterval) {
-                    initSensor(); 
-                }
+                // 📍 SOLUCIÓN SENSORES (PUNTO 3)
+                requestAllPermissions();
 
                 spiritBoxState = "SCANNING";
                 runSpiritBoxLoop();
                 
             } else {
-                // --- Apagar ---
                 pwr.style.transform = 'rotate(135deg)';
                 
                 lfoGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.1);
@@ -1315,7 +1367,6 @@
             if(lfo) lfo.frequency.linearRampToValueAtTime([5,12,20][scanSpeed], audioCtx.currentTime+0.1);
         });
 
-        // 📍 VOLUMEN % (PUNTO 2)
         document.getElementById('vol-slider').addEventListener('input', (e) => {
             const vol = e.target.value;
             if(masterGain) masterGain.gain.value = vol/100;
@@ -1406,14 +1457,12 @@
                 u.rate = 0.9 + Math.random() * 0.4; // Velocidad variable
 
                 u.onstart = () => {
-                    // Bajar el ruido de fondo MIENTRAS habla la palabra
                     lfoGain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime); 
                     radioGain.gain.linearRampToValueAtTime(0.005, audioCtx.currentTime);
                 };
 
                 u.onend = () => {
                     wordIndex++;
-                    // SUBIR el ruido de fondo en la pausa (simula barrido)
                     lfoGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime);
                     radioGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime);
                     
@@ -1599,6 +1648,9 @@
         });
 
         function handleUITap(event) {
+            // 📍 SOLUCIÓN SENSORES (PUNTO 3)
+            requestAllPermissions();
+
             if (isPinching || isPanning) return;
             if (!event.target.closest('.panel') && !event.target.closest('.filter-btn')) {
                 if (uiVisible) {
