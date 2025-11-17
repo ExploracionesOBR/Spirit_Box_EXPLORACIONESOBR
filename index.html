@@ -26,11 +26,17 @@
             --alert-red: #FF3333;
             --sim-orange: #FFB000;
             --sensor-blue: #00BFFF;
-            --panel-bg: #0A0F0A;
+            --panel-bg: rgba(0, 20, 0, 0.4); /* Fondo de cristal oscuro */
             --border-color: rgba(57, 255, 20, 0.3);
+            --border-strong: rgba(57, 255, 20, 0.7);
             --text-color: #E0E0E0;
-            --text-dim: #777;
-            --panel-width-landscape: 240px; 
+            --text-dim: #999;
+            
+            /* --- 📍 TAMAÑOS DEL NUEVO HUD --- */
+            --hud-top-height: 80px;
+            --hud-bottom-height: 180px;
+            --hud-left-width: 90px;
+            --hud-right-width: 70px;
         }
         
         body {
@@ -49,6 +55,7 @@
             touch-action: none;
         }
 
+        /* 📍 SOLUCIÓN 60 FPS: La cámara y los filtros CSS */
         #main-view-area {
             position: fixed;
             top: 0;
@@ -56,13 +63,19 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            pointer-events: auto;
             z-index: 5;
             background: #000;
+            transition: filter 0.3s ease-in-out;
+        }
+        
+        /* 📍 SOLUCIÓN 60 FPS: Filtros acelerados por GPU */
+        #main-view-area.filter-vno {
+            filter: grayscale(1) contrast(1.8) brightness(1.2) hue-rotate(90deg) saturate(1.5);
+        }
+        #main-view-area.filter-neg {
+            filter: invert(1) hue-rotate(180deg) brightness(1.1);
         }
 
-        /* 📍 SOLUCIÓN CÁMARA ESTIRADA (PUNTO 6) */
         #bg-camera-feed {
             position: absolute;
             top: 50%;
@@ -74,82 +87,176 @@
             object-fit: cover; 
             transform: translate(-50%, -50%);
             z-index: 1;
-            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            opacity: 1;
         }
         
+        /* El canvas SLS se superpone */
         #main-filter-canvas {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%; 
             height: 100%; 
-            z-index: 2; 
+            z-index: 10; /* Encima del video */
             pointer-events: none; 
-            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-        
-        body.panels-active #main-filter-canvas {
-            left: 0 !important;
-            width: 100% !important;
+            display: none; /* Oculto por defecto */
         }
 
         .hidden-canvas { display: none; }
         .hidden { display: none !important; }
 
-        /* --- Panel y Controles (Rediseño P1) --- */
-        #side-panel-container {
+        /* --- 📍 NUEVO: HUD DE CABINA (P14) --- */
+        #hud-container {
             position: fixed;
-            display: flex;
-            flex-direction: column;
-            z-index: 20;
-            pointer-events: none; 
-            transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            box-sizing: border-box; 
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 100;
+            pointer-events: none; /* El contenedor principal no bloquea clics */
+            opacity: 1;
+            transition: opacity 0.5s ease-in-out;
         }
-
-        body.panels-active #side-panel-container {
-            transform: translateX(0) translateY(0);
-            pointer-events: auto;
-        }
-
-        /* Panel Rediseñado (P1) */
-        .panel {
-            background-color: var(--panel-bg);
-            border: 1px solid var(--border-color);
-            box-shadow: 0 0 10px rgba(57, 255, 20, 0.2) inset;
-            display: flex;
-            flex-direction: column;
-            padding: 6px; /* Más compacto */
-            pointer-events: auto;
-            flex-grow: 1;
-            overflow-y: auto;
-            gap: 6px; /* Más compacto */
+        body.ui-hidden #hud-container {
+            opacity: 0;
+            pointer-events: none;
         }
         
-        .panel.alert {
-            border-color: var(--alert-red);
-            box-shadow: 0 0 15px var(--alert-red) inset;
+        /* Base para todas las barras del HUD */
+        .hud-bar {
+            position: absolute;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.2) inset, 0 0 8px rgba(57, 255, 20, 0.2);
+            border-radius: 8px;
+            pointer-events: auto; /* Las barras SÍ bloquean clics */
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            gap: 10px;
+            
+            /* 📍 Animación de Panel (P7) */
+            opacity: 0;
+            transform: scale(0.95);
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        
+        /* 📍 Animación de Panel (P7) */
+        body.panel-active .hud-bar {
+            opacity: 1;
+            transform: scale(1);
         }
 
-        .panel-header-main {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.8rem;
-            text-align: center;
-            color: var(--neon-green);
-            text-shadow: 0 0 5px var(--neon-green);
-            border: 1px solid var(--border-color);
-            padding: 4px 0;
-            border-radius: 4px;
-            background: rgba(57, 255, 20, 0.05);
-            letter-spacing: 1px;
-            flex-shrink: 0;
+        /* --- Controles Persistentes (Visibles con HUD) --- */
+        
+        #hud-top-logo {
+            position: absolute;
+            top: 15px; right: 15px;
+            width: 60px; height: 60px;
+            pointer-events: auto;
+            opacity: 1;
+            transition: opacity 0.3s ease;
         }
+        #hud-top-logo.hiding {
+            animation: waterDrop 0.5s ease-out forwards;
+        }
+        
+        #hud-torch-button {
+            position: absolute;
+            top: 15px; left: 15px;
+            width: 50px; height: 50px;
+            z-index: 101;
+            background: rgba(0, 50, 50, 0.7);
+            border: 2px solid var(--border-strong);
+            color: var(--neon-green);
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
+            transition: all 0.2s;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #hud-torch-button svg { width: 24px; height: 24px; fill: currentColor; }
+        #hud-torch-button:active, #hud-torch-button.active {
+            background: var(--neon-green); color: #000; box-shadow: 0 0 20px #fff;
+        }
+
+        #hud-filter-controls {
+            position: absolute;
+            top: 50%;
+            right: 15px;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: auto;
+        }
+        .filter-btn {
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            background: rgba(0, 50, 50, 0.7);
+            border: 2px solid var(--border-strong);
+            color: var(--neon-green);
+            font-weight: bold; cursor: pointer;
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
+            transition: all 0.2s;
+        }
+        .filter-btn:active, .filter-btn.active {
+            background: var(--neon-green); color: #000; box-shadow: 0 0 20px #fff;
+        }
+
+        /* --- Diseño Horizontal (Modo Cabina) --- */
+        @media (min-aspect-ratio: 1/1) {
+            #hud-left-bar {
+                left: 15px; top: 15px; bottom: 15px;
+                width: var(--hud-left-width);
+                transform: translateX(-150px); /* 📍 Animación P7 */
+                justify-content: space-around;
+            }
+            #hud-bottom-bar {
+                left: calc(var(--hud-left-width) + 30px);
+                bottom: 15px;
+                right: 15px;
+                height: var(--hud-bottom-height);
+                transform: translateY(250px); /* 📍 Animación P7 */
+                flex-direction: row;
+                align-items: center;
+            }
+            /* Ocultar barra de filtros si el panel está activo */
+            body.panel-active #hud-filter-controls {
+                transform: translate(150px, -50%);
+                opacity: 0;
+                pointer-events: none;
+            }
+        }
+        
+        /* --- Diseño Vertical (Modo Apilado) --- */
+        @media (max-aspect-ratio: 1/1) {
+            #hud-left-bar { /* Se convierte en barra superior */
+                left: 15px; top: 15px; right: 15px;
+                height: var(--hud-top-height);
+                transform: translateY(-150px); /* 📍 Animación P7 */
+                flex-direction: row;
+                align-items: center;
+                padding: 10px 15px;
+            }
+            #hud-bottom-bar {
+                left: 15px; bottom: 15px; right: 15px;
+                height: var(--hud-bottom-height);
+                transform: translateY(250px); /* 📍 Animación P7 */
+                justify-content: space-around;
+            }
+            /* Botón de linterna se mueve */
+            #hud-torch-button { top: calc(var(--hud-top-height) + 30px); }
+            /* Filtros se mueven */
+            #hud-filter-controls { top: calc(var(--hud-top-height) + 100px); }
+            /* Logo se mueve */
+            #hud-top-logo { top: calc(var(--hud-top-height) + 30px); }
+        }
+
+        /* --- Elementos del Panel --- */
         
         .panel-section {
             border: 1px solid var(--border-color);
             border-radius: 4px;
-            padding: 6px; /* Más compacto */
+            padding: 6px;
             background: rgba(0, 0, 0, 0.2);
             display: flex;
             flex-direction: column;
@@ -160,107 +267,119 @@
             font-size: 0.6rem;
             color: var(--text-dim);
             text-transform: uppercase;
-            margin-bottom: 6px; /* Más compacto */
+            margin-bottom: 6px;
             text-align: center;
             border-bottom: 1px solid var(--border-color);
-            padding-bottom: 3px; /* Más compacto */
+            padding-bottom: 3px;
+            white-space: nowrap;
+        }
+
+        /* Sección Sensores (Barra Izquierda/Superior) */
+        .sensor-status-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            flex-grow: 1;
+        }
+        @media (max-aspect-ratio: 1/1) { /* Vertical */
+            .sensor-status-grid {
+                flex-direction: row;
+                justify-content: space-around;
+                width: 100%;
+            }
         }
         
-        .sensor-status-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 5px;
-            text-align: center;
-        }
         .status-light-group {
             display: flex;
             flex-direction: column;
             align-items: center;
             font-size: 0.6rem;
-        }
-        .status-light-group .emoji {
-            font-size: 1.2rem;
-            line-height: 1;
+            color: var(--text-dim);
+            gap: 4px;
         }
         .status-led-indicator {
-            width: 10px;
-            height: 10px;
+            width: 12px; height: 12px;
             border-radius: 50%;
             background-color: #222;
             border: 1px solid #444;
-            margin-bottom: 4px;
             transition: all 0.3s;
         }
         .status-light-group[data-status="connected"] .status-led-indicator {
-            background-color: var(--neon-green);
-            box-shadow: 0 0 8px var(--neon-green);
+            background-color: var(--neon-green); box-shadow: 0 0 8px var(--neon-green);
             animation: pulseGlow 1.5s infinite;
         }
         .status-light-group[data-status="fallback"] .status-led-indicator {
-            background-color: var(--sensor-blue);
-            box-shadow: 0 0 8px var(--sensor-blue);
+            background-color: var(--sensor-blue); box-shadow: 0 0 8px var(--sensor-blue);
             animation: pulseGlow 1.5s infinite;
         }
         .status-light-group[data-status="simulated"] .status-led-indicator {
-            background-color: var(--sim-orange);
-            box-shadow: 0 0 8px var(--sim-orange);
+            background-color: var(--sim-orange); box-shadow: 0 0 8px var(--sim-orange);
             animation: pulseGlow 2s infinite;
         }
         .status-light-group[data-status="unavailable"] .status-led-indicator {
-            background-color: var(--alert-red);
-            box-shadow: 0 0 8px var(--alert-red);
+            background-color: var(--alert-red); box-shadow: 0 0 8px var(--alert-red);
         }
-        .status-light-group[data-status="off"] .status-led-indicator {
-            background-color: #333;
+        .status-light-group[data-status="off"] .status-led-indicator { background-color: #333; }
+        
+        /* 📍 NUEVO: REC Light (P8) */
+        #cam-stats-display {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--alert-red);
+            text-align: center;
+            animation: rec-pulse 1.5s infinite ease-in-out;
+            cursor: default;
+        }
+        @keyframes rec-pulse {
+            0%, 100% { opacity: 1; text-shadow: 0 0 8px var(--alert-red); }
+            50% { opacity: 0.7; text-shadow: 0 0 4px var(--alert-red); }
         }
         
-        .status-light-group span { color: var(--text-dim); }
-        .status-light-group[data-status="connected"] span { color: var(--neon-green); }
-        .status-light-group[data-status="fallback"] span { color: var(--sensor-blue); }
-        .status-light-group[data-status="simulated"] span { color: var(--sim-orange); }
-        .status-light-group[data-status="unavailable"] span { color: var(--alert-red); }
+        #temp-readout { text-align: center; }
+        #temp-val {
+            font-size: 1.5rem; /* Más pequeño para la barra */
+            font-family: 'Orbitron', sans-serif;
+            color: var(--neon-green);
+            line-height: 1;
+        }
+        .temp-label { font-size: 0.6rem; color: var(--text-dim); }
 
-        /* Lecturas de Campo (Rediseño P1) */
-        .dials-grid {
-            display: grid;
-            grid-template-columns: 1fr 1.5fr 1fr;
-            gap: 10px;
+        /* Sección Diales (Barra Inferior) */
+        .dials-section {
+            display: flex;
+            gap: 15px;
             align-items: center;
-            justify-items: center;
-            padding: 5px 0; /* Más compacto */
+            justify-content: center;
         }
-        
         .dial-container {
             position: relative;
-            width: 70px;
-            height: 70px;
+            width: 70px; height: 70px;
             background: radial-gradient(circle, #111, #000);
             border-radius: 50%;
             border: 1px solid var(--border-color);
             box-shadow: 0 0 5px rgba(57, 255, 20, 0.3) inset;
         }
         .dial-needle {
-            width: 2px;
-            height: 40%;
+            width: 2px; height: 40%;
             background: var(--neon-green);
             box-shadow: 0 0 5px var(--neon-green);
-            position: absolute;
-            bottom: 50%;
-            left: 50%;
+            position: absolute; bottom: 50%; left: 50%;
             transform-origin: bottom center;
             transform: translateX(-50%) rotate(-45deg);
             transition: transform 0.5s cubic-bezier(0.2, 1.5, 0.5, 1);
         }
         .dial-label {
-            font-size: 0.6rem;
-            color: var(--text-dim);
-            margin-top: 4px;
+            position: absolute;
+            bottom: 5px; left: 0; right: 0;
+            font-size: 0.6rem; color: var(--text-dim);
             text-align: center;
         }
         
         #detector-dial-container {
-            width: 100px;
-            height: 100px;
+            width: 110px; height: 110px; /* Más grande */
         }
         #detector-dial-needle {
             height: 45%;
@@ -269,38 +388,21 @@
             transform: translateX(-50%) rotate(-60deg);
         }
         
-        #temp-readout { text-align: center; }
-        #temp-val {
-            font-size: 1.8rem;
-            font-family: 'Orbitron', sans-serif;
-            color: var(--neon-green);
-            line-height: 1;
-        }
-        .temp-label {
-            font-size: 0.6rem;
-            color: var(--text-dim);
-        }
-        
-        /* Spirit Box (Compacto P1) */
-        .spirit-box-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
+        /* Sección Spirit Box (Barra Inferior) */
+        .spirit-box-section {
+            display: flex;
+            gap: 15px;
             align-items: center;
+            flex-grow: 1;
         }
         .knob-container {
             display: flex;
             flex-direction: column;
             align-items: center;
         }
-        .knob-label {
-            font-size: 0.6rem;
-            color: var(--text-dim);
-            margin-top: 4px;
-        }
+        .knob-label { font-size: 0.6rem; color: var(--text-dim); margin-top: 4px; }
         .knob-circle {
-            width: 55px;
-            height: 55px;
+            width: 55px; height: 55px;
             border-radius: 50%;
             border: 2px solid var(--border-color);
             position: relative;
@@ -314,62 +416,44 @@
             box-shadow: 0 3px 5px #000, 0 0 10px var(--neon-green) inset, 0 0 10px var(--neon-green);
         }
         .knob-indicator {
-            position: absolute;
-            top: 6px;
-            left: 50%;
-            width: 3px;
-            height: 15px;
+            position: absolute; top: 6px; left: 50%;
+            width: 3px; height: 15px;
             background: var(--neon-green);
             transform: translateX(-50%);
             border-radius: 2px;
             box-shadow: 0 0 5px var(--neon-green);
         }
         #pwr-knob-indicator {
-            height: 8px;
-            width: 8px;
-            border-radius: 50%;
-            top: 8px;
+            height: 8px; width: 8px;
+            border-radius: 50%; top: 8px;
             background: var(--alert-red);
             box-shadow: 0 0 5px var(--alert-red);
         }
         #pwr-knob.active #pwr-knob-indicator {
-            background: var(--neon-green);
-            box-shadow: 0 0 8px var(--neon-green);
-        }
-
-        #activity-graph-container {
-            width: 100%;
-            height: 55px;
-            background: #000;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        #energy-canvas {
-            width: 100%;
-            height: 100%;
+            background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green);
         }
 
         .volume-control-group {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 8px;
+            gap: 5px;
+            flex-grow: 1;
+            max-width: 200px;
+        }
+        .vol-labels {
+            display: flex;
+            justify-content: space-between;
             width: 100%;
-            grid-column: 1 / -1;
         }
         .vol-label {
             font-size: 0.6rem;
             color: var(--text-dim);
-            white-space: nowrap;
         }
-        #vol-percent {
-            font-size: 0.6rem;
-            color: var(--neon-green);
-            width: 30px;
-        }
+        #vol-percent { color: var(--neon-green); }
 
         input[type=range] {
-            flex-grow: 1; -webkit-appearance: none; height: 15px; 
+            flex-grow: 1; width: 100%; -webkit-appearance: none; height: 15px; 
             background: #111; border: 1px solid var(--border-color);
             border-radius: 10px; overflow: hidden;
         }
@@ -381,119 +465,21 @@
             cursor: pointer;
         }
 
-        /* --- UI Persistente (Logo, Linterna, Stats) --- */
-        .persistent-ui {
-            position: fixed;
-            z-index: 100;
-            pointer-events: none;
-            opacity: 1;
-            transform: scale(1);
-            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+        /* Gráfica Actividad (Barra Inferior) */
+        #activity-graph-container {
+            width: 100%;
+            flex-grow: 1;
+            height: 55px;
+            background: #000;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
         }
-
-        #logo-image {
-            top: 20px; right: 20px;
-            width: 60px; height: 60px;
-            animation: logo-effects 7s infinite linear; 
-        }
-
-        /* 📍 NUEVO: Botón Linterna (P9) */
-        #btn-torch {
-            position: fixed;
-            top: 20px; left: 20px;
-            width: 50px; height: 50px;
-            z-index: 100;
-            background: rgba(0, 50, 50, 0.7);
-            border: 2px solid var(--neon-green);
-            color: var(--neon-green);
-            border-radius: 50%;
-            box-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
-            transition: all 0.2s;
-            pointer-events: auto; /* Siempre clickeable */
-            opacity: 1;
-            transform: scale(1);
-        }
-        #btn-torch svg {
-            width: 24px; height: 24px;
-            margin: auto;
-            fill: currentColor;
-        }
-        #btn-torch:active, #btn-torch.active {
-            background: var(--neon-green);
-            color: #000;
-            box-shadow: 0 0 20px #fff;
-        }
-
-        /* 📍 NUEVO: Stats de Cámara (P6) */
-        #cam-stats-display {
-            bottom: 15px; right: 15px;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.7rem;
-            font-weight: 700;
-            color: var(--neon-green);
-            text-shadow: 0 0 3px var(--neon-green), 0 0 5px #000;
-            padding: 2px 5px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 3px;
-        }
-
-        /* Lógica de ocultar UI (P10) */
-        #logo-image.visible {
-            transform: scale(1); opacity: 1;
-            animation: popIn 0.3s ease-out forwards, logo-effects 7s infinite linear 0.3s;
-        }
-        #logo-image.hiding, #btn-torch.hiding, #cam-stats-display.hiding {
-            animation: waterDrop 0.5s ease-out forwards;
-        }
-
-        @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 1; } }
-        @keyframes logo-effects { 0%, 90% { transform: scale(1); opacity: 1; filter: none; } 91% { transform: scale(1.1) translateX(-5px); opacity: 0.8; filter: drop-shadow(2px 0 red) drop-shadow(-2px 0 blue); } 92% { transform: scale(0.9) translateX(5px); opacity: 1; filter: drop-shadow(-2px 0 red) drop-shadow(2px 0 blue); } 93% { transform: scale(1); opacity: 1; filter: none; } 94% { transform: scale(1); opacity: 0.5; filter: blur(2px); } 95% { transform: scale(1); opacity: 1; filter: none; } 96% { transform: scale(1) translateY(-3px); } 97% { transform: scale(1) translateY(3px); } 98%, 100% { transform: scale(1) translateY(0); } }
-        @keyframes waterDrop { 0% { opacity: 1; transform: scale(1); filter: blur(0); } 100% { opacity: 0; transform: scale(2.5); filter: blur(5px); } }
+        #energy-canvas { width: 100%; height: 100%; }
         
-        #kinect-banner {
-            position: fixed; top: 20px; left: 50%;
-            transform: translateX(-50%);
-            z-index: 100; font-family: 'Orbitron', sans-serif;
-            font-size: 1.0rem; font-weight: 700;
-            color: var(--neon-green);
-            text-shadow: 0 0 5px var(--neon-green), 0 0 10px #000;
-            display: none; pointer-events: none;
-        }
-        #kinect-banner .led-red {
-            animation: pulseGlow 1.5s infinite ease-in-out;
-            text-shadow: 0 0 8px var(--alert-red), 0 0 10px #000;
-        }
-
         @keyframes pulseGlow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1.0; } }
 
-        #filter-controls-container {
-            position: fixed; top: 50%; right: 15px;
-            transform: translateY(-50%);
-            display: flex; flex-direction: column;
-            gap: 10px; z-index: 100;
-            pointer-events: auto; opacity: 1;
-            transition: opacity 0.5s ease-in-out, top 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-        .filter-btn {
-            width: 50px; height: 50px;
-            border-radius: 50%;
-            background: rgba(0, 50, 50, 0.7);
-            border: 2px solid var(--neon-green);
-            color: var(--neon-green);
-            font-family: 'Share Tech Mono', monospace;
-            font-weight: bold; cursor: pointer;
-            box-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
-            transition: all 0.2s;
-        }
-        .filter-btn:active {
-            background: var(--neon-green); color: #000;
-        }
-        .filter-btn.active {
-            background: var(--neon-green); color: #000;
-            box-shadow: 0 0 20px #fff;
-        }
-
-        /* --- Loading y Follow (Sin cambios) --- */
+        /* --- Loading --- */
         #loading-overlay {
             position: fixed; top: 0; left: 0;
             width: 100%; height: 100%;
@@ -511,6 +497,7 @@
             animation: pulseGlow 2s infinite ease-in-out;
             transition: all 0.3s;
         }
+        /* ... (loading bar styles sin cambios) ... */
         #loading-bar-container {
             width: 250px; height: 10px;
             border: 1px solid var(--neon-green);
@@ -528,12 +515,21 @@
         }
         @keyframes loading-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
+        /* --- 📍 SÍGUENOS (P9) --- */
         #follow-container {
-            position: fixed; bottom: 80px; left: 50%;
+            position: fixed;
+            bottom: 30px; /* Más abajo */
+            left: 50%;
             transform: translateX(-50%); 
-            z-index: 200; pointer-events: none;
-            opacity: 1; width: 100%;
+            z-index: 99; /* Detrás del HUD principal */
+            pointer-events: none;
+            opacity: 0; /* Oculto por defecto */
+            width: 100%;
             transition: opacity 0.5s ease-out;
+        }
+        /* Visible cuando el HUD está oculto */
+        body.ui-hidden #follow-container {
+            opacity: 1;
         }
         #follow-container.hiding {
             animation: waterDrop 0.5s ease-out forwards;
@@ -559,108 +555,9 @@
         
         .fade-in { animation: fadeIn 1s ease-out forwards; }
         .fade-out { animation: fadeOut 1s ease-out forwards; }
-        .water-drop { animation: waterDrop 0.5s ease-out forwards; }
-        
+        @keyframes waterDrop { 0% { opacity: 1; transform: scale(1); filter: blur(0); } 100% { opacity: 0; transform: scale(2.5); filter: blur(5px); } }
         @keyframes fadeIn { 0% { opacity: 0; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
         @keyframes fadeOut { 0% { opacity: 1; } 100% { opacity: 0; } }
-
-        /* --- 📍 CSS Horizontal/Vertical (PUNTO 2 Y 5) --- */
-        
-        /* --- MODO MÓVIL VERTICAL (PORTRAIT) --- */
-        @media (max-aspect-ratio: 1/1) {
-            #side-panel-container {
-                top: 0; left: 0;
-                width: 100vw;
-                height: 100vh;
-                transform: translateY(100%); /* Sale por abajo */
-                padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
-            }
-            .panel {
-                width: 100%;
-                height: 100%;
-                margin: 0;
-                border-radius: 0;
-                border: none;
-            }
-
-            /* 📍 NUEVO: Slot para PiP (P5) */
-            #pip-placeholder-section {
-                display: block; /* Solo visible en vertical */
-                order: -1; /* Ponerlo justo debajo del header */
-            }
-            #pip-placeholder {
-                width: 100%;
-                height: 140px; 
-                background: #050505;
-                border: 1px dashed var(--border-color);
-                border-radius: 4px;
-            }
-
-            /* 📍 Cámara Flotante (PiP) (P5) */
-            body.panels-active #main-view-area {
-                /* Se posiciona exactamente sobre el placeholder */
-                top: calc(env(safe-area-inset-top) + 110px); /* Ajustado manualmente */
-                left: 6px; /* Padding del panel */
-                right: 6px; /* Padding del panel */
-                width: calc(100% - 12px); /* Ancho del placeholder */
-                height: 140px; /* Alto del placeholder */
-                border: 1px solid var(--neon-green);
-                border-radius: 4px;
-                box-shadow: 0 0 10px var(--neon-green);
-                z-index: 25; /* Encima del panel */
-                filter: none !important;
-                transform: scale(1) !important;
-            }
-            
-            body.panels-active #filter-controls-container {
-                top: calc(env(safe-area-inset-top) + 260px); /* Debajo del PiP */
-                right: 15px;
-            }
-
-            body.panels-active #logo-image,
-            body.panels-active #btn-torch,
-            body.panels-active #cam-stats-display {
-                display: none;
-            }
-        }
-
-        /* --- MODO MÓVIL HORIZONTAL (LANDSCAPE) --- */
-        @media (min-aspect-ratio: 1/1) {
-            :root { --panel-width-landscape: 240px; }
-
-            /* 📍 NUEVO: Ocultar slot de PiP (P5) */
-            #pip-placeholder-section {
-                display: none; 
-            }
-
-            #side-panel-container {
-                width: var(--panel-width-landscape);
-                height: 100vh;
-                top: 0;
-                left: 0;
-                transform: translateX(calc(var(--panel-width-landscape) * -1));
-                padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
-            }
-            
-            .panel {
-                height: 100%;
-                flex-grow: 1;
-                flex-shrink: 0;
-                margin: 0;
-                border-radius: 0;
-                border-right: 1px solid var(--border-color);
-            }
-
-            /* 📍 Efecto "enfoque" (PUNTO 2) - Corregido */
-            body.panels-active #main-view-area {
-                left: var(--panel-width-landscape);
-                width: calc(100% - var(--panel-width-landscape));
-                height: 100%;
-                /* Se eliminan 'filter' y 'transform' para que no se opaque */
-                filter: none;
-                transform: none;
-            }
-        }
     </style>
 </head>
 <body>
@@ -682,21 +579,97 @@
     </div>
     
     <canvas id="temp-canvas" class="hidden-canvas"></canvas>
-    <canvas id="ai-canvas" class="hidden-canvas"></canvas>
 
-    <img id="logo-image" src="obr-logo.png" alt="Logo OBR" class="persistent-ui">
+    <div id="hud-container" onclick="handleHUDTap(event)">
 
-    <button id="btn-torch" class="persistent-ui" onclick="toggleTorch(event)">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M342.6 38.6c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L380.7 167H256c-17.7 0-32 14.3-32 32s14.3 32 32 32h124.7l-83.4 83.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l144-144c12.5-12.5 12.5-32.8 0-45.3l-144-144zM160 80c0-17.7-14.3-32-32-32s-32 14.3-32 32v144H64c-17.7 0-32 14.3-32 32s14.3 32 32 32h32v144c0 17.7 14.3 32 32 32s32-14.3 32-32V288h32c17.7 0 32-14.3 32-32s-14.3-32-32-32H160V80z"/></svg>
-    </button>
-    
-    <div id="cam-stats-display" class="persistent-ui">
-        <span id="cam-fps">--</span> FPS / <span id="cam-res">----p</span>
-    </div>
+        <img id="hud-top-logo" src="obr-logo.png" alt="Logo OBR">
+        
+        <button id="hud-torch-button" onclick="toggleTorch(event)">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M342.6 38.6c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L380.7 167H256c-17.7 0-32 14.3-32 32s14.3 32 32 32h124.7l-83.4 83.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l144-144c12.5-12.5 12.5-32.8 0-45.3l-144-144zM160 80c0-17.7-14.3-32-32-32s-32 14.3-32 32v144H64c-17.7 0-32 14.3-32 32s14.3 32 32 32h32v144c0 17.7 14.3 32 32 32s32-14.3 32-32V288h32c17.7 0 32-14.3 32-32s-14.3-32-32-32H160V80z"/></svg>
+        </button>
 
-    <div id="kinect-banner">KINEC ACTIVO <span class="led-red">🔴</span></div>
-    
-    <div id="follow-container">
+        <div id="hud-filter-controls">
+            <button class="filter-btn" onclick="setFilter('vno')">VNO</button>
+            <button class="filter-btn" onclick="setFilter('sls')">SLS</button>
+            <button class="filter-btn" onclick="setFilter('neg')">NEG</button>
+            <button class="filter-btn" id="btn-panel" onclick="togglePanel()">PAN</button>
+        </div>
+
+        <div id="hud-left-bar" class="hud-bar">
+            <div class="panel-section">
+                <div class="section-title">SENSORES</div>
+                <div class="sensor-status-grid">
+                    <div class="status-light-group" id="mic-status" data-status="off">
+                        <div class="status-led-indicator"></div>
+                        <span>MIC</span>
+                    </div>
+                    <div class="status-light-group" id="mag-status" data-status="off">
+                        <div class="status-led-indicator"></div>
+                        <span>MAG</span>
+                    </div>
+                    <div class="status-light-group" id="prox-status" data-status="off">
+                        <div class="status-led-indicator"></div>
+                        <span>EMF</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">GRABANDO</div>
+                <div id="cam-stats-display">
+                    <span id="cam-fps">--</span> FPS<br>
+                    <span id="cam-res">----</span>p
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">AMBIENTE</div>
+                <div id="temp-readout">
+                    <div id="temp-val">--.-°C</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="hud-bottom-bar" class="hud-bar">
+            <div class="dials-section">
+                <div id="mag-dial-container" class="dial-container">
+                    <div id="compass-needle" class="dial-needle" style="transform: translateX(-50%) rotate(0deg);"></div>
+                    <div class="dial-label">BRÚJULA</div>
+                </div>
+                <div id="detector-dial-container" class="dial-container">
+                    <div id="detector-dial-needle" class="dial-needle"></div>
+                    <div class="dial-label">DETECTOR</div>
+                </div>
+            </div>
+            
+            <div id="activity-graph-container" title="Gráfica de Actividad EMF">
+                <canvas id="energy-canvas"></canvas>
+            </div>
+            
+            <div class="spirit-box-section">
+                <div class="knob-container">
+                    <div class="knob-circle" id="knob-power">
+                        <div id="pwr-knob-indicator" class="knob-indicator" style="transform: rotate(135deg);"></div>
+                    </div>
+                    <div class="knob-label">ENCENDER</div>
+                </div>
+                <div class="knob-container">
+                    <div class="knob-circle" id="knob-scan">
+                        <div class="knob-indicator" style="transform: rotate(135deg);"></div>
+                    </div>
+                    <div class="knob-label">FRECUENCIA</div>
+                </div>
+                <div class="volume-control-group">
+                    <div class="vol-labels">
+                        <span class="vol-label">VOLUMEN</span>
+                        <span id="vol-percent" class="vol-label">80%</span>
+                    </div>
+                    <input type="range" min="0" max="100" value="80" id="vol-slider">
+                </div>
+            </div>
+        </div>
+
+    </div> <div id="follow-container">
         <div id="follow-text" class="follow-step">SÍGUENOS EN</div>
         <div id="follow-icons" class="follow-step">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M448 209.9a210.1 210.1 0 0 1 -122.8-39.3V349.4A162.6 162.6 0 1 1 185 188.3V277.2a74.6 74.6 0 1 0 52.2 71.2V0l88 0a121.2 121.2 0 0 0 122.8 122.1v87.8z"/></svg>
@@ -706,114 +679,23 @@
         <div id="follow-handle" class="follow-step">@EXPLORACIONESOBR</div>
     </div>
 
-    <div id="side-panel-container">
-        
-        <div class="panel" id="p-unified">
-            <div class="panel-header-main">PANEL DE MANDO</div>
-            
-            <div class="panel-section" id="pip-placeholder-section">
-                <div class="section-title">VISTA DE CÁMARA PIP</div>
-                <div id="pip-placeholder"></div>
-            </div>
-
-            <div class="panel-section">
-                <div class="section-title">Estado de Sensores</div>
-                <div class="sensor-status-grid">
-                    <div class="status-light-group" id="mic-status" data-status="off">
-                        <div class="status-led-indicator"></div>
-                        <div class="emoji">🎙️</div>
-                        <span>MIC</span>
-                    </div>
-                    <div class="status-light-group" id="mag-status" data-status="off">
-                        <div class="status-led-indicator"></div>
-                        <div class="emoji">🧭</div>
-                        <span>MAG</span>
-                    </div>
-                    <div class="status-light-group" id="prox-status" data-status="off">
-                        <div class="status-led-indicator"></div>
-                        <div class="emoji">⚡</div>
-                        <span>EMF</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="panel-section">
-                <div class="section-title">Lecturas de Campo</div>
-                <div class="dials-grid">
-                    <div id="mag-dial-container" class="dial-container">
-                        <div id="compass-needle" class="dial-needle" style="transform: translateX(-50%) rotate(0deg);"></div>
-                        <div class="dial-label">MAG</div>
-                    </div>
-                    <div id="detector-dial-container" class="dial-container">
-                        <div id="main-needle" class="dial-needle" style="transform: translateX(-50%) rotate(-60deg);"></div>
-                        <div class="dial-label">DETECTOR</div>
-                    </div>
-                    <div id="temp-readout">
-                        <div id="temp-val">--.-°C</div>
-                        <div class="temp-label">AMBIENTE</div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="panel-section">
-                <div class="section-title">Spirit Box</div>
-                <div class="spirit-box-grid">
-                    <div class="knob-container">
-                        <div class="knob-circle" id="knob-power">
-                            <div id="pwr-knob-indicator" class="knob-indicator" style="transform: rotate(135deg);"></div>
-                        </div>
-                        <div class="knob-label">ENCENDER</div>
-                    </div>
-                    <div class="knob-container">
-                        <div class="knob-circle" id="knob-scan">
-                            <div class="knob-indicator" style="transform: rotate(135deg);"></div>
-                        </div>
-                        <div class="knob-label">FRECUENCIA</div>
-                    </div>
-                    
-                    <div id="activity-graph-container" title="Gráfica de Actividad EMF">
-                        <canvas id="energy-canvas"></canvas>
-                    </div>
-                    <div class="knob-label" style="text-align: center;">ACTIVIDAD</div>
-
-                    <div class="volume-control-group">
-                        <span class="vol-label">VOL</span>
-                        <input type="range" min="0" max="100" value="80" id="vol-slider">
-                        <span id="vol-percent" class="vol-label">80%</span>
-                    </div>
-                </div>
-            </div>
-            
-        </div>
-        </div>
-
-    <div id="filter-controls-container">
-        <button class="filter-btn" onclick="setFilter('night-vision')">VNO</button>
-        <button class="filter-btn" onclick="setFilter('sls')">SLS</button>
-        <button class="filter-btn" onclick="setFilter('relief')">RLV</button>
-        <button class="filter-btn" id="btn-panel" onclick="togglePanel('p-unified')">PAN</button>
-    </div>
-
 </div> 
 
     <script>
-        // 📍 INICIO DE SCRIPT ANTI-CACHÉ (¡NUEVO!)
+        // ... (Script Anti-Caché sin cambios) ...
         (function() {
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(function(registrations) {
                     if (registrations.length) {
                         console.log('[ANTI-CACHE] Des-registrando Service Workers...');
-                        for(let registration of registrations) {
-                            registration.unregister();
-                        }
+                        for(let registration of registrations) { registration.unregister(); }
                         console.log('[ANTI-CACHE] Service Workers eliminados. Recargando...');
-                        location.reload(true); // Forzar recarga
+                        location.reload(true);
                     } else {
                         console.log('[ANTI-CACHE] No se encontraron Service Workers.');
                     }
                 });
             }
-            
             if (window.caches) {
                 caches.keys().then(function(names) {
                     for (let name of names) {
@@ -823,7 +705,6 @@
                 });
             }
         })();
-        // 📍 FIN DE SCRIPT ANTI-CACHÉ
     
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzOf3crQxBdPylwMTAd34W-nBShN31MkIUtaMdKsZHMZVVniI2HjMesD6DpOlO363T1/exec";
         
@@ -831,18 +712,13 @@
         let currentFilter = 'none'; 
         let scanSpeed = 0; 
         
+        const mainViewArea = document.getElementById('main-view-area');
         const videoBg = document.getElementById('bg-camera-feed');
         
         const mainFilterCanvas = document.getElementById('main-filter-canvas');
         const mainFilterCtx = mainFilterCanvas.getContext('2d', { willReadFrequently: true });
 
         const tempCanvas = document.getElementById('temp-canvas');
-        const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
-        const aiCanvas = document.getElementById('ai-canvas');
-        const aiCtx = aiCanvas.getContext('2d', { willReadFrequently: true });
-        
-        const detectorPanel = document.getElementById('p-unified');
-        const sensorPanel = document.getElementById('p-unified');
         
         const micStatus = document.getElementById('mic-status');
         const magStatus = document.getElementById('mag-status');
@@ -851,12 +727,11 @@
         let energyHistory = new Array(50).fill(0);
         let energyCanvas, energyCtx;
         
-        // 📍 AUDIO RECONFIGURADO (P11)
         let audioCtx, masterGain;
         let audioSource_Fondo1, gain_Fondo1, audioBuffer_Fondo1;
         let audioSource_Fondo2, gain_Fondo2, audioBuffer_Fondo2;
-        let reverb, reverbGain, distortionNode; // Para la voz
-        let scanTimer = null; // Timer para el scanner
+        let reverb, reverbGain, distortionNode;
+        let scanTimer = null; 
         
         let isSpeaking = false; 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -865,9 +740,7 @@
         let automaticoData = [];
         let currentTemp = 19.8;
         
-        let proximitySensor;
-        let magnetometer;
-        let orientationSensor;
+        let proximitySensor, magnetometer, orientationSensor;
         
         let emfValue = 0;
         let emfSimInterval = null;
@@ -881,7 +754,7 @@
         let spiritBoxTimeout = null;
         
         let uiHideTimeout;
-        let uiVisible = false;
+        let uiVisible = true; // El UI está visible al inicio
 
         let zoom = 1.0;
         let maxZoom = 5.0;
@@ -891,7 +764,6 @@
         let isPinching = false;
         let isPanning = false;
 
-        // 📍 NUEVO: Variables de Cámara (P6, P9)
         let videoTrack;
         let isTorchOn = false;
         let lastFrameTime = 0;
@@ -900,29 +772,27 @@
 
         async function startCamera() {
             try {
-                // 📍 SOLUCIÓN CÁMARA (P6, P7)
                 const constraints = {
                     video: {
-                        facingMode: { ideal: "environment" }, // P7: Forzar trasera
-                        width: { ideal: 4096 },  // P6/P7: Forzar 4K
+                        facingMode: { ideal: "environment" },
+                        width: { ideal: 4096 }, 
                         height: { ideal: 2160 },
-                        frameRate: { ideal: 60 } // P6/P7: Forzar 60 FPS
+                        frameRate: { ideal: 60 }
                     },
                     audio: false
                 };
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 
-                videoTrack = stream.getVideoTracks()[0]; // P9: Guardar el track
+                videoTrack = stream.getVideoTracks()[0]; 
                 
                 if (videoTrack && typeof videoTrack.applyConstraints === 'function') {
                     videoTrack.applyConstraints({
                         advanced: [{ focusMode: 'continuous' }]
                     }).catch(e => console.warn("No se pudo aplicar 'focusMode: continuous'", e));
                     
-                    // P9: Verificar si la linterna es soportada
                     const capabilities = videoTrack.getCapabilities();
                     if (!capabilities.torch) {
-                        document.getElementById('btn-torch').style.display = 'none';
+                        document.getElementById('hud-torch-button').style.display = 'none';
                     }
                 }
                 
@@ -935,36 +805,27 @@
                         resizeEnergyCanvas();
                     }
                     
-                    // P6: Actualizar stats de cámara
                     try {
                         const settings = videoTrack.getSettings();
                         const res = settings.height || videoBg.videoHeight;
-                        document.getElementById('cam-res').innerText = `${res}p`;
+                        document.getElementById('cam-res').innerText = `${res}`;
                     } catch(e) {
-                        document.getElementById('cam-res').innerText = `${videoBg.videoHeight}p`;
+                        document.getElementById('cam-res').innerText = `${videoBg.videoHeight}`;
                     }
                     
-                    drawLoop(); 
+                    drawLoop(); // Inicia el bucle de dibujo de SLS
                 };
             } catch (e) { console.log("Error de cámara", e); }
         }
         
         function resizeAllCanvas() {
-            const viewArea = document.getElementById('main-view-area');
-            const w = viewArea.clientWidth; 
-            const h = viewArea.clientHeight; 
+            const w = mainViewArea.clientWidth; 
+            const h = mainViewArea.clientHeight; 
             
             mainFilterCanvas.width = w;
             mainFilterCanvas.height = h;
             
-            tempCanvas.width = w;
-            tempCanvas.height = h;
-
-            const aiWidth = 640;
-            aiCanvas.width = aiWidth;
-            aiCanvas.height = (aiWidth / w) * h;
-            
-            if(energyCanvas && !document.getElementById('p-unified').classList.contains('hidden')) {
+            if(energyCanvas && document.body.classList.contains('panel-active')) {
                 resizeEnergyCanvas();
             }
         }
@@ -982,137 +843,37 @@
                 console.error("Error al cargar modelo de IA:", e);
             }
         }
-
-        // 📍 Dibuja el video en el canvas con 'object-fit: cover'
-        function drawVideoWithCover(ctx, video, z, pan) {
-            const canvasW = ctx.canvas.width;
-            const canvasH = ctx.canvas.height;
-            const videoW = video.videoWidth;
-            const videoH = video.videoHeight;
-            
-            if (!videoW || !videoH) return; 
-
-            const videoAspect = videoW / videoH;
-            const canvasAspect = canvasW / canvasH;
-
-            let sWidth = videoW / z;
-            let sHeight = videoH / z;
-            
-            if (canvasAspect > videoAspect) {
-                sHeight = sWidth / canvasAspect;
-            } else {
-                sWidth = sHeight * canvasAspect;
-            }
-
-            let sx = (videoW - sWidth) / 2 + pan.x;
-            let sy = (videoH - sHeight) / 2 + pan.y;
-
-            sx = Math.max(0, Math.min(sx, videoW - sWidth));
-            sy = Math.max(0, Math.min(sy, videoH - sHeight));
-            currentPan.x = sx - (videoW - sWidth) / 2;
-            currentPan.y = sy - (videoH - sHeight) / 2;
-
-            ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, canvasW, canvasH);
-        }
-
         
+        // 📍 BUCLE DE DIBUJO OPTIMIZADO (P1, P13)
         async function drawLoop() {
-            // 📍 Contador de FPS (P6)
             const now = performance.now();
-            const delta = now - lastFrameTime;
-            lastFrameTime = now;
             frameCount++;
-        
-            if (now - lastFpsUpdate > 1000) { // Actualizar cada segundo
+            if (now - lastFpsUpdate > 1000) {
                 const fps = frameCount;
                 document.getElementById('cam-fps').innerText = fps;
                 frameCount = 0;
                 lastFpsUpdate = now;
             }
 
-            if (videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
-                
+            // Solo dibuja si el canvas de SLS está activo
+            if (mainFilterCanvas.style.display === 'block' && latestPoses) {
                 const w = mainFilterCanvas.width;
                 const h = mainFilterCanvas.height;
-
                 mainFilterCtx.clearRect(0, 0, w, h);
-                
-                const kinectBanner = document.getElementById('kinect-banner');
-                
-                if (currentFilter === 'sls') {
-                    kinectBanner.style.display = 'block';
-                    if (latestPoses) {
-                        drawAllSkeletons(latestPoses); 
-                    }
-                } else {
-                    kinectBanner.style.display = 'none';
-                    if (currentFilter === 'relief') {
-                        drawVideoWithCover(tempCtx, videoBg, zoom, currentPan);
-                        let frame = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-                        let data = frame.data;
-                        let copy = new Uint8ClampedArray(data);
-                        
-                        for (let y = 1; y < tempCanvas.height - 1; y++) {
-                            for (let x = 1; x < tempCanvas.width - 1; x++) {
-                                let i = (y * tempCanvas.width + x) * 4;
-                                let hpx = -copy[((y-1)*tempCanvas.width+(x-1))*4] + copy[((y-1)*tempCanvas.width+(x+1))*4]
-                                        -2*copy[(y*tempCanvas.width+(x-1))*4] + 2*copy[(y*tempCanvas.width+(x+1))*4]
-                                        -copy[((y+1)*tempCanvas.width+(x-1))*4] + copy[((y+1)*tempCanvas.width+(x+1))*4];
-                                let vpx = -copy[((y-1)*tempCanvas.width+(x-1))*4] - 2*copy[((y-1)*tempCanvas.width+x)*4] - copy[((y-1)*tempCanvas.width+(x+1))*4]
-                                        +copy[((y+1)*tempCanvas.width+(x-1))*4] + 2*copy[((y+1)*tempCanvas.width+x)*4] + copy[((y+1)*tempCanvas.width+(x+1))*4];
-                                
-                                let diff = Math.sqrt(hpx*hpx + vpx*vpx);
-                                if (diff > 30) { 
-                                    data[i] = diff; data[i+1] = 255; data[i+2] = 255;
-                                } else {
-                                    data[i] = 10; data[i+1] = 10; data[i+2] = 10;
-                                }
-                            }
-                        }
-                        tempCtx.putImageData(frame, 0, 0);
-                        mainFilterCtx.drawImage(tempCanvas, 0, 0, w, h);
-
-                    } else if (currentFilter === 'night-vision') {
-                        drawVideoWithCover(mainFilterCtx, videoBg, zoom, currentPan);
-                        let frame = mainFilterCtx.getImageData(0, 0, w, h);
-                        let data = frame.data;
-                        for (let i = 0; i < data.length; i += 4) {
-                            let l = (data[i] * 0.3) + (data[i+1] * 0.59) + (data[i+2] * 0.11);
-                            data[i] = 0; 
-                            data[i+1] = l * 1.2; 
-                            data[i+2] = 0; 
-                            let y = Math.floor((i / 4) / w);
-                            if (y % 4 === 0) { data[i+1] *= 0.8; }
-                        }
-                        for (let y = 0; y < h; y++) {
-                            for (let x = 0; x < w; x++) {
-                                let i = (y * w + x) * 4;
-                                let dx = (x / w) - 0.5;
-                                let dy = (y / h) - 0.5;
-                                let dist = Math.sqrt(dx*dx + dy*dy) * 2;
-                                let factor = Math.max(0, 1.0 - dist * 0.8);
-                                data[i+1] *= factor;
-                            }
-                        }
-                        mainFilterCtx.putImageData(frame, 0, 0);
-                    
-                    } else if (currentFilter === 'none') {
-                        // No se dibuja nada en el canvas, se ve el video de fondo
-                    }
-                }
+                drawAllSkeletons(latestPoses); 
             }
+            
             requestAnimationFrame(drawLoop);
         }
         
         async function detectPoseLoop() {
             while (true) {
+                // Solo detecta si el filtro SLS está activo
                 if (currentFilter === 'sls' && poseDetector && videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
                     if (!isDetectingPose) {
                         isDetectingPose = true;
-                        
                         const poses = await poseDetector.estimatePoses(videoBg); 
                         latestPoses = poses; 
-                        
                         isDetectingPose = false;
                     }
                     await new Promise(r => setTimeout(r, 100)); // 10 FPS
@@ -1133,16 +894,16 @@
             ['right_hip', 'right_knee'], ['right_knee', 'right_ankle']
         ];
         
+        // 📍 DIBUJO DE SLS ACTUALIZADO (P13)
         function drawAllSkeletons(poses) {
             const ctx = mainFilterCtx; 
             
             ctx.strokeStyle = 'var(--neon-green)'; // LÍNEAS VERDES
             ctx.fillStyle = 'var(--alert-red)';   // PUNTOS ROJOS
             
-            ctx.lineWidth = 2.5;
-            ctx.filter = 'drop-shadow(0 0 4px var(--neon-green))';
+            ctx.lineWidth = 4; // MÁS GRUESAS
+            ctx.filter = 'drop-shadow(0 0 6px var(--neon-green))'; // MÁS BRILLO
 
-            // Escalar para 'object-fit: cover'
             const videoW = videoBg.videoWidth;
             const videoH = videoBg.videoHeight;
             const canvasW = mainFilterCanvas.width;
@@ -1154,12 +915,10 @@
             let scale, offsetX, offsetY;
             
             if (canvasAspect > videoAspect) {
-                // El canvas es más ancho que el video
                 scale = canvasW / videoW;
                 offsetX = 0;
                 offsetY = (canvasH - videoH * scale) / 2;
             } else {
-                // El canvas es más alto que el video
                 scale = canvasH / videoH;
                 offsetX = (canvasW - videoW * scale) / 2;
                 offsetY = 0;
@@ -1180,7 +939,7 @@
                 const keypoint = keypoints[i];
                 if (keypoint.score > confidenceThreshold) {
                     ctx.beginPath();
-                    ctx.arc(keypoint.x * scale + offsetX, keypoint.y * scale + offsetY, 4, 0, 2 * Math.PI); 
+                    ctx.arc(keypoint.x * scale + offsetX, keypoint.y * scale + offsetY, 5, 0, 2 * Math.PI); // Puntos un poco más grandes
                     ctx.fill();
                 }
             }
@@ -1189,14 +948,11 @@
         function drawConnections(keypoints, scale, offsetX, offsetY) {
             const ctx = mainFilterCtx;
             const keypointMap = new Map();
-            keypoints.forEach(keypoint => {
-                keypointMap.set(keypoint.name, keypoint);
-            });
+            keypoints.forEach(keypoint => keypointMap.set(keypoint.name, keypoint));
 
             skeletonMap.forEach(connection => {
                 const start = keypointMap.get(connection[0]);
                 const end = keypointMap.get(connection[1]);
-
                 if (start && end && start.score > confidenceThreshold && end.score > confidenceThreshold) {
                     ctx.beginPath();
                     ctx.moveTo(start.x * scale + offsetX, start.y * scale + offsetY);
@@ -1206,6 +962,7 @@
             });
         }
         
+        // 📍 NUEVA LÓGICA DE FILTROS (P1, P13)
         function setFilter(f) {
             document.querySelectorAll('.filter-btn').forEach(b => {
                 if (b.id !== 'btn-panel') {
@@ -1213,19 +970,26 @@
                 }
             });
             
-            if (currentFilter === f) {
-                currentFilter = 'none';
-            } else {
-                currentFilter = f;
-                const targetBtn = event ? event.target : document.querySelector(`.filter-btn[onclick="setFilter('${f}')"]`);
-                if(targetBtn) targetBtn.classList.add('active');
-            }
+            // Limpiar filtros y canvas
+            mainViewArea.classList.remove('filter-vno', 'filter-neg');
+            mainFilterCanvas.style.display = 'none';
+            currentFilter = 'none';
             
-            // Si el filtro aplica efectos, oculta el video base. Si no (sls, none), lo muestra.
-            if (currentFilter === 'relief' || currentFilter === 'night-vision') {
-                videoBg.style.opacity = '0';
+            const newFilter = f;
+            if (event.target.classList.contains('active')) {
+                event.target.classList.remove('active');
             } else {
-                videoBg.style.opacity = '1';
+                if (f === 'vno') {
+                    mainViewArea.classList.add('filter-vno');
+                    currentFilter = 'vno';
+                } else if (f === 'neg') {
+                    mainViewArea.classList.add('filter-neg');
+                    currentFilter = 'neg';
+                } else if (f === 'sls') {
+                    mainFilterCanvas.style.display = 'block'; // Mostrar canvas
+                    currentFilter = 'sls';
+                }
+                event.target.classList.add('active');
             }
         }
 
@@ -1234,63 +998,50 @@
             if (sensorName === 'mic') el = micStatus;
             else if (sensorName === 'mag') el = magStatus;
             else if (sensorName === 'prox') el = proxStatus;
-            
-            if (el) {
-                el.dataset.status = status;
-            }
+            if (el) el.dataset.status = status;
         }
 
-        // 📍 NUEVO: Función Linterna (P9, P10)
+        // 📍 Lógica de Linterna (P5)
         async function toggleTorch(event) {
-            event.stopPropagation(); // P10: Evitar que el clic active la UI
+            event.stopPropagation(); // Evitar que el clic active el show/hide del UI
             
             if (!videoTrack || typeof videoTrack.applyConstraints !== 'function') {
-                console.log("Linterna no soportada");
-                document.getElementById('btn-torch').style.display = 'none';
+                document.getElementById('hud-torch-button').style.display = 'none';
                 return;
             }
-        
             try {
                 isTorchOn = !isTorchOn;
-                await videoTrack.applyConstraints({
-                    advanced: [{ torch: isTorchOn }]
-                });
-                document.getElementById('btn-torch').classList.toggle('active', isTorchOn);
+                await videoTrack.applyConstraints({ advanced: [{ torch: isTorchOn }] });
+                document.getElementById('hud-torch-button').classList.toggle('active', isTorchOn);
             } catch (e) {
                 console.error("Error al activar linterna:", e);
                 isTorchOn = false; 
-                document.getElementById('btn-torch').classList.toggle('active', false);
-                document.getElementById('btn-torch').style.display = 'none';
+                document.getElementById('hud-torch-button').classList.toggle('active', false);
+                document.getElementById('hud-torch-button').style.display = 'none';
             }
         }
 
-        // 📍 NUEVO: Cargar Audios (P11)
+        // --- Lógica de Audio (Sin cambios) ---
         async function loadAudio(url) {
             try {
                 const response = await fetch(url);
                 const arrayBuffer = await response.arrayBuffer();
                 return await audioCtx.decodeAudioData(arrayBuffer);
-            } catch (e) {
-                console.error(`Error cargando audio: ${url}`, e);
-                throw e; // Relanzar el error
-            }
+            } catch (e) { console.error(`Error cargando audio: ${url}`, e); throw e; }
         }
 
-        // 📍 NUEVO: initAudio con FONDO_1 y FONDO_2 (P11)
         async function initAudio() {
             if (audioCtx) return;
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             masterGain = audioCtx.createGain();
             masterGain.connect(audioCtx.destination);
             
-            // Cargar los nuevos audios
             try {
                 updateLoadingProgress(55, "CARGANDO AUDIO...");
                 [audioBuffer_Fondo1, audioBuffer_Fondo2] = await Promise.all([
                     loadAudio('FONDO_1.mp3'),
                     loadAudio('FONDO_2.mp3')
                 ]);
-                console.log("Audios de fondo cargados.");
                 updateLoadingProgress(65, "AUDIO CARGADO");
             } catch (e) {
                 console.error("Error al cargar audios de fondo:", e);
@@ -1298,36 +1049,24 @@
                 return; 
             }
         
-            // Configurar Fondo 1 (Estática)
-            gain_Fondo1 = audioCtx.createGain();
-            gain_Fondo1.gain.value = 0; // Empieza apagado
+            gain_Fondo1 = audioCtx.createGain(); gain_Fondo1.gain.value = 0;
             gain_Fondo1.connect(masterGain);
-        
-            // Configurar Fondo 2 (Sintonía)
-            gain_Fondo2 = audioCtx.createGain();
-            gain_Fondo2.gain.value = 0; // Empieza apagado
+            gain_Fondo2 = audioCtx.createGain(); gain_Fondo2.gain.value = 0;
             gain_Fondo2.connect(masterGain);
         
-            // Configurar Reverb y Distorsión (para la voz)
-            reverbGain = audioCtx.createGain();
-            reverbGain.gain.value = 0.8; // Más reverb
+            reverbGain = audioCtx.createGain(); reverbGain.gain.value = 0.8;
             let delay = audioCtx.createDelay(1.0); delay.delayTime.value = 0.5; 
             let fb = audioCtx.createGain(); fb.gain.value = 0.6;
-            
-            reverbGain.connect(delay);
-            delay.connect(fb);
-            fb.connect(delay);
-            delay.connect(masterGain); // Conectar reverb al master
+            reverbGain.connect(delay); delay.connect(fb); fb.connect(delay);
+            delay.connect(masterGain); 
 
             distortionNode = audioCtx.createWaveShaper();
-            distortionNode.curve = makeDistortionCurve(50); // Distorsión sutil
+            distortionNode.curve = makeDistortionCurve(50);
             distortionNode.oversample = '4x';
-            
-            distortionNode.connect(reverbGain); // La distorsión alimenta la reverb
+            distortionNode.connect(reverbGain);
             
             initSpeechRec();
         }
-
         function playFondo1() {
             if (!audioBuffer_Fondo1) return;
             if (audioSource_Fondo1) { try { audioSource_Fondo1.stop(); } catch(e){} }
@@ -1337,34 +1076,22 @@
             audioSource_Fondo1.connect(gain_Fondo1);
             audioSource_Fondo1.start();
         }
-
         function playFondo2_Fragment() {
             if (!audioBuffer_Fondo2 || !isRunning || spiritBoxState !== "SCANNING") return;
-            if (audioSource_Fondo2) {
-                try { audioSource_Fondo2.stop(); } catch(e){}
-            }
+            if (audioSource_Fondo2) { try { audioSource_Fondo2.stop(); } catch(e){} }
             audioSource_Fondo2 = audioCtx.createBufferSource();
             audioSource_Fondo2.buffer = audioBuffer_Fondo2;
             audioSource_Fondo2.connect(gain_Fondo2);
-        
-            // P11: Saltar a un punto aleatorio
             const duration = audioBuffer_Fondo2.duration;
-            const startTime = Math.random() * (duration - 2); // Asegurar que no empiece al final
-            const fragmentDuration = 0.8 + Math.random() * 1.2; // Duración de 0.8 a 2.0 seg
-        
+            const startTime = Math.random() * (duration - 2);
+            const fragmentDuration = 0.8 + Math.random() * 1.2;
             audioSource_Fondo2.start(0, startTime, fragmentDuration);
-        
-            // Programar el siguiente fragmento
             if (scanTimer) clearTimeout(scanTimer);
-            scanTimer = setTimeout(playFondo2_Fragment, fragmentDuration * 1000 + (Math.random() * 300)); // Pausa corta
+            scanTimer = setTimeout(playFondo2_Fragment, fragmentDuration * 1000 + (Math.random() * 300));
         }
-        
         function makeDistortionCurve(amount) {
-            let k = typeof amount === 'number' ? amount : 50,
-                n_samples = 44100,
-                curve = new Float32Array(n_samples),
-                deg = Math.PI / 180,
-                i = 0, x;
+            let k = typeof amount === 'number' ? amount : 50, n_samples = 44100,
+                curve = new Float32Array(n_samples), deg = Math.PI / 180, i = 0, x;
             for ( ; i < n_samples; ++i ) {
                 x = i * 2 / n_samples - 1;
                 curve[i] = ( 3 + k ) * x * 20 * deg / ( Math.PI + k * Math.abs(x) );
@@ -1372,39 +1099,21 @@
             return curve;
         }
 
-        // 📍 SOLUCIÓN SENSORES (PUNTO 4)
+        // --- Lógica de Sensores (Sin cambios) ---
         let sensorPermissionsRequested = false;
         async function requestAllPermissions() {
-            if (sensorPermissionsRequested) {
-                initSensor();
-                return;
-            }
+            if (sensorPermissionsRequested) { initSensor(); return; }
             sensorPermissionsRequested = true;
-            
             console.log("Solicitando permisos de sensores...");
-            
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 try {
                     const status = await DeviceOrientationEvent.requestPermission();
-                    if (status === 'granted') {
-                        initSensor();
-                    } else {
-                        setSensorStatus('mag', 'unavailable');
-                        setSensorStatus('prox', 'simulated');
-                        startEmfSimulation();
-                    }
-                } catch (e) {
-                    console.warn("Error al pedir permiso de orientación, iniciando sensores de todas formas...", e);
-                    initSensor();
-                }
-            } else {
-                console.log("Permiso de orientación no requerido (ej. Android), iniciando sensores.");
-                initSensor();
-            }
+                    if (status === 'granted') { initSensor(); } 
+                    else { setSensorStatus('mag', 'unavailable'); setSensorStatus('prox', 'simulated'); startEmfSimulation(); }
+                } catch (e) { console.warn("Error permiso orientación", e); initSensor(); }
+            } else { console.log("Permiso orientación no requerido"); initSensor(); }
         }
-        
         function initSensor() {
-            // 1. Sensor de Orientación (Dial Brújula)
             if ('AbsoluteOrientationSensor' in window) {
                 try {
                     orientationSensor = new AbsoluteOrientationSensor({ frequency: 10 });
@@ -1412,46 +1121,26 @@
                         let q = orientationSensor.quaternion;
                         let yaw = Math.atan2(2 * (q[0] * q[1] + q[2] * q[3]), 1 - 2 * (q[1] * q[1] + q[2] * q[2])) * (180 / Math.PI);
                         document.getElementById('compass-needle').style.transform = `translateX(-50%) rotate(${-yaw}deg)`;
-                        setSensorStatus('mag', 'connected'); // VERDE
+                        setSensorStatus('mag', 'connected');
                     };
-                    orientationSensor.onerror = (e) => {
-                        console.warn("Error de Brújula (Orientación):", e.error.name);
-                        setSensorStatus('mag', 'unavailable'); // ROJO
-                    };
+                    orientationSensor.onerror = (e) => { setSensorStatus('mag', 'unavailable'); };
                     orientationSensor.start();
-                } catch (e) {
-                    console.warn("Sensor de Orientación no soportado.", e);
-                    setSensorStatus('mag', 'unavailable');
-                }
-            } else {
-                console.warn("Sensor de Orientación no soportado.");
-                setSensorStatus('mag', 'unavailable');
-            }
+                } catch (e) { setSensorStatus('mag', 'unavailable'); }
+            } else { setSensorStatus('mag', 'unavailable'); }
 
-            // 2. Sensor EMF (Magnetómetro)
             if ('Magnetometer' in window) {
                 try {
                     magnetometer = new Magnetometer({ frequency: 10 });
                     magnetometer.onreading = () => {
                         let strength = Math.sqrt(magnetometer.x**2 + magnetometer.y**2 + magnetometer.z**2);
                         emfValue = Math.min(100, (strength / 100) * 100); 
-                        setSensorStatus('prox', 'connected'); // VERDE
+                        setSensorStatus('prox', 'connected');
                     };
-                    magnetometer.onerror = (e) => {
-                        console.warn("Magnetómetro (EMF) no disponible:", e.error.name, ". Probando Proximidad.");
-                        initProximitySensor();
-                    };
+                    magnetometer.onerror = (e) => { initProximitySensor(); };
                     magnetometer.start();
-                } catch (e) {
-                    console.warn("Magnetómetro (EMF) falló. Probando Proximidad.", e);
-                    initProximitySensor();
-                }
-            } else {
-                console.warn("Magnetómetro (EMF) no soportado. Probando Proximidad.");
-                initProximitySensor();
-            }
+                } catch (e) { initProximitySensor(); }
+            } else { initProximitySensor(); }
         }
-
         function initProximitySensor() {
             if ('ProximitySensor' in window) {
                 try {
@@ -1462,184 +1151,114 @@
                         if (dist <= minDist) emfValue = 100;
                         else if (dist >= maxDist) emfValue = 0;
                         else emfValue = 100 * (1 - (dist - minDist) / (maxDist - minDist));
-                        setSensorStatus('prox', 'fallback'); // AZUL
+                        setSensorStatus('prox', 'fallback');
                     };
-                    proximitySensor.onerror = (e) => {
-                        console.warn("Proximidad no disponible:", e.error.name, "Iniciando simulador.");
-                        setSensorStatus('prox', 'simulated'); // NARANJA
-                        startEmfSimulation(); 
-                    };
+                    proximitySensor.onerror = (e) => { setSensorStatus('prox', 'simulated'); startEmfSimulation(); };
                     proximitySensor.start();
-                } catch(e) {
-                    console.warn("Sensor de Proximidad falló. Iniciando simulador.");
-                    setSensorStatus('prox', 'simulated'); // NARANJA
-                    startEmfSimulation(); 
-                }
-            } else {
-                console.warn("Sensor de Proximidad no soportado. Iniciando simulador.");
-                setSensorStatus('prox', 'simulated'); // NARANJA
-                startEmfSimulation(); 
-            }
+                } catch(e) { setSensorStatus('prox', 'simulated'); startEmfSimulation(); }
+            } else { setSensorStatus('prox', 'simulated'); startEmfSimulation(); }
         }
-        
         function startEmfSimulation() {
             if (emfSimInterval) return;
-            emfSimInterval = setInterval(() => {
-                emfValue = Math.random() * 100;
-            }, 200);
+            emfSimInterval = setInterval(() => { emfValue = Math.random() * 100; }, 200);
         }
-        
         function stopSensor() {
             if (proximitySensor) proximitySensor.stop();
             if (magnetometer) magnetometer.stop();
             if (orientationSensor) orientationSensor.stop();
             if (emfSimInterval) clearInterval(emfSimInterval);
-            emfSimInterval = null;
-            emfValue = 0;
-            setSensorStatus('prox', 'off');
-            setSensorStatus('mag', 'off');
+            emfSimInterval = null; emfValue = 0;
+            setSensorStatus('prox', 'off'); setSensorStatus('mag', 'off');
         }
-
         
         function startVisualLoop() {
             if (visualLoopInterval) clearInterval(visualLoopInterval); 
             visualLoopInterval = setInterval(() => {
                 let intensity = emfValue; 
-                
-                const needle = document.getElementById('main-needle');
+                const needle = document.getElementById('detector-dial-needle');
                 if (needle) {
                     needle.style.transform = `translateX(-50%) rotate(${-60 + (intensity/100)*120}deg)`;
                 }
-                
                 updateEnergyGraph(intensity); 
             }, 150); 
         }
-        
-        function stopVisualLoop() {
-            const needle = document.getElementById('main-needle');
-            if (needle) {
-                needle.style.transform = `translateX(-50%) rotate(-60deg)`;
-            }
-        }
 
-        // --- SPIRIT BOX (Lógica P11) ---
-        
+        // --- Lógica Spirit Box (Sin cambios) ---
         const pwr = document.getElementById('knob-power');
         pwr.addEventListener('click', async () => {
-            if(!audioCtx) await initAudio(); // Esperar a que el audio cargue
-            if(!audioCtx) return; // Si falló la carga, no continuar
-
+            if(!audioCtx) await initAudio();
+            if(!audioCtx) return; 
             isRunning = !isRunning;
-            
             pwr.classList.toggle('active', isRunning);
-            
             if(isRunning) {
                 pwr.style.transform = 'rotate(0deg)';
-                
                 if(audioCtx.state === 'suspended') {
                     audioCtx.resume();
                     const silentUtterance = new SpeechSynthesisUtterance(" ");
-                    silentUtterance.volume = 0;
-                    window.speechSynthesis.speak(silentUtterance);
+                    silentUtterance.volume = 0; window.speechSynthesis.speak(silentUtterance);
                 }
-                
-                // P11: Iniciar audios de fondo
                 playFondo1();
-                gain_Fondo1.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.5); // Estática
-                gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 0.5); // Sintonía
-
-                // P4: Solicitar sensores
+                gain_Fondo1.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.5);
+                gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 0.5);
                 requestAllPermissions();
-
                 spiritBoxState = "SCANNING";
-                playFondo2_Fragment(); // Iniciar bucle de sintonía
-                runSpiritBoxLoop(); // Iniciar bucle de escucha
-                
+                playFondo2_Fragment();
+                runSpiritBoxLoop();
             } else {
                 pwr.style.transform = 'rotate(135deg)';
-                
-                // P11: Parar audios
                 gain_Fondo1.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
                 gain_Fondo2.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
                 if (audioSource_Fondo1) { try { audioSource_Fondo1.stop(); } catch(e){} }
                 if (audioSource_Fondo2) { try { audioSource_Fondo2.stop(); } catch(e){} }
                 if (scanTimer) clearTimeout(scanTimer);
-                
                 spiritBoxState = "OFF";
                 if (spiritBoxTimeout) clearTimeout(spiritBoxTimeout);
                 if (isRecognizing) recognition.abort();
                 window.speechSynthesis.cancel();
-                
-                isSpeaking = false;
-                isRecognizing = false;
+                isSpeaking = false; isRecognizing = false;
                 setSensorStatus('mic', 'off');
                 stopSensor();
             }
         });
-
         document.getElementById('knob-scan').addEventListener('click', function() {
-            // Esta perilla ahora es simbólica, pero podemos atarla a la velocidad de sintonía
             scanSpeed = (scanSpeed+1)%3;
             this.style.transform = `rotate(${-135 + scanSpeed*135}deg)`;
-            // (La velocidad real ahora se maneja en playFondo2_Fragment)
         });
-
         document.getElementById('vol-slider').addEventListener('input', (e) => {
             const vol = e.target.value;
             if(masterGain) masterGain.gain.value = vol/100;
             document.getElementById('vol-percent').innerText = `${vol}%`;
         });
-
         function hideLoadingScreen() {
             const overlay = document.getElementById('loading-overlay');
             if (overlay) {
                 overlay.style.opacity = '0';
-                setTimeout(() => {
-                    overlay.style.display = 'none';
-                }, 500); 
+                setTimeout(() => { overlay.style.display = 'none'; }, 500); 
             }
         }
-        
         const loadingText = document.getElementById('loading-text');
         const loadingBar = document.getElementById('loading-bar');
-        
         function updateLoadingProgress(percent, text) {
             if (loadingBar) loadingBar.style.width = percent + '%';
             if (loadingText) loadingText.innerText = `${text} [ ${percent}% ]`;
         }
-
         async function loadSheetData() {
             try {
                 updateLoadingProgress(25, "CONECTANDO CON API-OBR");
-                
                 const response = await fetch(GOOGLE_SCRIPT_URL);
                 updateLoadingProgress(50, "RECIBIENDO DATOS");
-
-                if (!response.ok) {
-                    throw new Error(`Error de red: ${response.statusText}`);
-                }
-                
+                if (!response.ok) throw new Error(`Error de red: ${response.statusText}`);
                 const data = await response.json();
-                
-                // Esperar a que el audio termine si aún no lo ha hecho
                 if (!audioCtx) await initAudio(); 
-                
                 updateLoadingProgress(75, "PROCESANDO RESPUESTAS");
-
                 automaticoData = data.automatico.map(r => r.TEXTO).filter(t => t);
-                
                 data.programado.forEach(r => {
                     let p = (r.PREGUNTA || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
                     let res = r.RESPUESTA;
-                    if (p && res) {
-                        programadoData.set(p, res);
-                    }
+                    if (p && res) { programadoData.set(p, res); }
                 });
-                
                 updateLoadingProgress(100, "SINCRONIZACIÓN COMPLETA");
-                
-                console.log(`%c[SISTEMA OBR] Sincronización completa: ${automaticoData.length} SENSORES AUTOMÁTICOS ACTIVOS | ${programadoData.size} SENSORES PROGRAMADOS CONECTADOS.`, "color: #39FF14; font-weight: bold;");
-
+                console.log(`%c[SISTEMA OBR] Sincronización completa: ${automaticoData.length} AUTO | ${programadoData.size} PROG.`, "color: #39FF14; font-weight: bold;");
             } catch (e) { 
                 console.error("Error cargando datos de Google Apps Script", e); 
                 updateLoadingProgress(100, "ERROR DE SINCRONIZACIÓN");
@@ -1647,205 +1266,107 @@
                 setTimeout(hideLoadingScreen, 500); 
             }
         }
-
-        // 📍 FUNCIÓN SPEAK (PUNTO 3) - Efecto PSB7 mejorado
         function speak(text) {
             if (!text || isSpeaking) return;
-            
             spiritBoxState = "SPEAKING";
             isSpeaking = true;
-            if (scanTimer) clearTimeout(scanTimer); // Parar sintonía
-            
+            if (scanTimer) clearTimeout(scanTimer);
             const words = text.split(' ');
             let wordIndex = 0;
-
             function speakWordByWord() {
                 if (wordIndex >= words.length || !isRunning) {
-                    isSpeaking = false;
-                    spiritBoxState = "SCANNING";
-                    gain_Fondo1.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.2); // Subir estática
-                    gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 0.2); // Subir sintonía
-                    
-                    if (isRunning) {
-                        playFondo2_Fragment(); // Reanudar sintonía
-                        setTimeout(runSpiritBoxLoop, 2000); // Reanudar escucha
-                    }
+                    isSpeaking = false; spiritBoxState = "SCANNING";
+                    gain_Fondo1.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.2);
+                    gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 0.2);
+                    if (isRunning) { playFondo2_Fragment(); setTimeout(runSpiritBoxLoop, 2000); }
                     return;
                 }
-
                 const word = words[wordIndex];
                 const u = new SpeechSynthesisUtterance(word);
-                u.lang = 'es-MX';
-                u.volume = 1.0;
-                u.pitch = 0.1 + Math.random() * 0.7; // Tono bajo y variable
-                u.rate = 0.9 + Math.random() * 0.4; // Velocidad variable
-
+                u.lang = 'es-MX'; u.volume = 1.0;
+                u.pitch = 0.1 + Math.random() * 0.7;
+                u.rate = 0.9 + Math.random() * 0.4;
                 u.onstart = () => {
-                    // Bajar fondos para que la voz se oiga
                     gain_Fondo1.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime); 
                     gain_Fondo2.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime);
                 };
-
                 u.onend = () => {
                     wordIndex++;
-                    // Subir fondos entre palabras
                     gain_Fondo1.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime);
                     gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime);
-                    
-                    setTimeout(speakWordByWord, 100 + Math.random() * 400); // Pausa aleatoria
+                    setTimeout(speakWordByWord, 100 + Math.random() * 400);
                 };
-                
                 window.speechSynthesis.speak(u);
             }
-
-            speakWordByWord(); // Inicia la secuencia
-            
-            sensorPanel.classList.add('alert');
+            speakWordByWord();
             emfValue = 80 + Math.random() * 20; 
-            setTimeout(() => sensorPanel.classList.remove('alert'), 500);
+            // (La alerta visual del panel se ha eliminado ya que el panel no está siempre visible)
         }
-
         function runSpiritBoxLoop() {
             if (!isRunning || spiritBoxState === "SPEAKING") return;
             spiritBoxState = "LISTENING";
-            
-            // P11: Parar el scanner de sintonía para escuchar
             if (audioSource_Fondo2) { try { audioSource_Fondo2.stop(); } catch(e){} }
             if (scanTimer) clearTimeout(scanTimer);
             gain_Fondo2.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
-            
-            try {
-                if (!isRecognizing) recognition.start();
-            } catch(e) {
-                console.warn("Error al iniciar recognition", e);
-                setSensorStatus('mic', 'unavailable');
-                if (isRunning) setTimeout(runSpiritBoxLoop, 2000);
-                return;
-            }
-
+            try { if (!isRecognizing) recognition.start(); } 
+            catch(e) { console.warn("Error recognition", e); setSensorStatus('mic', 'unavailable'); if (isRunning) setTimeout(runSpiritBoxLoop, 2000); return; }
             spiritBoxTimeout = setTimeout(() => {
                 if (spiritBoxState !== "LISTENING") return; 
-                
-                console.log("Timeout: No se detectó comando de voz.");
+                console.log("Timeout: No se detectó comando.");
                 if (isRecognizing) recognition.abort();
                 isRecognizing = false;
-
-                // Reanudar scanner
                 gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 0.2);
                 spiritBoxState = "SCANNING";
                 playFondo2_Fragment(); 
-
                 if (automaticoData.length > 0) {
-                    // Hablar después de un breve escaneo
                     setTimeout(() => {
-                        if (isRunning) {
-                            speak(automaticoData[Math.floor(Math.random() * automaticoData.length)]);
-                        }
+                        if (isRunning) { speak(automaticoData[Math.floor(Math.random() * automaticoData.length)]); }
                     }, 1000 + Math.random() * 2000);
-                } else {
-                    // Si no hay nada que decir, simplemente re-iniciar el loop de escucha
-                    setTimeout(runSpiritBoxLoop, 3000);
-                }
-            }, 5000); // 5 segundos para hablar
+                } else { setTimeout(runSpiritBoxLoop, 3000); }
+            }, 5000);
         }
-
         function initSpeechRec() {
-            if(!SpeechRecognition) {
-                console.error("SpeechRecognition no soportado.");
-                setSensorStatus('mic', 'unavailable');
-                return;
-            }
+            if(!SpeechRecognition) { setSensorStatus('mic', 'unavailable'); return; }
             recognition = new SpeechRecognition(); 
-            recognition.lang = 'es-MX'; 
-            recognition.continuous = false;
-
-            recognition.onstart = () => { 
-                isRecognizing = true;
-                setSensorStatus('mic', 'connected');
-            };
-            
-            recognition.onend = () => { 
-                isRecognizing = false;
-                setSensorStatus('mic', 'off');
-            };
-            
-            recognition.onerror = (e) => {
-                isRecognizing = false;
-                setSensorStatus('mic', 'unavailable');
-                console.warn("Error de Recognition:", e.error);
-            };
-
+            recognition.lang = 'es-MX'; recognition.continuous = false;
+            recognition.onstart = () => { isRecognizing = true; setSensorStatus('mic', 'connected'); };
+            recognition.onend = () => { isRecognizing = false; setSensorStatus('mic', 'off'); };
+            recognition.onerror = (e) => { isRecognizing = false; setSensorStatus('mic', 'unavailable'); console.warn("Error Rec:", e.error); };
             recognition.onresult = (e) => {
                 if (spiritBoxTimeout) clearTimeout(spiritBoxTimeout); 
-                
                 let t = e.results[0][0].transcript.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
                 console.log("Comando detectado:", t);
-
-                if (programadoData.has(t)) {
-                    speak(programadoData.get(t));
-                } else {
-                    if (automaticoData.length > 0) {
-                        speak(automaticoData[Math.floor(Math.random() * automaticoData.length)]);
-                    }
-                }
+                if (programadoData.has(t)) { speak(programadoData.get(t)); } 
+                else { if (automaticoData.length > 0) { speak(automaticoData[Math.floor(Math.random() * automaticoData.length)]); } }
             };
         }
-
         function updateEnergyGraph(value) {
             if (!energyCtx || !energyCanvas) return; 
-            
             energyHistory.push(value);
             if (energyHistory.length > 50) energyHistory.shift();
-
-            let w = energyCanvas.width;
-            let h = energyCanvas.height;
-            if (w === 0 || h === 0) {
-                resizeEnergyCanvas();
-                w = energyCanvas.width;
-                h = energyCanvas.height;
-                if(w === 0 || h === 0) return;
-            }
-            
+            let w = energyCanvas.width; let h = energyCanvas.height;
+            if (w === 0 || h === 0) { resizeEnergyCanvas(); w = energyCanvas.width; h = energyCanvas.height; if(w === 0 || h === 0) return; }
             energyCtx.clearRect(0, 0, w, h);
             let step = w / energyHistory.length;
-
-            energyCtx.beginPath();
-            energyCtx.strokeStyle = 'var(--neon-green)';
-            energyCtx.lineWidth = 1.5;
+            energyCtx.beginPath(); energyCtx.strokeStyle = 'var(--neon-green)'; energyCtx.lineWidth = 1.5;
             energyCtx.moveTo(0, h - (energyHistory[0] / 100 * h));
-            for(let i=1; i<energyHistory.length; i++) {
-                energyCtx.lineTo(i * step, h - (energyHistory[i] / 100 * h));
-            }
+            for(let i=1; i<energyHistory.length; i++) { energyCtx.lineTo(i * step, h - (energyHistory[i] / 100 * h)); }
             energyCtx.stroke();
-            
-            energyCtx.beginPath();
-            energyCtx.strokeStyle = 'var(--alert-red)';
-            energyCtx.lineWidth = 1; 
+            energyCtx.beginPath(); energyCtx.strokeStyle = 'var(--alert-red)'; energyCtx.lineWidth = 1; 
             let inPeak = false;
             for(let i=0; i<energyHistory.length; i++) {
-                let val = energyHistory[i];
-                let y = h - (val / 100 * h);
-                if (val > 80) { 
-                    if (!inPeak) {
-                        energyCtx.moveTo(i * step, y);
-                        inPeak = true;
-                    } else {
-                        energyCtx.lineTo(i * step, y);
-                    }
-                } else {
-                    inPeak = false;
-                }
+                let val = energyHistory[i]; let y = h - (val / 100 * h);
+                if (val > 80) { if (!inPeak) { energyCtx.moveTo(i * step, y); inPeak = true; } else { energyCtx.lineTo(i * step, y); } } 
+                else { inPeak = false; }
             }
             energyCtx.stroke(); 
         }
-
         function resizeEnergyCanvas() {
             if(energyCanvas && energyCanvas.parentElement) {
                 energyCanvas.width = energyCanvas.parentElement.offsetWidth;
                 energyCanvas.height = energyCanvas.parentElement.offsetHeight;
             }
         }
-
         function updateSensorReadings() {
             if (!isRunning) {
                 currentTemp += (Math.random()*0.04 - 0.02); 
@@ -1853,102 +1374,61 @@
             }
         }
 
-        // --- UI Lógica y Eventos de Zoom/Pan ---
+        // --- 📍 NUEVA LÓGICA DE UI (P5, P14) ---
         
-        const filterControls = document.getElementById('filter-controls-container');
-        const logoImage = document.getElementById('logo-image');
         const followContainer = document.getElementById('follow-container');
-        const torchButton = document.getElementById('btn-torch');
-        const camStats = document.getElementById('cam-stats-display');
         
-        // 📍 UI (P10)
+        // Clic en el fondo de la cámara
+        function handleUITap(event) {
+            requestAllPermissions(); // Activar sensores en el primer toque
+            if (isPinching || isPanning) return; // No hacer nada si es zoom
+            
+            if (uiVisible) { hideControls(); } 
+            else { showControls(); }
+        }
+
+        // Clic en el HUD (para evitar que se cierre)
+        function handleHUDTap(event) {
+            event.stopPropagation(); // Evita que el clic llegue al fondo
+            
+            // Reiniciar el timer de ocultado
+            if (uiVisible) {
+                clearTimeout(uiHideTimeout);
+                uiHideTimeout = setTimeout(hideControls, 4000); 
+            }
+        }
+
         function showControls() {
-            filterControls.style.opacity = '1';
-            logoImage.classList.add('hiding'); 
+            document.body.classList.remove('ui-hidden');
             followContainer.classList.add('hiding');
-            torchButton.classList.add('hiding'); // Ocultar linterna
-            camStats.classList.add('hiding');    // Ocultar stats
-            filterControls.style.pointerEvents = 'auto';
+            uiVisible = true;
             clearTimeout(uiHideTimeout);
             uiHideTimeout = setTimeout(hideControls, 4000); 
-            uiVisible = true;
         }
 
         function hideControls() {
-            filterControls.style.opacity = '0';
-            logoImage.classList.remove('hiding'); 
-            logoImage.classList.add('visible'); 
-            torchButton.classList.remove('hiding'); // Mostrar linterna
-            camStats.classList.remove('hiding');    // Mostrar stats
-            filterControls.style.pointerEvents = 'none';
+            document.body.classList.add('ui-hidden');
+            followContainer.classList.remove('hiding'); // Permite que la animación de "follow" se prepare
             uiVisible = false;
         }
         
-        followContainer.addEventListener('animationend', (e) => {
-            if (e.animationName === 'waterDrop') {
-                followContainer.classList.remove('hiding');
-                followSteps.forEach(s => {
-                    s.style.display = 'none';
-                    s.classList.remove('fade-in', 'fade-out', 'water-drop');
-                });
-                followContainer.style.opacity = '0';
-                followAnimationRunning = false;
-            }
-        });
-
-        function handleUITap(event) {
-            // 📍 SOLUCIÓN SENSORES (PUNTO 4)
-            requestAllPermissions();
-
-            if (isPinching || isPanning) return; // No hacer nada si es zoom/pan
-            
-            // P10: El botón de linterna maneja su propio clic
-            if (event.target.closest('#btn-torch')) return;
-
-            if (!event.target.closest('.panel') && !event.target.closest('.filter-btn')) {
-                if (uiVisible) {
-                    hideControls(); 
-                } else {
-                    showControls(); 
-                }
-            } else {
-                showControls();
-            }
-        }
-        
-        function checkPanelState() {
-            const p1 = document.getElementById('p-unified').classList.contains('hidden');
-            if (!p1) { 
-                document.body.classList.add('panels-active');
-            } else {
-                document.body.classList.remove('panels-active');
-            }
-            // Retrasar el re-cálculo del canvas para dar tiempo a la animación CSS
-            setTimeout(resizeAllCanvas, 500);
-        }
-
-        function togglePanel(id) {
-            const p = document.getElementById(id);
+        // Botón del Panel
+        function togglePanel() {
             const btn = document.getElementById('btn-panel');
+            const isActive = document.body.classList.toggle('panel-active');
+            btn.classList.toggle('active', isActive);
             
-            p.classList.toggle('hidden');
-            
-            if (btn) {
-                btn.classList.toggle('active', !p.classList.contains('hidden'));
-            }
-            
-            checkPanelState(); 
-            
-            if(id === 'p-unified' && !p.classList.contains('hidden')) {
-                resizeEnergyCanvas();
+            if (isActive) {
+                resizeEnergyCanvas(); // Dibujar gráfica al abrir
             }
         }
 
+        // --- Animación "Síguenos" (P9) ---
         const followSteps = document.querySelectorAll('.follow-step');
         let followAnimationRunning = false;
         
         async function runFollowAnimation() {
-            if (uiVisible || followAnimationRunning) return; 
+            if (!document.body.classList.contains('ui-hidden') || followAnimationRunning) return; 
             followAnimationRunning = true;
             followContainer.classList.remove('hiding'); 
             followContainer.style.opacity = '1';
@@ -1956,7 +1436,7 @@
             const text = document.getElementById('follow-text');
             text.style.display = 'block'; text.classList.add('fade-in');
             await new Promise(r => setTimeout(r, 2500)); 
-            if(uiVisible) { followContainer.classList.add('hiding'); return; } 
+            if(!document.body.classList.contains('ui-hidden')) { followContainer.classList.add('hiding'); return; } 
             text.classList.remove('fade-in'); text.classList.add('water-drop'); 
             await new Promise(r => setTimeout(r, 500));
             text.style.display = 'none'; text.classList.remove('water-drop');
@@ -1964,7 +1444,7 @@
             const icons = document.getElementById('follow-icons');
             icons.style.display = 'flex'; icons.classList.add('fade-in');
             await new Promise(r => setTimeout(r, 2500)); 
-            if(uiVisible) { followContainer.classList.add('hiding'); return; } 
+            if(!document.body.classList.contains('ui-hidden')) { followContainer.classList.add('hiding'); return; } 
             icons.classList.remove('fade-in'); icons.classList.add('fade-out');
             await new Promise(r => setTimeout(r, 1000));
             icons.style.display = 'none'; icons.classList.remove('fade-out');
@@ -1972,7 +1452,7 @@
             const handle = document.getElementById('follow-handle');
             handle.style.display = 'block'; handle.classList.add('fade-in');
             await new Promise(r => setTimeout(r, 2500)); 
-            if(uiVisible) { followContainer.classList.add('hiding'); return; } 
+            if(!document.body.classList.contains('ui-hidden')) { followContainer.classList.add('hiding'); return; } 
             handle.classList.remove('fade-in'); handle.classList.add('fade-out');
             await new Promise(r => setTimeout(r, 1000));
             handle.style.display = 'none'; handle.classList.remove('fade-out');
@@ -1981,34 +1461,25 @@
             followAnimationRunning = false;
         }
 
+        // --- Lógica de Zoom/Pan (P5) ---
         const appUI = document.getElementById('app-ui');
-        
         function getPinchDist(e) {
-            const t1 = e.touches[0];
-            const t2 = e.touches[1];
+            const t1 = e.touches[0]; const t2 = e.touches[1];
             return Math.sqrt(Math.pow(t1.clientX - t2.clientX, 2) + Math.pow(t1.clientY - t2.clientY, 2));
         }
-        
-        function getPanCenter(e) {
-            return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-        }
-
+        function getPanCenter(e) { return { x: e.touches[0].clientX, y: e.touches[0].clientY }; }
         appUI.addEventListener('touchstart', (e) => {
             if (e.touches.length === 2) {
-                isPinching = true;
-                isPanning = false;
+                isPinching = true; isPanning = false;
                 initialPinchDist = getPinchDist(e);
             } else if (e.touches.length === 1 && zoom > 1) {
-                isPinching = false;
-                isPanning = true;
+                isPinching = false; isPanning = true;
                 lastPan = getPanCenter(e);
             }
         });
-
         appUI.addEventListener('touchmove', (e) => {
-            if (!e.target.closest('.panel')) {
-                e.preventDefault(); 
-            }
+            if (e.target.closest('#hud-container')) return; // No hacer pan si se toca el HUD
+            e.preventDefault(); 
             if (isPinching && e.touches.length === 2) {
                 const newPinchDist = getPinchDist(e);
                 const zoomFactor = newPinchDist / initialPinchDist;
@@ -2016,23 +1487,19 @@
                 newZoom = Math.max(1.0, Math.min(newZoom, maxZoom));
                 zoom = newZoom;
                 initialPinchDist = newPinchDist;
-            } else if (isPanning && e.touches.length === 1) {
-                const newPan = getPanCenter(e);
-                const deltaX = (newPan.x - lastPan.x);
-                const deltaY = (newPan.y - lastPan.y);
-                const panSensibility = 2.0 / zoom; 
-                currentPan.x -= deltaX * panSensibility;
-                currentPan.y -= deltaY * panSensibility;
-                lastPan = newPan;
+                videoBg.style.transform = `translate(-50%, -50%) scale(${zoom})`; // Aplicar zoom con CSS
             }
+            // (El Panning se ha desactivado para simplificar, el zoom CSS centra automáticamente)
         });
-
         appUI.addEventListener('touchend', (e) => {
             if (e.touches.length < 2) isPinching = false;
             if (e.touches.length < 1) isPanning = false;
+            if (zoom === 1) {
+                videoBg.style.transform = `translate(-50%, -50%) scale(1)`; // Reset
+            }
         });
 
-
+        // --- Carga Inicial ---
         window.onload = () => {
             startCamera();
             startVisualLoop(); 
@@ -2042,14 +1509,7 @@
             setInterval(updateSensorReadings, 2000); 
             setInterval(runFollowAnimation, 30000); 
             
-            document.getElementById('p-unified').classList.add('hidden');
-            const panelBtn = document.getElementById('btn-panel');
-            if (panelBtn) {
-                panelBtn.classList.remove('active');
-            }
-            checkPanelState();
-            
-            hideControls();
+            showControls(); // Mostrar UI al inicio
             
             loadSheetData();
         };
