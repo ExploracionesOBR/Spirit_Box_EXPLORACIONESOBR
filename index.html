@@ -22,14 +22,13 @@
 
     <style>
         :root {
-            /* Colores Actualizados */
             --neon-green: #39FF14; 
             --alert-red: #FF3333;
             --sim-orange: #FFB000;
-            --sensor-blue: #00BFFF; /* Nuevo color para VU */
+            --sensor-blue: #00BFFF; 
             --panel-bg: #0A0F0A;
             --border-color: rgba(57, 255, 20, 0.3);
-            --text-color: #E0E0E0; /* Color de texto estándar */
+            --text-color: #E0E0E0; 
             --text-dim: #777;
             --panel-width-landscape: 300px;
             --panel-height-landscape: 160px;
@@ -38,7 +37,7 @@
         body {
             font-family: 'Share Tech Mono', monospace;
             background-color: #000;
-            color: var(--text-color); /* Color base cambiado */
+            color: var(--text-color);
             overflow: hidden;
             width: 100vw;
             height: 100vh;
@@ -133,10 +132,13 @@
             pointer-events: auto;
         }
 
-        /* Fondo de Panel (Ruido/Estática) */
+        /* 📍 CORRECCIÓN: Fondo de Panel (Ruido CSS) */
         .panel {
-            background-color: var(--panel-bg);
-            background-image: url('https://i.imgur.com/M6Lgwwz.png'); /* Textura de ruido */
+            background-color: #0c0c0c; /* Un fondo oscuro sólido */
+            /* Reemplazo de la imagen rota por un ruido CSS */
+            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 2px 2px;
             border: 1px solid var(--border-color);
             box-shadow: 0 0 10px rgba(57, 255, 20, 0.2) inset;
             display: flex;
@@ -171,7 +173,7 @@
             border: 1px solid var(--border-color);
             border-radius: 4px;
             padding: 6px; 
-            background: rgba(0, 0, 0, 0.4); /* Más oscuro para que resalte el fondo */
+            background: rgba(0, 0, 0, 0.4); 
             display: flex;
             flex-direction: column;
         }
@@ -179,7 +181,7 @@
         .section-title {
             font-family: 'Orbitron', sans-serif;
             font-size: 0.6rem;
-            color: var(--text-color); /* Color cambiado */
+            color: var(--text-color); 
             text-transform: uppercase;
             margin-bottom: 6px; 
             text-align: center;
@@ -337,8 +339,8 @@
         }
         
         #detector-dial-container {
-            width: 100px;
-            height: 100px;
+            width: 90px;
+            height: 90px;
         }
         #detector-dial-needle {
             height: 45%;
@@ -349,7 +351,7 @@
         
         #temp-readout { text-align: center; z-index: 5; }
         #temp-val {
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             font-family: 'Orbitron', sans-serif;
             color: var(--neon-green);
             line-height: 1;
@@ -361,7 +363,7 @@
         
         #panel-cam-stats {
             font-family: 'Orbitron', sans-serif;
-            font-size: 1.2rem;
+            font-size: 1.0rem;
             font-weight: 700;
             color: var(--neon-green);
             text-shadow: 0 0 3px var(--neon-green);
@@ -419,6 +421,7 @@
             z-index: 5;
             /* Diseño de puntero */
             clip-path: polygon(0 0, 100% 0, 100% 70%, 50% 100%, 0 70%);
+            transition: transform 0.3s ease; /* Transición suave */
         }
 
         /* Diseño de Switch (Encender) */
@@ -712,6 +715,26 @@
                 justify-content: space-around;
                 align-items: center;
             }
+            
+            /* 📍 CORRECCIÓN: Layout aplastado en vertical */
+            #bottom-panel .panel-section {
+                flex-grow: 1;
+                flex-basis: 0;
+                height: 100%;
+                justify-content: center;
+            }
+            /* En vertical, los diales deben ser más pequeños */
+            .dial-container {
+                 width: 60px;
+                 height: 60px;
+            }
+            #detector-dial-container {
+                 width: 80px;
+                 height: 80px;
+            }
+            #temp-val { font-size: 1.2rem; }
+            #panel-cam-stats { font-size: 0.9rem; }
+
 
             body.panels-active #main-view-area {
                 display: none;
@@ -749,6 +772,14 @@
                 flex-direction: row;
                 justify-content: space-around;
                 align-items: center;
+            }
+            
+            /* 📍 CORRECCIÓN: Layout aplastado en horizontal */
+            #bottom-panel .panel-section {
+                flex-grow: 1;
+                flex-basis: 0;
+                height: 100%;
+                justify-content: center;
             }
 
             body.panels-active #main-view-area {
@@ -1338,6 +1369,7 @@
             }
         }
         
+        // 📍 CORRECCIÓN: Esta función YA NO pide permiso de mic.
         async function initAudio_LoadFiles() {
             if (audioCtx) return;
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1674,6 +1706,7 @@
                 
                 const data = await response.json();
                 
+                // 📍 CORRECCIÓN: Llamada movida aquí.
                 if (!audioCtx) await initAudio_LoadFiles(); 
                 
                 updateLoadingProgress(75, "PROCESANDO RESPUESTAS");
