@@ -79,9 +79,9 @@
             filter: none;
         }
         
-        /* 📍 NUEVO: Filtro Térmico (TRM) */
-        body.filter-thermal #bg-camera-feed {
-            filter: grayscale(1) contrast(2.5) sepia(1) hue-rotate(-120deg) brightness(1.1);
+        /* 📍 NUEVO: Filtro "Detector" (DTR) */
+        body.filter-detector #bg-camera-feed {
+            filter: grayscale(1) contrast(3) sepia(1) hue-rotate(-30deg) saturate(5);
         }
         body.filter-negative #bg-camera-feed {
             filter: invert(1) contrast(1.1);
@@ -948,7 +948,7 @@
 
 
     <div id="filter-controls-container">
-        <button class="filter-btn" onclick="setFilter('thermal')">TRM</button>
+        <button class="filter-btn" onclick="setFilter('detector')">DTR</button>
         <button class="filter-btn" onclick="setFilter('sls')">SLS</button>
         <button class="filter-btn" onclick="setFilter('negative')">NEG</button>
         <button class="filter-btn" id="btn-panel" onclick="togglePanels()">PAN</button>
@@ -1245,7 +1245,7 @@
         ];
         
         function drawAllSkeletons(poses) {
-            const ctx = mainFilterCtx; 
+            const ctx = mainFilterCanvas; 
             
             ctx.strokeStyle = 'var(--neon-green)'; 
             ctx.fillStyle = 'var(--alert-red)';    
@@ -1283,7 +1283,7 @@
         }
 
         function drawKeypoints(keypoints, scale, offsetX, offsetY) {
-            const ctx = mainFilterCtx;
+            const ctx = mainFilterCanvas;
             for (let i = 0; i < keypoints.length; i++) {
                 const keypoint = keypoints[i];
                 if (keypoint.score > confidenceThreshold) {
@@ -1295,7 +1295,7 @@
         }
 
         function drawConnections(keypoints, scale, offsetX, offsetY) {
-            const ctx = mainFilterCtx;
+            const ctx = mainFilterCanvas;
             const keypointMap = new Map();
             keypoints.forEach(keypoint => {
                 keypointMap.set(keypoint.name, keypoint);
@@ -1314,7 +1314,6 @@
             });
         }
         
-        // 📍 Lógica de Filtro actualizada
         function setFilter(f) {
             document.querySelectorAll('.filter-btn').forEach(b => {
                 if (b.id !== 'btn-panel') {
@@ -1322,8 +1321,8 @@
                 }
             });
             
-            // 📍 Limpia filtros anteriores
-            document.body.classList.remove('filter-thermal', 'filter-sls', 'filter-negative');
+            // 📍 Lógica de filtro actualizada para 'detector'
+            document.body.classList.remove('filter-detector', 'filter-sls', 'filter-negative');
             mainFilterCanvas.style.display = 'none';
 
             if (currentFilter === f) {
