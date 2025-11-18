@@ -32,7 +32,7 @@
             --text-dim-grey: #777;
             --panel-width-landscape: 300px;
             --panel-height-landscape: 160px;
-            --bottom-panel-height-vertical: 200px; /* Panel inferior más grueso en vertical */
+            --bottom-panel-height-vertical: 200px; /* Panel inferior más grueso */
         }
         
         body {
@@ -112,14 +112,17 @@
             flex-direction: column;
             z-index: 20;
             pointer-events: none; 
-            transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            /* 📍 NUEVA ANIMACIÓN: Explosión de Burbuja */
+            clip-path: circle(0% at 50% 50%);
+            transition: clip-path 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
             box-sizing: border-box; 
             overflow: hidden;
         }
         
         body.panels-active #left-panel,
         body.panels-active #bottom-panel {
-            transform: translateX(0) translateY(0);
+            /* 📍 NUEVA ANIMACIÓN: Explosión de Burbuja */
+            clip-path: circle(150% at 50% 50%);
             pointer-events: auto;
         }
         
@@ -315,6 +318,7 @@
             padding: 6px 0; 
         }
         
+        /* 📍 NUEVO: Diseño de Dial (de la imagen) */
         .dial-container {
             position: relative;
             width: 75px;
@@ -325,53 +329,48 @@
             box-shadow: 0 0 8px rgba(57, 255, 20, 0.3) inset, 0 0 5px #000;
             overflow: hidden;
         }
-        
         .dial-container::before {
             content: '';
             position: absolute;
             top: 5px; left: 5px; right: 5px; bottom: 5px;
             border-radius: 50%;
             border: 1px solid var(--border-color-dark);
-            box-shadow: 0 0 5px rgba(57, 255, 20, 0.1) inset;
+            background: repeating-conic-gradient(from 0deg, var(--border-color-dark) 0deg 1deg, transparent 1deg 9deg);
+            mask-image: radial-gradient(transparent 70%, black 71%);
             z-index: 1;
         }
         .dial-container::after {
             content: '';
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: 
-                radial-gradient(ellipse at center, transparent 75%, rgba(57, 255, 20, 0.2) 76%, transparent 77%) 0 0 / 100% 100%,
-                repeating-conic-gradient(from 135deg, transparent 0deg 1deg, var(--neon-green) 1deg 1.5deg, transparent 1.5deg 3deg) no-repeat center center / 150% 150%;
+            top: 10px; left: 10px; right: 10px; bottom: 10px;
+            border-radius: 50%;
+            background: repeating-conic-gradient(from 0deg, var(--border-color-dark) 0deg 1.5deg, transparent 1.5deg 45deg);
+            mask-image: radial-gradient(transparent 50%, black 51%);
             z-index: 2;
-        }
-        .dial-container.mag::after {
-            background: 
-                radial-gradient(ellipse at center, transparent 75%, rgba(57, 255, 20, 0.2) 76%, transparent 77%) 0 0 / 100% 100%,
-                repeating-conic-gradient(from -45deg, transparent 0deg 1deg, var(--neon-green) 1deg 1.5deg, transparent 1.5deg 3deg) no-repeat center center / 150% 150%,
-                repeating-conic-gradient(from -45deg, transparent 0deg 2.5deg, var(--neon-green) 2.5deg 4.5deg, transparent 4.5deg 90deg) no-repeat center center / 150% 150%;
-            background-blend-mode: overlay, normal, normal;
-        }
-        .dial-container.detector::after {
-             background: 
-                radial-gradient(ellipse at center, transparent 75%, rgba(57, 255, 20, 0.2) 76%, transparent 77%) 0 0 / 100% 100%,
-                repeating-conic-gradient(from -60deg, transparent 0deg 1deg, var(--neon-green) 1deg 1.5deg, transparent 1.5deg 3deg) no-repeat center center / 150% 150%,
-                repeating-conic-gradient(from -60deg, transparent 0deg 2.5deg, var(--alert-red) 2.5deg 4.5deg, transparent 4.5deg 30deg) no-repeat center center / 150% 150%;
-            background-blend-mode: overlay, normal, normal;
         }
 
         .dial-needle {
             width: 3px;
             height: 40%;
-            background: var(--neon-green);
-            box-shadow: 0 0 8px var(--neon-green);
             position: absolute;
             bottom: 50%;
             left: 50%;
             transform-origin: bottom center;
-            transform: translateX(-50%) rotate(-45deg);
             transition: transform 0.5s cubic-bezier(0.2, 1.5, 0.5, 1);
             z-index: 10;
         }
+        /* Color de aguja específico */
+        #compass-needle {
+            background: var(--neon-green);
+            box-shadow: 0 0 8px var(--neon-green);
+            transform: translateX(-50%) rotate(0deg);
+        }
+        #main-needle {
+            background: var(--alert-red);
+            box-shadow: 0 0 8px var(--alert-red);
+            transform: translateX(-50%) rotate(-60deg);
+        }
+
         .dial-label {
             font-size: 0.65rem;
             color: var(--text-dim-grey);
@@ -386,9 +385,6 @@
         }
         #detector-dial-needle {
             height: 45%;
-            background: var(--alert-red);
-            box-shadow: 0 0 10px var(--alert-red);
-            transform: translateX(-50%) rotate(-60deg);
         }
         
         #temp-readout { text-align: center; z-index: 5; }
@@ -493,12 +489,11 @@
              position: relative;
              transition: all 0.3s;
         }
-        /* Colores de velocidad */
-        #knob-scan.speed-1 { border-color: var(--sensor-blue); }
+        #knob-scan.speed-1 { border-color: var(--sensor-blue); box-shadow: 0 0 10px var(--sensor-blue) inset; }
         #knob-scan.speed-1::before { color: var(--sensor-blue); text-shadow: 0 0 5px var(--sensor-blue); }
-        #knob-scan.speed-2 { border-color: var(--sim-orange); }
+        #knob-scan.speed-2 { border-color: var(--sim-orange); box-shadow: 0 0 10px var(--sim-orange) inset; }
         #knob-scan.speed-2::before { color: var(--sim-orange); text-shadow: 0 0 5px var(--sim-orange); }
-        #knob-scan.speed-3 { border-color: var(--alert-red); }
+        #knob-scan.speed-3 { border-color: var(--alert-red); box-shadow: 0 0 10px var(--alert-red) inset; }
         #knob-scan.speed-3::before { color: var(--alert-red); text-shadow: 0 0 5px var(--alert-red); }
 
 
@@ -738,16 +733,41 @@
             display: none;
             position: fixed;
             z-index: 999;
-            bottom: 20px;
-            right: 20px;
-            width: 80px;
-            height: 80px;
+            /* 📍 Posición PiP actualizada */
+            bottom: calc(var(--bottom-panel-height-vertical) + 20px);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px; /* Más grande */
+            height: 120px; /* Más grande */
             border-radius: 50%;
-            border: 2px solid var(--neon-green);
+            border: 3px solid var(--neon-green);
             box-shadow: 0 0 15px var(--neon-green);
             object-fit: cover;
-            transform: scale(1);
             animation: pulseGlow 1.5s infinite;
+        }
+
+        /* 📍 NUEVO: Contenedor "Síguenos" */
+        #follow-container {
+            position: absolute; /* Se pega al #main-view-area */
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%); 
+            z-index: 10;
+            pointer-events: none;
+            opacity: 1;
+            transition: opacity 0.5s ease-out;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            color: var(--neon-green);
+            text-shadow: 0 0 8px var(--neon-green);
+            display: none; /* Se activa con JS */
+        }
+        body.panels-active #follow-container {
+            bottom: 15px; /* Sube un poco cuando el panel está activo */
+            font-size: 1rem;
+        }
+        #follow-container.hiding {
+            opacity: 0;
         }
 
         /* --- CSS RESPONSIVE (Horizontal/Vertical) --- */
@@ -756,9 +776,13 @@
             #left-panel {
                 top: 0; left: 0;
                 width: 100vw;
-                height: calc(100vh - var(--bottom-panel-height-vertical)); /* Ajuste de altura */
-                transform: translateY(-100%);
-                padding: env(safe-area-inset-top) 0 0 0;
+                height: calc(100vh - var(--bottom-panel-height-vertical));
+                /* Animación de Burbuja */
+                clip-path: circle(0% at 50% 0%);
+                transition: clip-path 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            }
+            body.panels-active #left-panel {
+                clip-path: circle(150% at 50% 0%);
             }
             #left-panel .panel {
                 border-radius: 0; border-bottom: none;
@@ -768,9 +792,14 @@
             #bottom-panel {
                 bottom: 0; left: 0;
                 width: 100vw;
-                height: var(--bottom-panel-height-vertical); /* Panel inferior más grueso */
-                transform: translateY(100%);
+                height: var(--bottom-panel-height-vertical);
+                /* Animación de Burbuja */
+                clip-path: circle(0% at 50% 100%);
+                transition: clip-path 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
                 padding: 0 0 env(safe-area-inset-bottom) 0;
+            }
+             body.panels-active #bottom-panel {
+                clip-path: circle(150% at 50% 100%);
             }
             #bottom-panel .panel {
                 border-radius: 0; border-top: none;
@@ -786,6 +815,7 @@
                 height: 100%;
                 justify-content: center;
             }
+            /* 📍 Layout Vertical Panel Inferior */
             #bottom-panel .dials-grid {
                 grid-template-columns: 1fr 1fr;
             }
@@ -800,8 +830,14 @@
                  margin-bottom: 0;
             }
             #temp-val { font-size: 1.2rem; }
-            #panel-cam-stats { font-size: 0.9rem; }
-            #vu-meter-container { height: 100%; }
+            #vu-meter-container { height: 100px; }
+            #panel-cam-stats {
+                order: -1; /* Mover Rendimiento Arriba */
+                height: auto;
+                font-size: 0.8rem;
+                padding: 4px;
+            }
+            #panel-cam-stats span { font-size: 0.9rem; }
 
 
             body.panels-active #main-view-area {
@@ -823,8 +859,13 @@
                 height: 100vh;
                 top: 0;
                 left: 0;
-                transform: translateX(calc(var(--panel-width-landscape) * -1));
+                /* Animación de Burbuja */
+                clip-path: circle(0% at 0% 50%);
+                transition: clip-path 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
                 padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
+            }
+            body.panels-active #left-panel {
+                clip-path: circle(150% at 0% 50%);
             }
             #left-panel .panel {
                 border-radius: 0; border-right: none;
@@ -833,12 +874,17 @@
 
             #bottom-panel {
                 width: calc(100% - var(--panel-width-landscape));
-                height: var(--panel-height-landscape); /* Altura estándar en horizontal */
+                height: var(--panel-height-landscape); /* Altura estándar */
                 top: auto;
                 bottom: 0;
                 left: var(--panel-width-landscape);
-                transform: translateY(100%);
+                /* Animación de Burbuja */
+                clip-path: circle(0% at 50% 100%);
+                transition: clip-path 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
                 padding: 0 0 env(safe-area-inset-bottom) 0;
+            }
+            body.panels-active #bottom-panel {
+                clip-path: circle(150% at 50% 100%);
             }
              #bottom-panel .panel {
                 border-radius: 0; border-top: none;
@@ -897,6 +943,7 @@
         <video id="bg-camera-feed" playsinline autoplay muted></video>
         <canvas id="main-filter-canvas"></canvas>
         <div id="camera-frame"></div>
+        <div id="follow-container">@EXPLORACIONESOBR</div>
     </div>
     
     <canvas id="ai-canvas" class="hidden-canvas"></canvas>
@@ -985,15 +1032,24 @@
                 <div class="processing-line"></div>
             </div>
 
-            <div class="panel-section">
+            <div class="panel-section" id="section-performance">
+                <div class="section-title">Rendimiento</div>
+                <div id="panel-cam-stats">
+                    <span id="cam-fps-panel">--</span>
+                    <span>FPS</span>
+                    <span id="cam-res-panel">----p</span>
+                </div>
+            </div>
+
+            <div class="panel-section" id="section-field-readings">
                 <div class="section-title">Lecturas de Campo</div>
                 <div class="dials-grid">
                     <div id="mag-dial-container" class="dial-container mag">
-                        <div id="compass-needle" class="dial-needle" style="transform: translateX(-50%) rotate(0deg);"></div>
+                        <div id="compass-needle" class="dial-needle"></div>
                         <div class="dial-label">MAG</div>
                     </div>
                     <div id="detector-dial-container" class="dial-container detector">
-                        <div id="main-needle" class="dial-needle" style="transform: translateX(-50%) rotate(-60deg);"></div>
+                        <div id="main-needle" class="dial-needle"></div>
                         <div class="dial-label">DETECTOR</div>
                     </div>
                     <div id="temp-readout">
@@ -1003,19 +1059,10 @@
                 </div>
             </div>
             
-            <div class="panel-section">
+            <div class="panel-section" id="section-vu-meter">
                 <div class="section-title">Medidor de Sonido (VU)</div>
                 <div id="vu-meter-container">
                     <canvas id="vu-meter-canvas"></canvas>
-                </div>
-            </div>
-            
-            <div class="panel-section">
-                <div class="section-title">Rendimiento</div>
-                <div id="panel-cam-stats">
-                    <span id="cam-fps-panel">--</span>
-                    <span>FPS</span>
-                    <span id="cam-res-panel">----p</span>
                 </div>
             </div>
 
@@ -1162,7 +1209,9 @@
                 
                 videoBg.srcObject = stream;
                 if (pipVideo) {
-                    pipVideo.srcObject = await navigator.mediaDevices.getUserMedia(constraints);
+                    // Crea un stream separado para el PiP para evitar conflictos
+                    const pipStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    pipVideo.srcObject = pipStream;
                     pipVideo.muted = true;
                     pipVideo.play();
                 }
@@ -1777,7 +1826,8 @@
                 knob.classList.add('speed-3');
             }
             
-            knob.querySelector('.knob-indicator').style.transform = `translateX(-50%) rotate(${rotation}deg)`;
+            // 📍 El knob-indicator ya no existe, el estilo se aplica al botón mismo
+            // this.querySelector('.knob-indicator').style.transform = `translateX(-50%) rotate(${rotation}deg)`;
             console.log("Velocidad de Scan:", ["LENTO", "NORMAL", "RAPIDO"][scanSpeed]);
         });
 
@@ -1852,6 +1902,26 @@
             }
         }
 
+        // 📍 Lógica de Voz Mejorada
+        let preferredVoice = null;
+        function loadVoices() {
+            let voices = window.speechSynthesis.getVoices();
+            if (voices.length > 0) {
+                preferredVoice = voices.find(v => v.lang === 'es-MX');
+                if (!preferredVoice) preferredVoice = voices.find(v => v.lang === 'es-ES');
+                if (!preferredVoice) preferredVoice = voices.find(v => v.lang.startsWith('es-'));
+                console.log("Voz seleccionada:", preferredVoice ? preferredVoice.name : "Ninguna (usará default)");
+            } else {
+                console.warn("No se cargaron voces.");
+            }
+        }
+        
+        // Carga voces al inicio y si cambian
+        loadVoices();
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+        }
+
         function speak(text) {
             if (!text || isSpeaking) return;
             
@@ -1878,7 +1948,11 @@
 
                 const word = words[wordIndex];
                 const u = new SpeechSynthesisUtterance(word);
-                u.lang = 'es-MX';
+                
+                if (preferredVoice) {
+                    u.voice = preferredVoice;
+                }
+                u.lang = preferredVoice ? preferredVoice.lang : 'es-MX';
                 u.volume = 1.0;
                 u.pitch = 0.1 + Math.random() * 0.7; 
                 u.rate = 0.9 + Math.random() * 0.4; 
@@ -2143,10 +2217,12 @@
         
         const filterControls = document.getElementById('filter-controls-container');
         const logoImage = document.getElementById('logo-image');
+        const followContainer = document.getElementById('follow-container');
         
         function showControls() {
             filterControls.style.opacity = '1';
             logoImage.classList.add('hiding'); 
+            followContainer.classList.add('hiding');
             filterControls.style.pointerEvents = 'auto';
             clearTimeout(uiHideTimeout);
             uiHideTimeout = setTimeout(hideControls, 4000); 
@@ -2157,6 +2233,7 @@
             filterControls.style.opacity = '0';
             logoImage.classList.remove('hiding'); 
             logoImage.classList.add('visible'); 
+            followContainer.classList.remove('hiding');
             filterControls.style.pointerEvents = 'none';
             uiVisible = false;
         }
@@ -2195,6 +2272,17 @@
                 setTimeout(resizeVuCanvas, 500);
             }
             setTimeout(resizeAllCanvas, 500); 
+        }
+
+        function runFollowAnimation() {
+            if (uiVisible || !followContainer) return; 
+            followContainer.style.display = 'block';
+            followContainer.style.opacity = '1';
+            
+            setTimeout(() => {
+                if (uiVisible) return; // No ocultar si los controles están visibles
+                followContainer.classList.add('hiding');
+            }, 4000);
         }
 
         const appUI = document.getElementById('app-ui');
@@ -2256,6 +2344,7 @@
             detectPoseLoop(); 
             
             setInterval(updateSensorReadings, 2000); 
+            setInterval(runFollowAnimation, 30000); // Activa el "Síguenos"
             
             document.body.classList.remove('panels-active');
             document.getElementById('btn-panel').classList.remove('active');
@@ -2263,7 +2352,7 @@
             
             hideControls();
             
-            loadSheetData(); // Esta función ahora llama a requestAllPermissions al final
+            loadSheetData(); 
         };
         
         window.onresize = () => {
