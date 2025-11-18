@@ -26,8 +26,8 @@
             --alert-red: #FF3333;
             --sim-orange: #FFB000;
             --sensor-blue: #00BFFF; 
-            --panel-bg-dark: #1A1A1A; /* Más oscuro para militar */
-            --border-color-dark: rgba(57, 255, 20, 0.4); /* Borde más sutil */
+            --panel-bg-dark: #1A1A1A;
+            --border-color-dark: rgba(57, 255, 20, 0.4);
             --text-color-light: #E0E0E0; 
             --text-dim-grey: #777;
             --panel-width-landscape: 300px;
@@ -79,9 +79,9 @@
             filter: none;
         }
         
-        /* Filtros CSS (Alto Rendimiento) */
-        body.filter-night-vision #bg-camera-feed {
-            filter: brightness(1.7) contrast(2.5) grayscale(1) sepia(0.3) hue-rotate(90deg);
+        /* 📍 NUEVO: Filtro Térmico (TRM) */
+        body.filter-thermal #bg-camera-feed {
+            filter: grayscale(1) contrast(2.5) sepia(1) hue-rotate(-120deg) brightness(1.1);
         }
         body.filter-negative #bg-camera-feed {
             filter: invert(1) contrast(1.1);
@@ -114,7 +114,7 @@
             pointer-events: none; 
             transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             box-sizing: border-box; 
-            overflow: hidden; /* Elimina barras deslizadoras */
+            overflow: hidden;
         }
         
         body.panels-active #left-panel,
@@ -123,7 +123,6 @@
             pointer-events: auto;
         }
         
-        /* 📍 NUEVO: Marco de Cámara cuando paneles activos */
         #camera-frame {
             position: fixed;
             top: 0;
@@ -135,7 +134,7 @@
             pointer-events: none;
             z-index: 10;
             transition: border-color 0.3s ease-in-out;
-            animation: none; /* Se activa con body.panels-active */
+            animation: none;
             opacity: 0;
         }
         
@@ -150,7 +149,6 @@
             100% { border-color: rgba(57, 255, 20, 0.8); box-shadow: 0 0 15px rgba(57, 255, 20, 0.5); }
         }
         
-        /* 📍 NUEVO: Líneas de procesamiento animadas */
         #processing-lines {
             position: absolute;
             top: 0;
@@ -190,8 +188,6 @@
             100% { transform: translateY(100vh); opacity: 0; }
         }
 
-
-        /* 📍 DISEÑO MILITAR */
         .panel {
             background-color: var(--panel-bg-dark); 
             background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgMTAwIDEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzFhMWExYSIvPjxwYXRoIGQ9Ik0wIDUwSDEwMFYxMEgwWiIgZmlsbD0iI0EwQTBBMCIgb3BhY2l0eT0iMC4wMiIvPjxwYXRoIGQ9Ik0wIDkwSDEwMFY1MEgwWiIgZmlsbD0iIzEwMTAxMCIgb3BhY2l0eT0iMC4wMyIvPjxwYXRoIGQ9Ik0wIDEwMEgxMFYwSDBaIiBmaWxsPSIjRkZGRkZGIiBvcGFjaXR5PSIwLjAxIi8+PC9zdmc+'); /* Textura de carbono sutil */
@@ -202,10 +198,10 @@
             padding: 8px; 
             pointer-events: auto;
             flex-grow: 1;
-            overflow: hidden; /* Asegura que no haya scrollbar */
+            overflow: hidden;
             gap: 8px; 
-            border-radius: 0; /* Sin bordes redondeados */
-            position: relative; /* Para las líneas de procesamiento */
+            border-radius: 0;
+            position: relative;
         }
         
         .panel.alert {
@@ -235,7 +231,7 @@
             padding: 8px; 
             flex-shrink: 0;
             flex-grow: 0;
-            z-index: 2; /* Encima de las líneas */
+            z-index: 2;
         }
         
         .section-title {
@@ -245,10 +241,10 @@
             text-transform: uppercase;
             margin-bottom: 8px; 
             text-align: center;
-            border-bottom: 1px dashed var(--border-color-dark); /* Línea punteada */
+            border-bottom: 1px dashed var(--border-color-dark);
             padding-bottom: 4px; 
             letter-spacing: 1px;
-            color: var(--sim-orange); /* Color de título más distintivo */
+            color: var(--sim-orange);
         }
         
         .panel-button-torch {
@@ -697,8 +693,6 @@
         }
         @keyframes loading-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-        /* Contenedor de "Follow" ELIMINADO */
-
         /* --- CSS RESPONSIVE (Horizontal/Vertical) --- */
         
         @media (max-aspect-ratio: 1/1) {
@@ -711,7 +705,7 @@
             }
             #left-panel .panel {
                 border-radius: 0; border-bottom: none;
-                overflow-y: auto; /* Permite scroll solo en vertical */
+                overflow-y: auto;
             }
             
             #bottom-panel {
@@ -734,7 +728,6 @@
                 height: 100%;
                 justify-content: center;
             }
-            /* En vertical, los diales deben ser más pequeños */
             .dial-container {
                  width: 60px;
                  height: 60px;
@@ -767,7 +760,7 @@
             }
             #left-panel .panel {
                 border-radius: 0; border-right: none;
-                overflow-y: auto; /* Permite scroll si el contenido crece */
+                overflow-y: auto;
             }
 
             #bottom-panel {
@@ -800,7 +793,6 @@
                 height: calc(100% - var(--panel-height-landscape));
             }
             
-            /* Marco de cámara para landscape */
             body.panels-active #camera-frame {
                 left: var(--panel-width-landscape);
                 top: 0;
@@ -826,7 +818,8 @@
     <div id="main-view-area" onclick="handleUITap(event)">
         <video id="bg-camera-feed" playsinline autoplay muted></video>
         <canvas id="main-filter-canvas"></canvas>
-        <div id="camera-frame"></div> </div>
+        <div id="camera-frame"></div>
+    </div>
     
     <canvas id="ai-canvas" class="hidden-canvas"></canvas>
 
@@ -837,10 +830,11 @@
     </div>
 
     <div id="kinect-banner">KINEC ACTIVO <span class="led-red">🔴</span></div>
-    
+
     <div id="left-panel">
         <div class="panel" id="p-unified">
-            <div id="processing-lines"> <div class="processing-line"></div>
+            <div id="processing-lines">
+                <div class="processing-line"></div>
                 <div class="processing-line"></div>
                 <div class="processing-line"></div>
                 <div class="processing-line"></div>
@@ -898,7 +892,8 @@
 
                     <div class="knob-container">
                         <div class="knob-circle" id="knob-scan">
-                            <div class="knob-indicator" style="transform: rotate(0deg);"></div> </div>
+                            <div class="knob-indicator" style="transform: rotate(0deg);"></div>
+                        </div>
                         <div class="knob-label">FRECUENCIA</div>
                     </div>
                     
@@ -919,7 +914,8 @@
 
     <div id="bottom-panel">
         <div class="panel" id="p-bottom">
-            <div id="processing-lines"> <div class="processing-line"></div>
+            <div id="processing-lines">
+                <div class="processing-line"></div>
                 <div class="processing-line"></div>
             </div>
             <div class="panel-section">
@@ -952,7 +948,7 @@
 
 
     <div id="filter-controls-container">
-        <button class="filter-btn" onclick="setFilter('night-vision')">VNO</button>
+        <button class="filter-btn" onclick="setFilter('thermal')">TRM</button>
         <button class="filter-btn" onclick="setFilter('sls')">SLS</button>
         <button class="filter-btn" onclick="setFilter('negative')">NEG</button>
         <button class="filter-btn" id="btn-panel" onclick="togglePanels()">PAN</button>
@@ -1318,6 +1314,7 @@
             });
         }
         
+        // 📍 Lógica de Filtro actualizada
         function setFilter(f) {
             document.querySelectorAll('.filter-btn').forEach(b => {
                 if (b.id !== 'btn-panel') {
@@ -1325,7 +1322,8 @@
                 }
             });
             
-            document.body.classList.remove('filter-night-vision', 'filter-sls', 'filter-negative');
+            // 📍 Limpia filtros anteriores
+            document.body.classList.remove('filter-thermal', 'filter-sls', 'filter-negative');
             mainFilterCanvas.style.display = 'none';
 
             if (currentFilter === f) {
