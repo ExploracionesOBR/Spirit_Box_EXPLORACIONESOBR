@@ -26,10 +26,10 @@
             --alert-red: #FF3333;
             --sim-orange: #FFB000;
             --sensor-blue: #00BFFF; 
-            --panel-bg: #0A0F0A;
-            --border-color: rgba(57, 255, 20, 0.3);
-            --text-color: #E0E0E0; 
-            --text-dim: #777;
+            --panel-bg-dark: #1A1A1A; /* Más oscuro para militar */
+            --border-color-dark: rgba(57, 255, 20, 0.4); /* Borde más sutil */
+            --text-color-light: #E0E0E0; 
+            --text-dim-grey: #777;
             --panel-width-landscape: 300px;
             --panel-height-landscape: 160px;
         }
@@ -37,7 +37,7 @@
         body {
             font-family: 'Share Tech Mono', monospace;
             background-color: #000;
-            color: var(--text-color);
+            color: var(--text-color-light);
             overflow: hidden;
             width: 100vw;
             height: 100vh;
@@ -106,7 +106,7 @@
         .hidden-canvas { display: none; }
         .hidden { display: none !important; }
 
-        #left-panel {
+        #left-panel, #bottom-panel {
             position: fixed;
             display: flex;
             flex-direction: column;
@@ -114,159 +114,206 @@
             pointer-events: none; 
             transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             box-sizing: border-box; 
+            overflow: hidden; /* Elimina barras deslizadoras */
         }
-
-        #bottom-panel {
-            position: fixed;
-            display: flex;
-            flex-direction: column;
-            z-index: 19;
-            pointer-events: none; 
-            transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            box-sizing: border-box;
-        }
-
+        
         body.panels-active #left-panel,
         body.panels-active #bottom-panel {
             transform: translateX(0) translateY(0);
             pointer-events: auto;
         }
+        
+        /* 📍 NUEVO: Marco de Cámara cuando paneles activos */
+        #camera-frame {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+            border: 4px solid transparent;
+            pointer-events: none;
+            z-index: 10;
+            transition: border-color 0.3s ease-in-out;
+            animation: none; /* Se activa con body.panels-active */
+            opacity: 0;
+        }
+        
+        body.panels-active #camera-frame {
+            opacity: 1;
+            border-color: var(--neon-green);
+            animation: cameraFrameGlow 2s infinite alternate;
+        }
 
-        /* 📍 CORRECCIÓN: Fondo de Panel (Ruido CSS) */
+        @keyframes cameraFrameGlow {
+            0% { border-color: rgba(57, 255, 20, 0.4); box-shadow: 0 0 5px rgba(57, 255, 20, 0.2); }
+            100% { border-color: rgba(57, 255, 20, 0.8); box-shadow: 0 0 15px rgba(57, 255, 20, 0.5); }
+        }
+        
+        /* 📍 NUEVO: Líneas de procesamiento animadas */
+        #processing-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        
+        body.panels-active #processing-lines {
+            opacity: 1;
+        }
+
+        .processing-line {
+            position: absolute;
+            background: var(--neon-green);
+            box-shadow: 0 0 5px var(--neon-green), 0 0 10px var(--neon-green);
+            width: 2px;
+            height: 100px;
+            opacity: 0.5;
+            animation: scan 4s linear infinite;
+        }
+        .processing-line:nth-child(1) { left: 10%; animation-duration: 4s; animation-delay: 0s; }
+        .processing-line:nth-child(2) { left: 30%; animation-duration: 3.5s; animation-delay: -1s; }
+        .processing-line:nth-child(3) { left: 50%; animation-duration: 4.5s; animation-delay: -2s; }
+        .processing-line:nth-child(4) { left: 70%; animation-duration: 3s; animation-delay: -3s; }
+        .processing-line:nth-child(5) { left: 90%; animation-duration: 4s; animation-delay: -4s; }
+
+        @keyframes scan {
+            0% { transform: translateY(-100px); opacity: 0; }
+            20% { opacity: 0.5; }
+            80% { opacity: 0.5; }
+            100% { transform: translateY(100vh); opacity: 0; }
+        }
+
+
+        /* 📍 DISEÑO MILITAR */
         .panel {
-            background-color: #0c0c0c; /* Un fondo oscuro sólido */
-            /* Reemplazo de la imagen rota por un ruido CSS */
-            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 2px 2px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 0 10px rgba(57, 255, 20, 0.2) inset;
+            background-color: var(--panel-bg-dark); 
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgMTAwIDEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzFhMWExYSIvPjxwYXRoIGQ9Ik0wIDUwSDEwMFYxMEgwWiIgZmlsbD0iI0EwQTBBMCIgb3BhY2l0eT0iMC4wMiIvPjxwYXRoIGQ9Ik0wIDkwSDEwMFY1MEgwWiIgZmlsbD0iIzEwMTAxMCIgb3BhY2l0eT0iMC4wMyIvPjxwYXRoIGQ9Ik0wIDEwMEgxMFYwSDBaIiBmaWxsPSIjRkZGRkZGIiBvcGFjaXR5PSIwLjAxIi8+PC9zdmc+'); /* Textura de carbono sutil */
+            border: 2px solid var(--border-color-dark);
+            box-shadow: 0 0 15px rgba(57, 255, 20, 0.2) inset, 0 0 5px rgba(0,0,0,0.8);
             display: flex;
             flex-direction: column;
-            padding: 6px; 
+            padding: 8px; 
             pointer-events: auto;
             flex-grow: 1;
-            overflow-y: auto;
-            gap: 6px; 
+            overflow: hidden; /* Asegura que no haya scrollbar */
+            gap: 8px; 
+            border-radius: 0; /* Sin bordes redondeados */
+            position: relative; /* Para las líneas de procesamiento */
         }
         
         .panel.alert {
             border-color: var(--alert-red);
-            box-shadow: 0 0 15px var(--alert-red) inset;
+            box-shadow: 0 0 20px var(--alert-red) inset, 0 0 8px var(--alert-red);
         }
 
         .panel-header-main {
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
             text-align: center;
             color: var(--neon-green);
-            text-shadow: 0 0 5px var(--neon-green);
-            border: 1px solid var(--border-color);
-            padding: 4px 0;
-            border-radius: 4px;
-            background: rgba(57, 255, 20, 0.05);
-            letter-spacing: 1px;
+            text-shadow: 0 0 8px var(--neon-green);
+            border: 1px solid var(--border-color-dark);
+            padding: 6px 0;
+            background: rgba(57, 255, 20, 0.08);
+            letter-spacing: 2px;
             flex-shrink: 0;
+            text-transform: uppercase;
         }
         
         .panel-section {
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            padding: 6px; 
-            background: rgba(0, 0, 0, 0.4); 
+            border: 1px solid var(--border-color-dark);
+            background: rgba(0, 0, 0, 0.6); 
             display: flex;
             flex-direction: column;
+            padding: 8px; 
+            flex-shrink: 0;
+            flex-grow: 0;
+            z-index: 2; /* Encima de las líneas */
         }
         
         .section-title {
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.6rem;
-            color: var(--text-color); 
+            font-size: 0.7rem;
+            color: var(--text-color-light); 
             text-transform: uppercase;
-            margin-bottom: 6px; 
+            margin-bottom: 8px; 
             text-align: center;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 3px; 
+            border-bottom: 1px dashed var(--border-color-dark); /* Línea punteada */
+            padding-bottom: 4px; 
+            letter-spacing: 1px;
+            color: var(--sim-orange); /* Color de título más distintivo */
         }
         
         .panel-button-torch {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 12px;
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             background: rgba(0, 50, 50, 0.7);
             border: 2px solid var(--neon-green);
             color: var(--neon-green);
-            border-radius: 4px;
-            box-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
+            box-shadow: 0 0 12px rgba(57, 255, 20, 0.5);
             transition: all 0.2s;
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             text-transform: uppercase;
             cursor: pointer;
+            letter-spacing: 1.5px;
         }
         .panel-button-torch svg {
-            width: 20px; height: 20px;
+            width: 24px; height: 24px;
             fill: currentColor;
             flex-shrink: 0;
         }
         .panel-button-torch:active, .panel-button-torch.active {
             background: var(--neon-green);
             color: #000;
-            box-shadow: 0 0 20px #fff;
+            box-shadow: 0 0 25px #fff;
         }
 
         .sensor-status-grid {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 5px;
+            gap: 8px;
             text-align: center;
         }
         .status-light-group {
             display: flex;
             flex-direction: column;
             align-items: center;
-            font-size: 0.6rem;
+            font-size: 0.65rem;
+            text-transform: uppercase;
         }
         .status-light-group .emoji {
-            font-size: 1.2rem;
+            font-size: 1.4rem;
             line-height: 1;
+            margin-bottom: 2px;
         }
         .status-led-indicator {
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
             background-color: #222;
             border: 1px solid #444;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
             transition: all 0.3s;
         }
-        .status-light-group[data-status="connected"] .status-led-indicator {
-            background-color: var(--neon-green);
-            box-shadow: 0 0 8px var(--neon-green);
-            animation: pulseGlow 1.5s infinite;
-        }
-        .status-light-group[data-status="fallback"] .status-led-indicator {
-            background-color: var(--sensor-blue);
-            box-shadow: 0 0 8px var(--sensor-blue);
-            animation: pulseGlow 1.5s infinite;
-        }
-        .status-light-group[data-status="simulated"] .status-led-indicator {
-            background-color: var(--sim-orange);
-            box-shadow: 0 0 8px var(--sim-orange);
-            animation: pulseGlow 2s infinite;
-        }
-        .status-light-group[data-status="unavailable"] .status-led-indicator {
-            background-color: var(--alert-red);
-            box-shadow: 0 0 8px var(--alert-red);
-        }
-        .status-light-group[data-status="off"] .status-led-indicator {
-            background-color: #333;
-        }
+        .status-light-group[data-status="connected"] .status-led-indicator { background-color: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); animation: pulseGlow 1.5s infinite; }
+        .status-light-group[data-status="fallback"] .status-led-indicator { background-color: var(--sensor-blue); box-shadow: 0 0 10px var(--sensor-blue); animation: pulseGlow 1.5s infinite; }
+        .status-light-group[data-status="simulated"] .status-led-indicator { background-color: var(--sim-orange); box-shadow: 0 0 10px var(--sim-orange); animation: pulseGlow 2s infinite; }
+        .status-light-group[data-status="unavailable"] .status-led-indicator { background-color: var(--alert-red); box-shadow: 0 0 10px var(--alert-red); }
+        .status-light-group[data-status="off"] .status-led-indicator { background-color: #333; }
         
-        .status-light-group span { color: var(--text-dim); }
+        .status-light-group span { color: var(--text-dim-grey); }
         .status-light-group[data-status="connected"] span { color: var(--neon-green); }
         .status-light-group[data-status="fallback"] span { color: var(--sensor-blue); }
         .status-light-group[data-status="simulated"] span { color: var(--sim-orange); }
@@ -275,38 +322,35 @@
         .dials-grid {
             display: grid;
             grid-template-columns: 1fr 1.5fr 1fr;
-            gap: 10px;
+            gap: 12px;
             align-items: center;
             justify-items: center;
-            padding: 5px 0; 
+            padding: 6px 0; 
         }
         
-        /* Diseño de Dial/Medidor */
         .dial-container {
             position: relative;
-            width: 70px;
-            height: 70px;
+            width: 75px;
+            height: 75px;
             background: #000;
             border-radius: 50%;
-            border: 2px solid var(--border-color);
-            box-shadow: 0 0 5px rgba(57, 255, 20, 0.3) inset, 0 0 5px #000;
+            border: 2px solid var(--border-color-dark);
+            box-shadow: 0 0 8px rgba(57, 255, 20, 0.3) inset, 0 0 5px #000;
         }
-        /* Marcas del medidor */
         .dial-container::before {
             content: '';
             position: absolute;
-            top: 5px; left: 5px; right: 5px; bottom: 5px;
+            top: 6px; left: 6px; right: 6px; bottom: 6px;
             border-radius: 50%;
             background: conic-gradient(
                 var(--neon-green) 0deg 5deg, transparent 5deg 15deg,
-                var(--text-dim) 15deg 18deg, transparent 18deg 60deg,
-                var(--text-dim) 60deg 63deg, transparent 63deg 105deg,
+                var(--text-dim-grey) 15deg 18deg, transparent 18deg 60deg,
+                var(--text-dim-grey) 60deg 63deg, transparent 63deg 105deg,
                 var(--alert-red) 105deg 110deg, transparent 110deg 250deg,
                 var(--neon-green) 250deg 255deg, transparent 255deg 360deg
             );
             mask-image: radial-gradient(transparent 65%, black 66%);
         }
-        /* Brillo de cristal */
         .dial-container::after {
             content: '';
             position: absolute;
@@ -319,10 +363,10 @@
         }
 
         .dial-needle {
-            width: 2px;
+            width: 3px;
             height: 40%;
             background: var(--neon-green);
-            box-shadow: 0 0 5px var(--neon-green);
+            box-shadow: 0 0 8px var(--neon-green);
             position: absolute;
             bottom: 50%;
             left: 50%;
@@ -332,51 +376,55 @@
             z-index: 10;
         }
         .dial-label {
-            font-size: 0.6rem;
-            color: var(--text-dim);
-            margin-top: 4px;
+            font-size: 0.65rem;
+            color: var(--text-dim-grey);
+            margin-top: 5px;
             text-align: center;
+            text-transform: uppercase;
         }
         
         #detector-dial-container {
-            width: 90px;
-            height: 90px;
+            width: 95px;
+            height: 95px;
         }
         #detector-dial-needle {
             height: 45%;
             background: var(--alert-red);
-            box-shadow: 0 0 8px var(--alert-red);
+            box-shadow: 0 0 10px var(--alert-red);
             transform: translateX(-50%) rotate(-60deg);
         }
         
         #temp-readout { text-align: center; z-index: 5; }
         #temp-val {
-            font-size: 1.5rem;
+            font-size: 1.6rem;
             font-family: 'Orbitron', sans-serif;
             color: var(--neon-green);
-            line-height: 1;
+            line-height: 1.1;
+            text-shadow: 0 0 5px var(--neon-green);
         }
         .temp-label {
-            font-size: 0.6rem;
-            color: var(--text-dim);
+            font-size: 0.65rem;
+            color: var(--text-dim-grey);
+            text-transform: uppercase;
         }
         
         #panel-cam-stats {
             font-family: 'Orbitron', sans-serif;
-            font-size: 1.0rem;
+            font-size: 1.1rem;
             font-weight: 700;
             color: var(--neon-green);
-            text-shadow: 0 0 3px var(--neon-green);
-            padding: 5px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 3px;
+            text-shadow: 0 0 5px var(--neon-green);
+            padding: 6px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--border-color-dark);
             text-align: center;
+            letter-spacing: 1px;
         }
 
         .spirit-box-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            gap: 12px;
             align-items: center;
         }
         .knob-container {
@@ -385,61 +433,58 @@
             align-items: center;
         }
         .knob-label {
-            font-size: 0.6rem;
-            color: var(--text-dim);
-            margin-top: 4px;
+            font-size: 0.65rem;
+            color: var(--text-dim-grey);
+            margin-top: 6px;
+            text-transform: uppercase;
         }
         
-        /* Diseño de Knob (Frecuencia) */
         .knob-circle {
-            width: 55px;
-            height: 55px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
-            border: 2px solid var(--border-color);
+            border: 2px solid var(--border-color-dark);
             position: relative;
             cursor: pointer;
             background: #111;
-            box-shadow: 0 3px 5px #000, 0 0 5px rgba(57, 255, 20, 0.3) inset;
+            box-shadow: 0 4px 6px #000, 0 0 8px rgba(57, 255, 20, 0.3) inset;
             transition: all 0.3s;
         }
-        .knob-circle::before { /* Sombra interna */
+        .knob-circle::before { 
              content: '';
-             position: absolute; top: 2px; left: 2px; right: 2px; bottom: 2px;
+             position: absolute; top: 3px; left: 3px; right: 3px; bottom: 3px;
              border-radius: 50%;
              background: radial-gradient(circle, #222, #000);
         }
         .knob-indicator {
             position: absolute;
-            top: 6px;
+            top: 8px;
             left: 50%;
-            width: 3px;
-            height: 15px;
+            width: 4px;
+            height: 18px;
             background: var(--neon-green);
             transform: translateX(-50%);
             border-radius: 2px;
-            box-shadow: 0 0 5px var(--neon-green);
+            box-shadow: 0 0 8px var(--neon-green);
             z-index: 5;
-            /* Diseño de puntero */
             clip-path: polygon(0 0, 100% 0, 100% 70%, 50% 100%, 0 70%);
-            transition: transform 0.3s ease; /* Transición suave */
+            transition: transform 0.3s ease; 
         }
 
-        /* Diseño de Switch (Encender) */
         .switch-container {
             display: flex;
             flex-direction: column;
             align-items: center;
-            width: 55px; /* Mismo ancho que el knob */
+            width: 60px; 
         }
         .switch {
             position: relative;
             display: inline-block;
-            width: 30px;
-            height: 55px;
+            width: 35px;
+            height: 60px;
             background: #111;
-            border: 2px solid var(--border-color);
-            border-radius: 4px;
-            box-shadow: 0 3px 5px #000, 0 0 5px rgba(57, 255, 20, 0.3) inset;
+            border: 2px solid var(--border-color-dark);
+            box-shadow: 0 4px 6px #000, 0 0 8px rgba(57, 255, 20, 0.3) inset;
         }
         .switch input { display: none; }
         .slider {
@@ -452,30 +497,29 @@
         .slider:before {
             position: absolute;
             content: "";
-            height: 22px;
-            width: 22px;
-            left: 2px;
+            height: 25px;
+            width: 25px;
+            left: 3px;
             bottom: 3px;
             background-color: var(--alert-red);
-            box-shadow: 0 0 8px var(--alert-red);
+            box-shadow: 0 0 10px var(--alert-red);
             border: 1px solid #333;
-            border-radius: 3px;
             transition: .4s;
         }
         input:checked + .slider:before {
-            transform: translateY(-25px);
+            transform: translateY(-28px);
             background-color: var(--neon-green);
-            box-shadow: 0 0 8px var(--neon-green);
+            box-shadow: 0 0 10px var(--neon-green);
         }
 
 
         #activity-graph-container {
             width: 100%;
-            height: 55px;
+            height: 60px;
             background: #000;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
+            border: 1px solid var(--border-color-dark);
             overflow: hidden;
+            grid-column: span 2;
         }
         #energy-canvas {
             width: 100%;
@@ -485,42 +529,43 @@
         .volume-control-group {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             width: 100%;
             grid-column: 1 / -1;
         }
         .vol-label {
-            font-size: 0.6rem;
-            color: var(--text-dim);
+            font-size: 0.65rem;
+            color: var(--text-dim-grey);
             white-space: nowrap;
+            text-transform: uppercase;
         }
         #vol-percent {
-            font-size: 0.6rem;
+            font-size: 0.65rem;
             color: var(--neon-green);
-            width: 30px;
+            width: 35px;
+            text-align: right;
         }
 
         input[type=range] {
-            flex-grow: 1; -webkit-appearance: none; height: 15px; 
-            background: #111; border: 1px solid var(--border-color);
-            border-radius: 10px; overflow: hidden;
+            flex-grow: 1; -webkit-appearance: none; height: 18px; 
+            background: #111; border: 1px solid var(--border-color-dark);
+            border-radius: 2px; overflow: hidden;
         }
         input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 25px; height: 25px;
+            -webkit-appearance: none; width: 30px; height: 30px;
             background: #444; border: 1px solid #666;
-            border-radius: 50%;
+            border-radius: 0; /* Cuadrado */
             box-shadow: -100vw 0 0 100vw var(--neon-green);
             cursor: pointer;
         }
         
-        /* Medidor VU (Sonido) */
         #vu-meter-container {
             width: 100%;
-            height: 40px;
+            height: 45px;
             background: #000;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            padding: 3px;
+            border: 1px solid var(--border-color-dark);
+            padding: 4px;
+            overflow: hidden;
         }
         #vu-meter-canvas {
             width: 100%;
@@ -539,25 +584,24 @@
 
         #logo-image {
             top: 20px; right: 20px;
-            width: 60px; height: 60px;
+            width: 70px; height: 70px;
             animation: logo-effects 7s infinite linear; 
         }
 
-        /* STATS FLOTANTES */
         #floating-cam-stats {
             bottom: 15px; right: 15px;
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             font-weight: 700;
             color: var(--neon-green);
-            text-shadow: 0 0 3px var(--neon-green), 0 0 5px #000;
-            padding: 2px 5px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 3px;
-            display: none; /* Oculto por defecto */
+            text-shadow: 0 0 4px var(--neon-green), 0 0 6px #000;
+            padding: 3px 6px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--border-color-dark);
+            display: none; 
+            letter-spacing: 0.5px;
         }
         
-        /* Mostrar stats flotantes SÓLO si el panel NO está activo */
         body:not(.panels-active) #floating-cam-stats {
             display: block;
         }
@@ -567,7 +611,7 @@
             transform: scale(1); opacity: 1;
             animation: popIn 0.3s ease-out forwards, logo-effects 7s infinite linear 0.3s;
         }
-        #logo-image.hiding, #floating-cam-stats.hiding {
+        #logo-image.hiding {
             animation: waterDrop 0.5s ease-out forwards;
         }
 
@@ -576,17 +620,18 @@
         @keyframes waterDrop { 0% { opacity: 1; transform: scale(1); filter: blur(0); } 100% { opacity: 0; transform: scale(2.5); filter: blur(5px); } }
         
         #kinect-banner {
-            position: fixed; top: 20px; left: 50%;
+            position: fixed; top: 25px; left: 50%;
             transform: translateX(-50%);
             z-index: 100; font-family: 'Orbitron', sans-serif;
-            font-size: 1.0rem; font-weight: 700;
+            font-size: 1.1rem; font-weight: 700;
             color: var(--neon-green);
-            text-shadow: 0 0 5px var(--neon-green), 0 0 10px #000;
+            text-shadow: 0 0 8px var(--neon-green), 0 0 12px #000;
             display: none; pointer-events: none;
+            letter-spacing: 1px;
         }
         #kinect-banner .led-red {
             animation: pulseGlow 1.5s infinite ease-in-out;
-            text-shadow: 0 0 8px var(--alert-red), 0 0 10px #000;
+            text-shadow: 0 0 10px var(--alert-red), 0 0 12px #000;
         }
 
         @keyframes pulseGlow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1.0; } }
@@ -595,13 +640,13 @@
             position: fixed; top: 50%; right: 15px;
             transform: translateY(-50%);
             display: flex; flex-direction: column;
-            gap: 10px; z-index: 100;
+            gap: 12px; z-index: 100;
             pointer-events: auto; opacity: 1;
             transition: opacity 0.5s ease-in-out, top 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
         .filter-btn {
-            width: 50px; height: 50px;
-            border-radius: 50%;
+            width: 55px; height: 55px;
+            border-radius: 0;
             background: rgba(0, 50, 50, 0.7);
             border: 2px solid var(--neon-green);
             color: var(--neon-green);
@@ -652,41 +697,7 @@
         }
         @keyframes loading-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-        #follow-container {
-            position: fixed; bottom: 80px; left: 50%;
-            transform: translateX(-50%); 
-            z-index: 200; pointer-events: none;
-            opacity: 1; width: 100%;
-            transition: opacity 0.5s ease-out;
-        }
-        #follow-container.hiding {
-            animation: waterDrop 0.5s ease-out forwards;
-        }
-        .follow-step {
-            display: none; 
-            color: var(--neon-green);
-            font-size: 1.5rem;
-            font-family: 'Orbitron', sans-serif;
-            text-shadow: 0 0 10px var(--neon-green);
-            text-align: center; opacity: 0;
-        }
-        #follow-icons {
-            display: none; align-items: center;
-            justify-content: center;
-        }
-        #follow-icons svg {
-            width: 50px; height: 50px;
-            margin: 0 15px;
-            fill: var(--neon-green);
-            filter: drop-shadow(0 0 5px var(--neon-green));
-        }
-        
-        .fade-in { animation: fadeIn 1s ease-out forwards; }
-        .fade-out { animation: fadeOut 1s ease-out forwards; }
-        .water-drop { animation: waterDrop 0.5s ease-out forwards; }
-        
-        @keyframes fadeIn { 0% { opacity: 0; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
-        @keyframes fadeOut { 0% { opacity: 1; } 100% { opacity: 0; } }
+        /* Contenedor de "Follow" ELIMINADO */
 
         /* --- CSS RESPONSIVE (Horizontal/Vertical) --- */
         
@@ -700,6 +711,7 @@
             }
             #left-panel .panel {
                 border-radius: 0; border-bottom: none;
+                overflow-y: auto; /* Permite scroll solo en vertical */
             }
             
             #bottom-panel {
@@ -716,7 +728,6 @@
                 align-items: center;
             }
             
-            /* 📍 CORRECCIÓN: Layout aplastado en vertical */
             #bottom-panel .panel-section {
                 flex-grow: 1;
                 flex-basis: 0;
@@ -756,6 +767,7 @@
             }
             #left-panel .panel {
                 border-radius: 0; border-right: none;
+                overflow-y: auto; /* Permite scroll si el contenido crece */
             }
 
             #bottom-panel {
@@ -774,7 +786,6 @@
                 align-items: center;
             }
             
-            /* 📍 CORRECCIÓN: Layout aplastado en horizontal */
             #bottom-panel .panel-section {
                 flex-grow: 1;
                 flex-basis: 0;
@@ -783,6 +794,14 @@
             }
 
             body.panels-active #main-view-area {
+                left: var(--panel-width-landscape);
+                top: 0;
+                width: calc(100% - var(--panel-width-landscape));
+                height: calc(100% - var(--panel-height-landscape));
+            }
+            
+            /* Marco de cámara para landscape */
+            body.panels-active #camera-frame {
                 left: var(--panel-width-landscape);
                 top: 0;
                 width: calc(100% - var(--panel-width-landscape));
@@ -807,7 +826,7 @@
     <div id="main-view-area" onclick="handleUITap(event)">
         <video id="bg-camera-feed" playsinline autoplay muted></video>
         <canvas id="main-filter-canvas"></canvas>
-    </div>
+        <div id="camera-frame"></div> </div>
     
     <canvas id="ai-canvas" class="hidden-canvas"></canvas>
 
@@ -819,18 +838,14 @@
 
     <div id="kinect-banner">KINEC ACTIVO <span class="led-red">🔴</span></div>
     
-    <div id="follow-container">
-        <div id="follow-text" class="follow-step">SÍGUENOS EN</div>
-        <div id="follow-icons" class="follow-step">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M448 209.9a210.1 210.1 0 0 1 -122.8-39.3V349.4A162.6 162.6 0 1 1 185 188.3V277.2a74.6 74.6 0 1 0 52.2 71.2V0l88 0a121.2 121.2 0 0 0 122.8 122.1v87.8z"/></svg>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path d="M549.7 124.1c-6.3-23.7-24.8-42.3-48.3-48.6C458.8 64 288 64 288 64S117.2 64 74.6 75.5c-23.5 6.3-42 24.9-48.3 48.6-11.4 42.9-11.4 132.3-11.4 132.3s0 89.4 11.4 132.3c6.3 23.7 24.8 42.3 48.3 48.6C117.2 448 288 448 288 448s170.8 0 213.4-11.5c23.5-6.3 42-24.9 48.3-48.6 11.4-42.9 11.4-132.3 11.4-132.3s0-89.4-11.4-132.3zM232 341.5V170.5l145.2 85.5-145.2 85.5z"/></svg>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M504 256C504 119 393 8 256 8S8 119 8 256c0 123.8 90.7 226.4 209.3 245V327.7h-63V256h63v-54.6c0-62.2 37-96.5 93.7-96.5 27.1 0 55.5 4.8 55.5 4.8v61h-31.3c-30.8 0-40.4 19.1-40.4 38.7V256h68.8l-11 71.7h-57.8V501C413.3 482.4 504 379.8 504 256z"/></svg>
-        </div>
-        <div id="follow-handle" class="follow-step">@EXPLORACIONESOBR</div>
-    </div>
-
     <div id="left-panel">
         <div class="panel" id="p-unified">
+            <div id="processing-lines"> <div class="processing-line"></div>
+                <div class="processing-line"></div>
+                <div class="processing-line"></div>
+                <div class="processing-line"></div>
+                <div class="processing-line"></div>
+            </div>
             <div class="panel-header-main">PANEL DE MANDO</div>
             
             <div class="panel-section">
@@ -890,7 +905,6 @@
                     <div id="activity-graph-container" title="Gráfica de Actividad de Sonido">
                         <canvas id="energy-canvas"></canvas>
                     </div>
-                    <div class="knob-label" style="text-align: center;">ACTIVIDAD (SONIDO)</div>
 
                     <div class="volume-control-group">
                         <span class="vol-label">VOL</span>
@@ -905,6 +919,9 @@
 
     <div id="bottom-panel">
         <div class="panel" id="p-bottom">
+            <div id="processing-lines"> <div class="processing-line"></div>
+                <div class="processing-line"></div>
+            </div>
             <div class="panel-section">
                 <div class="section-title">Lecturas de Campo</div>
                 <div class="dials-grid">
@@ -1369,7 +1386,6 @@
             }
         }
         
-        // 📍 CORRECCIÓN: Esta función YA NO pide permiso de mic.
         async function initAudio_LoadFiles() {
             if (audioCtx) return;
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1706,7 +1722,6 @@
                 
                 const data = await response.json();
                 
-                // 📍 CORRECCIÓN: Llamada movida aquí.
                 if (!audioCtx) await initAudio_LoadFiles(); 
                 
                 updateLoadingProgress(75, "PROCESANDO RESPUESTAS");
@@ -2030,13 +2045,10 @@
         
         const filterControls = document.getElementById('filter-controls-container');
         const logoImage = document.getElementById('logo-image');
-        const followContainer = document.getElementById('follow-container');
-        const torchButton = document.getElementById('btn-torch');
         
         function showControls() {
             filterControls.style.opacity = '1';
             logoImage.classList.add('hiding'); 
-            followContainer.classList.add('hiding');
             filterControls.style.pointerEvents = 'auto';
             clearTimeout(uiHideTimeout);
             uiHideTimeout = setTimeout(hideControls, 4000); 
@@ -2051,17 +2063,6 @@
             uiVisible = false;
         }
         
-        followContainer.addEventListener('animationend', (e) => {
-            if (e.animationName === 'waterDrop') {
-                followContainer.classList.remove('hiding');
-                followSteps.forEach(s => {
-                    s.style.display = 'none';
-                    s.classList.remove('fade-in', 'fade-out', 'water-drop');
-                });
-                followContainer.style.opacity = '0';
-                followAnimationRunning = false;
-            }
-        });
 
         function handleUITap(event) {
             // requestAllPermissions(); // Movido al botón 'pwr'
@@ -2088,43 +2089,6 @@
                 setTimeout(resizeVuCanvas, 500);
             }
             setTimeout(resizeAllCanvas, 500); 
-        }
-
-        const followSteps = document.querySelectorAll('.follow-step');
-        let followAnimationRunning = false;
-        
-        async function runFollowAnimation() {
-            if (uiVisible || followAnimationRunning) return; 
-            followAnimationRunning = true;
-            followContainer.classList.remove('hiding'); 
-            followContainer.style.opacity = '1';
-            
-            const text = document.getElementById('follow-text');
-            text.style.display = 'block'; text.classList.add('fade-in');
-            await new Promise(r => setTimeout(r, 2500)); 
-            if(uiVisible) { followContainer.classList.add('hiding'); return; } 
-            text.classList.remove('fade-in'); text.classList.add('water-drop'); 
-            await new Promise(r => setTimeout(r, 500));
-            text.style.display = 'none'; text.classList.remove('water-drop');
-            
-            const icons = document.getElementById('follow-icons');
-            icons.style.display = 'flex'; icons.classList.add('fade-in');
-            await new Promise(r => setTimeout(r, 2500)); 
-            if(uiVisible) { followContainer.classList.add('hiding'); return; } 
-            icons.classList.remove('fade-in'); icons.classList.add('fade-out');
-            await new Promise(r => setTimeout(r, 1000));
-            icons.style.display = 'none'; icons.classList.remove('fade-out');
-
-            const handle = document.getElementById('follow-handle');
-            handle.style.display = 'block'; handle.classList.add('fade-in');
-            await new Promise(r => setTimeout(r, 2500)); 
-            if(uiVisible) { followContainer.classList.add('hiding'); return; } 
-            handle.classList.remove('fade-in'); handle.classList.add('fade-out');
-            await new Promise(r => setTimeout(r, 1000));
-            handle.style.display = 'none'; handle.classList.remove('fade-out');
-
-            followContainer.style.opacity = '0';
-            followAnimationRunning = false;
         }
 
         const appUI = document.getElementById('app-ui');
@@ -2186,7 +2150,6 @@
             detectPoseLoop(); 
             
             setInterval(updateSensorReadings, 2000); 
-            setInterval(runFollowAnimation, 30000); 
             
             document.body.classList.remove('panels-active');
             document.getElementById('btn-panel').classList.remove('active');
