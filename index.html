@@ -79,7 +79,6 @@
             filter: none;
         }
         
-        /* 📍 NUEVO: Filtro "Detector" (DTR) */
         body.filter-detector #bg-camera-feed {
             filter: grayscale(1) contrast(3) sepia(1) hue-rotate(-30deg) saturate(5);
         }
@@ -190,7 +189,7 @@
 
         .panel {
             background-color: var(--panel-bg-dark); 
-            background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgMTAwIDEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzFhMWExYSIvPjxwYXRoIGQ9Ik0wIDUwSDEwMFYxMEgwWiIgZmlsbD0iI0EwQTBBMCIgb3BhY2l0eT0iMC4wMiIvPjxwYXRoIGQ9Ik0wIDkwSDEwMFY1MEgwWiIgZmlsbD0iIzEwMTAxMCIgb3BhY2l0eT0iMC4wMyIvPjxwYXRoIGQ9Ik0wIDEwMEgxMFYwSDBaIiBmaWxsPSIjRkZGRkZGIiBvcGFjaXR5PSIwLjAxIi8+PC9zdmc+'); /* Textura de carbono sutil */
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgMTAwIDEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzFhMWExYSIvPjxwYXRoIGQ9Ik0wIDUwSDEwMFYxMEgwWiIgZmlsbD0iI0EwQTBBMCIgb3BhY2l0eT0iMC4wMiIvPjxwYXRoIGQ9Ik0wIDkwSDEwMFY1MEgwWiIgZmlsbD0iIzEwMTAxMCIgb3BhY2l0eT0iMC4wMyIvPjxwYXRoIGQ9Ik0wIDEwMEgxMFYwSDBaIiBmaWxsPSIjRkZGRkZGIiBvcGFjaXR5PSIwLjAxIi8+PC9zdmc+');
             border: 2px solid var(--border-color-dark);
             box-shadow: 0 0 15px rgba(57, 255, 20, 0.2) inset, 0 0 5px rgba(0,0,0,0.8);
             display: flex;
@@ -247,33 +246,23 @@
             color: var(--sim-orange);
         }
         
+        /* 📍 NUEVO: Diseño de botón Linterna */
         .panel-button-torch {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            width: 100%;
-            padding: 12px;
             background: rgba(0, 50, 50, 0.7);
-            border: 2px solid var(--neon-green);
+            border: 2px solid var(--border-color-dark);
             color: var(--neon-green);
-            box-shadow: 0 0 12px rgba(57, 255, 20, 0.5);
             transition: all 0.2s;
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.85rem;
-            text-transform: uppercase;
+            font-size: 1.8rem; /* Emoji más grande */
             cursor: pointer;
-            letter-spacing: 1.5px;
-        }
-        .panel-button-torch svg {
-            width: 24px; height: 24px;
-            fill: currentColor;
-            flex-shrink: 0;
+            padding: 8px;
+            line-height: 1;
         }
         .panel-button-torch:active, .panel-button-torch.active {
             background: var(--neon-green);
             color: #000;
             box-shadow: 0 0 25px #fff;
+            border-color: var(--neon-green);
         }
 
         .sensor-status-grid {
@@ -404,18 +393,48 @@
             text-transform: uppercase;
         }
         
+        /* 📍 NUEVO: Layout Panel Inferior */
+        #bottom-panel .panel {
+            flex-direction: row;
+            justify-content: space-around;
+            align-items: center;
+        }
+        #bottom-panel .panel-section {
+            flex-grow: 1;
+            flex-basis: 0;
+            height: 100%;
+            justify-content: center;
+        }
+        #bottom-panel .dials-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        #detector-dial-container {
+            grid-column: span 2; /* Detector ocupa todo el ancho */
+            width: 95px;
+            height: 95px;
+            margin-bottom: 5px;
+        }
+        #mag-dial-container { width: 70px; height: 70px; }
+        #temp-readout { width: 70px; }
+        #temp-val { font-size: 1.2rem; }
+        
         #panel-cam-stats {
             font-family: 'Orbitron', sans-serif;
-            font-size: 1.1rem;
+            font-size: 0.9rem; /* 📍 Tamaño reducido */
             font-weight: 700;
-            color: var(--neon-green);
-            text-shadow: 0 0 5px var(--neon-green);
-            padding: 6px;
+            color: var(--text-dim-grey); /* 📍 Menos importante */
+            text-shadow: none;
+            padding: 4px;
             background: rgba(0,0,0,0.5);
             border: 1px solid var(--border-color-dark);
             text-align: center;
             letter-spacing: 1px;
         }
+        #panel-cam-stats span {
+            color: var(--text-color-light); /* Números en color claro */
+        }
+        
 
         .spirit-box-grid {
             display: grid;
@@ -459,7 +478,7 @@
             width: 4px;
             height: 18px;
             background: var(--neon-green);
-            transform: translateX(-50%);
+            transform: translateX(-50%) rotate(0deg); /* 📍 Inicia en 0 */
             border-radius: 2px;
             box-shadow: 0 0 8px var(--neon-green);
             z-index: 5;
@@ -467,45 +486,48 @@
             transition: transform 0.3s ease; 
         }
 
-        .switch-container {
+        /* 📍 NUEVO: Botón de Encender (REC) */
+        .power-button-container {
             display: flex;
             flex-direction: column;
             align-items: center;
             width: 60px; 
         }
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 35px;
+        #knob-power {
+            width: 60px;
             height: 60px;
-            background: #111;
+            border-radius: 50%;
             border: 2px solid var(--border-color-dark);
-            box-shadow: 0 4px 6px #000, 0 0 8px rgba(57, 255, 20, 0.3) inset;
-        }
-        .switch input { display: none; }
-        .slider {
-            position: absolute;
+            position: relative;
             cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: transparent;
-            transition: .4s;
+            background: #111;
+            box-shadow: 0 4px 6px #000, 0 0 8px rgba(57, 255, 20, 0.3) inset;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
         }
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 25px;
-            width: 25px;
-            left: 3px;
-            bottom: 3px;
-            background-color: var(--alert-red);
-            box-shadow: 0 0 10px var(--alert-red);
-            border: 1px solid #333;
-            transition: .4s;
+        #knob-power::before {
+            content: "REC";
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            color: var(--alert-red);
+            text-shadow: 0 0 5px var(--alert-red);
+            transition: all 0.3s;
         }
-        input:checked + .slider:before {
-            transform: translateY(-28px);
-            background-color: var(--neon-green);
-            box-shadow: 0 0 10px var(--neon-green);
+        #knob-power.active {
+            border-color: var(--alert-red);
+            background: #330000;
+        }
+        #knob-power.active::before {
+            color: var(--alert-red);
+            text-shadow: 0 0 10px var(--alert-red), 0 0 15px #fff;
+            animation: pulseRec 1.5s infinite;
+        }
+        @keyframes pulseRec {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
         }
 
 
@@ -550,7 +572,7 @@
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none; width: 30px; height: 30px;
             background: #444; border: 1px solid #666;
-            border-radius: 0; /* Cuadrado */
+            border-radius: 0;
             box-shadow: -100vw 0 0 100vw var(--neon-green);
             cursor: pointer;
         }
@@ -587,15 +609,18 @@
         #floating-cam-stats {
             bottom: 15px; right: 15px;
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.75rem;
+            font-size: 0.7rem; /* 📍 Tamaño reducido */
             font-weight: 700;
-            color: var(--neon-green);
-            text-shadow: 0 0 4px var(--neon-green), 0 0 6px #000;
-            padding: 3px 6px;
-            background: rgba(0,0,0,0.4);
+            color: var(--text-dim-grey); /* 📍 Menos importante */
+            text-shadow: none;
+            padding: 2px 5px;
+            background: rgba(0,0,0,0.5);
             border: 1px solid var(--border-color-dark);
             display: none; 
             letter-spacing: 0.5px;
+        }
+        #floating-cam-stats span {
+             color: var(--text-color-light);
         }
         
         body:not(.panels-active) #floating-cam-stats {
@@ -638,7 +663,7 @@
             display: flex; flex-direction: column;
             gap: 12px; z-index: 100;
             pointer-events: auto; opacity: 1;
-            transition: opacity 0.5s ease-in-out, top 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
         .filter-btn {
             width: 55px; height: 55px;
@@ -650,6 +675,7 @@
             font-weight: bold; cursor: pointer;
             box-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
             transition: all 0.2s;
+            font-size: 1rem;
         }
         .filter-btn:active {
             background: var(--neon-green); color: #000;
@@ -728,16 +754,22 @@
                 height: 100%;
                 justify-content: center;
             }
+            #bottom-panel .dials-grid {
+                grid-template-columns: 1fr 1fr;
+            }
             .dial-container {
                  width: 60px;
                  height: 60px;
             }
             #detector-dial-container {
+                 grid-column: span 1; /* Ajuste para vertical */
                  width: 80px;
                  height: 80px;
+                 margin-bottom: 0;
             }
             #temp-val { font-size: 1.2rem; }
             #panel-cam-stats { font-size: 0.9rem; }
+            #vu-meter-container { height: 100px; }
 
 
             body.panels-active #main-view-area {
@@ -785,6 +817,17 @@
                 height: 100%;
                 justify-content: center;
             }
+            /* 📍 NUEVO: Layout horizontal del panel inferior */
+            #bottom-panel .dials-grid {
+                grid-template-columns: 1fr 1.5fr 1fr;
+            }
+            #detector-dial-container {
+                grid-column: 2 / 3;
+            }
+            #mag-dial-container { grid-column: 1 / 2; }
+            #temp-readout { grid-column: 3 / 4; }
+            #vu-meter-container { height: 100px; } /* Altura uniforme */
+            #panel-cam-stats { height: 100px; display: flex; align-items: center; justify-content: center; }
 
             body.panels-active #main-view-area {
                 left: var(--panel-width-landscape);
@@ -798,6 +841,22 @@
                 top: 0;
                 width: calc(100% - var(--panel-width-landscape));
                 height: calc(100% - var(--panel-height-landscape));
+            }
+
+            /* 📍 NUEVO: Posición de botones de filtro cuando el panel está activo */
+            body.panels-active #filter-controls-container {
+                top: 15px;
+                right: 50%;
+                transform: translateX(50%);
+                flex-direction: row;
+                width: auto;
+                gap: 10px;
+                z-index: 21; /* Encima del marco */
+            }
+            body.panels-active .filter-btn {
+                width: 45px;
+                height: 45px;
+                font-size: 0.8rem;
             }
         }
     </style>
@@ -844,10 +903,7 @@
             
             <div class="panel-section">
                 <div class="section-title">Controles de Dispositivo</div>
-                <button id="btn-torch" class="panel-button-torch" onclick="toggleTorch(event)">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M342.6 38.6c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L380.7 167H256c-17.7 0-32 14.3-32 32s14.3 32 32 32h124.7l-83.4 83.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l144-144c12.5-12.5 12.5-32.8 0-45.3l-144-144zM160 80c0-17.7-14.3-32-32-32s-32 14.3-32 32v144H64c-17.7 0-32 14.3-32 32s14.3 32 32 32h32v144c0 17.7 14.3 32 32 32s32-14.3 32-32V288h32c17.7 0 32-14.3 32-32s-14.3-32-32-32H160V80z"/></svg>
-                    <span>LINTERNA</span>
-                </button>
+                <button id="btn-torch" class="panel-button-torch" onclick="toggleTorch(event)">🔦</button>
             </div>
             
             <div class="panel-section">
@@ -870,23 +926,13 @@
                     </div>
                 </div>
             </div>
-            
-            <div class="panel-section">
-                <div class="section-title">Medidor de Sonido (VU)</div>
-                <div id="vu-meter-container">
-                    <canvas id="vu-meter-canvas"></canvas>
-                </div>
-            </div>
 
             <div class="panel-section">
                 <div class="section-title">Spirit Box</div>
                 <div class="spirit-box-grid">
                     
-                    <div class="switch-container">
-                        <label class="switch">
-                            <input type="checkbox" id="knob-power">
-                            <span class="slider"></span>
-                        </label>
+                    <div class="power-button-container">
+                        <div id="knob-power"></div>
                         <div class="knob-label">ENCENDER</div>
                     </div>
 
@@ -918,6 +964,7 @@
                 <div class="processing-line"></div>
                 <div class="processing-line"></div>
             </div>
+
             <div class="panel-section">
                 <div class="section-title">Lecturas de Campo</div>
                 <div class="dials-grid">
@@ -933,6 +980,13 @@
                         <div id="temp-val">--.-°C</div>
                         <div class="temp-label">AMBIENTE</div>
                     </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Medidor de Sonido (VU)</div>
+                <div id="vu-meter-container">
+                    <canvas id="vu-meter-canvas"></canvas>
                 </div>
             </div>
             
@@ -1321,7 +1375,6 @@
                 }
             });
             
-            // 📍 Lógica de filtro actualizada para 'detector'
             document.body.classList.remove('filter-detector', 'filter-sls', 'filter-negative');
             mainFilterCanvas.style.display = 'none';
 
@@ -1363,11 +1416,11 @@
                 await videoTrack.applyConstraints({
                     advanced: [{ torch: isTorchOn }]
                 });
-                document.getElementById('btn-torch').classList.toggle('active', isTorchOn);
+                event.currentTarget.classList.toggle('active', isTorchOn);
             } catch (e) {
                 console.error("Error al activar linterna:", e);
                 isTorchOn = false; 
-                document.getElementById('btn-torch').classList.toggle('active', false);
+                event.currentTarget.classList.remove('active');
                 document.getElementById('btn-torch').style.display = 'none';
             }
         }
@@ -1629,13 +1682,15 @@
                 await initSpeechRecAndVUMeter(); 
             }
             
-            if(!audioCtx) { 
-                console.error("Contexto de Audio no pudo inicializarse. El Spirit Box no funcionará.");
-                pwr.checked = false; 
+            if(!audioCtx || !micStreamSource) { // Comprueba si el mic falló
+                console.error("Contexto de Audio o Micrófono no pudo inicializarse.");
+                pwr.classList.remove('active');
+                isRunning = false;
                 return; 
             }
 
-            isRunning = pwr.checked; 
+            isRunning = !isRunning; // Alternar estado
+            pwr.classList.toggle('active', isRunning); 
             
             if(isRunning) {
                 if(audioCtx.state === 'suspended') {
@@ -1649,7 +1704,7 @@
                 gain_Fondo1.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.5); 
                 gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 0.5); 
 
-                requestAllPermissions();
+                // Los sensores MAG/EMF ya están activos desde window.onload
 
                 spiritBoxState = "SCANNING";
                 playFondo2_Fragment(); 
@@ -1670,7 +1725,7 @@
                 isSpeaking = false;
                 isRecognizing = false;
                 setSensorStatus('mic', 'off');
-                stopSensor();
+                // No detenemos los sensores MAG/EMF
             }
         });
 
@@ -1748,10 +1803,13 @@
                 updateLoadingProgress(100, "ERROR DE SINCRONIZACIÓN");
             } finally {
                 setTimeout(hideLoadingScreen, 500); 
+                // 📍 ARRANCA LOS SENSORES MAG/EMF DESPUÉS DE CARGAR
+                requestAllPermissions();
             }
         }
 
         function speak(text) {
+            console.log("Intentando hablar:", text); // Debugging
             if (!text || isSpeaking) return;
             
             spiritBoxState = "SPEAKING";
@@ -2062,7 +2120,7 @@
         
 
         function handleUITap(event) {
-            // requestAllPermissions(); // Movido al botón 'pwr'
+            // requestAllPermissions(); // Movido a window.onload
 
             if (isPinching || isPanning) return; 
             
@@ -2153,7 +2211,7 @@
             
             hideControls();
             
-            loadSheetData();
+            loadSheetData(); // Esta función ahora llama a requestAllPermissions al final
         };
         
         window.onresize = () => {
