@@ -21,7 +21,7 @@
             --alert-red: #FF3333;
             --sim-orange: #FFB000;
             --sensor-blue: #00BFFF; 
-            --panel-bg-dark: rgba(5, 10, 5, 0.85); /* Transparencia Glass */
+            --panel-bg-dark: rgba(5, 10, 5, 0.85);
             --border-color-dark: rgba(57, 255, 20, 0.4);
             --panel-width-landscape: 300px;
             --bottom-panel-height-vertical: 200px;
@@ -35,7 +35,7 @@
             overflow: hidden; width: 100vw; height: 100dvh;
         }
 
-        /* --- PANTALLA DE CARGA --- */
+        /* --- PANTALLA DE CARGA (MODIFICADA) --- */
         #loading-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #000; z-index: 9999;
@@ -43,9 +43,9 @@
             transition: opacity 0.5s ease-out;
         }
         #loading-logo { width: 100px; height: 100px; margin-bottom: 20px; filter: drop-shadow(0 0 10px var(--neon-green)); animation: pulse 2s infinite; }
-        #loading-text { font-family: 'Orbitron'; color: var(--neon-green); letter-spacing: 2px; margin-bottom: 10px; }
-        #loading-bar-container { width: 80%; max-width: 300px; height: 4px; background: #222; }
-        #loading-bar { width: 0%; height: 100%; background: var(--neon-green); transition: width 0.3s; }
+        #loading-text { font-family: 'Orbitron'; color: var(--neon-green); letter-spacing: 2px; margin-bottom: 10px; font-size: 0.9rem; }
+        #loading-bar-container { width: 70%; max-width: 250px; height: 4px; background: #222; border-radius: 2px; overflow: hidden; }
+        #loading-bar { width: 0%; height: 100%; background: var(--neon-green); transition: width 0.3s; box-shadow: 0 0 10px var(--neon-green); }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
         /* --- CÁMARA --- */
@@ -100,7 +100,7 @@
         }
         #logo-image.hiding { transform: scale(0) rotate(180deg); opacity: 0; }
 
-        /* --- PANELES (RESTAURADOS A VERSIÓN ESTABLE) --- */
+        /* --- PANELES (DISEÑO ORIGINAL CONSERVADO) --- */
         .panel {
             background: var(--panel-bg-dark) !important; 
             backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
@@ -133,13 +133,11 @@
             border-bottom: 1px dashed rgba(57,255,20,0.3); margin-bottom: 5px;
         }
 
-        /* Sensor Grid (Estilo Estable) */
         .sensor-status-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center; }
         .status-light-group { display: flex; flex-direction: column; align-items: center; font-size: 0.6rem; color: #999; }
         .status-led-indicator { width: 10px; height: 10px; border-radius: 50%; background: #333; margin-bottom: 5px; border: 1px solid #555; }
         .status-led-indicator.active { background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); }
         
-        /* Spirit Box Grid (Estilo Estable) */
         .spirit-box-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; align-items: center; }
         .knob-container { display: flex; flex-direction: column; align-items: center; }
         
@@ -153,14 +151,14 @@
         #knob-power.active { border-color: var(--alert-red); color: var(--alert-red); text-shadow: 0 0 8px var(--alert-red); background: radial-gradient(circle, #410000 30%, #1a0000 100%); }
         #knob-scan.active { border-color: var(--sim-orange); color: var(--sim-orange); }
 
-        /* Volume & VU */
         .volume-control-group { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; }
         input[type=range] { flex: 1; height: 4px; background: #333; -webkit-appearance: none; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; background: var(--neon-green); border-radius: 50%; }
-        #vu-meter-container { width: 100%; height: 35px; background: #000; border: 1px solid #333; margin-top: 5px; }
+        
+        #vu-meter-container { width: 100%; height: 40px; background: #050505; border: 1px solid #333; margin-top: 5px; position: relative; }
         #vu-meter-canvas { width: 100%; height: 100%; }
 
-        /* Bottom Panel Dials (Estilo Estable) */
+        /* Diales Panel Inferior */
         .dials-grid { display: flex; width: 100%; height: 100%; justify-content: space-around; align-items: center; padding: 0 10px; }
         .dial-container { position: relative; width: 80px; height: 80px; border: 1px solid #444; border-radius: 50%; background: #000; }
         .dial-needle { position: absolute; top: 50%; left: 50%; width: 45%; height: 2px; background: red; transform-origin: 0% 50%; transform: rotate(-90deg); transition: transform 0.3s; }
@@ -182,7 +180,7 @@
 
 <div id="loading-overlay">
     <img id="loading-logo" src="obr-logo.png" alt="Logo" onerror="this.style.display='none'">
-    <div id="loading-text">INICIANDO SISTEMA...</div>
+    <div id="loading-text">INICIANDO SISTEMA... 0%</div>
     <div id="loading-bar-container"><div id="loading-bar"></div></div>
 </div>
 
@@ -236,7 +234,7 @@
             </div>
         </div>
         
-        <div class="section-title">Audio Monitor</div>
+        <div class="section-title">Análisis de Espectro</div>
         <div id="vu-meter-container"><canvas id="vu-meter-canvas"></canvas></div>
     </div>
 </div>
@@ -259,19 +257,19 @@
 </div>
 
 <script>
-    /* --- CONFIG --- */
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzOf3crQxBdPylwMTAd34W-nBShN31MkIUtaMdKsZHMZVVniI2HjMesD6DpOlO363T1/exec";
     const SOCIAL_INTERVAL = 15000;
+    const SCAN_DELAYS = [1500, 700, 300];
     
     let isRunning = false;
     let audioCtx, masterGain, radioGain;
-    let audioBuffer_Fondo1, audioBuffer_Fondo2; // Buffers de archivos reales
+    let audioBuffer_Fondo1, audioBuffer_Fondo2; 
+    let sourceFondo1 = null;
     let programadoData = new Map(), automaticoData = [];
     let uiHideTimeout, currentFilter = 'none';
     let recognition;
     let scanTimer;
-    let scanSpeed = 1; // 0, 1, 2
-    const SCAN_DELAYS = [1500, 700, 300];
+    let scanSpeed = 1;
 
     /* --- PANTALLA DE CARGA --- */
     function updateLoading(percent, text) {
@@ -279,22 +277,15 @@
         const txt = document.getElementById('loading-text');
         const overlay = document.getElementById('loading-overlay');
         if(bar) bar.style.width = percent + '%';
-        if(txt) txt.innerText = text;
+        if(txt) txt.innerText = text + " " + percent + "%";
         if(percent >= 100) {
             setTimeout(() => { overlay.style.opacity = 0; setTimeout(() => overlay.style.display = 'none', 500); }, 800);
         }
     }
 
-    /* --- 1. SLS KINECT LOGIC (RESTAURADA CON MAPA Y ESCALA) --- */
+    /* --- 1. SLS KINECT --- */
     let poseDetector, latestPoses = [];
-    const skeletonMap = [
-        ['left_shoulder', 'right_shoulder'], ['left_shoulder', 'left_elbow'],
-        ['left_elbow', 'left_wrist'], ['right_shoulder', 'right_elbow'],
-        ['right_elbow', 'right_wrist'], ['left_shoulder', 'left_hip'],
-        ['right_shoulder', 'right_hip'], ['left_hip', 'right_hip'],
-        ['left_hip', 'left_knee'], ['left_knee', 'left_ankle'],
-        ['right_hip', 'right_knee'], ['right_knee', 'right_ankle']
-    ];
+    const skeletonMap = [['left_shoulder', 'right_shoulder'], ['left_shoulder', 'left_elbow'], ['left_elbow', 'left_wrist'], ['right_shoulder', 'right_elbow'], ['right_elbow', 'right_wrist'], ['left_shoulder', 'left_hip'], ['right_shoulder', 'right_hip'], ['left_hip', 'right_hip'], ['left_hip', 'left_knee'], ['left_knee', 'left_ankle'], ['right_hip', 'right_knee'], ['right_knee', 'right_ankle']];
 
     async function initMLModel() {
         const model = poseDetection.SupportedModels.MoveNet;
@@ -325,104 +316,106 @@
             const videoAspect = video.videoWidth / video.videoHeight;
             const canvasAspect = canvas.width / canvas.height;
             let scale, offsetX, offsetY;
-            
-            if (canvasAspect > videoAspect) {
-                scale = canvas.width / video.videoWidth;
-                offsetX = 0; offsetY = (canvas.height - video.videoHeight * scale) / 2;
-            } else {
-                scale = canvas.height / video.videoHeight;
-                offsetX = (canvas.width - video.videoWidth * scale) / 2; offsetY = 0;
-            }
+            if (canvasAspect > videoAspect) { scale = canvas.width / video.videoWidth; offsetX = 0; offsetY = (canvas.height - video.videoHeight * scale) / 2; } 
+            else { scale = canvas.height / video.videoHeight; offsetX = (canvas.width - video.videoWidth * scale) / 2; offsetY = 0; }
 
             latestPoses.forEach(pose => {
-                const keypointMap = new Map();
-                pose.keypoints.forEach(kp => keypointMap.set(kp.name, kp));
-                
-                ctx.fillStyle = '#FF0000'; // PUNTOS ROJOS
-                pose.keypoints.forEach(kp => {
-                    if(kp.score > 0.3) {
-                        ctx.beginPath(); ctx.arc(kp.x * scale + offsetX, kp.y * scale + offsetY, 5, 0, 2 * Math.PI); ctx.fill();
-                    }
-                });
-
-                ctx.strokeStyle = '#39FF14'; // LINEAS VERDE NEON
-                ctx.lineWidth = 3;
+                const keypointMap = new Map(); pose.keypoints.forEach(kp => keypointMap.set(kp.name, kp));
+                ctx.fillStyle = '#FF0000';
+                pose.keypoints.forEach(kp => { if(kp.score > 0.3) { ctx.beginPath(); ctx.arc(kp.x * scale + offsetX, kp.y * scale + offsetY, 5, 0, 2 * Math.PI); ctx.fill(); } });
+                ctx.strokeStyle = '#39FF14'; ctx.lineWidth = 3;
                 skeletonMap.forEach(conn => {
-                    const p1 = keypointMap.get(conn[0]);
-                    const p2 = keypointMap.get(conn[1]);
-                    if(p1 && p2 && p1.score > 0.3 && p2.score > 0.3) {
-                        ctx.beginPath(); ctx.moveTo(p1.x * scale + offsetX, p1.y * scale + offsetY);
-                        ctx.lineTo(p2.x * scale + offsetX, p2.y * scale + offsetY); ctx.stroke();
-                    }
+                    const p1 = keypointMap.get(conn[0]); const p2 = keypointMap.get(conn[1]);
+                    if(p1 && p2 && p1.score > 0.3 && p2.score > 0.3) { ctx.beginPath(); ctx.moveTo(p1.x * scale + offsetX, p1.y * scale + offsetY); ctx.lineTo(p2.x * scale + offsetX, p2.y * scale + offsetY); ctx.stroke(); }
                 });
             });
         }
         requestAnimationFrame(drawLoop);
     }
 
-    /* --- 2. AUDIO ENGINE & MICROPHONE (REPARADO) --- */
+    /* --- 2. AUDIO ENGINE --- */
     async function initAudioSystem() {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         audioCtx = new AudioContext();
-        masterGain = audioCtx.createGain();
-        masterGain.gain.value = 0.8;
+        masterGain = audioCtx.createGain(); masterGain.gain.value = 0.8;
         masterGain.connect(audioCtx.destination);
-        radioGain = audioCtx.createGain();
-        radioGain.connect(masterGain);
+        radioGain = audioCtx.createGain(); radioGain.connect(masterGain);
         
-        // Intentar cargar archivos reales
         try {
             const b1 = await fetch('FONDO_1.mp3').then(r => r.arrayBuffer());
             audioBuffer_Fondo1 = await audioCtx.decodeAudioData(b1);
             const b2 = await fetch('FONDO_2.mp3').then(r => r.arrayBuffer());
             audioBuffer_Fondo2 = await audioCtx.decodeAudioData(b2);
-        } catch(e) { console.warn("No se encontraron archivos MP3. Usando modo sintético."); }
+        } catch(e) { console.warn("No audio files"); }
 
-        // INICIALIZAR MICRÓFONO (Para voz y VU meter)
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const micSrc = audioCtx.createMediaStreamSource(stream);
             const analyser = audioCtx.createAnalyser();
-            micSrc.connect(analyser); // Solo al analzador, no al destino (feedback)
-            initVUMeter(analyser);
-            
-            // Activar Reconocimiento
+            micSrc.connect(analyser);
+            initWaveformVisualizer(analyser); // CAMBIADO A ONDAS
             initSpeechRec();
             document.getElementById('st-mic').querySelector('.status-led-indicator').classList.add('active');
-        } catch(e) { console.error("Microphone Access Denied", e); }
+        } catch(e) { console.error("Mic denied"); }
+    }
+
+    /* --- 3. VISUALIZADOR TIPO TOPOGRÁFICO (OSCILOSCOPIO) --- */
+    function initWaveformVisualizer(analyser) {
+        const cv = document.getElementById('vu-meter-canvas');
+        const ctx = cv.getContext('2d');
+        analyser.fftSize = 2048;
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        function draw() {
+            if(!cv.offsetParent) return requestAnimationFrame(draw);
+            const w = cv.width = cv.clientWidth;
+            const h = cv.height = cv.clientHeight;
+
+            analyser.getByteTimeDomainData(dataArray);
+
+            ctx.fillStyle = '#000'; // Fondo negro limpio
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'var(--neon-green)';
+            ctx.beginPath();
+
+            const sliceWidth = w * 1.0 / bufferLength;
+            let x = 0;
+
+            for(let i = 0; i < bufferLength; i++) {
+                const v = dataArray[i] / 128.0;
+                const y = v * h / 2;
+
+                if(i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+
+                x += sliceWidth;
+            }
+
+            ctx.lineTo(cv.width, cv.height / 2);
+            ctx.stroke();
+            requestAnimationFrame(draw);
+        }
+        draw();
     }
 
     function initSpeechRec() {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if(SpeechRecognition) {
-            recognition = new SpeechRecognition();
-            recognition.lang = 'es-MX';
-            recognition.continuous = false;
-            recognition.interimResults = false;
-            recognition.onstart = () => { /* Silencio mientras habla el usuario? */ };
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if(SR) {
+            recognition = new SR(); recognition.lang = 'es-MX'; recognition.continuous = false; recognition.interimResults = false;
             recognition.onend = () => { if(isRunning) recognition.start(); };
-            recognition.onresult = (e) => {
-                const transcript = e.results[0][0].transcript.toLowerCase();
-                console.log("Voz:", transcript);
-                processSpiritBoxResponse(transcript);
-            };
+            recognition.onresult = (e) => { processSpiritBoxResponse(e.results[0][0].transcript.toLowerCase()); };
         }
     }
 
     function processSpiritBoxResponse(text) {
-        // Pausar radio un momento
         if(scanTimer) clearTimeout(scanTimer);
-        
         let found = false;
-        for (let [key, value] of programadoData) {
-            if (text.includes(key)) { speak(value); found = true; break; }
-        }
-        if (!found && automaticoData.length > 0) {
-            speak(automaticoData[Math.floor(Math.random() * automaticoData.length)]);
-        }
-        
-        // Reanudar radio después de hablar
-        setTimeout(playRadioFragment, 4000); 
+        for (let [key, value] of programadoData) { if (text.includes(key)) { speak(value); found = true; break; } }
+        if (!found && automaticoData.length > 0) { speak(automaticoData[Math.floor(Math.random() * automaticoData.length)]); }
+        setTimeout(playRadioFragment, 4000);
     }
 
     function speak(text) {
@@ -432,54 +425,39 @@
         window.speechSynthesis.speak(u);
     }
 
-    /* --- 3. TUNING EFFECT (RESTAURADO LOGICA DE FRAGMENTOS) --- */
+    function playBaseAudio() {
+        if(audioBuffer_Fondo1) {
+            if(sourceFondo1) try { sourceFondo1.stop(); } catch(e){}
+            sourceFondo1 = audioCtx.createBufferSource();
+            sourceFondo1.buffer = audioBuffer_Fondo1; sourceFondo1.loop = true;
+            const g = audioCtx.createGain(); g.gain.value = 0.4; 
+            sourceFondo1.connect(g); g.connect(masterGain);
+            sourceFondo1.start();
+        }
+    }
+
     function playRadioFragment() {
         if(!isRunning) return;
-        
-        // Si tenemos el archivo real FONDO_2 (Estática/Radio)
         if(audioBuffer_Fondo2) {
             const src = audioCtx.createBufferSource();
-            src.buffer = audioBuffer_Fondo2;
-            src.connect(radioGain);
-            // Reproducir un trozo aleatorio
+            src.buffer = audioBuffer_Fondo2; src.connect(radioGain);
             const duration = audioBuffer_Fondo2.duration;
-            const start = Math.random() * (duration - 1);
-            const len = 0.2 + Math.random() * 0.5; // Trozos cortos
-            src.start(0, start, len);
-        } else {
-            // Fallback Sintético (Tuning Sweep Noise)
-            const osc = audioCtx.createOscillator();
-            const noise = audioCtx.createBufferSource();
-            const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 1, audioCtx.sampleRate);
-            const data = buffer.getChannelData(0);
-            for(let i=0; i<buffer.length; i++) data[i] = Math.random() * 2 - 1;
-            noise.buffer = buffer;
-            
-            const filter = audioCtx.createBiquadFilter();
-            filter.type = "bandpass";
-            filter.frequency.value = Math.random() * 1000 + 200;
-            
-            noise.connect(filter); filter.connect(radioGain);
-            noise.start(); noise.stop(audioCtx.currentTime + 0.3);
+            src.start(0, Math.random()*(duration-1), 0.2 + Math.random()*0.5);
         }
-
-        // Loop
         scanTimer = setTimeout(playRadioFragment, SCAN_DELAYS[scanSpeed]);
     }
 
-    /* --- CONTROLES PRINCIPALES --- */
+    /* --- CONTROLES --- */
     document.getElementById('knob-power').addEventListener('click', async function() {
         if(!audioCtx) await initAudioSystem();
         if(audioCtx.state === 'suspended') await audioCtx.resume();
-        
         isRunning = !isRunning;
         this.classList.toggle('active', isRunning);
-        
         if(isRunning) {
-            playRadioFragment(); // Inicia el efecto de sintonización
-            try { recognition.start(); } catch(e){}
+            playBaseAudio(); playRadioFragment(); try { recognition.start(); } catch(e){}
             if(navigator.vibrate) navigator.vibrate([10,50,10]);
         } else {
+            if(sourceFondo1) { try { sourceFondo1.stop(); } catch(e){} sourceFondo1 = null; }
             if(scanTimer) clearTimeout(scanTimer);
             try { recognition.abort(); } catch(e){}
             window.speechSynthesis.cancel();
@@ -494,50 +472,33 @@
         this.style.borderColor = scanSpeed === 2 ? 'var(--alert-red)' : (scanSpeed === 1 ? 'var(--sim-orange)' : 'var(--sensor-blue)');
     });
 
-    /* --- INITIALIZATION --- */
     window.onload = async () => {
-        updateLoading(10, "INICIANDO HARDWARE...");
+        updateLoading(10, "INICIANDO HARDWARE");
         await startCamera();
-        updateLoading(30, "CARGANDO IA...");
+        updateLoading(30, "CALIBRANDO SENSORES");
         await initMLModel(); 
         drawLoop(); 
         initMatrixEffect();
         startSensors();
         startVisualLoops();
-        
         await loadSheetData();
-        
         initSocialTimer();
-        
-        document.getElementById('main-view-area').addEventListener('click', (e) => {
-            if(e.target.id !== 'btn-panel') toggleControls(true);
-        });
-        
+        document.getElementById('main-view-area').addEventListener('click', (e) => { if(e.target.id !== 'btn-panel') toggleControls(true); });
         document.getElementById('vol-slider').addEventListener('input', (e) => {
-            const val = e.target.value;
-            document.getElementById('vol-text').innerText = val + "%";
+            const val = e.target.value; document.getElementById('vol-text').innerText = val + "%";
             if(masterGain) masterGain.gain.value = val / 100;
         });
     };
 
-    /* --- UTILS (Matrix, Sensors, etc.) --- */
     function initMatrixEffect() {
-        const cvs = document.getElementById('matrix-canvas');
-        const ctx = cvs.getContext('2d');
-        let w, h;
-        const resize = () => { w = cvs.width = document.getElementById('left-panel').clientWidth || 300; h = cvs.height = window.innerHeight; };
+        const cvs = document.getElementById('matrix-canvas'); const ctx = cvs.getContext('2d');
+        let w, h; const resize = () => { w = cvs.width = document.getElementById('left-panel').clientWidth || 300; h = cvs.height = window.innerHeight; };
         window.addEventListener('resize', resize); setTimeout(resize, 500);
         const cols = Math.floor(300/15)+1; const ypos = Array(cols).fill(0).map(()=>Math.random()*500);
-        function draw() {
-            ctx.fillStyle='rgba(0,10,0,0.1)'; ctx.fillRect(0,0,w,h); ctx.fillStyle='#0F0'; ctx.font='12px monospace';
-            ypos.forEach((y,i)=>{ const t=Math.random()>0.98?'1':'0'; ctx.fillText(t,i*15,y); ypos[i]=y<0?h:y-(Math.random()*10+5); });
-            requestAnimationFrame(draw);
-        } draw();
+        function draw() { ctx.fillStyle='rgba(0,10,0,0.1)'; ctx.fillRect(0,0,w,h); ctx.fillStyle='#0F0'; ctx.font='12px monospace'; ypos.forEach((y,i)=>{ const t=Math.random()>0.98?'1':'0'; ctx.fillText(t,i*15,y); ypos[i]=y<0?h:y-(Math.random()*10+5); }); requestAnimationFrame(draw); } draw();
     }
-
     function toggleControls(show) {
-        const ctrls = document.getElementById('filter-controls-container');
-        const logo = document.getElementById('logo-image');
+        const ctrls = document.getElementById('filter-controls-container'); const logo = document.getElementById('logo-image');
         if(show) { ctrls.classList.add('visible'); logo.classList.add('hiding'); clearTimeout(uiHideTimeout); uiHideTimeout = setTimeout(()=>toggleControls(false),2000); }
         else { ctrls.classList.remove('visible'); logo.classList.remove('hiding'); }
     }
@@ -550,32 +511,9 @@
     async function startCamera() { try { const s = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}); document.getElementById('bg-camera-feed').srcObject = s; }catch(e){} }
     function startSensors() { window.addEventListener('deviceorientation', (e)=>{ if(e.alpha) document.getElementById('compass-arrow').style.transform = `rotate(${-e.alpha}deg)`; }, true); }
     function initSocialTimer() { setInterval(() => { const el = document.getElementById('social-overlay'); el.classList.add('visible'); setTimeout(()=>el.classList.remove('visible'),4000); }, SOCIAL_INTERVAL); }
-    
-    function initVUMeter(analyser) {
-        const cv = document.getElementById('vu-meter-canvas'); const ctx = cv.getContext('2d');
-        if(!analyser) return;
-        analyser.fftSize = 32; const da = new Uint8Array(analyser.frequencyBinCount);
-        function d() {
-            if(!cv.offsetParent) return requestAnimationFrame(d);
-            const w = cv.width = cv.clientWidth; const h = cv.height = cv.clientHeight;
-            analyser.getByteFrequencyData(da);
-            const avg = da.reduce((a,b)=>a+b,0)/da.length;
-            ctx.clearRect(0,0,w,h);
-            const bars=20, barW=(w/bars)-1, act=Math.floor((avg/255)*bars*1.5);
-            for(let i=0;i<bars;i++) { ctx.fillStyle=i<act?(i>14?'#F00':(i>10?'#FC0':'#0F0')):'#222'; ctx.fillRect(i*(barW+1),0,barW,h); }
-            requestAnimationFrame(d);
-        } d();
-    }
-    
     async function loadSheetData() { 
-        updateLoading(50, "CONECTANDO...");
-        try { 
-            const r = await fetch(GOOGLE_SCRIPT_URL).then(res => res.json());
-            updateLoading(80, "DATOS RECIBIDOS...");
-            if(r.automatico) automaticoData = r.automatico.map(x => x.TEXTO); 
-            if(r.programado) r.programado.forEach(x => programadoData.set(x.PREGUNTA.toLowerCase(), x.RESPUESTA)); 
-            updateLoading(100, "LISTO");
-        } catch(e) { updateLoading(100, "OFFLINE"); }
+        updateLoading(50, "SINTONIZANDO ESPECTRO");
+        try { const r = await fetch(GOOGLE_SCRIPT_URL).then(res => res.json()); updateLoading(80, "RECIBIENDO DATOS"); if(r.automatico) automaticoData = r.automatico.map(x => x.TEXTO); if(r.programado) r.programado.forEach(x => programadoData.set(x.PREGUNTA.toLowerCase(), x.RESPUESTA)); updateLoading(100, "SISTEMA LISTO"); } catch(e) { updateLoading(100, "MODO OFFLINE"); }
     }
     function startVisualLoops() { setInterval(()=>{ document.getElementById('emf-arrow').style.transform = `rotate(${Math.random()*120-60}deg)`; }, 150); }
 </script>
