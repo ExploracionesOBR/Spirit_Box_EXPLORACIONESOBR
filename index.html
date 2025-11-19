@@ -21,6 +21,38 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
 
     <style>
+
+/* Camera neon border sweep for panels-active */
+@keyframes cameraFrameGlow {
+  0% {
+    box-shadow: 0 0 8px rgba(57,255,20,0.3) inset, 0 0 12px rgba(255,20,20,0.06);
+    border-color: rgba(57,255,20,0.6);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(57,255,20,0.6) inset, 0 0 22px rgba(255,20,20,0.12);
+    border-color: rgba(255,20,20,0.8);
+  }
+  100% {
+    box-shadow: 0 0 8px rgba(57,255,20,0.3) inset, 0 0 12px rgba(255,20,20,0.06);
+    border-color: rgba(57,255,20,0.6);
+  }
+}
+body.panels-active #main-view-area::after{
+  content:'';
+  position:absolute; inset:0;
+  border: 2px solid transparent;
+  pointer-events:none;
+  background: linear-gradient(90deg, rgba(57,255,20,0.0), rgba(255,20,20,0.25), rgba(57,255,20,0.0));
+  animation: cameraBorderSweep 2.2s linear infinite;
+  mix-blend-mode: screen;
+}
+@keyframes cameraBorderSweep {
+  0% { transform: translateX(-100%); opacity:0; }
+  20% { opacity:0.6; transform: translateX(-10%); }
+  80% { opacity:0.6; transform: translateX(10%); }
+  100% { transform: translateX(100%); opacity:0; }
+}
+
         :root {
             --neon-green: #39FF14; 
             --alert-red: #FF3333;
@@ -826,6 +858,7 @@
     <div id="main-view-area" onclick="handleUITap(event)">
         <video id="bg-camera-feed" playsinline autoplay muted></video>
         <canvas id="main-filter-canvas"></canvas>
+<canvas id="gl-bluewave" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:4;pointer-events:none;display:none;"></canvas>
         <div id="camera-frame"></div> </div>
     
     <canvas id="ai-canvas" class="hidden-canvas"></canvas>
@@ -1184,21 +1217,75 @@
         }
 
         
-        async function drawLoop() {
-            const now = performance.now();
-            const delta = now - lastFrameTime;
-            lastFrameTime = now;
-            frameCount++;
-        
-            if (now - lastFpsUpdate > 1000) { 
-                const fps = frameCount;
-                document.getElementById('cam-fps-panel').innerText = fps;
-                document.getElementById('floating-cam-fps').innerText = fps;
-                frameCount = 0;
-                lastFpsUpdate = now;
-            }
+        async 
+function drawLoop() {
+    const canvas = document.getElementById('main-filter-canvas');
+    const ctx = canvas.getContext('2d');
+    const video = document.getElementById('bg-camera-feed');
+    if(!canvas || !ctx) return requestAnimationFrame(drawLoop);
+    canvas.width = document.getElementById('main-view-area').clientWidth || window.innerWidth;
+    canvas.height = document.getElementById('main-view-area').clientHeight || window.innerHeight;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            if (videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
+    if (currentFilter === 'sls' && latestPoses && latestPoses.length > 0 && video && video.readyState >= 2) {
+        const videoAspect = video.videoWidth / video.videoHeight || 1;
+        const canvasAspect = canvas.width / canvas.height;
+        let scale, offsetX=0, offsetY=0;
+        if (canvasAspect > videoAspect) { scale = canvas.width / video.videoWidth; offsetY = (canvas.height - video.videoHeight * scale) / 2; } 
+        else { scale = canvas.height / video.videoHeight; offsetX = (canvas.width - video.videoWidth * scale) / 2; }
+
+        // prepare context for neon lines + red points
+        ctx.lineWidth = 10;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = 'rgba(50,255,30,0.95)'; // neon green
+        ctx.shadowColor = 'rgba(50,255,30,0.85)';
+        ctx.shadowBlur = 12;
+
+        latestPoses.forEach(pose => {
+            if(!pose) return;
+            const keypointMap = new Map(); pose.keypoints.forEach(kp=> keypointMap.set(kp.name, kp));
+            // draw connections
+            skeletonMap.forEach(conn => {
+                const p1 = keypointMap.get(conn[0]); const p2 = keypointMap.get(conn[1]);
+                if(p1 && p2 && p1.score > 0.3 && p2.score > 0.3) {
+                    const x1 = p1.x * scale + offsetX, y1 = p1.y * scale + offsetY;
+                    const x2 = p2.x * scale + offsetX, y2 = p2.y * scale + offsetY;
+                    ctx.beginPath();
+                    ctx.moveTo(x1,y1);
+                    ctx.lineTo(x2,y2);
+                    ctx.stroke();
+
+                    // midpoint red dot
+                    const mx = (x1+x2)/2, my = (y1+y2)/2;
+                    ctx.fillStyle = 'rgba(200,20,20,0.95)';
+                    ctx.shadowColor = 'rgba(200,20,20,0.9)';
+                    ctx.shadowBlur = 14;
+                    ctx.beginPath();
+                    ctx.arc(mx, my, 5, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            });
+
+            // draw keypoints
+            pose.keypoints.forEach(kp => {
+                if(kp.score > 0.35) {
+                    const x = kp.x * scale + offsetX, y = kp.y * scale + offsetY;
+                    ctx.fillStyle = 'rgba(220,40,40,1)';
+                    ctx.shadowColor = 'rgba(220,40,40,0.95)';
+                    ctx.shadowBlur = 14;
+                    ctx.beginPath(); ctx.arc(x,y,7 + kp.score*4, 0, Math.PI*2); ctx.fill();
+                }
+            });
+        });
+
+        // reset shadow
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'transparent';
+    }
+    requestAnimationFrame(drawLoop);
+}
+if (videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
                 
                 const w = mainFilterCanvas.width;
                 const h = mainFilterCanvas.height;
@@ -1318,12 +1405,41 @@
             });
         }
         
-        function setFilter(f) {
-            document.querySelectorAll('.filter-btn').forEach(b => {
-                if (b.id !== 'btn-panel') {
-                    b.classList.remove('active');
-                }
-            });
+        
+function setFilter(f) {
+    try {
+        document.querySelectorAll('.filter-btn').forEach(b => {
+            if (b.id !== 'btn-panel') b.classList.remove('active');
+        });
+    } catch(e){}
+    const mainFilterCanvas = document.getElementById('main-filter-canvas');
+    if (mainFilterCanvas) mainFilterCanvas.style.display = 'none';
+    try { if (window.BlueWave && BlueWave.isActive()) BlueWave.stop(); } catch(e){}
+    document.body.classList.remove('filter-night-vision', 'filter-sls', 'filter-negative', 'filter-bluewave', 'filter-night');
+    if (currentFilter === f) {
+        currentFilter = 'none';
+    } else {
+        currentFilter = f;
+        // mark button active (best effort)
+        try {
+            const btn = document.querySelector(`[onclick="setFilter('${f}')"]`);
+            if(btn) btn.classList.add('active');
+        } catch(e){}
+        if (f === 'sls') {
+            document.body.classList.add('filter-sls');
+            if (mainFilterCanvas) mainFilterCanvas.style.display = 'block';
+        } else if (f === 'negative') {
+            document.body.classList.add('filter-negative');
+        } else if (f === 'bluewave') {
+            document.body.classList.add('filter-bluewave');
+            try { if (window.BlueWave) BlueWave.start(); } catch(e){}
+        } else {
+            document.body.classList.add('filter-' + f);
+        }
+    }
+    try { toggleControls(true); } catch(e){}
+}
+});
             
             document.body.classList.remove('filter-night-vision', 'filter-sls', 'filter-negative');
             mainFilterCanvas.style.display = 'none';
@@ -1396,7 +1512,6 @@
                 updateLoadingProgress(55, "CARGANDO AUDIO...");
                 [audioBuffer_Fondo1, audioBuffer_Fondo2] = await Promise.all([
                     loadAudio('FONDO_1.mp3'),
-                    loadAudio('FONDO_2.mp3')
                 ]);
                 console.log("Audios de fondo cargados.");
                 updateLoadingProgress(65, "AUDIO CARGADO");
@@ -2163,5 +2278,124 @@
             resizeAllCanvas(); 
         };
     </script>
+
+<script>
+/* --- BLUE LIGHT WAVE (WebGL) --- */
+(function initBlueWaveModule(){
+  const video = document.getElementById('bg-camera-feed');
+  const glCanvas = document.getElementById('gl-bluewave');
+  let gl, program, tex, posLoc, timeLoc, resLoc;
+  let rafId = null;
+  let startT = performance.now();
+
+  function fit() {
+    if(!glCanvas) return;
+    glCanvas.width = glCanvas.clientWidth;
+    glCanvas.height = glCanvas.clientHeight;
+    if (gl) gl.viewport(0,0,glCanvas.width, glCanvas.height);
+  }
+  window.addEventListener('resize', fit);
+
+  function createShader(type, src){
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+      console.warn(gl.getShaderInfoLog(s));
+      return null;
+    }
+    return s;
+  }
+
+  function setupGL(){
+    if (!video || !glCanvas) return;
+    gl = glCanvas.getContext('webgl', { preserveDrawingBuffer: false });
+    if (!gl) { console.warn('WebGL not supported'); return; }
+
+    const vs = `
+      attribute vec2 a_pos;
+      varying vec2 v_uv;
+      void main(){ v_uv = a_pos*0.5+0.5; gl_Position = vec4(a_pos,0,1); }
+    `;
+    const fs = `
+      precision mediump float;
+      varying vec2 v_uv;
+      uniform sampler2D u_tex;
+      uniform float u_time;
+      uniform vec2 u_res;
+      void main(){
+        vec2 p = v_uv;
+        vec2 c = vec2(0.5, 0.5);
+        float t = u_time;
+        float wave = sin((p.y * 8.0) + t * 1.8) * 0.018;
+        float r = distance(p, c);
+        float radial = sin(r * 20.0 - t * 3.0) * 0.009;
+        p.x += wave + radial;
+        vec3 col = texture2D(u_tex, p).rgb;
+        float glow = smoothstep(0.7, 0.2, r);
+        col += glow * vec3(0.06, 0.12, 0.28);
+        col = col * vec3(0.55, 0.6, 1.4);
+        float l = dot(col, vec3(0.2126,0.7152,0.0722));
+        col = mix(vec3(l), col, 1.4);
+        col *= 1.0 - (r * 0.35);
+        gl_FragColor = vec4(col, 1.0);
+      }
+    `;
+    const vsh = createShader(gl.VERTEX_SHADER, vs);
+    const fsh = createShader(gl.FRAGMENT_SHADER, fs);
+    program = gl.createProgram();
+    gl.attachShader(program, vsh);
+    gl.attachShader(program, fsh);
+    gl.linkProgram(program);
+    gl.useProgram(program);
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
+    posLoc = gl.getAttribLocation(program, 'a_pos');
+    gl.enableVertexAttribArray(posLoc);
+    gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+    tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    timeLoc = gl.getUniformLocation(program, 'u_time');
+    resLoc = gl.getUniformLocation(program, 'u_res');
+    fit();
+  }
+
+  function start() {
+    if (!gl) setupGL();
+    if(!gl) return;
+    glCanvas.style.display = 'block';
+    cancelAnimationFrame(rafId);
+    function frame(now){
+      const t = (now - startT)/1000;
+      gl.uniform1f(timeLoc, t);
+      gl.uniform2f(resLoc, glCanvas.width, glCanvas.height);
+      if (video && video.readyState >= 2) {
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        try {
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, video);
+        } catch(e) {}
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      }
+      rafId = requestAnimationFrame(frame);
+    }
+    rafId = requestAnimationFrame(frame);
+  }
+
+  function stop() {
+    if (glCanvas) glCanvas.style.display = 'none';
+    if (rafId) cancelAnimationFrame(rafId);
+  }
+
+  window.BlueWave = { start, stop, isActive: () => (glCanvas && glCanvas.style.display === 'block') };
+
+  video && video.addEventListener('loadeddata', () => { try { setupGL(); } catch(e){} });
+
+})();
+</script>
+
 </body>
 </html>
