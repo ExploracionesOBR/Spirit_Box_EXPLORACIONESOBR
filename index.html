@@ -32,7 +32,7 @@
             --text-dim-grey: #777;
             --panel-width-landscape: 300px;
             --panel-height-landscape: 160px;
-            --bottom-panel-height-vertical: 220px; /* Aumentado un poco para acomodar mejor */
+            --bottom-panel-height-vertical: 220px;
         }
         
         body {
@@ -296,13 +296,9 @@
             transition: all 0.3s;
         }
         
-        /* MEJORA: Código de colores ajustado a la petición */
         .status-light-group[data-status="connected"] .status-led-indicator { background-color: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); animation: pulseGlow 1.5s infinite; }
-        /* Azul para Simulación activada o Fallback */
         .status-light-group[data-status="simulated"] .status-led-indicator { background-color: var(--sensor-blue); box-shadow: 0 0 10px var(--sensor-blue); animation: pulseGlow 2s infinite; }
-        /* Naranja para Localizado pero no conectado/esperando */
         .status-light-group[data-status="orange"] .status-led-indicator { background-color: var(--sim-orange); box-shadow: 0 0 10px var(--sim-orange); }
-        /* Rojo para error o no localizado */
         .status-light-group[data-status="unavailable"] .status-led-indicator { background-color: var(--alert-red); box-shadow: 0 0 10px var(--alert-red); }
         .status-light-group[data-status="off"] .status-led-indicator { background-color: #333; }
         
@@ -613,11 +609,9 @@
         #logo-image {
             top: 20px; right: 20px;
             width: 70px; height: 70px;
-            /* MEJORA: Animación Glitch cuando está visible */
             animation: logo-effects 7s infinite linear, glitch 2s infinite alternate-reverse; 
         }
         
-        /* MEJORA: Keyframes para efecto GLITCH */
         @keyframes glitch {
             0% { transform: translate(0); opacity: 1; filter: none; }
             10% { transform: translate(-2px, 2px); opacity: 0.8; filter: drop-shadow(2px 0 red); }
@@ -758,7 +752,6 @@
             animation: pulseGlow 1.5s infinite;
         }
 
-        /* MEJORA: Contenedor "Síguenos" con logos y animación cíclica */
         #follow-container {
             position: absolute; 
             bottom: 30px;
@@ -766,7 +759,7 @@
             transform: translateX(-50%); 
             z-index: 10;
             pointer-events: none;
-            opacity: 0; /* Empieza oculto */
+            opacity: 0;
             transition: opacity 1s ease-out, transform 1s ease-out;
             font-family: 'Orbitron', sans-serif;
             font-size: 1rem;
@@ -803,8 +796,6 @@
             bottom: 15px; 
         }
 
-        /* --- CSS RESPONSIVE (Horizontal/Vertical) --- */
-        
         @media (max-aspect-ratio: 1/1) {
             #left-panel {
                 top: 0; left: 0;
@@ -1119,23 +1110,10 @@
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(function(registrations) {
                     if (registrations.length) {
-                        console.log('[ANTI-CACHE] Des-registrando Service Workers...');
                         for(let registration of registrations) {
                             registration.unregister();
                         }
-                        console.log('[ANTI-CACHE] Service Workers eliminados. Recargando...');
                         location.reload(true); 
-                    } else {
-                        console.log('[ANTI-CACHE] No se encontraron Service Workers.');
-                    }
-                });
-            }
-            
-            if (window.caches) {
-                caches.keys().then(function(names) {
-                    for (let name of names) {
-                        console.log('[ANTI-CACHE] Eliminando caché:', name);
-                        caches.delete(name);
                     }
                 });
             }
@@ -1146,7 +1124,7 @@
         let isRunning = false;
         let currentFilter = 'none'; 
         
-        let scanSpeed = 1; // 0=Lento, 1=Normal, 2=Rápido
+        let scanSpeed = 1; 
         const SCAN_DELAYS = [1500, 700, 200];
         
         const videoBg = document.getElementById('bg-camera-feed');
@@ -1180,6 +1158,7 @@
         let programadoData = new Map();
         let automaticoData = [];
         let currentTemp = 19.8;
+        let automaticoCounter = 0; // Contador para disparar frases automáticas
         
         let proximitySensor;
         let magnetometer;
@@ -1213,8 +1192,7 @@
         let frameCount = 0;
         let lastFpsUpdate = 0;
         
-        // Variables de estado de sensores mejoradas
-        let magState = 'off'; // off, connected, orange (detected but waiting), simulated (blue/fallback)
+        let magState = 'off';
         let emfState = 'off';
 
         async function startCamera() {
@@ -1235,7 +1213,7 @@
                 if (videoTrack && typeof videoTrack.applyConstraints === 'function') {
                     videoTrack.applyConstraints({
                         advanced: [{ focusMode: 'continuous' }]
-                    }).catch(e => console.warn("No se pudo aplicar 'focusMode: continuous'", e));
+                    }).catch(e => console.warn("Error focus", e));
                     
                     const capabilities = videoTrack.getCapabilities();
                     if (!capabilities.torch) {
@@ -1309,9 +1287,8 @@
                     maxPoses: 6 
                 };
                 poseDetector = await poseDetection.createDetector(model, detectorConfig);
-                console.log("MoveNet (IA Multi-Pose) cargado.");
             } catch (e) {
-                console.error("Error al cargar modelo de IA:", e);
+                console.error("Error IA:", e);
             }
         }
         
@@ -1330,14 +1307,11 @@
             }
 
             if (videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
-                
                 const w = mainFilterCanvas.width;
                 const h = mainFilterCanvas.height;
-
                 mainFilterCtx.clearRect(0, 0, w, h);
                 
                 const kinectBanner = document.getElementById('kinect-banner');
-                
                 if (currentFilter === 'sls') {
                     kinectBanner.style.display = 'block';
                     if (latestPoses) {
@@ -1355,10 +1329,8 @@
                 if (currentFilter === 'sls' && poseDetector && videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
                     if (!isDetectingPose) {
                         isDetectingPose = true;
-                        
                         const poses = await poseDetector.estimatePoses(videoBg); 
                         latestPoses = poses; 
-                        
                         isDetectingPose = false;
                     }
                     await new Promise(r => setTimeout(r, 100)); 
@@ -1381,12 +1353,9 @@
         
         function drawAllSkeletons(poses) {
             const ctx = mainFilterCanvas; 
-            
-            // MEJORA: Líneas VERDE NEÓN y más gruesas para SLS
             ctx.strokeStyle = 'var(--neon-green)'; 
-            ctx.fillStyle = '#FF0000'; // MEJORA: Puntos ROJOS
-            
-            ctx.lineWidth = 4; // MEJORA: Más gruesas
+            ctx.fillStyle = '#FF0000';
+            ctx.lineWidth = 4;
             ctx.filter = 'drop-shadow(0 0 5px var(--neon-green))';
 
             const videoW = videoBg.videoWidth;
@@ -1425,7 +1394,7 @@
                 if (keypoint.score > confidenceThreshold) {
                     ctx.beginPath();
                     ctx.arc(keypoint.x * scale + offsetX, keypoint.y * scale + offsetY, 5, 0, 2 * Math.PI); 
-                    ctx.fill(); // Relleno ROJO definido arriba
+                    ctx.fill();
                 }
             }
         }
@@ -1440,7 +1409,6 @@
             skeletonMap.forEach(connection => {
                 const start = keypointMap.get(connection[0]);
                 const end = keypointMap.get(connection[1]);
-
                 if (start && end && start.score > confidenceThreshold && end.score > confidenceThreshold) {
                     ctx.beginPath();
                     ctx.moveTo(start.x * scale + offsetX, start.y * scale + offsetY);
@@ -1456,7 +1424,6 @@
                     b.classList.remove('active');
                 }
             });
-            
             document.body.classList.remove('filter-detector', 'filter-sls', 'filter-negative');
             mainFilterCanvas.style.display = 'none';
 
@@ -1466,12 +1433,8 @@
                 currentFilter = f;
                 const targetBtn = event ? event.target : document.querySelector(`.filter-btn[onclick="setFilter('${f}')"]`);
                 if(targetBtn) targetBtn.classList.add('active');
-
                 document.body.classList.add('filter-' + f);
-                
-                if (f === 'sls') {
-                    mainFilterCanvas.style.display = 'block';
-                }
+                if (f === 'sls') mainFilterCanvas.style.display = 'block';
             }
         }
 
@@ -1480,30 +1443,22 @@
             if (sensorName === 'mic') el = micStatus;
             else if (sensorName === 'mag') el = magStatus;
             else if (sensorName === 'prox') el = proxStatus;
-            
-            if (el) {
-                el.dataset.status = status;
-            }
+            if (el) el.dataset.status = status;
         }
 
         async function toggleTorch(event) {
             if (!videoTrack || typeof videoTrack.applyConstraints !== 'function') {
-                console.log("Linterna no soportada");
                 document.getElementById('btn-torch').style.display = 'none';
                 return;
             }
-        
             try {
-                // MEJORA: Lógica de linterna arreglada
                 const newState = !isTorchOn;
                 await videoTrack.applyConstraints({
                     advanced: [{ torch: newState }]
                 });
-                isTorchOn = newState; // Actualizar variable solo si tuvo éxito
+                isTorchOn = newState;
                 event.currentTarget.classList.toggle('active', isTorchOn);
             } catch (e) {
-                console.error("Error al activar linterna:", e);
-                // Si falla, intentamos forzar el apagado visual
                 isTorchOn = false; 
                 event.currentTarget.classList.remove('active');
             }
@@ -1515,7 +1470,7 @@
                 const arrayBuffer = await response.arrayBuffer();
                 return await audioCtx.decodeAudioData(arrayBuffer);
             } catch (e) {
-                console.error(`Error cargando audio: ${url}`, e);
+                console.error(`Error audio: ${url}`, e);
                 throw e; 
             }
         }
@@ -1532,10 +1487,8 @@
                     loadAudio('FONDO_1.mp3'),
                     loadAudio('FONDO_2.mp3')
                 ]);
-                console.log("Audios de fondo cargados.");
                 updateLoadingProgress(65, "AUDIO CARGADO");
             } catch (e) {
-                console.error("Error al cargar audios de fondo:", e);
                 updateLoadingProgress(65, "ERROR DE AUDIO");
                 return; 
             }
@@ -1561,7 +1514,6 @@
             distortionNode = audioCtx.createWaveShaper();
             distortionNode.curve = makeDistortionCurve(50); 
             distortionNode.oversample = '4x';
-            
             distortionNode.connect(reverbGain); 
         }
 
@@ -1617,18 +1569,15 @@
             sensorPermissionsRequested = true;
             
             console.log("Solicitando permisos de sensores...");
-            
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 try {
                     const status = await DeviceOrientationEvent.requestPermission();
                     if (status === 'granted') {
                         initSensor();
                     } else {
-                        // MEJORA: Fallback si no hay permiso
                         handleSensorFailure();
                     }
                 } catch (e) {
-                    console.warn("Error al pedir permiso de orientación, probando sensores:", e);
                     initSensor();
                 }
             } else {
@@ -1636,9 +1585,7 @@
             }
         }
         
-        // MEJORA: Lógica centralizada de sensores (MAG/EMF)
         function initSensor() {
-            // 1. Intentar Orientación (MAG)
             if ('AbsoluteOrientationSensor' in window) {
                 try {
                     orientationSensor = new AbsoluteOrientationSensor({ frequency: 10 });
@@ -1646,12 +1593,11 @@
                         let q = orientationSensor.quaternion;
                         let yaw = Math.atan2(2 * (q[0] * q[1] + q[2] * q[3]), 1 - 2 * (q[1] * q[1] + q[2] * q[2])) * (180 / Math.PI);
                         document.getElementById('compass-needle').style.transform = `translateX(-50%) rotate(${-yaw}deg)`;
-                        setSensorStatus('mag', 'connected'); // VERDE (OK)
+                        setSensorStatus('mag', 'connected');
                     };
                     orientationSensor.onerror = (e) => {
-                        console.warn("Error Brújula:", e);
-                        setSensorStatus('mag', 'orange'); // Detectado pero no funciona
-                        activateFallbackLogic(); // Activar fallback de luz/proximidad
+                        setSensorStatus('mag', 'orange'); 
+                        activateFallbackLogic();
                     };
                     orientationSensor.start();
                 } catch (e) {
@@ -1659,24 +1605,21 @@
                     activateFallbackLogic();
                 }
             } else {
-                 // Si no existe API, probar Fallback directo
-                 setSensorStatus('mag', 'unavailable'); // ROJO inicialmente
+                 setSensorStatus('mag', 'unavailable');
                  activateFallbackLogic();
             }
 
-            // 2. Intentar Magnetómetro (EMF)
             if ('Magnetometer' in window) {
                 try {
                     magnetometer = new Magnetometer({ frequency: 10 });
                     magnetometer.onreading = () => {
                         let strength = Math.sqrt(magnetometer.x**2 + magnetometer.y**2 + magnetometer.z**2);
                         emfValue = Math.min(100, (strength / 100) * 100); 
-                        setSensorStatus('prox', 'connected'); // VERDE
+                        setSensorStatus('prox', 'connected');
                     };
                     magnetometer.onerror = (e) => {
-                        console.warn("Magnetómetro error:", e);
-                        setSensorStatus('prox', 'orange'); // Detectado, error
-                        initProximitySensor(); // Probar proximidad
+                        setSensorStatus('prox', 'orange');
+                        initProximitySensor();
                     };
                     magnetometer.start();
                 } catch (e) {
@@ -1684,26 +1627,22 @@
                     initProximitySensor();
                 }
             } else {
-                console.warn("Sin Magnetómetro");
                 setSensorStatus('prox', 'unavailable');
                 initProximitySensor();
             }
         }
 
         function handleSensorFailure() {
-             setSensorStatus('mag', 'unavailable'); // Rojo
-             setSensorStatus('prox', 'simulated');  // Azul (Simulación)
+             setSensorStatus('mag', 'unavailable'); 
+             setSensorStatus('prox', 'simulated'); 
              startEmfSimulation();
         }
 
-        // Lógica de Fallback para MAG (Luz Roja simulador o Proximidad)
         function activateFallbackLogic() {
-            // Si falla MAG, usamos Proximidad o Simulación matemática para colorearlo AZUL
             if('ProximitySensor' in window) {
-                 // Ya se maneja en initProximitySensor, solo cambiamos el estado visual de MAG para reflejar que usa fallback
-                 setSensorStatus('mag', 'simulated'); // AZUL
+                 setSensorStatus('mag', 'simulated');
             } else {
-                 setSensorStatus('mag', 'simulated'); // AZUL (Simulación pura)
+                 setSensorStatus('mag', 'simulated');
             }
         }
 
@@ -1717,8 +1656,6 @@
                         if (dist <= minDist) emfValue = 100;
                         else if (dist >= maxDist) emfValue = 0;
                         else emfValue = 100 * (1 - (dist - minDist) / (maxDist - minDist));
-                        
-                        // MEJORA: Si usa proximidad, es un Fallback -> AZUL
                         setSensorStatus('prox', 'simulated'); 
                     };
                     proximitySensor.onerror = () => {
@@ -1738,12 +1675,11 @@
         
         function startEmfSimulation() {
             if (emfSimInterval) return;
-            // MEJORA: Movimiento irregular en simulación
             emfSimInterval = setInterval(() => {
                 if(Math.random() > 0.7) {
-                    emfValue = Math.random() * 80; // Saltos bruscos
+                    emfValue = Math.random() * 80; 
                 } else {
-                    emfValue = Math.random() * 20; // Ruido de fondo
+                    emfValue = Math.random() * 20; 
                 }
             }, 150);
         }
@@ -1759,29 +1695,16 @@
             setSensorStatus('mag', 'off');
         }
 
-        
         function startVisualLoop() {
             if (visualLoopInterval) clearInterval(visualLoopInterval); 
             visualLoopInterval = setInterval(() => {
                 let intensity = emfValue; 
-                
                 const needle = document.getElementById('main-needle');
                 if (needle) {
-                    // Movimiento de la aguja
                     needle.style.transform = `translateX(-50%) rotate(${-60 + (intensity/100)*120}deg)`;
                 }
-                
             }, 100); 
         }
-        
-        function stopVisualLoop() {
-            const needle = document.getElementById('main-needle');
-            if (needle) {
-                needle.style.transform = `translateX(-50%) rotate(-60deg)`;
-            }
-        }
-
-        // --- SPIRIT BOX ---
         
         const pwr = document.getElementById('knob-power');
         pwr.addEventListener('click', async () => {
@@ -1793,8 +1716,13 @@
                 await initSpeechRecAndVUMeter(); 
             }
             
+            // Asegurar que el contexto esté activo al pulsar Power
+            if (audioCtx && audioCtx.state === 'suspended') {
+                await audioCtx.resume();
+            }
+            
             if(!audioCtx || !micStreamSource) { 
-                console.error("Contexto de Audio o Micrófono no pudo inicializarse.");
+                console.error("Error crítico de audio/mic");
                 pwr.classList.remove('active');
                 isRunning = false;
                 return; 
@@ -1804,12 +1732,8 @@
             pwr.classList.toggle('active', isRunning); 
             
             if(isRunning) {
-                if(audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                    const silentUtterance = new SpeechSynthesisUtterance(" ");
-                    silentUtterance.volume = 0;
-                    window.speechSynthesis.speak(silentUtterance);
-                }
+                // Reiniciar contador automático
+                automaticoCounter = 0;
                 
                 playFondo1();
                 gain_Fondo1.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.5); 
@@ -1843,22 +1767,18 @@
         });
 
         document.getElementById('knob-scan').addEventListener('click', function() {
-            scanSpeed = (scanSpeed + 1) % 3; // 0, 1, 2
+            scanSpeed = (scanSpeed + 1) % 3;
             let rotation;
             let knob = this;
             knob.classList.remove('speed-1', 'speed-2', 'speed-3');
             
-            if (scanSpeed === 0) { // Lento
-                rotation = -120;
+            if (scanSpeed === 0) {
                 knob.classList.add('speed-1');
-            } else if (scanSpeed === 1) { // Normal
-                rotation = 0;
+            } else if (scanSpeed === 1) {
                 knob.classList.add('speed-2');
-            } else { // Rápido
-                rotation = 120;
+            } else {
                 knob.classList.add('speed-3');
             }
-            console.log("Velocidad de Scan:", ["LENTO", "NORMAL", "RAPIDO"][scanSpeed]);
         });
 
         document.getElementById('vol-slider').addEventListener('input', (e) => {
@@ -1889,36 +1809,27 @@
             let response;
             try {
                 updateLoadingProgress(25, "CONECTANDO CON API-OBR");
-                
                 response = await fetch(GOOGLE_SCRIPT_URL);
                 updateLoadingProgress(50, "RECIBIENDO DATOS");
 
-                if (!response.ok) {
-                    throw new Error(`Error de red: ${response.statusText}`);
-                }
+                if (!response.ok) throw new Error(`Error de red`);
                 
                 const data = await response.json();
-                
                 if (!audioCtx) await initAudio_LoadFiles(); 
                 
                 updateLoadingProgress(75, "PROCESANDO RESPUESTAS");
 
                 automaticoData = data.automatico.map(r => r.TEXTO).filter(t => t);
-                
                 data.programado.forEach(r => {
                     let p = (r.PREGUNTA || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
                     let res = r.RESPUESTA;
-                    if (p && res) {
-                        programadoData.set(p, res);
-                    }
+                    if (p && res) programadoData.set(p, res);
                 });
                 
                 updateLoadingProgress(100, "SINCRONIZACIÓN COMPLETA");
-                
-                console.log(`%c[SISTEMA OBR] Sincronización completa: ${automaticoData.length} AUTO | ${programadoData.size} PROG.`, "color: #39FF14; font-weight: bold;");
 
             } catch (e) { 
-                console.error("Error cargando datos de Google Apps Script:", e);
+                console.error("Error datos:", e);
                 updateLoadingProgress(100, "ERROR DE SINCRONIZACIÓN");
             } finally {
                 setTimeout(hideLoadingScreen, 500); 
@@ -1926,7 +1837,6 @@
             }
         }
 
-        
         let preferredVoice = null;
         function loadVoices() {
             let voices = window.speechSynthesis.getVoices();
@@ -1934,7 +1844,6 @@
                 preferredVoice = voices.find(v => v.lang === 'es-MX');
                 if (!preferredVoice) preferredVoice = voices.find(v => v.lang === 'es-ES');
                 if (!preferredVoice) preferredVoice = voices.find(v => v.lang.startsWith('es-'));
-                console.log("Voz seleccionada:", preferredVoice ? preferredVoice.name : "Ninguna (usará default)");
             }
         }
         
@@ -1987,7 +1896,6 @@
                     wordIndex++;
                     gain_Fondo1.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime);
                     gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime);
-                    
                     setTimeout(speakWordByWord, 100 + Math.random() * 400); 
                 };
                 
@@ -1996,7 +1904,6 @@
 
             speakWordByWord(); 
             
-            // MEJORA: Feedback visual cuando habla
             const sensorPanel = document.getElementById('p-unified');
             if(sensorPanel) {
                 sensorPanel.classList.add('alert');
@@ -2007,41 +1914,51 @@
 
         function runSpiritBoxLoop() {
             if (!isRunning || spiritBoxState === "SPEAKING") return;
+            
+            // Entramos en fase de ESCUCHA
             spiritBoxState = "LISTENING";
             
-            if (audioSource_Fondo2) { try { audioSource_Fondo2.stop(); } catch(e){} }
-            if (scanTimer) clearTimeout(scanTimer);
-            gain_Fondo2.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+            // Silenciar ligeramente el ruido de fondo para "escuchar" mejor
+            gain_Fondo2.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.2);
             
             try {
                 if (!isRecognizing && recognition) { 
-                    recognition.start();
+                    recognition.start(); 
+                    // El indicador LED verde se enciende en recognition.onstart
                 }
             } catch(e) {
-                console.warn("Error al iniciar recognition", e);
-                setSensorStatus('mic', 'unavailable');
                 if (isRunning) setTimeout(runSpiritBoxLoop, 2000);
                 return;
             }
 
+            // Tiempo máximo de escucha antes de volver a escanear (ventana de silencio)
             spiritBoxTimeout = setTimeout(() => {
                 if (spiritBoxState !== "LISTENING") return; 
                 
-                console.log("Timeout: No se detectó comando de voz.");
+                // Nadie dijo nada
                 if (isRecognizing && recognition) recognition.abort();
-                isRecognizing = false;
+                isRecognizing = false; // Esto apagará el LED Verde en onend
 
                 gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 0.2);
                 spiritBoxState = "SCANNING";
                 playFondo2_Fragment(); 
 
-                if (automaticoData.length > 0) {
+                // LÓGICA AUTOMÁTICA: Incrementar contador de silencio
+                automaticoCounter++;
+
+                // Si ha pasado suficiente "tiempo" (ciclos de escucha sin respuesta), soltar algo random
+                // Se ajusta el umbral (ej: cada 3 ciclos de silencio ~ 15 segundos aprox)
+                if (automaticoCounter >= 2 && automaticoData.length > 0) {
+                    automaticoCounter = 0; // Reset
                     setTimeout(() => {
                         if (isRunning) {
-                            speak(automaticoData[Math.floor(Math.random() * automaticoData.length)]);
+                            let frase = automaticoData[Math.floor(Math.random() * automaticoData.length)];
+                            console.log("Disparando Automático:", frase);
+                            speak(frase);
                         }
-                    }, 1000 + Math.random() * 2000);
+                    }, 1000);
                 } else {
+                    // Volver a intentar escuchar en unos segundos
                     setTimeout(runSpiritBoxLoop, 3000);
                 }
             }, 5000); 
@@ -2049,18 +1966,14 @@
 
         async function initSpeechRecAndVUMeter() {
             if (!SpeechRecognition) {
-                console.error("SpeechRecognition no soportado.");
                 setSensorStatus('mic', 'unavailable');
                 return;
             }
 
             let stream;
             try {
-                console.log("Solicitando permiso de micrófono...");
                 stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                console.log("Permiso de micrófono obtenido.");
             } catch (e) {
-                console.error("Error al obtener permiso de micrófono:", e);
                 setSensorStatus('mic', 'unavailable'); 
                 return; 
             }
@@ -2070,47 +1983,50 @@
                 vuAnalyserNode = audioCtx.createAnalyser();
                 vuAnalyserNode.fftSize = 256;
                 micStreamSource.connect(vuAnalyserNode);
-                
-                // MEJORA: Conectar el micrófono a la salida para reproducir audio (Feedback loop cuidado)
-                const micGain = audioCtx.createGain();
-                micGain.gain.value = 0.8; // Volumen ajustado
-                micStreamSource.connect(micGain);
-                micGain.connect(audioCtx.destination);
+                // CORRECCIÓN: NO CONECTAMOS A DESTINATION (No Feedback)
+                // micStreamSource.connect(audioCtx.destination);  <-- Eliminado
 
                 vuDataArray = new Uint8Array(vuAnalyserNode.frequencyBinCount);
                 drawVUMeter(); 
-                console.log("VU Meter inicializado.");
+                console.log("Micrófono activo para gráficas (sin feedback).");
             }
 
             recognition = new SpeechRecognition(); 
             recognition.lang = 'es-MX'; 
-            recognition.continuous = false;
+            recognition.continuous = false; 
 
+            // LED VERDE SOLO CUANDO ESTÁ LISTO PARA COMANDO
             recognition.onstart = () => { 
                 isRecognizing = true;
-                setSensorStatus('mic', 'connected'); 
+                setSensorStatus('mic', 'connected'); // Verde
             };
             
             recognition.onend = () => { 
                 isRecognizing = false;
+                // Regresar a estado "apagado visualmente" aunque siga graficando
                 setSensorStatus('mic', 'off'); 
             };
             
             recognition.onerror = (e) => {
                 isRecognizing = false;
                 setSensorStatus('mic', 'unavailable'); 
-                console.warn("Error de Recognition:", e.error);
             };
 
             recognition.onresult = (e) => {
                 if (spiritBoxTimeout) clearTimeout(spiritBoxTimeout); 
                 
                 let t = e.results[0][0].transcript.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-                console.log("Comando detectado:", t);
+                console.log("Comando oído:", t);
 
+                // Si oímos algo, reseteamos el contador automático para no interrumpir
+                automaticoCounter = 0;
+
+                // LÓGICA PRINCIPAL: Buscar en Programado, sino Random de Automático
                 if (programadoData.has(t)) {
+                    // RESPUESTA PROGRAMADA
                     speak(programadoData.get(t));
                 } else {
+                    // COMANDO NO RECONOCIDO -> RESPUESTA AL AZAR DE AUTOMÁTICO
                     if (automaticoData.length > 0) {
                         speak(automaticoData[Math.floor(Math.random() * automaticoData.length)]);
                     }
@@ -2119,6 +2035,7 @@
         }
 
         function drawVUMeter() {
+            // Siempre dibujar si hay contexto y analizador, independiente de si está "grabando" voz
             if (!vuCtx || !vuAnalyserNode) { 
                 requestAnimationFrame(drawVUMeter);
                 return;
@@ -2133,6 +2050,7 @@
             let rms = Math.sqrt(sum / vuDataArray.length);
             let db = 20 * Math.log10(rms);
             
+            // Ajustar sensibilidad visual
             let minDb = -60;
             let maxDb = -10;
             let volumePercent = Math.max(0, Math.min(100, 100 * (db - minDb) / (maxDb - minDb)));
@@ -2199,26 +2117,6 @@
                 energyCtx.lineTo(i * step, h - (energyHistory[i] / 100 * h));
             }
             energyCtx.stroke();
-            
-            energyCtx.beginPath();
-            energyCtx.strokeStyle = 'var(--alert-red)';
-            energyCtx.lineWidth = 1; 
-            let inPeak = false;
-            for(let i=0; i<energyHistory.length; i++) {
-                let val = energyHistory[i];
-                let y = h - (val / 100 * h);
-                if (val > 80) { 
-                    if (!inPeak) {
-                        energyCtx.moveTo(i * step, y);
-                        inPeak = true;
-                    } else {
-                        energyCtx.lineTo(i * step, y);
-                    }
-                } else {
-                    inPeak = false;
-                }
-            }
-            energyCtx.stroke(); 
         }
 
         function resizeEnergyCanvas() {
@@ -2243,8 +2141,6 @@
             }
         }
 
-        // --- UI Lógica y Eventos de Zoom/Pan ---
-        
         const filterControls = document.getElementById('filter-controls-container');
         const logoImage = document.getElementById('logo-image');
         const followContainer = document.getElementById('follow-container');
@@ -2252,13 +2148,10 @@
         function showControls() {
             filterControls.style.opacity = '1';
             logoImage.classList.add('hiding'); 
-            
-            // MEJORA: Ocultar "Síguenos" al mostrar controles
             if (followContainer) {
                 followContainer.classList.remove('show-anim');
                 followContainer.classList.add('hide-anim');
             }
-
             filterControls.style.pointerEvents = 'auto';
             clearTimeout(uiHideTimeout);
             uiHideTimeout = setTimeout(hideControls, 4000); 
@@ -2269,21 +2162,15 @@
             filterControls.style.opacity = '0';
             logoImage.classList.remove('hiding'); 
             logoImage.classList.add('visible'); 
-            
             filterControls.style.pointerEvents = 'none';
             uiVisible = false;
         }
         
-
         function handleUITap(event) {
             if (isPinching || isPanning) return; 
-            
             if (!event.target.closest('.panel') && !event.target.closest('.filter-btn')) {
-                if (uiVisible) {
-                    hideControls(); 
-                } else {
-                    showControls(); 
-                }
+                if (uiVisible) hideControls(); 
+                else showControls(); 
             } else {
                 showControls();
             }
@@ -2297,7 +2184,6 @@
             const pwrButton = document.getElementById('knob-power');
     
             if (isVertical && document.body.classList.contains('panels-active') && !pwrButton.classList.contains('active')) {
-                console.log("Vertical panel open, auto-starting Spirit Box...");
                 pwrButton.click(); 
             }
             
@@ -2308,15 +2194,10 @@
             setTimeout(resizeAllCanvas, 500); 
         }
 
-        // MEJORA: Lógica de animación para "SÍGUENOS" cada 30 segundos
         function runFollowAnimation() {
             if (uiVisible || !followContainer) return; 
-            
-            // Mostrar
             followContainer.classList.remove('hide-anim');
             followContainer.classList.add('show-anim');
-            
-            // Ocultar después de 5 segundos
             setTimeout(() => {
                 followContainer.classList.remove('show-anim');
                 followContainer.classList.add('hide-anim');
@@ -2374,22 +2255,17 @@
             if (e.touches.length < 1) isPanning = false;
         });
 
-
         window.onload = () => {
             startCamera();
             startVisualLoop(); 
             initMLModel(); 
             detectPoseLoop(); 
-            
             setInterval(updateSensorReadings, 2000); 
-            setInterval(runFollowAnimation, 30000); // MEJORA: Loop cada 30 segundos
-            
+            setInterval(runFollowAnimation, 30000);
             document.body.classList.remove('panels-active');
             document.getElementById('btn-panel').classList.remove('active');
             document.getElementById('knob-scan').classList.add('speed-2'); 
-            
             hideControls();
-            
             loadSheetData(); 
         };
         
