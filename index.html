@@ -2,15 +2,10 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <link rel="apple-touch-icon" href="obr-logo.png">
-
-    <title>DETECTOR-OBR V4</title> 
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>DETECTOR-OBR V5 (VISUAL)</title> 
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
     
@@ -20,16 +15,18 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
 
     <style>
+        /* --- BASE DE COLORES Y FUENTES (FUENTE: MEJOR VISUAL) --- */
         :root {
             --neon-green: #39FF14;
             --alert-red: #FF3333;
             --sim-orange: #FFB000;
             --sensor-blue: #00BFFF; 
-            --panel-bg-dark: #0f1110;
-            --border-color-dark: rgba(57, 255, 20, 0.6);
+            --panel-bg-dark: #1A1A1A;
+            --border-color-dark: rgba(57, 255, 20, 0.4);
             --text-color-light: #E0E0E0; 
-            --panel-width-landscape: 320px;
-            --panel-height-landscape: 180px;
+            --text-dim-grey: #777;
+            --panel-width-landscape: 300px;
+            --panel-height-landscape: 160px;
         }
         
         body {
@@ -42,48 +39,38 @@
 
         #app-ui { width: 100%; height: 100%; position: relative; touch-action: none; }
 
-        /* --- VISOR CÁMARA --- */
+        /* --- VIDEO Y CANVAS --- */
         #main-view-area {
             position: fixed; top: 0; left: 0;
             width: 100%; height: 100%;
-            overflow: hidden; z-index: 5;
-            background: #000;
+            overflow: hidden; z-index: 5; background: #000;
         }
 
         #bg-camera-feed {
             position: absolute; top: 50%; left: 50%;
-            min-width: 100%; min-height: 100%; 
-            width: auto; height: auto;
-            object-fit: cover; 
-            transform: translate(-50%, -50%);
-            z-index: 1;
-            transition: filter 0.3s ease;
+            min-width: 100%; min-height: 100%; width: auto; height: auto;
+            object-fit: cover; transform: translate(-50%, -50%);
+            z-index: 1; transition: filter 0.3s ease;
         }
         
         /* Filtros */
-        body.filter-negative #bg-camera-feed { filter: invert(1) contrast(1.2) hue-rotate(180deg); }
-        body.filter-relief #bg-camera-feed { opacity: 0; }
+        body.filter-negative #bg-camera-feed { filter: invert(1) contrast(1.2); }
+        body.filter-relief #bg-camera-feed { opacity: 0; } /* Ocultar video para ver solo bordes */
 
         #main-filter-canvas {
-            position: absolute; top: 0; left: 0;
-            width: 100%; height: 100%; 
-            z-index: 2; pointer-events: none; 
-            display: none;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            z-index: 2; pointer-events: none; display: none;
         }
-        body.filter-sls #main-filter-canvas,
+        body.filter-sls #main-filter-canvas, 
         body.filter-relief #main-filter-canvas { display: block; }
 
-        /* --- MARCO TIPO VISOR (VIEWFINDER) --- */
+        .hidden-canvas { display: none; }
+
+        /* --- MARCO DE CAMARA (MEJORA TERROR) --- */
         #camera-frame {
             position: fixed; top: 10px; left: 10px; right: 10px; bottom: 10px;
-            pointer-events: none; z-index: 10;
-            opacity: 0; transition: opacity 0.5s;
-        }
-
-        /* Diseño del Marco TERROR/EXPLORACIÓN */
-        body.panels-active #camera-frame {
-            opacity: 1;
-            /* Esquinas Estilo Visor */
+            pointer-events: none; z-index: 10; opacity: 0; transition: opacity 0.5s;
+            /* Diseño Visor REC */
             background:
                 linear-gradient(to right, var(--neon-green) 2px, transparent 2px) 0 0,
                 linear-gradient(to bottom, var(--neon-green) 2px, transparent 2px) 0 0,
@@ -93,222 +80,178 @@
                 linear-gradient(to top, var(--neon-green) 2px, transparent 2px) 0 100%,
                 linear-gradient(to left, var(--neon-green) 2px, transparent 2px) 100% 100%,
                 linear-gradient(to top, var(--neon-green) 2px, transparent 2px) 100% 100%;
-            background-size: 40px 40px;
-            background-repeat: no-repeat;
-            box-shadow: inset 0 0 50px rgba(0,0,0,0.8); /* Viñeta oscura */
+            background-size: 30px 30px; background-repeat: no-repeat;
         }
-        
-        /* Cruz central */
-        #camera-frame::after {
-            content: '+';
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            color: rgba(57, 255, 20, 0.3);
-            font-size: 2rem; font-family: 'Orbitron';
-        }
-        
-        /* Indicador REC */
+        body.panels-active #camera-frame { opacity: 1; }
         #rec-indicator {
             position: absolute; top: 15px; right: 20px;
             color: var(--alert-red); font-family: 'Orbitron';
-            font-size: 1rem; display: flex; align-items: center; gap: 5px;
-            text-shadow: 0 0 5px red;
+            text-shadow: 0 0 5px red; display: flex; align-items: center; gap: 5px;
         }
 
-        /* --- PANELES ROBUSTOS --- */
+        /* --- PANELES (ESTRUCTURA ORIGINAL MEJOR VISUAL) --- */
         #left-panel, #bottom-panel {
             position: fixed; display: flex; flex-direction: column;
             z-index: 20; pointer-events: none; 
             transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             box-sizing: border-box; overflow: hidden;
         }
-        
-        body.panels-active #left-panel,
-        body.panels-active #bottom-panel {
-            transform: translateX(0) translateY(0); pointer-events: auto;
-        }
 
         .panel {
             background-color: var(--panel-bg-dark);
-            /* Textura de rejilla técnica */
-            background-image: 
-                linear-gradient(rgba(57, 255, 20, 0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(57, 255, 20, 0.05) 1px, transparent 1px);
-            background-size: 20px 20px;
-            border: 3px solid var(--border-color-dark); /* Borde más grueso */
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.9), inset 0 0 30px rgba(0,0,0,0.8);
+            /* Patrón original SVG del MEJOR VISUAL */
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgMTAwIDEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzFhMWExYSIvPjxwYXRoIGQ9Ik0wIDUwSDEwMFYxMEgwWiIgZmlsbD0iI0EwQTBBMCIgb3BhY2l0eT0iMC4wMiIvPjxwYXRoIGQ9Ik0wIDkwSDEwMFY1MEgwWiIgZmlsbD0iIzEwMTAxMCIgb3BhY2l0eT0iMC4wMyIvPjxwYXRoIGQ9Ik0wIDEwMEgxMFYwSDBaIiBmaWxsPSIjRkZGRkZGIiBvcGFjaXR5PSIwLjAxIi8+PC9zdmc+');
+            border: 2px solid var(--border-color-dark);
+            box-shadow: 0 0 15px rgba(57, 255, 20, 0.2) inset;
             display: flex; flex-direction: column;
-            padding: 10px; pointer-events: auto;
-            flex-grow: 1; overflow: hidden; gap: 10px; 
+            padding: 8px; pointer-events: auto; flex-grow: 1; overflow: hidden; gap: 8px; 
             border-radius: 0; position: relative;
         }
         
-        .panel.alert {
-            border-color: var(--alert-red);
-            box-shadow: 0 0 20px var(--alert-red) inset;
-        }
+        .panel.alert { border-color: var(--alert-red); box-shadow: 0 0 20px var(--alert-red) inset; }
 
         .panel-header-main {
-            font-family: 'Orbitron', sans-serif; font-size: 1rem; font-weight: 900;
+            font-family: 'Orbitron', sans-serif; font-size: 0.9rem;
             text-align: center; color: var(--neon-green);
             text-shadow: 0 0 8px var(--neon-green);
-            border: 2px solid var(--border-color-dark); /* Borde doble */
-            padding: 8px 0; background: rgba(0, 20, 0, 0.8);
-            letter-spacing: 3px; flex-shrink: 0; z-index: 2;
+            border: 1px solid var(--border-color-dark); padding: 6px 0;
+            background: rgba(57, 255, 20, 0.08); letter-spacing: 2px; flex-shrink: 0;
         }
         
         .panel-section {
-            border: 1px solid rgba(57, 255, 20, 0.3);
-            background: rgba(0, 0, 0, 0.7); 
-            display: flex; flex-direction: column;
-            padding: 8px; flex-shrink: 0; flex-grow: 0; z-index: 2;
-            backdrop-filter: blur(2px);
+            border: 1px solid var(--border-color-dark);
+            background: rgba(0, 0, 0, 0.6); 
+            display: flex; flex-direction: column; padding: 8px; 
+            flex-shrink: 0; flex-grow: 0;
         }
-        
+
         .section-title {
             font-family: 'Orbitron', sans-serif; font-size: 0.7rem;
             color: var(--sim-orange); text-transform: uppercase;
             margin-bottom: 8px; text-align: center;
-            border-bottom: 1px dashed rgba(57, 255, 20, 0.3); padding-bottom: 4px; 
-            font-weight: 700;
+            border-bottom: 1px dashed var(--border-color-dark); padding-bottom: 4px; 
         }
 
-        /* --- CORRECCIÓN BARRA DE VOLUMEN (FIX CUADRO VERDE) --- */
-        .volume-control-group {
-            display: flex; align-items: center; gap: 10px;
-            width: 100%; grid-column: 1 / -1; margin-top: 10px;
+        /* Botón Linterna (Estilo Mejor Visual) */
+        .panel-button-torch {
+            background: rgba(0, 50, 50, 0.7);
+            border: 2px solid var(--border-color-dark);
+            color: var(--neon-green); font-size: 1.8rem;
+            cursor: pointer; padding: 8px; line-height: 1; transition: 0.2s;
         }
+        .panel-button-torch.active { background: var(--neon-green); color: #000; box-shadow: 0 0 20px #fff; }
+
+        /* Sensores */
+        .sensor-status-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center; }
+        .status-light-group { display: flex; flex-direction: column; align-items: center; font-size: 0.65rem; }
+        .status-led-indicator { width: 12px; height: 12px; border-radius: 50%; background-color: #222; border: 1px solid #444; margin-bottom: 6px; transition: all 0.3s; }
+        
+        /* Colores Sensores (CORREGIDO) */
+        .status-light-group[data-status="connected"] .status-led-indicator { background-color: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); }
+        .status-light-group[data-status="detected"] .status-led-indicator { background-color: var(--sim-orange); box-shadow: 0 0 8px var(--sim-orange); } /* Naranja */
+        .status-light-group[data-status="simulated"] .status-led-indicator { background-color: var(--sensor-blue); box-shadow: 0 0 8px var(--sensor-blue); animation: pulseGlow 2s infinite; } /* Azul */
+        .status-light-group[data-status="unavailable"] .status-led-indicator { background-color: var(--alert-red); box-shadow: 0 0 8px var(--alert-red); }
+
+        /* --- BARRA DE VOLUMEN (FIX CUADRO VERDE) --- */
+        .volume-control-group { display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 10px; }
+        .vol-label { font-size: 0.65rem; color: var(--text-dim-grey); }
         input[type=range] {
-            flex-grow: 1; -webkit-appearance: none; height: 12px; 
+            flex-grow: 1; -webkit-appearance: none; height: 10px; 
             background: #111; border: 1px solid var(--border-color-dark);
-            border-radius: 6px; 
-            overflow: hidden; /* ⚡ ESTO SOLUCIONA EL CUADRO VERDE GIGANTE */
+            border-radius: 5px; 
+            overflow: hidden; /* <--- ESTO ELIMINA EL CUADRO VERDE */
         }
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none; width: 20px; height: 20px;
-            background: #fff; border: 2px solid #000;
-            border-radius: 50%;
-            box-shadow: -100vw 0 0 100vw var(--neon-green); /* Ahora se recorta correctamente */
+            background: #444; border: 1px solid #666;
+            box-shadow: -100vw 0 0 100vw var(--neon-green);
             cursor: pointer;
         }
 
-        /* --- DIALES REDISEÑADOS --- */
-        .dials-grid {
-            display: grid; grid-template-columns: 1fr 1.5fr 1fr;
-            gap: 12px; align-items: center; justify-items: center; padding: 6px 0;
-        }
+        /* --- DIALES MEJORADOS (DISEÑO V4 EN ESTRUCTURA V2) --- */
+        .dials-grid { display: grid; grid-template-columns: 1fr 1.5fr 1fr; gap: 12px; align-items: center; justify-items: center; padding: 6px 0; }
+        
         .dial-container {
             position: relative; width: 75px; height: 75px;
             border-radius: 50%;
+            /* Diseño Metálico Pro */
             background: radial-gradient(circle at center, #222 50%, #000 100%);
-            border: 3px solid #444; /* Aro metálico */
+            border: 2px solid #555;
             box-shadow: 0 0 10px rgba(0,0,0,0.8), inset 0 0 10px #000;
-            /* Marcas de graduación */
-            background-image: repeating-conic-gradient(
-                from 0deg, 
-                rgba(255,255,255,0.1) 0deg 2deg, 
-                transparent 2deg 30deg
-            );
         }
-        /* Aro interno brillante */
+        /* Marcas graduación */
         .dial-container::after {
-            content: ''; position: absolute;
-            top: 5px; left: 5px; right: 5px; bottom: 5px;
-            border-radius: 50%; border: 1px solid rgba(255,255,255,0.1);
+            content: ''; position: absolute; top:0; left:0; width:100%; height:100%; border-radius:50%;
+            background-image: repeating-conic-gradient(from 0deg, rgba(255,255,255,0.1) 0deg 2deg, transparent 2deg 30deg);
         }
-        
+
         .dial-needle {
-            width: 4px; height: 45%; background: var(--neon-green);
+            width: 3px; height: 45%; background: var(--neon-green);
             position: absolute; bottom: 50%; left: 50%;
             transform-origin: bottom center; transform: rotate(-45deg);
-            transition: transform 0.5s cubic-bezier(0.4, 2.5, 0.5, 0.8); /* Rebote */
-            z-index: 10;
-            border-radius: 2px;
-            box-shadow: 0 0 5px var(--neon-green);
-        }
-        /* Centro de la aguja */
-        .dial-needle::after {
-            content: ''; position: absolute; bottom: -3px; left: -3px;
-            width: 10px; height: 10px; background: #fff; border-radius: 50%;
+            transition: transform 0.5s cubic-bezier(0.4, 2, 0.5, 0.8); /* Rebote realista */
+            z-index: 10; box-shadow: 0 0 5px var(--neon-green);
         }
         #detector-dial-needle { background: var(--alert-red); box-shadow: 0 0 5px red; }
+        #detector-dial-container { width: 95px; height: 95px; }
+        
+        /* Textos */
+        .dial-label { font-size: 0.65rem; color: var(--text-dim-grey); margin-top: 5px; text-align: center; text-transform: uppercase; }
+        #temp-val { font-size: 1.6rem; font-family: 'Orbitron'; color: var(--neon-green); text-shadow: 0 0 5px var(--neon-green); }
+        
+        /* VU METER */
+        #vu-meter-container { width: 100%; height: 45px; background: #000; border: 1px solid var(--border-color-dark); padding: 4px; }
+        #vu-meter-canvas { width: 100%; height: 100%; }
 
-        /* --- SPIRIT BOX --- */
-        .spirit-box-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; align-items: center;
-        }
+        /* SPIRIT BOX */
+        .spirit-box-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: center; }
         .knob-container { display: flex; flex-direction: column; align-items: center; }
-        .knob-label { font-size: 0.65rem; color: var(--text-dim-grey); margin-top: 6px; letter-spacing: 1px;}
-
+        
         #knob-power {
-            width: 65px; height: 65px; border-radius: 50%;
-            border: 3px solid var(--border-color-dark);
-            cursor: pointer; background: radial-gradient(circle, #222, #000);
+            width: 60px; height: 60px; border-radius: 50%;
+            border: 2px solid var(--border-color-dark); cursor: pointer; background: #111;
             display: flex; align-items: center; justify-content: center;
             transition: all 0.3s;
-            box-shadow: 0 5px 10px #000;
         }
-        #knob-power::before {
-            content: "REC"; font-family: 'Orbitron'; font-size: 0.8rem; color: var(--alert-red);
-        }
-        #knob-power.active {
-            border-color: var(--alert-red); background: #400; box-shadow: 0 0 20px var(--alert-red);
-        }
+        #knob-power::before { content: "REC"; font-family: 'Orbitron'; font-size: 0.8rem; color: var(--alert-red); }
+        #knob-power.active { border-color: var(--alert-red); background: #400; box-shadow: 0 0 15px var(--alert-red); }
         #knob-power.active::before { animation: pulseRec 1.5s infinite; color: #FFF; text-shadow: 0 0 10px red; }
-        @keyframes pulseRec { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        
+        #knob-scan { width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--border-color-dark); background: #111; position:relative; }
+        #knob-scan .dial-needle { height: 30%; transform: translateX(-50%) rotate(0deg); background: #FFF; }
 
-        /* --- SENSORES ESTADO --- */
-        .status-light-group {
-            display: flex; flex-direction: column; align-items: center; font-size: 0.65rem;
-            background: rgba(255,255,255,0.03); padding: 5px; border-radius: 4px;
-        }
-        .status-led-indicator {
-            width: 10px; height: 10px; border-radius: 50%;
-            background-color: #222; border: 1px solid #555; margin-bottom: 4px;
-        }
-        .status-light-group[data-status="connected"] .status-led-indicator { background-color: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); }
-        .status-light-group[data-status="detected"] .status-led-indicator { background-color: var(--sim-orange); box-shadow: 0 0 8px var(--sim-orange); }
-        .status-light-group[data-status="simulated"] .status-led-indicator { background-color: var(--sensor-blue); box-shadow: 0 0 8px var(--sensor-blue); animation: pulseGlow 2s infinite; }
-        .status-light-group[data-status="unavailable"] .status-led-indicator { background-color: var(--alert-red); box-shadow: 0 0 8px var(--alert-red); }
+        /* --- ELEMENTOS FLOTANTES --- */
+        #logo-image { top: 20px; right: 20px; width: 70px; position: fixed; z-index: 100; filter: drop-shadow(0 0 5px var(--neon-green)); transition: opacity 0.3s; }
+        .glitch-effect { animation: glitch 0.3s infinite; }
+        @keyframes glitch { 0% { transform: translate(0); } 20% { transform: translate(-2px, 2px); } 40% { transform: translate(-2px, -2px); } 60% { transform: translate(2px, 2px); } 80% { transform: translate(2px, -2px); } 100% { transform: translate(0); } }
 
-        /* --- ANIMACIONES & EXTRAS --- */
-        @keyframes pulseGlow { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
+        #kinect-banner { position: fixed; top: 25px; left: 50%; transform: translateX(-50%); z-index: 100; font-family: 'Orbitron'; color: var(--neon-green); display: none; pointer-events: none; font-weight: 700; text-shadow: 0 0 10px var(--neon-green); }
 
+        /* Follow Banner */
         #follow-banner {
-            position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
-            z-index: 150; text-align: center; width: 80%;
-            display: flex; flex-direction: column; align-items: center;
-            opacity: 0; transition: opacity 1s, transform 1s;
-            pointer-events: none;
+            position: fixed; bottom: 140px; left: 50%; transform: translateX(-50%);
+            z-index: 150; text-align: center; display: flex; flex-direction: column; align-items: center;
+            opacity: 0; transition: opacity 1s; pointer-events: none;
         }
-        #follow-banner.visible { opacity: 1; transform: translateX(-50%) scale(1); }
-        .social-icons { display: flex; gap: 25px; margin-bottom: 10px; }
-        .social-icons svg { width: 45px; height: 45px; fill: var(--neon-green); filter: drop-shadow(0 0 8px var(--neon-green)); }
-        .follow-text { font-family: 'Orbitron'; color: var(--neon-green); font-size: 1.2rem; text-shadow: 0 0 10px black; background: rgba(0,0,0,0.7); padding: 5px 15px; border: 1px solid var(--neon-green); }
-
-        /* Logo Glitch */
-        #logo-image { top: 20px; right: 20px; width: 70px; filter: drop-shadow(0 0 5px var(--neon-green)); }
-        .glitch-effect { animation: glitch-anim 0.3s infinite; }
-        @keyframes glitch-anim {
-            0% { transform: translate(0); } 20% { transform: translate(-2px, 2px); } 40% { transform: translate(-2px, -2px); }
-            60% { transform: translate(2px, 2px); } 80% { transform: translate(2px, -2px); } 100% { transform: translate(0); }
-        }
+        #follow-banner.visible { opacity: 1; }
+        .social-icons { display: flex; gap: 20px; margin-bottom: 10px; }
+        .social-icons svg { width: 40px; height: 40px; fill: var(--neon-green); filter: drop-shadow(0 0 5px var(--neon-green)); }
+        .follow-text { font-family: 'Orbitron'; color: var(--neon-green); background: rgba(0,0,0,0.8); padding: 5px 10px; border: 1px solid var(--neon-green); }
 
         /* Botones Laterales */
         #filter-controls-container {
             position: fixed; top: 50%; right: 15px; transform: translateY(-50%);
-            display: flex; flex-direction: column; gap: 15px; z-index: 100;
+            display: flex; flex-direction: column; gap: 12px; z-index: 100;
             pointer-events: auto; transition: opacity 0.5s;
         }
         .filter-btn {
-            width: 55px; height: 55px; background: rgba(0, 20, 0, 0.8);
+            width: 55px; height: 55px; background: rgba(0, 50, 50, 0.7);
             border: 2px solid var(--neon-green); color: var(--neon-green);
             font-family: 'Share Tech Mono'; font-weight: bold; cursor: pointer;
-            box-shadow: 0 0 10px rgba(57, 255, 20, 0.3); backdrop-filter: blur(4px);
         }
-        .filter-btn.active { background: var(--neon-green); color: #000; box-shadow: 0 0 20px var(--neon-green); }
+        .filter-btn.active { background: var(--neon-green); color: #000; box-shadow: 0 0 15px #fff; }
 
-        /* Responsive */
+        /* Responsive Exacto MEJOR VISUAL */
         @media (max-aspect-ratio: 1/1) {
             #left-panel {
                 top: 0; left: 0; width: 100vw; height: calc(100vh - var(--panel-height-landscape));
@@ -318,13 +261,13 @@
                 bottom: 0; left: 0; width: 100vw; height: var(--panel-height-landscape);
                 transform: translateY(100%); padding-bottom: env(safe-area-inset-bottom);
             }
-            #bottom-panel .panel { flex-direction: row; }
-            body.panels-active #main-view-area { display: none; } /* En vertical ocultamos video principal si hay panel */
+            #bottom-panel .panel { flex-direction: row; justify-content: space-around; }
+            #bottom-panel .dials-grid { grid-template-columns: 1fr 1fr; }
+            #mag-dial-container { display: none; } /* Ocultar uno en vertical por espacio */
+            
+            body.panels-active #main-view-area { display: none; } /* Ocultar video principal en vertical con paneles */
             body.panels-active #pip-camera-feed { display: block; }
             body.panels-active #filter-controls-container { display: none; }
-            
-            /* Marco de cámara NO visible en modo vertical con paneles (porque se oculta el video) */
-            body.panels-active #camera-frame { display: none; } 
         }
 
         @media (min-aspect-ratio: 1/1) {
@@ -343,45 +286,40 @@
                 height: calc(100% - var(--panel-height-landscape));
             }
         }
-
-        /* PiP y Banner Kinect */
+        
+        /* PiP (Fuente 2) */
         #pip-camera-feed {
-            display: none; position: fixed; z-index: 999; bottom: 20px; right: 20px; width: 90px; height: 90px;
+            display: none; position: fixed; z-index: 999; bottom: 20px; right: 20px; width: 80px; height: 80px;
             border-radius: 50%; border: 2px solid var(--neon-green); object-fit: cover; box-shadow: 0 0 15px var(--neon-green);
         }
-        #kinect-banner {
-            position: fixed; top: 25px; left: 50%; transform: translateX(-50%); z-index: 100;
-            font-family: 'Orbitron'; color: var(--neon-green); display: none; pointer-events: none;
-            font-weight: 700; text-shadow: 0 0 10px var(--neon-green);
-        }
-        .hidden-canvas { display: none; }
-        .persistent-ui { position: fixed; z-index: 100; pointer-events: none; transition: opacity 0.3s; }
+
+        @keyframes pulseRec { 0%{opacity:1;} 50%{opacity:0.5;} 100%{opacity:1;} }
+        @keyframes pulseGlow { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
     </style>
 </head>
 <body>
 
 <div id="app-ui"> 
 
-    <div id="loading-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:9999; display:flex; justify-content:center; align-items:center; transition: opacity 0.5s;">
+    <div id="loading-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:9999; display:flex; justify-content:center; align-items:center; transition:opacity 0.5s;">
         <div style="text-align:center;">
-            <div style="color:#39FF14; font-family:'Orbitron'; margin-bottom:10px; letter-spacing:2px;">CARGANDO SISTEMAS...</div>
-            <div style="width:200px; height:4px; background:#222; border-radius:2px; overflow:hidden;">
-                <div id="loading-bar" style="width:0%; height:100%; background:#39FF14;"></div>
-            </div>
+            <div style="color:#39FF14; font-family:'Orbitron'; margin-bottom:10px;">INICIANDO...</div>
+            <div style="width:200px; height:4px; background:#333;"><div id="loading-bar" style="width:0%; height:100%; background:#39FF14;"></div></div>
         </div>
     </div>
 
     <div id="main-view-area" onclick="handleUITap(event)">
         <video id="bg-camera-feed" playsinline autoplay muted></video>
         <canvas id="main-filter-canvas"></canvas>
+        
         <div id="camera-frame">
-            <div id="rec-indicator"><span style="font-size:2rem; line-height:0; margin-top:-5px;">•</span> REC</div>
+            <div id="rec-indicator"><span style="font-size:2rem; margin-top:-5px;">•</span> REC</div>
         </div>
     </div>
     
     <canvas id="relief-buffer" class="hidden-canvas"></canvas>
 
-    <img id="logo-image" src="obr-logo.png" class="persistent-ui">
+    <img id="logo-image" src="obr-logo.png">
     <video id="pip-camera-feed" playsinline autoplay muted></video>
     <div id="kinect-banner">KINECT ACTIVO <span style="animation: pulseGlow 1s infinite">🔴</span></div>
 
@@ -396,7 +334,6 @@
 
     <div id="left-panel">
         <div class="panel" id="p-unified">
-            <canvas id="matrix-canvas-left" class="matrix-bg"></canvas>
             <div class="panel-header-main">PANEL DE MANDO</div>
             
             <div class="panel-section">
@@ -420,19 +357,18 @@
             </div>
             
             <div class="panel-section">
-                <div class="section-title">Spirit Box V4</div>
+                <div class="section-title">Spirit Box</div>
                 <div class="spirit-box-grid">
                     <div style="display:flex; flex-direction:column; align-items:center;">
                         <div id="knob-power"></div>
                         <div class="knob-label">ENCENDER</div>
                     </div>
                     <div class="knob-container">
-                        <div class="knob-circle" id="knob-scan">
-                            <div class="dial-needle" style="height:30%; transform:translateX(-50%) rotate(0deg);"></div>
+                        <div id="knob-scan">
+                            <div class="dial-needle" style="height:30%; transform: translateX(-50%) rotate(0deg); top:35%;"></div>
                         </div>
                         <div class="knob-label">SCAN</div>
                     </div>
-                    
                     <div class="volume-control-group">
                         <span class="vol-label">VOL</span>
                         <input type="range" min="0" max="100" value="80" id="vol-slider">
@@ -444,8 +380,7 @@
 
     <div id="bottom-panel">
         <div class="panel" id="p-bottom">
-            <canvas id="matrix-canvas-bottom" class="matrix-bg"></canvas>
-
+            
             <div class="panel-section">
                 <div class="section-title">Lecturas</div>
                 <div class="dials-grid">
@@ -466,8 +401,8 @@
             
             <div class="panel-section">
                 <div class="section-title">CAM</div>
-                <div id="panel-cam-stats" style="text-align:center; font-family:'Orbitron'; color:#777; display:flex; flex-direction:column; justify-content:center; height:80px;">
-                    <span id="cam-fps-panel" style="font-size:1.8rem; color:#39FF14;">--</span> FPS
+                <div id="panel-cam-stats" style="text-align:center; font-family:'Orbitron'; color:#777; display:flex; flex-direction:column; justify-content:center; height:100%;">
+                    <span id="cam-fps-panel" style="font-size:1.5rem; color:#39FF14;">--</span> FPS
                 </div>
             </div>
 
@@ -493,11 +428,12 @@
 <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzOf3crQxBdPylwMTAd34W-nBShN31MkIUtaMdKsZHMZVVniI2HjMesD6DpOlO363T1/exec";
     
+    // VARIABLES
     let isRunning = false;
     let currentFilter = 'none';
     let scanSpeed = 1;
     const SCAN_DELAYS = [1500, 700, 200];
-
+    
     // DOM
     const videoBg = document.getElementById('bg-camera-feed');
     const pipVideo = document.getElementById('pip-camera-feed');
@@ -506,46 +442,43 @@
     const reliefBuffer = document.getElementById('relief-buffer');
     const reliefCtx = reliefBuffer.getContext('2d', { willReadFrequently: true });
     
-    // Audio
+    // AUDIO
     let audioCtx, masterGain;
     let audioSource_Fondo1, gain_Fondo1, audioBuffer_Fondo1;
     let audioSource_Fondo2, gain_Fondo2, audioBuffer_Fondo2;
     let scanTimer = null;
     let micStreamSource, vuAnalyserNode, vuDataArray, vuCanvas, vuCtx;
     
+    // RECONOCIMIENTO
     let recognition, isRecognizing = false;
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let programadoData = new Map();
     let automaticoData = [];
     
-    // Sensores
+    // SENSORES
     let orientationSensor, magnetometer, proximitySensor;
-    let emfValue = 0;
-    let emfSimInterval = null;
-
-    // Kinect/SLS
+    let emfValue = 0, emfSimInterval = null;
+    
+    // SLS
     let poseDetector, latestPoses = [], isDetectingPose = false;
     const skeletonMap = [['left_shoulder','right_shoulder'],['left_shoulder','left_elbow'],['left_elbow','left_wrist'],['right_shoulder','right_elbow'],['right_elbow','right_wrist'],['left_shoulder','left_hip'],['right_shoulder','right_hip'],['left_hip','right_hip'],['left_hip','left_knee'],['left_knee','left_ankle'],['right_hip','right_knee'],['right_knee','right_ankle']];
     
-    let videoTrack, isTorchOn = false;
-    let uiVisible = true, uiHideTimeout;
+    let videoTrack, isTorchOn = false, uiVisible = true;
 
     // --- INICIO ---
     window.onload = async () => {
         await startCamera();
         resizeCanvases();
-        initMatrixEffect();
         loadSheetData();
         
-        // Cargar modelo SLS
         try {
             const model = poseDetection.SupportedModels.MoveNet;
             poseDetector = await poseDetection.createDetector(model, {modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING});
             detectPoseLoop();
         } catch(e){}
 
-        // Animaciones Loop
-        setInterval(triggerGlitch, 6000 + Math.random()*4000);
+        // Animaciones
+        setInterval(triggerGlitch, 5000 + Math.random()*5000);
         setInterval(runFollowSequence, 30000);
 
         hideControls();
@@ -555,23 +488,18 @@
     window.onresize = resizeCanvases;
 
     function resizeCanvases() {
-        const w = window.innerWidth;
-        const h = window.innerHeight;
-        mainFilterCanvas.width = w;
-        mainFilterCanvas.height = h;
-        // Buffer RLV pequeño para rendimiento
-        reliefBuffer.width = 320; 
-        reliefBuffer.height = Math.floor(320 * (h/w));
+        const w = window.innerWidth, h = window.innerHeight;
+        mainFilterCanvas.width = w; mainFilterCanvas.height = h;
+        reliefBuffer.width = 320; reliefBuffer.height = Math.floor(320 * (h/w));
         
         if(document.body.classList.contains('panels-active')) {
              const vuC = document.getElementById('vu-meter-container');
              vuCanvas = document.getElementById('vu-meter-canvas');
              if(vuC) { vuCanvas.width = vuC.clientWidth; vuCanvas.height = vuC.clientHeight; vuCtx = vuCanvas.getContext('2d'); }
-             initMatrixEffect();
         }
     }
 
-    // --- CÁMARA ---
+    // --- CAMARA ---
     async function startCamera() {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -582,21 +510,18 @@
             pipVideo.srcObject = stream;
             videoTrack = stream.getVideoTracks()[0];
             
-            // Verificar Torch
             const caps = videoTrack.getCapabilities();
             if (!caps.torch) document.getElementById('btn-torch').style.display = 'none';
         } catch (e) { console.error(e); }
     }
 
-    // --- BUCLE VISUAL ---
-    let lastFrameTime = 0;
-    let frameCount = 0;
+    // --- DRAW LOOP ---
+    let lastFrameTime = 0, frameCount = 0;
     function drawLoop() {
         const now = performance.now();
         if (now - lastFrameTime > 1000) {
             document.getElementById('cam-fps-panel').innerText = frameCount;
-            frameCount = 0;
-            lastFrameTime = now;
+            frameCount = 0; lastFrameTime = now;
         }
         frameCount++;
 
@@ -604,25 +529,27 @@
             const w = mainFilterCanvas.width, h = mainFilterCanvas.height;
             mainFilterCtx.clearRect(0, 0, w, h);
 
-            // 1. RLV MEJORADO (Sobel / Bordes)
+            // SLS (Verde y Rojo)
+            if (currentFilter === 'sls' && latestPoses.length > 0) {
+                drawSLS(latestPoses);
+            }
+
+            // RLV (Bordes Verdes sobre Negro)
             if (currentFilter === 'relief') {
                 reliefCtx.drawImage(videoBg, 0, 0, reliefBuffer.width, reliefBuffer.height);
                 let frame = reliefCtx.getImageData(0, 0, reliefBuffer.width, reliefBuffer.height);
                 let d = frame.data;
                 let bw = reliefBuffer.width;
-                
                 for(let i=0; i<d.length; i+=4) {
                     let top = i - bw*4;
                     let left = i - 4;
                     if(top > 0 && left > 0) {
                         let val = Math.abs(d[i]*0.3 + d[i+1]*0.59 + d[i+2]*0.11);
                         let valT = Math.abs(d[top]*0.3 + d[top+1]*0.59 + d[top+2]*0.11);
-                        let diff = Math.abs(val - valT);
-                        
-                        if (diff > 15) { // Umbral borde
-                            d[i] = 0; d[i+1] = diff*3; d[i+2] = 0; d[i+3] = 255;
-                        } else {
-                            d[i] = 0; d[i+1] = 0; d[i+2] = 0; d[i+3] = 255;
+                        if (Math.abs(val - valT) > 15) { // Borde
+                            d[i]=0; d[i+1]=255; d[i+2]=0; d[i+3]=255; 
+                        } else { // Fondo
+                            d[i]=0; d[i+1]=0; d[i+2]=0; d[i+3]=255; 
                         }
                     }
                 }
@@ -630,17 +557,11 @@
                 mainFilterCtx.imageSmoothingEnabled = false;
                 mainFilterCtx.drawImage(reliefBuffer, 0, 0, w, h);
             }
-
-            // 2. SLS OPTIMIZADO
-            if (currentFilter === 'sls' && latestPoses.length > 0) {
-                drawSLS(latestPoses);
-            }
         }
-        if(document.body.classList.contains('panels-active')) drawMatrix();
         requestAnimationFrame(drawLoop);
     }
 
-    // --- SLS LOGIC ---
+    // --- SLS ---
     async function detectPoseLoop() {
         while(true) {
             if (currentFilter === 'sls' && !isDetectingPose) {
@@ -658,10 +579,7 @@
         const scale = Math.max(cW/vW, cH/vH);
         const dx = (cW - vW*scale)/2, dy = (cH - vH*scale)/2;
 
-        ctx.lineWidth = 5; 
-        ctx.strokeStyle = '#39FF14'; // VERDE
-        ctx.fillStyle = '#FF3333';   // ROJO
-        ctx.lineCap = 'round';
+        ctx.lineWidth = 6; ctx.strokeStyle = '#39FF14'; ctx.fillStyle = '#FF3333';
         ctx.shadowBlur = 10; ctx.shadowColor = '#39FF14';
 
         poses.forEach(pose => {
@@ -669,37 +587,38 @@
                 const p1 = pose.keypoints.find(k=>k.name===bone[0]);
                 const p2 = pose.keypoints.find(k=>k.name===bone[1]);
                 if(p1 && p2 && p1.score>0.3 && p2.score>0.3) {
-                    ctx.beginPath();
-                    ctx.moveTo(p1.x*scale+dx, p1.y*scale+dy);
-                    ctx.lineTo(p2.x*scale+dx, p2.y*scale+dy);
-                    ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(p1.x*scale+dx, p1.y*scale+dy); ctx.lineTo(p2.x*scale+dx, p2.y*scale+dy); ctx.stroke();
                 }
             });
             pose.keypoints.forEach(k => {
-                if(k.score>0.3) {
-                    ctx.beginPath(); ctx.arc(k.x*scale+dx, k.y*scale+dy, 6, 0, 2*Math.PI); ctx.fill();
-                }
+                if(k.score>0.3) { ctx.beginPath(); ctx.arc(k.x*scale+dx, k.y*scale+dy, 6, 0, 2*Math.PI); ctx.fill(); }
             });
         });
         ctx.shadowBlur = 0;
     }
 
-    // --- SENSORES (LOGICA DE COLORES) ---
-    let sensorsReady = false;
+    // --- SENSORES ---
     async function requestSensors() {
-        if(sensorsReady) return;
-        sensorsReady = true;
-        
         if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
              try { await DeviceOrientationEvent.requestPermission(); } catch(e){}
         }
         
+        // Reset statuses to Detecting
+        document.getElementById('mag-status').dataset.status = 'detected';
+        document.getElementById('prox-status').dataset.status = 'detected';
+
         initMagnetometer();
         initOrientation();
+        
+        // Watchdog: Si en 1.5s no hay datos reales, pasar a simulador (Azul)
         setTimeout(() => {
             if(emfValue === 0 && document.getElementById('prox-status').dataset.status !== 'connected') {
-                document.getElementById('prox-status').dataset.status = 'simulated'; // AZUL
+                document.getElementById('prox-status').dataset.status = 'simulated';
                 startEmfSimulation();
+            }
+            if(document.getElementById('mag-status').dataset.status !== 'connected') {
+                 // Si no hay brújula, rojo
+                 document.getElementById('mag-status').dataset.status = 'unavailable';
             }
         }, 1500);
     }
@@ -724,24 +643,22 @@
             try {
                 proximitySensor = new ProximitySensor();
                 proximitySensor.onreading = () => {
-                    document.getElementById('prox-status').dataset.status = 'connected'; // VERDE
+                    document.getElementById('prox-status').dataset.status = 'connected';
                     emfValue = proximitySensor.near ? 80 : 0;
                 };
                 proximitySensor.onerror = () => {
-                    document.getElementById('prox-status').dataset.status = 'simulated'; // AZUL
+                    document.getElementById('prox-status').dataset.status = 'simulated';
                     startEmfSimulation();
                 };
                 proximitySensor.start();
             } catch(e){ 
-                document.getElementById('prox-status').dataset.status = 'simulated'; // AZUL
+                document.getElementById('prox-status').dataset.status = 'simulated';
                 startEmfSimulation(); 
             }
         } else {
-            document.getElementById('prox-status').dataset.status = 'detected'; // NARANJA
-            setTimeout(() => {
-                 document.getElementById('prox-status').dataset.status = 'simulated'; 
-                 startEmfSimulation();
-            }, 1000);
+             // Si no existe prox, simulador directo
+             document.getElementById('prox-status').dataset.status = 'simulated';
+             startEmfSimulation();
         }
     }
 
@@ -755,7 +672,7 @@
                     document.getElementById('compass-needle').style.transform = `translateX(-50%) rotate(${-yaw}deg)`;
                     document.getElementById('mag-status').dataset.status = 'connected';
                 };
-                orientationSensor.onerror = () => document.getElementById('mag-status').dataset.status = 'unavailable'; // ROJO
+                orientationSensor.onerror = () => document.getElementById('mag-status').dataset.status = 'unavailable';
                 orientationSensor.start();
             } catch(e) { document.getElementById('mag-status').dataset.status = 'unavailable'; }
         } else {
@@ -768,47 +685,15 @@
         emfSimInterval = setInterval(() => emfValue = Math.random()*100, 200);
     }
     
-    // Visual Loop para Agujas
     setInterval(() => {
         let needle = document.getElementById('main-needle');
         if(needle) needle.style.transform = `translateX(-50%) rotate(${-60 + (emfValue/100)*120}deg)`;
         document.getElementById('temp-val').innerText = (18 + Math.random()).toFixed(1) + "°C";
     }, 150);
 
-    // --- MATRIX EFFECT ---
-    let matrixColumns = [];
-    function initMatrixEffect() {
-        ['matrix-canvas-left', 'matrix-canvas-bottom'].forEach(id => {
-            const c = document.getElementById(id);
-            if(!c) return;
-            c.width = c.parentElement.offsetWidth; c.height = c.parentElement.offsetHeight;
-            const cols = Math.floor(c.width/15);
-            const colData = [];
-            for(let i=0; i<cols; i++) colData.push({ y:Math.random()*c.height, speed:1+Math.random()*2, text: getMatrixChar() });
-            matrixColumns.push({c, ctx:c.getContext('2d'), data:colData});
-        });
-    }
-    function getMatrixChar() {
-        if(Math.random()>0.95 && automaticoData.length>0) return automaticoData[Math.floor(Math.random()*automaticoData.length)].substring(0,5);
-        return Math.random()>0.5 ? "1" : "0";
-    }
-    function drawMatrix() {
-        matrixColumns.forEach(item => {
-            const {c, ctx, data} = item;
-            ctx.fillStyle='rgba(0,0,0,0.1)'; ctx.fillRect(0,0,c.width,c.height);
-            ctx.fillStyle='#0F0'; ctx.font='12px monospace';
-            data.forEach((col, i) => {
-                ctx.fillText(col.text, i*15, col.y);
-                col.y -= col.speed; // SUBIENDO
-                if(col.y < 0) { col.y = c.height; col.text = getMatrixChar(); }
-            });
-        });
-    }
-
-    // --- SPIRIT BOX & AUDIO ---
+    // --- SPIRIT BOX ---
     document.getElementById('knob-power').addEventListener('click', async function() {
         const btn = this;
-        // 1. Init Audio Context (Unlock)
         if (!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             await loadAudioFiles();
@@ -820,19 +705,17 @@
 
         if (isRunning) {
             requestSensors();
-            initMic();
+            initMic(); // VU
             playNoise();
             gain_Fondo1.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime+1);
             gain_Fondo2.gain.linearRampToValueAtTime(0.8, audioCtx.currentTime+1);
-            spiritBoxState = "SCANNING";
             playScanFragment();
             runRecognitionLoop();
-            window.speechSynthesis.speak(new SpeechSynthesisUtterance(" "));
+            window.speechSynthesis.speak(new SpeechSynthesisUtterance(" ")); // Unlock TTS
         } else {
             gain_Fondo1.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
             gain_Fondo2.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
             if(scanTimer) clearTimeout(scanTimer);
-            spiritBoxState = "OFF";
             if(isRecognizing && recognition) recognition.stop();
         }
     });
@@ -850,7 +733,7 @@
         audioSource_Fondo1.loop = true; audioSource_Fondo1.connect(gain_Fondo1); audioSource_Fondo1.start();
     }
     function playScanFragment() {
-        if(!isRunning || spiritBoxState !== "SCANNING") return;
+        if(!isRunning) return;
         if(audioSource_Fondo2) try{audioSource_Fondo2.stop()}catch(e){}
         audioSource_Fondo2 = audioCtx.createBufferSource(); audioSource_Fondo2.buffer = audioBuffer_Fondo2;
         audioSource_Fondo2.connect(gain_Fondo2);
@@ -859,7 +742,7 @@
         scanTimer = setTimeout(playScanFragment, SCAN_DELAYS[scanSpeed]+Math.random()*200);
     }
 
-    // Reconocimiento Voz
+    // RECONOCIMIENTO
     function initSpeechRec() {
         if (!SpeechRecognition) return;
         recognition = new SpeechRecognition();
@@ -875,15 +758,17 @@
         if (!isRunning) return;
         setTimeout(() => {
             if(!isRunning) return;
-            spiritBoxState = "LISTENING";
+            // Listen Mode
             gain_Fondo2.gain.setTargetAtTime(0, audioCtx.currentTime, 0.5);
             try { if(!recognition) initSpeechRec(); if(!isRecognizing) recognition.start(); } catch(e){}
+            
+            // Back to Scan
             setTimeout(() => {
                 if(!isRunning) return;
                 if(isRecognizing) recognition.stop();
-                spiritBoxState = "SCANNING";
                 gain_Fondo2.gain.setTargetAtTime(0.8, audioCtx.currentTime, 0.5);
                 playScanFragment();
+                // Random Speak
                 if(Math.random()>0.7 && automaticoData.length>0) speak(automaticoData[Math.floor(Math.random()*automaticoData.length)]);
                 else runRecognitionLoop();
             }, 4000);
@@ -897,7 +782,7 @@
         window.speechSynthesis.speak(u);
     }
 
-    // VU Meter
+    // VU METER
     async function initMic() {
         if(micStreamSource) return;
         try {
@@ -932,8 +817,7 @@
             await videoTrack.applyConstraints({advanced: [{torch: isTorchOn}]});
             if(isTorchOn) e.target.classList.add('active'); else e.target.classList.remove('active');
         } catch(err) {
-            isTorchOn = false;
-            e.target.classList.remove('active');
+            isTorchOn = false; e.target.classList.remove('active');
         }
     }
     
@@ -942,13 +826,11 @@
         logo.classList.add('glitch-effect');
         setTimeout(()=>logo.classList.remove('glitch-effect'), 300);
     }
-
     function runFollowSequence() {
         const banner = document.getElementById('follow-banner');
         banner.classList.add('visible');
         setTimeout(() => banner.classList.remove('visible'), 5000);
     }
-
     function togglePanels() {
         document.body.classList.toggle('panels-active');
         document.getElementById('btn-panel').classList.toggle('active');
@@ -972,8 +854,6 @@
         const c = document.getElementById('filter-controls-container');
         c.style.opacity = uiVisible?1:0; c.style.pointerEvents = uiVisible?'auto':'none';
     }
-
-    // Cargar Datos
     async function loadSheetData() {
         try {
             const r = await fetch(GOOGLE_SCRIPT_URL); const d = await r.json();
@@ -983,7 +863,6 @@
             setTimeout(()=>document.getElementById('loading-overlay').remove(),500);
         } catch(e){ document.getElementById('loading-overlay').remove(); }
     }
-
 </script>
 </body>
 </html>
