@@ -2,7 +2,6 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
@@ -11,8 +10,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <link rel="apple-touch-icon" href="obr-logo.png">
 
-    <title>DETECTOR-OBR</title> 
+    <title>DETECTOR-OBR PRO</title> 
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
@@ -32,7 +32,7 @@
             --text-dim-grey: #777;
             --panel-width-landscape: 300px;
             --panel-height-landscape: 160px;
-            --bottom-panel-height-vertical: 200px; /* Panel inferior más grueso */
+            --bottom-panel-height-vertical: 220px; /* Aumentado un poco para acomodar mejor */
         }
         
         body {
@@ -112,7 +112,6 @@
             flex-direction: column;
             z-index: 20;
             pointer-events: none; 
-            /* 📍 NUEVA ANIMACIÓN: Explosión de Burbuja */
             clip-path: circle(0% at 50% 50%);
             transition: clip-path 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
             box-sizing: border-box; 
@@ -121,7 +120,6 @@
         
         body.panels-active #left-panel,
         body.panels-active #bottom-panel {
-            /* 📍 NUEVA ANIMACIÓN: Explosión de Burbuja */
             clip-path: circle(150% at 50% 50%);
             pointer-events: auto;
         }
@@ -297,16 +295,21 @@
             margin-bottom: 6px;
             transition: all 0.3s;
         }
+        
+        /* MEJORA: Código de colores ajustado a la petición */
         .status-light-group[data-status="connected"] .status-led-indicator { background-color: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); animation: pulseGlow 1.5s infinite; }
-        .status-light-group[data-status="fallback"] .status-led-indicator { background-color: var(--sensor-blue); box-shadow: 0 0 10px var(--sensor-blue); animation: pulseGlow 1.5s infinite; }
-        .status-light-group[data-status="simulated"] .status-led-indicator { background-color: var(--sim-orange); box-shadow: 0 0 10px var(--sim-orange); animation: pulseGlow 2s infinite; }
+        /* Azul para Simulación activada o Fallback */
+        .status-light-group[data-status="simulated"] .status-led-indicator { background-color: var(--sensor-blue); box-shadow: 0 0 10px var(--sensor-blue); animation: pulseGlow 2s infinite; }
+        /* Naranja para Localizado pero no conectado/esperando */
+        .status-light-group[data-status="orange"] .status-led-indicator { background-color: var(--sim-orange); box-shadow: 0 0 10px var(--sim-orange); }
+        /* Rojo para error o no localizado */
         .status-light-group[data-status="unavailable"] .status-led-indicator { background-color: var(--alert-red); box-shadow: 0 0 10px var(--alert-red); }
         .status-light-group[data-status="off"] .status-led-indicator { background-color: #333; }
         
         .status-light-group span { color: var(--text-dim-grey); }
         .status-light-group[data-status="connected"] span { color: var(--neon-green); }
-        .status-light-group[data-status="fallback"] span { color: var(--sensor-blue); }
-        .status-light-group[data-status="simulated"] span { color: var(--sim-orange); }
+        .status-light-group[data-status="simulated"] span { color: var(--sensor-blue); }
+        .status-light-group[data-status="orange"] span { color: var(--sim-orange); }
         .status-light-group[data-status="unavailable"] span { color: var(--alert-red); }
 
         .dials-grid {
@@ -318,7 +321,6 @@
             padding: 6px 0; 
         }
         
-        /* 📍 NUEVO: Diseño de Dial (de la imagen) */
         .dial-container {
             position: relative;
             width: 75px;
@@ -359,7 +361,6 @@
             transition: transform 0.5s cubic-bezier(0.2, 1.5, 0.5, 1);
             z-index: 10;
         }
-        /* Color de aguja específico */
         #compass-needle {
             background: var(--neon-green);
             box-shadow: 0 0 8px var(--neon-green);
@@ -463,7 +464,6 @@
             text-transform: uppercase;
         }
         
-        /* 📍 NUEVO: Botón Frecuencia (similar a REC) */
         #knob-scan {
             width: 60px;
             height: 60px;
@@ -613,7 +613,20 @@
         #logo-image {
             top: 20px; right: 20px;
             width: 70px; height: 70px;
-            animation: logo-effects 7s infinite linear; 
+            /* MEJORA: Animación Glitch cuando está visible */
+            animation: logo-effects 7s infinite linear, glitch 2s infinite alternate-reverse; 
+        }
+        
+        /* MEJORA: Keyframes para efecto GLITCH */
+        @keyframes glitch {
+            0% { transform: translate(0); opacity: 1; filter: none; }
+            10% { transform: translate(-2px, 2px); opacity: 0.8; filter: drop-shadow(2px 0 red); }
+            20% { transform: translate(2px, -2px); opacity: 0.8; filter: drop-shadow(-2px 0 blue); }
+            30% { transform: translate(0); opacity: 1; filter: none; }
+            90% { transform: translate(0); }
+            92% { transform: skewX(10deg); }
+            94% { transform: skewX(-10deg); }
+            95% { transform: none; }
         }
 
         #floating-cam-stats {
@@ -640,7 +653,7 @@
 
         #logo-image.visible {
             transform: scale(1); opacity: 1;
-            animation: popIn 0.3s ease-out forwards, logo-effects 7s infinite linear 0.3s;
+            animation: popIn 0.3s ease-out forwards, glitch 3s infinite;
         }
         #logo-image.hiding {
             animation: waterDrop 0.5s ease-out forwards;
@@ -733,12 +746,11 @@
             display: none;
             position: fixed;
             z-index: 999;
-            /* 📍 Posición PiP actualizada */
             bottom: calc(var(--bottom-panel-height-vertical) + 20px);
             left: 50%;
             transform: translateX(-50%);
-            width: 120px; /* Más grande */
-            height: 120px; /* Más grande */
+            width: 120px; 
+            height: 120px; 
             border-radius: 50%;
             border: 3px solid var(--neon-green);
             box-shadow: 0 0 15px var(--neon-green);
@@ -746,28 +758,49 @@
             animation: pulseGlow 1.5s infinite;
         }
 
-        /* 📍 NUEVO: Contenedor "Síguenos" */
+        /* MEJORA: Contenedor "Síguenos" con logos y animación cíclica */
         #follow-container {
-            position: absolute; /* Se pega al #main-view-area */
+            position: absolute; 
             bottom: 30px;
             left: 50%;
             transform: translateX(-50%); 
             z-index: 10;
             pointer-events: none;
-            opacity: 1;
-            transition: opacity 0.5s ease-out;
+            opacity: 0; /* Empieza oculto */
+            transition: opacity 1s ease-out, transform 1s ease-out;
             font-family: 'Orbitron', sans-serif;
-            font-size: 1.2rem;
+            font-size: 1rem;
             color: var(--neon-green);
             text-shadow: 0 0 8px var(--neon-green);
-            display: none; /* Se activa con JS */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            background: rgba(0,0,0,0.6);
+            padding: 10px 20px;
+            border: 1px solid var(--neon-green);
+            border-radius: 8px;
         }
-        body.panels-active #follow-container {
-            bottom: 15px; /* Sube un poco cuando el panel está activo */
-            font-size: 1rem;
+        #follow-container.show-anim {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
         }
-        #follow-container.hiding {
+        #follow-container.hide-anim {
             opacity: 0;
+            transform: translateX(-50%) translateY(20px);
+        }
+        .social-icons {
+            display: flex;
+            gap: 15px;
+            font-size: 1.5rem;
+        }
+        .social-icons i {
+            color: #fff;
+            text-shadow: 0 0 5px var(--neon-green);
+        }
+        
+        body.panels-active #follow-container {
+            bottom: 15px; 
         }
 
         /* --- CSS RESPONSIVE (Horizontal/Vertical) --- */
@@ -777,7 +810,6 @@
                 top: 0; left: 0;
                 width: 100vw;
                 height: calc(100vh - var(--bottom-panel-height-vertical));
-                /* Animación de Burbuja */
                 clip-path: circle(0% at 50% 0%);
                 transition: clip-path 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
             }
@@ -793,7 +825,6 @@
                 bottom: 0; left: 0;
                 width: 100vw;
                 height: var(--bottom-panel-height-vertical);
-                /* Animación de Burbuja */
                 clip-path: circle(0% at 50% 100%);
                 transition: clip-path 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
                 padding: 0 0 env(safe-area-inset-bottom) 0;
@@ -815,7 +846,7 @@
                 height: 100%;
                 justify-content: center;
             }
-            /* 📍 Layout Vertical Panel Inferior */
+            
             #bottom-panel .dials-grid {
                 grid-template-columns: 1fr 1fr;
             }
@@ -832,13 +863,11 @@
             #temp-val { font-size: 1.2rem; }
             #vu-meter-container { height: 100px; }
             #panel-cam-stats {
-                order: -1; /* Mover Rendimiento Arriba */
                 height: auto;
                 font-size: 0.8rem;
                 padding: 4px;
             }
             #panel-cam-stats span { font-size: 0.9rem; }
-
 
             body.panels-active #main-view-area {
                 display: none;
@@ -859,7 +888,6 @@
                 height: 100vh;
                 top: 0;
                 left: 0;
-                /* Animación de Burbuja */
                 clip-path: circle(0% at 0% 50%);
                 transition: clip-path 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
                 padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
@@ -874,11 +902,10 @@
 
             #bottom-panel {
                 width: calc(100% - var(--panel-width-landscape));
-                height: var(--panel-height-landscape); /* Altura estándar */
+                height: var(--panel-height-landscape); 
                 top: auto;
                 bottom: 0;
                 left: var(--panel-width-landscape);
-                /* Animación de Burbuja */
                 clip-path: circle(0% at 50% 100%);
                 transition: clip-path 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
                 padding: 0 0 env(safe-area-inset-bottom) 0;
@@ -943,7 +970,15 @@
         <video id="bg-camera-feed" playsinline autoplay muted></video>
         <canvas id="main-filter-canvas"></canvas>
         <div id="camera-frame"></div>
-        <div id="follow-container">@EXPLORACIONESOBR</div>
+        
+        <div id="follow-container">
+            <div class="social-icons">
+                <i class="fab fa-tiktok"></i>
+                <i class="fab fa-youtube"></i>
+                <i class="fab fa-facebook"></i>
+            </div>
+            <div>@EXPLORACIONESOBR</div>
+        </div>
     </div>
     
     <canvas id="ai-canvas" class="hidden-canvas"></canvas>
@@ -1032,12 +1067,10 @@
                 <div class="processing-line"></div>
             </div>
 
-            <div class="panel-section" id="section-performance">
-                <div class="section-title">Rendimiento</div>
-                <div id="panel-cam-stats">
-                    <span id="cam-fps-panel">--</span>
-                    <span>FPS</span>
-                    <span id="cam-res-panel">----p</span>
+            <div class="panel-section" id="section-vu-meter">
+                <div class="section-title">Medidor de Sonido (VU)</div>
+                <div id="vu-meter-container">
+                    <canvas id="vu-meter-canvas"></canvas>
                 </div>
             </div>
 
@@ -1059,10 +1092,12 @@
                 </div>
             </div>
             
-            <div class="panel-section" id="section-vu-meter">
-                <div class="section-title">Medidor de Sonido (VU)</div>
-                <div id="vu-meter-container">
-                    <canvas id="vu-meter-canvas"></canvas>
+            <div class="panel-section" id="section-performance">
+                <div class="section-title">Rendimiento</div>
+                <div id="panel-cam-stats">
+                    <span id="cam-fps-panel">--</span>
+                    <span>FPS</span>
+                    <span id="cam-res-panel">----p</span>
                 </div>
             </div>
 
@@ -1123,9 +1158,6 @@
         const aiCanvas = document.getElementById('ai-canvas');
         const aiCtx = aiCanvas.getContext('2d', { willReadFrequently: true });
         
-        const detectorPanel = document.getElementById('p-unified');
-        const sensorPanel = document.getElementById('p-unified');
-        
         const micStatus = document.getElementById('mic-status');
         const magStatus = document.getElementById('mag-status');
         const proxStatus = document.getElementById('prox-status');
@@ -1180,6 +1212,10 @@
         let lastFrameTime = 0;
         let frameCount = 0;
         let lastFpsUpdate = 0;
+        
+        // Variables de estado de sensores mejoradas
+        let magState = 'off'; // off, connected, orange (detected but waiting), simulated (blue/fallback)
+        let emfState = 'off';
 
         async function startCamera() {
             try {
@@ -1209,7 +1245,6 @@
                 
                 videoBg.srcObject = stream;
                 if (pipVideo) {
-                    // Crea un stream separado para el PiP para evitar conflictos
                     const pipStream = await navigator.mediaDevices.getUserMedia(constraints);
                     pipVideo.srcObject = pipStream;
                     pipVideo.muted = true;
@@ -1279,38 +1314,6 @@
                 console.error("Error al cargar modelo de IA:", e);
             }
         }
-
-        function drawVideoWithCover(ctx, video, z, pan) {
-            const canvasW = ctx.canvas.width;
-            const canvasH = ctx.canvas.height;
-            const videoW = video.videoWidth;
-            const videoH = video.videoHeight;
-            
-            if (!videoW || !videoH) return; 
-
-            const videoAspect = videoW / videoH;
-            const canvasAspect = canvasW / canvasH;
-
-            let sWidth = videoW / z;
-            let sHeight = videoH / z;
-            
-            if (canvasAspect > videoAspect) {
-                sHeight = sWidth / canvasAspect;
-            } else {
-                sWidth = sHeight * canvasAspect;
-            }
-
-            let sx = (videoW - sWidth) / 2 + pan.x;
-            let sy = (videoH - sHeight) / 2 + pan.y;
-
-            sx = Math.max(0, Math.min(sx, videoW - sWidth));
-            sy = Math.max(0, Math.min(sy, videoH - sHeight));
-            currentPan.x = sx - (videoW - sWidth) / 2;
-            currentPan.y = sy - (videoH - sHeight) / 2;
-
-            ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, canvasW, canvasH);
-        }
-
         
         async function drawLoop() {
             const now = performance.now();
@@ -1379,10 +1382,11 @@
         function drawAllSkeletons(poses) {
             const ctx = mainFilterCanvas; 
             
+            // MEJORA: Líneas VERDE NEÓN y más gruesas para SLS
             ctx.strokeStyle = 'var(--neon-green)'; 
-            ctx.fillStyle = 'var(--alert-red)';    
+            ctx.fillStyle = '#FF0000'; // MEJORA: Puntos ROJOS
             
-            ctx.lineWidth = 6;
+            ctx.lineWidth = 4; // MEJORA: Más gruesas
             ctx.filter = 'drop-shadow(0 0 5px var(--neon-green))';
 
             const videoW = videoBg.videoWidth;
@@ -1421,7 +1425,7 @@
                 if (keypoint.score > confidenceThreshold) {
                     ctx.beginPath();
                     ctx.arc(keypoint.x * scale + offsetX, keypoint.y * scale + offsetY, 5, 0, 2 * Math.PI); 
-                    ctx.fill();
+                    ctx.fill(); // Relleno ROJO definido arriba
                 }
             }
         }
@@ -1490,16 +1494,18 @@
             }
         
             try {
-                isTorchOn = !isTorchOn;
+                // MEJORA: Lógica de linterna arreglada
+                const newState = !isTorchOn;
                 await videoTrack.applyConstraints({
-                    advanced: [{ torch: isTorchOn }]
+                    advanced: [{ torch: newState }]
                 });
+                isTorchOn = newState; // Actualizar variable solo si tuvo éxito
                 event.currentTarget.classList.toggle('active', isTorchOn);
             } catch (e) {
                 console.error("Error al activar linterna:", e);
+                // Si falla, intentamos forzar el apagado visual
                 isTorchOn = false; 
                 event.currentTarget.classList.remove('active');
-                document.getElementById('btn-torch').style.display = 'none';
             }
         }
 
@@ -1618,21 +1624,21 @@
                     if (status === 'granted') {
                         initSensor();
                     } else {
-                        setSensorStatus('mag', 'unavailable');
-                        setSensorStatus('prox', 'simulated');
-                        startEmfSimulation();
+                        // MEJORA: Fallback si no hay permiso
+                        handleSensorFailure();
                     }
                 } catch (e) {
-                    console.warn("Error al pedir permiso de orientación, iniciando sensores de todas formas...", e);
+                    console.warn("Error al pedir permiso de orientación, probando sensores:", e);
                     initSensor();
                 }
             } else {
-                console.log("Permiso de orientación no requerido (ej. Android), iniciando sensores.");
                 initSensor();
             }
         }
         
+        // MEJORA: Lógica centralizada de sensores (MAG/EMF)
         function initSensor() {
+            // 1. Intentar Orientación (MAG)
             if ('AbsoluteOrientationSensor' in window) {
                 try {
                     orientationSensor = new AbsoluteOrientationSensor({ frequency: 10 });
@@ -1640,42 +1646,64 @@
                         let q = orientationSensor.quaternion;
                         let yaw = Math.atan2(2 * (q[0] * q[1] + q[2] * q[3]), 1 - 2 * (q[1] * q[1] + q[2] * q[2])) * (180 / Math.PI);
                         document.getElementById('compass-needle').style.transform = `translateX(-50%) rotate(${-yaw}deg)`;
-                        setSensorStatus('mag', 'connected'); 
+                        setSensorStatus('mag', 'connected'); // VERDE (OK)
                     };
                     orientationSensor.onerror = (e) => {
-                        console.warn("Error de Brújula (Orientación):", e.error.name);
-                        setSensorStatus('mag', 'unavailable'); 
+                        console.warn("Error Brújula:", e);
+                        setSensorStatus('mag', 'orange'); // Detectado pero no funciona
+                        activateFallbackLogic(); // Activar fallback de luz/proximidad
                     };
                     orientationSensor.start();
                 } catch (e) {
-                    console.warn("Sensor de Orientación no soportado.", e);
-                    setSensorStatus('mag', 'unavailable');
+                    setSensorStatus('mag', 'orange');
+                    activateFallbackLogic();
                 }
             } else {
-                console.warn("Sensor de Orientación no soportado.");
-                setSensorStatus('mag', 'unavailable');
+                 // Si no existe API, probar Fallback directo
+                 setSensorStatus('mag', 'unavailable'); // ROJO inicialmente
+                 activateFallbackLogic();
             }
 
+            // 2. Intentar Magnetómetro (EMF)
             if ('Magnetometer' in window) {
                 try {
                     magnetometer = new Magnetometer({ frequency: 10 });
                     magnetometer.onreading = () => {
                         let strength = Math.sqrt(magnetometer.x**2 + magnetometer.y**2 + magnetometer.z**2);
                         emfValue = Math.min(100, (strength / 100) * 100); 
-                        setSensorStatus('prox', 'connected'); 
+                        setSensorStatus('prox', 'connected'); // VERDE
                     };
                     magnetometer.onerror = (e) => {
-                        console.warn("Magnetómetro (EMF) no disponible:", e.error.name, ". Probando Proximidad.");
-                        initProximitySensor();
+                        console.warn("Magnetómetro error:", e);
+                        setSensorStatus('prox', 'orange'); // Detectado, error
+                        initProximitySensor(); // Probar proximidad
                     };
                     magnetometer.start();
                 } catch (e) {
-                    console.warn("Magnetómetro (EMF) falló. Probando Proximidad.", e);
+                    setSensorStatus('prox', 'orange');
                     initProximitySensor();
                 }
             } else {
-                console.warn("Magnetómetro (EMF) no soportado. Probando Proximidad.");
+                console.warn("Sin Magnetómetro");
+                setSensorStatus('prox', 'unavailable');
                 initProximitySensor();
+            }
+        }
+
+        function handleSensorFailure() {
+             setSensorStatus('mag', 'unavailable'); // Rojo
+             setSensorStatus('prox', 'simulated');  // Azul (Simulación)
+             startEmfSimulation();
+        }
+
+        // Lógica de Fallback para MAG (Luz Roja simulador o Proximidad)
+        function activateFallbackLogic() {
+            // Si falla MAG, usamos Proximidad o Simulación matemática para colorearlo AZUL
+            if('ProximitySensor' in window) {
+                 // Ya se maneja en initProximitySensor, solo cambiamos el estado visual de MAG para reflejar que usa fallback
+                 setSensorStatus('mag', 'simulated'); // AZUL
+            } else {
+                 setSensorStatus('mag', 'simulated'); // AZUL (Simulación pura)
             }
         }
 
@@ -1689,21 +1717,20 @@
                         if (dist <= minDist) emfValue = 100;
                         else if (dist >= maxDist) emfValue = 0;
                         else emfValue = 100 * (1 - (dist - minDist) / (maxDist - minDist));
-                        setSensorStatus('prox', 'fallback'); 
+                        
+                        // MEJORA: Si usa proximidad, es un Fallback -> AZUL
+                        setSensorStatus('prox', 'simulated'); 
                     };
-                    proximitySensor.onerror = (e) => {
-                        console.warn("Proximidad no disponible:", e.error.name, "Iniciando simulador.");
+                    proximitySensor.onerror = () => {
                         setSensorStatus('prox', 'simulated'); 
                         startEmfSimulation(); 
                     };
                     proximitySensor.start();
                 } catch(e) {
-                    console.warn("Sensor de Proximidad falló. Iniciando simulador.");
                     setSensorStatus('prox', 'simulated'); 
                     startEmfSimulation(); 
                 }
             } else {
-                console.warn("Sensor de Proximidad no soportado. Iniciando simulador.");
                 setSensorStatus('prox', 'simulated'); 
                 startEmfSimulation(); 
             }
@@ -1711,9 +1738,14 @@
         
         function startEmfSimulation() {
             if (emfSimInterval) return;
+            // MEJORA: Movimiento irregular en simulación
             emfSimInterval = setInterval(() => {
-                emfValue = Math.random() * 100;
-            }, 200);
+                if(Math.random() > 0.7) {
+                    emfValue = Math.random() * 80; // Saltos bruscos
+                } else {
+                    emfValue = Math.random() * 20; // Ruido de fondo
+                }
+            }, 150);
         }
         
         function stopSensor() {
@@ -1735,10 +1767,11 @@
                 
                 const needle = document.getElementById('main-needle');
                 if (needle) {
+                    // Movimiento de la aguja
                     needle.style.transform = `translateX(-50%) rotate(${-60 + (intensity/100)*120}deg)`;
                 }
                 
-            }, 150); 
+            }, 100); 
         }
         
         function stopVisualLoop() {
@@ -1825,9 +1858,6 @@
                 rotation = 120;
                 knob.classList.add('speed-3');
             }
-            
-            // 📍 El knob-indicator ya no existe, el estilo se aplica al botón mismo
-            // this.querySelector('.knob-indicator').style.transform = `translateX(-50%) rotate(${rotation}deg)`;
             console.log("Velocidad de Scan:", ["LENTO", "NORMAL", "RAPIDO"][scanSpeed]);
         });
 
@@ -1889,12 +1919,6 @@
 
             } catch (e) { 
                 console.error("Error cargando datos de Google Apps Script:", e);
-                if (response) {
-                    console.error("Respuesta del servidor:", response.status, response.statusText);
-                    console.error("Asegúrate que tu Script esté desplegado como 'Cualquier Usuario' (Anyone).");
-                } else {
-                    console.error("Error de red. Revisa tu conexión a internet o problemas de CORS.");
-                }
                 updateLoadingProgress(100, "ERROR DE SINCRONIZACIÓN");
             } finally {
                 setTimeout(hideLoadingScreen, 500); 
@@ -1902,7 +1926,7 @@
             }
         }
 
-        // 📍 Lógica de Voz Mejorada
+        
         let preferredVoice = null;
         function loadVoices() {
             let voices = window.speechSynthesis.getVoices();
@@ -1911,12 +1935,9 @@
                 if (!preferredVoice) preferredVoice = voices.find(v => v.lang === 'es-ES');
                 if (!preferredVoice) preferredVoice = voices.find(v => v.lang.startsWith('es-'));
                 console.log("Voz seleccionada:", preferredVoice ? preferredVoice.name : "Ninguna (usará default)");
-            } else {
-                console.warn("No se cargaron voces.");
             }
         }
         
-        // Carga voces al inicio y si cambian
         loadVoices();
         if (window.speechSynthesis.onvoiceschanged !== undefined) {
             window.speechSynthesis.onvoiceschanged = loadVoices;
@@ -1975,9 +1996,13 @@
 
             speakWordByWord(); 
             
-            sensorPanel.classList.add('alert');
-            emfValue = 80 + Math.random() * 20; 
-            setTimeout(() => sensorPanel.classList.remove('alert'), 500);
+            // MEJORA: Feedback visual cuando habla
+            const sensorPanel = document.getElementById('p-unified');
+            if(sensorPanel) {
+                sensorPanel.classList.add('alert');
+                emfValue = 80 + Math.random() * 20; 
+                setTimeout(() => sensorPanel.classList.remove('alert'), 500);
+            }
         }
 
         function runSpiritBoxLoop() {
@@ -1991,8 +2016,6 @@
             try {
                 if (!isRecognizing && recognition) { 
                     recognition.start();
-                } else if (!recognition) {
-                    console.warn("Recognition no está inicializado. El micrófono falló.");
                 }
             } catch(e) {
                 console.warn("Error al iniciar recognition", e);
@@ -2047,6 +2070,13 @@
                 vuAnalyserNode = audioCtx.createAnalyser();
                 vuAnalyserNode.fftSize = 256;
                 micStreamSource.connect(vuAnalyserNode);
+                
+                // MEJORA: Conectar el micrófono a la salida para reproducir audio (Feedback loop cuidado)
+                const micGain = audioCtx.createGain();
+                micGain.gain.value = 0.8; // Volumen ajustado
+                micStreamSource.connect(micGain);
+                micGain.connect(audioCtx.destination);
+
                 vuDataArray = new Uint8Array(vuAnalyserNode.frequencyBinCount);
                 drawVUMeter(); 
                 console.log("VU Meter inicializado.");
@@ -2222,7 +2252,13 @@
         function showControls() {
             filterControls.style.opacity = '1';
             logoImage.classList.add('hiding'); 
-            followContainer.classList.add('hiding');
+            
+            // MEJORA: Ocultar "Síguenos" al mostrar controles
+            if (followContainer) {
+                followContainer.classList.remove('show-anim');
+                followContainer.classList.add('hide-anim');
+            }
+
             filterControls.style.pointerEvents = 'auto';
             clearTimeout(uiHideTimeout);
             uiHideTimeout = setTimeout(hideControls, 4000); 
@@ -2233,15 +2269,13 @@
             filterControls.style.opacity = '0';
             logoImage.classList.remove('hiding'); 
             logoImage.classList.add('visible'); 
-            followContainer.classList.remove('hiding');
+            
             filterControls.style.pointerEvents = 'none';
             uiVisible = false;
         }
         
 
         function handleUITap(event) {
-            // requestAllPermissions(); // Movido a window.onload
-
             if (isPinching || isPanning) return; 
             
             if (!event.target.closest('.panel') && !event.target.closest('.filter-btn')) {
@@ -2274,15 +2308,19 @@
             setTimeout(resizeAllCanvas, 500); 
         }
 
+        // MEJORA: Lógica de animación para "SÍGUENOS" cada 30 segundos
         function runFollowAnimation() {
             if (uiVisible || !followContainer) return; 
-            followContainer.style.display = 'block';
-            followContainer.style.opacity = '1';
             
+            // Mostrar
+            followContainer.classList.remove('hide-anim');
+            followContainer.classList.add('show-anim');
+            
+            // Ocultar después de 5 segundos
             setTimeout(() => {
-                if (uiVisible) return; // No ocultar si los controles están visibles
-                followContainer.classList.add('hiding');
-            }, 4000);
+                followContainer.classList.remove('show-anim');
+                followContainer.classList.add('hide-anim');
+            }, 5000);
         }
 
         const appUI = document.getElementById('app-ui');
@@ -2344,11 +2382,11 @@
             detectPoseLoop(); 
             
             setInterval(updateSensorReadings, 2000); 
-            setInterval(runFollowAnimation, 30000); // Activa el "Síguenos"
+            setInterval(runFollowAnimation, 30000); // MEJORA: Loop cada 30 segundos
             
             document.body.classList.remove('panels-active');
             document.getElementById('btn-panel').classList.remove('active');
-            document.getElementById('knob-scan').classList.add('speed-2'); // Inicia en Normal
+            document.getElementById('knob-scan').classList.add('speed-2'); 
             
             hideControls();
             
