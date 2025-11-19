@@ -32,7 +32,6 @@
             --text-dim-grey: #777;
             --panel-width-landscape: 300px;
             --panel-height-landscape: 160px;
-            --bottom-panel-height-vertical: 200px; /* Panel inferior más grueso */
         }
         
         body {
@@ -80,8 +79,9 @@
             filter: none;
         }
         
-        body.filter-detector #bg-camera-feed {
-            filter: grayscale(1) contrast(3) sepia(1) hue-rotate(-30deg) saturate(5);
+        /* 📍 NUEVO: Filtro Térmico (TRM) */
+        body.filter-thermal #bg-camera-feed {
+            filter: grayscale(1) contrast(2.5) sepia(1) hue-rotate(-120deg) brightness(1.1);
         }
         body.filter-negative #bg-camera-feed {
             filter: invert(1) contrast(1.1);
@@ -112,17 +112,14 @@
             flex-direction: column;
             z-index: 20;
             pointer-events: none; 
-            /* 📍 NUEVA ANIMACIÓN: Explosión de Burbuja */
-            clip-path: circle(0% at 50% 50%);
-            transition: clip-path 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             box-sizing: border-box; 
             overflow: hidden;
         }
         
         body.panels-active #left-panel,
         body.panels-active #bottom-panel {
-            /* 📍 NUEVA ANIMACIÓN: Explosión de Burbuja */
-            clip-path: circle(150% at 50% 50%);
+            transform: translateX(0) translateY(0);
             pointer-events: auto;
         }
         
@@ -193,9 +190,7 @@
 
         .panel {
             background-color: var(--panel-bg-dark); 
-            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 2px 2px;
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgMTAwIDEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzFhMWExYSIvPjxwYXRoIGQ9Ik0wIDUwSDEwMFYxMEgwWiIgZmlsbD0iI0EwQTBBMCIgb3BhY2l0eT0iMC4wMiIvPjxwYXRoIGQ9Ik0wIDkwSDEwMFY1MEgwWiIgZmlsbD0iIzEwMTAxMCIgb3BhY2l0eT0iMC4wMyIvPjxwYXRoIGQ9Ik0wIDEwMEgxMFYwSDBaIiBmaWxsPSIjRkZGRkZGIiBvcGFjaXR5PSIwLjAxIi8+PC9zdmc+'); /* Textura de carbono sutil */
             border: 2px solid var(--border-color-dark);
             box-shadow: 0 0 15px rgba(57, 255, 20, 0.2) inset, 0 0 5px rgba(0,0,0,0.8);
             display: flex;
@@ -253,21 +248,32 @@
         }
         
         .panel-button-torch {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 12px;
             background: rgba(0, 50, 50, 0.7);
-            border: 2px solid var(--border-color-dark);
+            border: 2px solid var(--neon-green);
             color: var(--neon-green);
+            box-shadow: 0 0 12px rgba(57, 255, 20, 0.5);
             transition: all 0.2s;
             font-family: 'Orbitron', sans-serif;
-            font-size: 1.8rem;
+            font-size: 0.85rem;
+            text-transform: uppercase;
             cursor: pointer;
-            padding: 8px;
-            line-height: 1;
+            letter-spacing: 1.5px;
+        }
+        .panel-button-torch svg {
+            width: 24px; height: 24px;
+            fill: currentColor;
+            flex-shrink: 0;
         }
         .panel-button-torch:active, .panel-button-torch.active {
             background: var(--neon-green);
             color: #000;
             box-shadow: 0 0 25px #fff;
-            border-color: var(--neon-green);
         }
 
         .sensor-status-grid {
@@ -318,7 +324,6 @@
             padding: 6px 0; 
         }
         
-        /* 📍 NUEVO: Diseño de Dial (de la imagen) */
         .dial-container {
             position: relative;
             width: 75px;
@@ -327,50 +332,45 @@
             border-radius: 50%;
             border: 2px solid var(--border-color-dark);
             box-shadow: 0 0 8px rgba(57, 255, 20, 0.3) inset, 0 0 5px #000;
-            overflow: hidden;
         }
         .dial-container::before {
             content: '';
             position: absolute;
-            top: 5px; left: 5px; right: 5px; bottom: 5px;
+            top: 6px; left: 6px; right: 6px; bottom: 6px;
             border-radius: 50%;
-            border: 1px solid var(--border-color-dark);
-            background: repeating-conic-gradient(from 0deg, var(--border-color-dark) 0deg 1deg, transparent 1deg 9deg);
-            mask-image: radial-gradient(transparent 70%, black 71%);
-            z-index: 1;
+            background: conic-gradient(
+                var(--neon-green) 0deg 5deg, transparent 5deg 15deg,
+                var(--text-dim-grey) 15deg 18deg, transparent 18deg 60deg,
+                var(--text-dim-grey) 60deg 63deg, transparent 63deg 105deg,
+                var(--alert-red) 105deg 110deg, transparent 110deg 250deg,
+                var(--neon-green) 250deg 255deg, transparent 255deg 360deg
+            );
+            mask-image: radial-gradient(transparent 65%, black 66%);
         }
         .dial-container::after {
             content: '';
             position: absolute;
-            top: 10px; left: 10px; right: 10px; bottom: 10px;
-            border-radius: 50%;
-            background: repeating-conic-gradient(from 0deg, var(--border-color-dark) 0deg 1.5deg, transparent 1.5deg 45deg);
-            mask-image: radial-gradient(transparent 50%, black 51%);
-            z-index: 2;
+            top: 5%; left: 10%;
+            width: 80%; height: 40%;
+            border-radius: 50% / 100%;
+            border-top-left-radius: 60px;
+            border-top-right-radius: 60px;
+            background: radial-gradient(ellipse at top, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 60%);
         }
 
         .dial-needle {
             width: 3px;
             height: 40%;
+            background: var(--neon-green);
+            box-shadow: 0 0 8px var(--neon-green);
             position: absolute;
             bottom: 50%;
             left: 50%;
             transform-origin: bottom center;
+            transform: translateX(-50%) rotate(-45deg);
             transition: transform 0.5s cubic-bezier(0.2, 1.5, 0.5, 1);
             z-index: 10;
         }
-        /* Color de aguja específico */
-        #compass-needle {
-            background: var(--neon-green);
-            box-shadow: 0 0 8px var(--neon-green);
-            transform: translateX(-50%) rotate(0deg);
-        }
-        #main-needle {
-            background: var(--alert-red);
-            box-shadow: 0 0 8px var(--alert-red);
-            transform: translateX(-50%) rotate(-60deg);
-        }
-
         .dial-label {
             font-size: 0.65rem;
             color: var(--text-dim-grey);
@@ -385,6 +385,9 @@
         }
         #detector-dial-needle {
             height: 45%;
+            background: var(--alert-red);
+            box-shadow: 0 0 10px var(--alert-red);
+            transform: translateX(-50%) rotate(-60deg);
         }
         
         #temp-readout { text-align: center; z-index: 5; }
@@ -401,49 +404,18 @@
             text-transform: uppercase;
         }
         
-        #bottom-panel .panel {
-            flex-direction: row;
-            justify-content: space-around;
-            align-items: center;
-        }
-        #bottom-panel .panel-section {
-            flex-grow: 1;
-            flex-basis: 0;
-            height: 100%;
-            justify-content: center;
-        }
-        #bottom-panel .dials-grid {
-            grid-template-columns: 1fr 1.5fr 1fr;
-        }
-        #detector-dial-container {
-            grid-column: 2 / 3;
-        }
-        #mag-dial-container { grid-column: 1 / 2; }
-        #temp-readout { grid-column: 3 / 4; }
-        #vu-meter-container { height: 100px; }
-        
         #panel-cam-stats {
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.9rem;
+            font-size: 1.1rem;
             font-weight: 700;
-            color: var(--text-dim-grey);
-            text-shadow: none;
-            padding: 4px;
+            color: var(--neon-green);
+            text-shadow: 0 0 5px var(--neon-green);
+            padding: 6px;
             background: rgba(0,0,0,0.5);
             border: 1px solid var(--border-color-dark);
             text-align: center;
             letter-spacing: 1px;
-            height: 100px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
         }
-        #panel-cam-stats span {
-            color: var(--text-color-light);
-            font-size: 1.1rem;
-        }
-        
 
         .spirit-box-grid {
             display: grid;
@@ -463,8 +435,7 @@
             text-transform: uppercase;
         }
         
-        /* 📍 NUEVO: Botón Frecuencia (similar a REC) */
-        #knob-scan {
+        .knob-circle {
             width: 60px;
             height: 60px;
             border-radius: 50%;
@@ -473,71 +444,68 @@
             cursor: pointer;
             background: #111;
             box-shadow: 0 4px 6px #000, 0 0 8px rgba(57, 255, 20, 0.3) inset;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             transition: all 0.3s;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.8rem;
-            color: var(--text-dim-grey);
-            text-transform: uppercase;
-            letter-spacing: 1px;
         }
-        #knob-scan::before {
-             content: "SCAN";
-             z-index: 6;
-             position: relative;
-             transition: all 0.3s;
+        .knob-circle::before { 
+             content: '';
+             position: absolute; top: 3px; left: 3px; right: 3px; bottom: 3px;
+             border-radius: 50%;
+             background: radial-gradient(circle, #222, #000);
         }
-        #knob-scan.speed-1 { border-color: var(--sensor-blue); box-shadow: 0 0 10px var(--sensor-blue) inset; }
-        #knob-scan.speed-1::before { color: var(--sensor-blue); text-shadow: 0 0 5px var(--sensor-blue); }
-        #knob-scan.speed-2 { border-color: var(--sim-orange); box-shadow: 0 0 10px var(--sim-orange) inset; }
-        #knob-scan.speed-2::before { color: var(--sim-orange); text-shadow: 0 0 5px var(--sim-orange); }
-        #knob-scan.speed-3 { border-color: var(--alert-red); box-shadow: 0 0 10px var(--alert-red) inset; }
-        #knob-scan.speed-3::before { color: var(--alert-red); text-shadow: 0 0 5px var(--alert-red); }
+        .knob-indicator {
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            width: 4px;
+            height: 18px;
+            background: var(--neon-green);
+            transform: translateX(-50%);
+            border-radius: 2px;
+            box-shadow: 0 0 8px var(--neon-green);
+            z-index: 5;
+            clip-path: polygon(0 0, 100% 0, 100% 70%, 50% 100%, 0 70%);
+            transition: transform 0.3s ease; 
+        }
 
-
-        .power-button-container {
+        .switch-container {
             display: flex;
             flex-direction: column;
             align-items: center;
             width: 60px; 
         }
-        #knob-power {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            border: 2px solid var(--border-color-dark);
+        .switch {
             position: relative;
-            cursor: pointer;
+            display: inline-block;
+            width: 35px;
+            height: 60px;
             background: #111;
+            border: 2px solid var(--border-color-dark);
             box-shadow: 0 4px 6px #000, 0 0 8px rgba(57, 255, 20, 0.3) inset;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
         }
-        #knob-power::before {
-            content: "REC";
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.8rem;
-            color: var(--alert-red);
-            text-shadow: 0 0 5px var(--alert-red);
-            transition: all 0.3s;
+        .switch input { display: none; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: transparent;
+            transition: .4s;
         }
-        #knob-power.active {
-            border-color: var(--alert-red);
-            background: #330000;
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 25px;
+            width: 25px;
+            left: 3px;
+            bottom: 3px;
+            background-color: var(--alert-red);
+            box-shadow: 0 0 10px var(--alert-red);
+            border: 1px solid #333;
+            transition: .4s;
         }
-        #knob-power.active::before {
-            color: var(--alert-red);
-            text-shadow: 0 0 10px var(--alert-red), 0 0 15px #fff;
-            animation: pulseRec 1.5s infinite;
-        }
-        @keyframes pulseRec {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
+        input:checked + .slider:before {
+            transform: translateY(-28px);
+            background-color: var(--neon-green);
+            box-shadow: 0 0 10px var(--neon-green);
         }
 
 
@@ -582,7 +550,7 @@
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none; width: 30px; height: 30px;
             background: #444; border: 1px solid #666;
-            border-radius: 0;
+            border-radius: 0; /* Cuadrado */
             box-shadow: -100vw 0 0 100vw var(--neon-green);
             cursor: pointer;
         }
@@ -619,18 +587,15 @@
         #floating-cam-stats {
             bottom: 15px; right: 15px;
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             font-weight: 700;
-            color: var(--text-dim-grey);
-            text-shadow: none;
-            padding: 2px 5px;
-            background: rgba(0,0,0,0.5);
+            color: var(--neon-green);
+            text-shadow: 0 0 4px var(--neon-green), 0 0 6px #000;
+            padding: 3px 6px;
+            background: rgba(0,0,0,0.4);
             border: 1px solid var(--border-color-dark);
             display: none; 
             letter-spacing: 0.5px;
-        }
-        #floating-cam-stats span {
-             color: var(--text-color-light);
         }
         
         body:not(.panels-active) #floating-cam-stats {
@@ -673,7 +638,7 @@
             display: flex; flex-direction: column;
             gap: 12px; z-index: 100;
             pointer-events: auto; opacity: 1;
-            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            transition: opacity 0.5s ease-in-out, top 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
         .filter-btn {
             width: 55px; height: 55px;
@@ -685,7 +650,6 @@
             font-weight: bold; cursor: pointer;
             box-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
             transition: all 0.2s;
-            font-size: 1rem;
         }
         .filter-btn:active {
             background: var(--neon-green); color: #000;
@@ -728,47 +692,6 @@
             background-size: 200% 100%;
         }
         @keyframes loading-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-        
-        #pip-camera-feed {
-            display: none;
-            position: fixed;
-            z-index: 999;
-            /* 📍 Posición PiP actualizada */
-            bottom: calc(var(--bottom-panel-height-vertical) + 20px);
-            left: 50%;
-            transform: translateX(-50%);
-            width: 120px; /* Más grande */
-            height: 120px; /* Más grande */
-            border-radius: 50%;
-            border: 3px solid var(--neon-green);
-            box-shadow: 0 0 15px var(--neon-green);
-            object-fit: cover;
-            animation: pulseGlow 1.5s infinite;
-        }
-
-        /* 📍 NUEVO: Contenedor "Síguenos" */
-        #follow-container {
-            position: absolute; /* Se pega al #main-view-area */
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%); 
-            z-index: 10;
-            pointer-events: none;
-            opacity: 1;
-            transition: opacity 0.5s ease-out;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.2rem;
-            color: var(--neon-green);
-            text-shadow: 0 0 8px var(--neon-green);
-            display: none; /* Se activa con JS */
-        }
-        body.panels-active #follow-container {
-            bottom: 15px; /* Sube un poco cuando el panel está activo */
-            font-size: 1rem;
-        }
-        #follow-container.hiding {
-            opacity: 0;
-        }
 
         /* --- CSS RESPONSIVE (Horizontal/Vertical) --- */
         
@@ -776,13 +699,9 @@
             #left-panel {
                 top: 0; left: 0;
                 width: 100vw;
-                height: calc(100vh - var(--bottom-panel-height-vertical));
-                /* Animación de Burbuja */
-                clip-path: circle(0% at 50% 0%);
-                transition: clip-path 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-            }
-            body.panels-active #left-panel {
-                clip-path: circle(150% at 50% 0%);
+                height: calc(100vh - var(--panel-height-landscape));
+                transform: translateY(-100%);
+                padding: env(safe-area-inset-top) 0 0 0;
             }
             #left-panel .panel {
                 border-radius: 0; border-bottom: none;
@@ -792,21 +711,15 @@
             #bottom-panel {
                 bottom: 0; left: 0;
                 width: 100vw;
-                height: var(--bottom-panel-height-vertical);
-                /* Animación de Burbuja */
-                clip-path: circle(0% at 50% 100%);
-                transition: clip-path 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+                height: var(--panel-height-landscape);
+                transform: translateY(100%);
                 padding: 0 0 env(safe-area-inset-bottom) 0;
-            }
-             body.panels-active #bottom-panel {
-                clip-path: circle(150% at 50% 100%);
             }
             #bottom-panel .panel {
                 border-radius: 0; border-top: none;
                 flex-direction: row;
                 justify-content: space-around;
                 align-items: center;
-                overflow-y: hidden;
             }
             
             #bottom-panel .panel-section {
@@ -815,37 +728,20 @@
                 height: 100%;
                 justify-content: center;
             }
-            /* 📍 Layout Vertical Panel Inferior */
-            #bottom-panel .dials-grid {
-                grid-template-columns: 1fr 1fr;
-            }
             .dial-container {
                  width: 60px;
                  height: 60px;
             }
             #detector-dial-container {
-                 grid-column: span 1;
                  width: 80px;
                  height: 80px;
-                 margin-bottom: 0;
             }
             #temp-val { font-size: 1.2rem; }
-            #vu-meter-container { height: 100px; }
-            #panel-cam-stats {
-                order: -1; /* Mover Rendimiento Arriba */
-                height: auto;
-                font-size: 0.8rem;
-                padding: 4px;
-            }
-            #panel-cam-stats span { font-size: 0.9rem; }
+            #panel-cam-stats { font-size: 0.9rem; }
 
 
             body.panels-active #main-view-area {
                 display: none;
-            }
-            
-            body.panels-active #pip-camera-feed {
-                display: block;
             }
             
             body.panels-active #filter-controls-container {
@@ -859,13 +755,8 @@
                 height: 100vh;
                 top: 0;
                 left: 0;
-                /* Animación de Burbuja */
-                clip-path: circle(0% at 0% 50%);
-                transition: clip-path 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+                transform: translateX(calc(var(--panel-width-landscape) * -1));
                 padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
-            }
-            body.panels-active #left-panel {
-                clip-path: circle(150% at 0% 50%);
             }
             #left-panel .panel {
                 border-radius: 0; border-right: none;
@@ -874,17 +765,12 @@
 
             #bottom-panel {
                 width: calc(100% - var(--panel-width-landscape));
-                height: var(--panel-height-landscape); /* Altura estándar */
+                height: var(--panel-height-landscape);
                 top: auto;
                 bottom: 0;
                 left: var(--panel-width-landscape);
-                /* Animación de Burbuja */
-                clip-path: circle(0% at 50% 100%);
-                transition: clip-path 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+                transform: translateY(100%);
                 padding: 0 0 env(safe-area-inset-bottom) 0;
-            }
-            body.panels-active #bottom-panel {
-                clip-path: circle(150% at 50% 100%);
             }
              #bottom-panel .panel {
                 border-radius: 0; border-top: none;
@@ -899,16 +785,6 @@
                 height: 100%;
                 justify-content: center;
             }
-            #bottom-panel .dials-grid {
-                grid-template-columns: 1fr 1.5fr 1fr;
-            }
-            #detector-dial-container {
-                grid-column: 2 / 3;
-            }
-            #mag-dial-container { grid-column: 1 / 2; }
-            #temp-readout { grid-column: 3 / 4; }
-            #vu-meter-container { height: 100px; }
-            #panel-cam-stats { height: 100px; display: flex; flex-direction:column; align-items: center; justify-content: center; }
 
             body.panels-active #main-view-area {
                 left: var(--panel-width-landscape);
@@ -943,7 +819,6 @@
         <video id="bg-camera-feed" playsinline autoplay muted></video>
         <canvas id="main-filter-canvas"></canvas>
         <div id="camera-frame"></div>
-        <div id="follow-container">@EXPLORACIONESOBR</div>
     </div>
     
     <canvas id="ai-canvas" class="hidden-canvas"></canvas>
@@ -953,8 +828,6 @@
     <div id="floating-cam-stats" class="persistent-ui">
         <span id="floating-cam-fps">--</span> FPS / <span id="floating-cam-res">----p</span>
     </div>
-
-    <video id="pip-camera-feed" playsinline autoplay muted></video>
 
     <div id="kinect-banner">KINEC ACTIVO <span class="led-red">🔴</span></div>
 
@@ -971,7 +844,10 @@
             
             <div class="panel-section">
                 <div class="section-title">Controles de Dispositivo</div>
-                <button id="btn-torch" class="panel-button-torch" onclick="toggleTorch(event)">🔦</button>
+                <button id="btn-torch" class="panel-button-torch" onclick="toggleTorch(event)">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M342.6 38.6c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L380.7 167H256c-17.7 0-32 14.3-32 32s14.3 32 32 32h124.7l-83.4 83.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l144-144c12.5-12.5 12.5-32.8 0-45.3l-144-144zM160 80c0-17.7-14.3-32-32-32s-32 14.3-32 32v144H64c-17.7 0-32 14.3-32 32s14.3 32 32 32h32v144c0 17.7 14.3 32 32 32s32-14.3 32-32V288h32c17.7 0 32-14.3 32-32s-14.3-32-32-32H160V80z"/></svg>
+                    <span>LINTERNA</span>
+                </button>
             </div>
             
             <div class="panel-section">
@@ -994,19 +870,30 @@
                     </div>
                 </div>
             </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Medidor de Sonido (VU)</div>
+                <div id="vu-meter-container">
+                    <canvas id="vu-meter-canvas"></canvas>
+                </div>
+            </div>
 
             <div class="panel-section">
                 <div class="section-title">Spirit Box</div>
                 <div class="spirit-box-grid">
                     
-                    <div class="power-button-container">
-                        <div id="knob-power"></div>
+                    <div class="switch-container">
+                        <label class="switch">
+                            <input type="checkbox" id="knob-power">
+                            <span class="slider"></span>
+                        </label>
                         <div class="knob-label">ENCENDER</div>
                     </div>
 
                     <div class="knob-container">
                         <div class="knob-circle" id="knob-scan">
-                            </div>
+                            <div class="knob-indicator" style="transform: rotate(0deg);"></div>
+                        </div>
                         <div class="knob-label">FRECUENCIA</div>
                     </div>
                     
@@ -1031,25 +918,15 @@
                 <div class="processing-line"></div>
                 <div class="processing-line"></div>
             </div>
-
-            <div class="panel-section" id="section-performance">
-                <div class="section-title">Rendimiento</div>
-                <div id="panel-cam-stats">
-                    <span id="cam-fps-panel">--</span>
-                    <span>FPS</span>
-                    <span id="cam-res-panel">----p</span>
-                </div>
-            </div>
-
-            <div class="panel-section" id="section-field-readings">
+            <div class="panel-section">
                 <div class="section-title">Lecturas de Campo</div>
                 <div class="dials-grid">
-                    <div id="mag-dial-container" class="dial-container mag">
-                        <div id="compass-needle" class="dial-needle"></div>
+                    <div id="mag-dial-container" class="dial-container">
+                        <div id="compass-needle" class="dial-needle" style="transform: translateX(-50%) rotate(0deg);"></div>
                         <div class="dial-label">MAG</div>
                     </div>
-                    <div id="detector-dial-container" class="dial-container detector">
-                        <div id="main-needle" class="dial-needle"></div>
+                    <div id="detector-dial-container" class="dial-container">
+                        <div id="main-needle" class="dial-needle" style="transform: translateX(-50%) rotate(-60deg);"></div>
                         <div class="dial-label">DETECTOR</div>
                     </div>
                     <div id="temp-readout">
@@ -1059,10 +936,10 @@
                 </div>
             </div>
             
-            <div class="panel-section" id="section-vu-meter">
-                <div class="section-title">Medidor de Sonido (VU)</div>
-                <div id="vu-meter-container">
-                    <canvas id="vu-meter-canvas"></canvas>
+            <div class="panel-section">
+                <div class="section-title">Rendimiento</div>
+                <div id="panel-cam-stats">
+                    <span id="cam-fps-panel">--</span> FPS / <span id="cam-res-panel">----p</span>
                 </div>
             </div>
 
@@ -1071,7 +948,7 @@
 
 
     <div id="filter-controls-container">
-        <button class="filter-btn" onclick="setFilter('detector')">DTR</button>
+        <button class="filter-btn" onclick="setFilter('thermal')">TRM</button>
         <button class="filter-btn" onclick="setFilter('sls')">SLS</button>
         <button class="filter-btn" onclick="setFilter('negative')">NEG</button>
         <button class="filter-btn" id="btn-panel" onclick="togglePanels()">PAN</button>
@@ -1115,7 +992,6 @@
         const SCAN_DELAYS = [1500, 700, 200];
         
         const videoBg = document.getElementById('bg-camera-feed');
-        const pipVideo = document.getElementById('pip-camera-feed');
         
         const mainFilterCanvas = document.getElementById('main-filter-canvas');
         const mainFilterCtx = mainFilterCanvas.getContext('2d', { willReadFrequently: true });
@@ -1208,14 +1084,6 @@
                 }
                 
                 videoBg.srcObject = stream;
-                if (pipVideo) {
-                    // Crea un stream separado para el PiP para evitar conflictos
-                    const pipStream = await navigator.mediaDevices.getUserMedia(constraints);
-                    pipVideo.srcObject = pipStream;
-                    pipVideo.muted = true;
-                    pipVideo.play();
-                }
-                
                 videoBg.onloadedmetadata = () => {
                     resizeAllCanvas(); 
                     energyCanvas = document.getElementById('energy-canvas');
@@ -1377,7 +1245,7 @@
         ];
         
         function drawAllSkeletons(poses) {
-            const ctx = mainFilterCanvas; 
+            const ctx = mainFilterCtx; 
             
             ctx.strokeStyle = 'var(--neon-green)'; 
             ctx.fillStyle = 'var(--alert-red)';    
@@ -1415,7 +1283,7 @@
         }
 
         function drawKeypoints(keypoints, scale, offsetX, offsetY) {
-            const ctx = mainFilterCanvas;
+            const ctx = mainFilterCtx;
             for (let i = 0; i < keypoints.length; i++) {
                 const keypoint = keypoints[i];
                 if (keypoint.score > confidenceThreshold) {
@@ -1427,7 +1295,7 @@
         }
 
         function drawConnections(keypoints, scale, offsetX, offsetY) {
-            const ctx = mainFilterCanvas;
+            const ctx = mainFilterCtx;
             const keypointMap = new Map();
             keypoints.forEach(keypoint => {
                 keypointMap.set(keypoint.name, keypoint);
@@ -1446,6 +1314,7 @@
             });
         }
         
+        // 📍 Lógica de Filtro actualizada
         function setFilter(f) {
             document.querySelectorAll('.filter-btn').forEach(b => {
                 if (b.id !== 'btn-panel') {
@@ -1453,7 +1322,8 @@
                 }
             });
             
-            document.body.classList.remove('filter-detector', 'filter-sls', 'filter-negative');
+            // 📍 Limpia filtros anteriores
+            document.body.classList.remove('filter-thermal', 'filter-sls', 'filter-negative');
             mainFilterCanvas.style.display = 'none';
 
             if (currentFilter === f) {
@@ -1494,11 +1364,11 @@
                 await videoTrack.applyConstraints({
                     advanced: [{ torch: isTorchOn }]
                 });
-                event.currentTarget.classList.toggle('active', isTorchOn);
+                document.getElementById('btn-torch').classList.toggle('active', isTorchOn);
             } catch (e) {
                 console.error("Error al activar linterna:", e);
                 isTorchOn = false; 
-                event.currentTarget.classList.remove('active');
+                document.getElementById('btn-torch').classList.toggle('active', false);
                 document.getElementById('btn-torch').style.display = 'none';
             }
         }
@@ -1760,15 +1630,13 @@
                 await initSpeechRecAndVUMeter(); 
             }
             
-            if(!audioCtx || !micStreamSource) { 
-                console.error("Contexto de Audio o Micrófono no pudo inicializarse.");
-                pwr.classList.remove('active');
-                isRunning = false;
+            if(!audioCtx) { 
+                console.error("Contexto de Audio no pudo inicializarse. El Spirit Box no funcionará.");
+                pwr.checked = false; 
                 return; 
             }
 
-            isRunning = !pwr.classList.contains('active');
-            pwr.classList.toggle('active', isRunning); 
+            isRunning = pwr.checked; 
             
             if(isRunning) {
                 if(audioCtx.state === 'suspended') {
@@ -1781,6 +1649,8 @@
                 playFondo1();
                 gain_Fondo1.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.5); 
                 gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 0.5); 
+
+                requestAllPermissions();
 
                 spiritBoxState = "SCANNING";
                 playFondo2_Fragment(); 
@@ -1801,33 +1671,14 @@
                 isSpeaking = false;
                 isRecognizing = false;
                 setSensorStatus('mic', 'off');
-                
-                const isVertical = window.innerHeight > window.innerWidth;
-                if (isVertical && document.body.classList.contains('panels-active')) {
-                    togglePanels();
-                }
+                stopSensor();
             }
         });
 
         document.getElementById('knob-scan').addEventListener('click', function() {
             scanSpeed = (scanSpeed + 1) % 3; // 0, 1, 2
-            let rotation;
-            let knob = this;
-            knob.classList.remove('speed-1', 'speed-2', 'speed-3');
-            
-            if (scanSpeed === 0) { // Lento
-                rotation = -120;
-                knob.classList.add('speed-1');
-            } else if (scanSpeed === 1) { // Normal
-                rotation = 0;
-                knob.classList.add('speed-2');
-            } else { // Rápido
-                rotation = 120;
-                knob.classList.add('speed-3');
-            }
-            
-            // 📍 El knob-indicator ya no existe, el estilo se aplica al botón mismo
-            // this.querySelector('.knob-indicator').style.transform = `translateX(-50%) rotate(${rotation}deg)`;
+            let rotation = -120 + (scanSpeed * 120); // -120, 0, 120 grados
+            this.querySelector('.knob-indicator').style.transform = `translateX(-50%) rotate(${rotation}deg)`;
             console.log("Velocidad de Scan:", ["LENTO", "NORMAL", "RAPIDO"][scanSpeed]);
         });
 
@@ -1898,28 +1749,7 @@
                 updateLoadingProgress(100, "ERROR DE SINCRONIZACIÓN");
             } finally {
                 setTimeout(hideLoadingScreen, 500); 
-                requestAllPermissions();
             }
-        }
-
-        // 📍 Lógica de Voz Mejorada
-        let preferredVoice = null;
-        function loadVoices() {
-            let voices = window.speechSynthesis.getVoices();
-            if (voices.length > 0) {
-                preferredVoice = voices.find(v => v.lang === 'es-MX');
-                if (!preferredVoice) preferredVoice = voices.find(v => v.lang === 'es-ES');
-                if (!preferredVoice) preferredVoice = voices.find(v => v.lang.startsWith('es-'));
-                console.log("Voz seleccionada:", preferredVoice ? preferredVoice.name : "Ninguna (usará default)");
-            } else {
-                console.warn("No se cargaron voces.");
-            }
-        }
-        
-        // Carga voces al inicio y si cambian
-        loadVoices();
-        if (window.speechSynthesis.onvoiceschanged !== undefined) {
-            window.speechSynthesis.onvoiceschanged = loadVoices;
         }
 
         function speak(text) {
@@ -1948,11 +1778,7 @@
 
                 const word = words[wordIndex];
                 const u = new SpeechSynthesisUtterance(word);
-                
-                if (preferredVoice) {
-                    u.voice = preferredVoice;
-                }
-                u.lang = preferredVoice ? preferredVoice.lang : 'es-MX';
+                u.lang = 'es-MX';
                 u.volume = 1.0;
                 u.pitch = 0.1 + Math.random() * 0.7; 
                 u.rate = 0.9 + Math.random() * 0.4; 
@@ -2217,12 +2043,10 @@
         
         const filterControls = document.getElementById('filter-controls-container');
         const logoImage = document.getElementById('logo-image');
-        const followContainer = document.getElementById('follow-container');
         
         function showControls() {
             filterControls.style.opacity = '1';
             logoImage.classList.add('hiding'); 
-            followContainer.classList.add('hiding');
             filterControls.style.pointerEvents = 'auto';
             clearTimeout(uiHideTimeout);
             uiHideTimeout = setTimeout(hideControls, 4000); 
@@ -2233,14 +2057,13 @@
             filterControls.style.opacity = '0';
             logoImage.classList.remove('hiding'); 
             logoImage.classList.add('visible'); 
-            followContainer.classList.remove('hiding');
             filterControls.style.pointerEvents = 'none';
             uiVisible = false;
         }
         
 
         function handleUITap(event) {
-            // requestAllPermissions(); // Movido a window.onload
+            // requestAllPermissions(); // Movido al botón 'pwr'
 
             if (isPinching || isPanning) return; 
             
@@ -2259,30 +2082,11 @@
             document.body.classList.toggle('panels-active');
             document.getElementById('btn-panel').classList.toggle('active', document.body.classList.contains('panels-active'));
             
-            const isVertical = window.innerHeight > window.innerWidth;
-            const pwrButton = document.getElementById('knob-power');
-    
-            if (isVertical && document.body.classList.contains('panels-active') && !pwrButton.classList.contains('active')) {
-                console.log("Vertical panel open, auto-starting Spirit Box...");
-                pwrButton.click(); 
-            }
-            
             if (document.body.classList.contains('panels-active')) {
                 setTimeout(resizeEnergyCanvas, 500);
                 setTimeout(resizeVuCanvas, 500);
             }
             setTimeout(resizeAllCanvas, 500); 
-        }
-
-        function runFollowAnimation() {
-            if (uiVisible || !followContainer) return; 
-            followContainer.style.display = 'block';
-            followContainer.style.opacity = '1';
-            
-            setTimeout(() => {
-                if (uiVisible) return; // No ocultar si los controles están visibles
-                followContainer.classList.add('hiding');
-            }, 4000);
         }
 
         const appUI = document.getElementById('app-ui');
@@ -2344,15 +2148,13 @@
             detectPoseLoop(); 
             
             setInterval(updateSensorReadings, 2000); 
-            setInterval(runFollowAnimation, 30000); // Activa el "Síguenos"
             
             document.body.classList.remove('panels-active');
             document.getElementById('btn-panel').classList.remove('active');
-            document.getElementById('knob-scan').classList.add('speed-2'); // Inicia en Normal
             
             hideControls();
             
-            loadSheetData(); 
+            loadSheetData();
         };
         
         window.onresize = () => {
