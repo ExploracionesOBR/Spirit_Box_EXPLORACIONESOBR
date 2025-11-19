@@ -16,16 +16,16 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
 
     <style>
-        /* --- ESTILOS VISUALES (VERSIÓN ESTABLE RESTAURADA) --- */
+        /* --- ESTILOS CLÁSICOS (NO MODIFICAR) --- */
         :root {
             --neon-green: #39FF14;
             --alert-red: #FF3333;
             --sim-orange: #FFB000;
             --sensor-blue: #00BFFF; 
-            --panel-bg-dark: rgba(5, 10, 5, 0.90); /* Fondo original */
+            --panel-bg-dark: rgba(10, 15, 10, 0.9);
             --border-color-dark: rgba(57, 255, 20, 0.4);
             --panel-width-landscape: 300px;
-            --bottom-panel-height-vertical: 200px;
+            --bottom-panel-height-vertical: 180px;
         }
         
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
@@ -49,7 +49,7 @@
         #loading-bar { width: 0%; height: 100%; background: var(--neon-green); transition: width 0.3s; box-shadow: 0 0 10px var(--neon-green); }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
-        /* CÁMARA Y LIENZOS */
+        /* CÁMARA */
         #main-view-area {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             overflow: hidden; z-index: 1; background: #000;
@@ -102,7 +102,7 @@
         }
         #logo-image.hiding { transform: scale(0) rotate(180deg); opacity: 0; }
 
-        /* --- PANELES (LAYOUT ORIGINAL RESTAURADO) --- */
+        /* --- ESTRUCTURA DE PANELES (ESTABLE) --- */
         .panel {
             background: var(--panel-bg-dark) !important; 
             backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
@@ -118,7 +118,7 @@
             transform: translateX(-100%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
         #bottom-panel {
-            position: fixed; bottom: 0; left: var(--panel-width-landscape); right: 0; height: var(--bottom-panel-height-vertical);
+            position: fixed; bottom: 0; left: var(--panel-width-landscape); right: 0; height: 160px; /* Altura estable */
             display: flex; z-index: 20;
             transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -127,7 +127,9 @@
         body.panels-active #bottom-panel { transform: translateY(0); }
 
         #matrix-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; opacity: 0.15; pointer-events: none; }
-        .panel-content { position: relative; z-index: 1; padding: 10px; display: flex; flex-direction: column; gap: 15px; height: 100%; overflow-y: auto; }
+        
+        /* Contenido del Panel (Padding arreglado) */
+        .panel-content { position: relative; z-index: 1; padding: 15px; display: flex; flex-direction: column; gap: 15px; height: 100%; overflow-y: auto; }
 
         .section-title {
             font-family: 'Orbitron'; font-size: 0.7rem; color: var(--sim-orange);
@@ -135,47 +137,60 @@
             border-bottom: 1px dashed rgba(57,255,20,0.3); margin-bottom: 5px;
         }
 
-        /* GRILLA DE SENSORES (Versión Estable) */
-        .sensor-status-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center; }
-        .status-light-group { display: flex; flex-direction: column; align-items: center; font-size: 0.6rem; color: #999; }
-        .status-led-indicator { width: 10px; height: 10px; border-radius: 50%; background: #333; margin-bottom: 5px; border: 1px solid #555; }
+        /* --- ELEMENTOS VISUALES ESTABLES --- */
+        .sensor-status-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center; margin-bottom: 5px; }
+        .status-light-group { display: flex; flex-direction: column; align-items: center; font-size: 0.65rem; color: #999; }
+        .status-led-indicator { width: 12px; height: 12px; border-radius: 50%; background: #333; margin-bottom: 5px; border: 1px solid #555; }
         .status-led-indicator.active { background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); }
         
-        /* SPIRIT BOX UI (Versión Estable) */
-        .spirit-box-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; align-items: center; }
+        /* Layout de Spirit Box (GRID FIJO) */
+        .spirit-box-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 15px; 
+            justify-items: center;
+            align-items: start;
+        }
+        
         .knob-container { display: flex; flex-direction: column; align-items: center; }
         
         #knob-power, #knob-scan {
-            width: 60px; height: 60px; border-radius: 50%; border: 2px solid #444;
+            width: 65px; height: 65px; /* Tamaño original */
+            border-radius: 50%; border: 2px solid #444;
             background: radial-gradient(circle, #222 30%, #000 100%);
             display: flex; align-items: center; justify-content: center; cursor: pointer;
-            font-family: 'Orbitron'; font-size: 0.75rem; color: #777;
+            font-family: 'Orbitron'; font-size: 0.8rem; color: #777;
             box-shadow: 0 4px 8px #000;
+            transition: all 0.2s;
         }
         #knob-power.active { border-color: var(--alert-red); color: var(--alert-red); text-shadow: 0 0 8px var(--alert-red); background: radial-gradient(circle, #410000 30%, #1a0000 100%); }
         #knob-scan.active { border-color: var(--sim-orange); color: var(--sim-orange); }
 
-        .volume-control-group { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; }
-        input[type=range] { flex: 1; height: 4px; background: #333; -webkit-appearance: none; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; background: var(--neon-green); border-radius: 50%; }
+        .volume-control-group { 
+            grid-column: 1 / -1; /* Ocupa todo el ancho */
+            display: flex; align-items: center; gap: 10px; width: 100%; 
+            margin-top: 5px;
+        }
+        input[type=range] { flex: 1; height: 5px; background: #333; -webkit-appearance: none; border-radius: 3px; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: var(--neon-green); border-radius: 50%; box-shadow: 0 0 5px var(--neon-green); }
         
-        /* VU METER ESTÁNDAR (Barras) */
-        #vu-meter-container { width: 100%; height: 35px; background: #000; border: 1px solid #333; margin-top: 5px; }
+        /* Onda Topográfica (Osciloscopio) */
+        #vu-meter-container { width: 100%; height: 50px; background: #050505; border: 1px solid #333; margin-top: 5px; position: relative; border-radius: 4px; }
         #vu-meter-canvas { width: 100%; height: 100%; }
 
-        /* DIALES INFERIORES (Versión Estable) */
+        /* Diales Inferiores */
         .dials-grid { display: flex; width: 100%; height: 100%; justify-content: space-around; align-items: center; padding: 0 10px; }
-        .dial-container { position: relative; width: 80px; height: 80px; border: 1px solid #444; border-radius: 50%; background: #000; }
+        .dial-container { position: relative; width: 85px; height: 85px; border: 2px solid #444; border-radius: 50%; background: #000; }
         .dial-needle { position: absolute; top: 50%; left: 50%; width: 45%; height: 2px; background: red; transform-origin: 0% 50%; transform: rotate(-90deg); transition: transform 0.3s; }
-        .dial-label { position: absolute; bottom: 15px; width: 100%; text-align: center; font-size: 0.6rem; color: #666; }
+        .dial-label { position: absolute; bottom: 18px; width: 100%; text-align: center; font-size: 0.6rem; color: #666; font-weight: bold; }
 
         /* RESPONSIVE */
         @media (min-aspect-ratio: 1/1) {
             body.panels-active #main-view-area { left: var(--panel-width-landscape); width: calc(100% - var(--panel-width-landscape)); }
         }
         @media (max-aspect-ratio: 1/1) {
-            #left-panel { width: 100%; height: auto; bottom: 200px; top: 0; transform: translateY(-100%); border-right: none; border-bottom: 1px solid var(--border-color-dark); }
-            #bottom-panel { left: 0; height: 200px; }
+            #left-panel { width: 100%; height: auto; bottom: 180px; top: 0; transform: translateY(-100%); border-right: none; border-bottom: 1px solid var(--border-color-dark); }
+            #bottom-panel { left: 0; height: 180px; }
             body.panels-active #left-panel { transform: translateY(0); }
             .dials-grid { display: grid; grid-template-columns: 1fr 1fr; justify-items: center; gap: 10px; }
         }
@@ -185,13 +200,15 @@
 
 <div id="loading-overlay">
     <img id="loading-logo" src="obr-logo.png" alt="Logo" onerror="this.style.display='none'">
-    <div id="loading-text">INICIANDO SISTEMA... 0%</div>
+    <div id="loading-text">CALIBRANDO SENSORES... 0%</div>
     <div id="loading-bar-container"><div id="loading-bar"></div></div>
 </div>
 
 <div id="main-view-area">
     <video id="bg-camera-feed" playsinline autoplay muted></video>
-    <canvas id="main-filter-canvas"></canvas> <div id="social-overlay">
+    <canvas id="main-filter-canvas"></canvas>
+    
+    <div id="social-overlay">
         <div class="social-title">SÍGUENOS EN</div>
         <div class="social-icons">
             <svg class="social-icon-svg" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>
@@ -235,11 +252,11 @@
             <div class="volume-control-group">
                 <span style="font-size:0.7rem">VOL</span>
                 <input type="range" id="vol-slider" min="0" max="100" value="80">
-                <span id="vol-text" style="font-size:0.7rem; width:25px; text-align:right; color:var(--neon-green)">80%</span>
+                <span id="vol-text" style="font-size:0.7rem; width:30px; text-align:right; color:var(--neon-green)">80%</span>
             </div>
         </div>
         
-        <div class="section-title">Monitor de Audio</div>
+        <div class="section-title">Espectro</div>
         <div id="vu-meter-container"><canvas id="vu-meter-canvas"></canvas></div>
     </div>
 </div>
@@ -265,7 +282,7 @@
     
     let isRunning = false;
     let audioCtx, masterGain, radioGain;
-    let audioBuffer_Fondo2; // Solo necesitamos Fondo 2 para los fragmentos
+    let audioBuffer_Fondo2; 
     let programadoData = new Map(), automaticoData = [];
     let uiHideTimeout, currentFilter = 'none';
     let recognition;
@@ -283,7 +300,7 @@
         }
     }
 
-    /* --- 1. SLS KINECT (Lógica Reparada) --- */
+    /* --- SLS KINECT LOGIC (Fixed Scaling) --- */
     let poseDetector, latestPoses = [];
     const skeletonMap = [['left_shoulder', 'right_shoulder'], ['left_shoulder', 'left_elbow'], ['left_elbow', 'left_wrist'], ['right_shoulder', 'right_elbow'], ['right_elbow', 'right_wrist'], ['left_shoulder', 'left_hip'], ['right_shoulder', 'right_hip'], ['left_hip', 'right_hip'], ['left_hip', 'left_knee'], ['left_knee', 'left_ankle'], ['right_hip', 'right_knee'], ['right_knee', 'right_ankle']];
 
@@ -308,13 +325,11 @@
         const ctx = canvas.getContext('2d');
         const video = document.getElementById('bg-camera-feed');
         
-        // Aseguramos que el canvas coincida con el video
         canvas.width = document.getElementById('main-view-area').clientWidth;
         canvas.height = document.getElementById('main-view-area').clientHeight;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         if (currentFilter === 'sls' && latestPoses.length > 0 && video.readyState >= 2) {
-            // Cálculo de escala COVER para alinear correctamente
             const videoAspect = video.videoWidth / video.videoHeight;
             const canvasAspect = canvas.width / canvas.height;
             let scale, offsetX, offsetY;
@@ -340,7 +355,7 @@
         requestAnimationFrame(drawLoop);
     }
 
-    /* --- 2. AUDIO & SPIRIT BOX (Microfono Reparado) --- */
+    /* --- AUDIO SYSTEM --- */
     async function initAudioSystem() {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         audioCtx = new AudioContext();
@@ -354,34 +369,46 @@
         } catch(e) { console.warn("No audio files"); }
 
         try {
-            // FORZAR ACTIVACIÓN DE MICRÓFONO
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const micSrc = audioCtx.createMediaStreamSource(stream);
             const analyser = audioCtx.createAnalyser();
-            micSrc.connect(analyser); // Solo para visualizar, no feedback
-            initVUMeter(analyser);
-            initSpeechRec(); // Iniciar reconocimiento
+            micSrc.connect(analyser);
+            initWaveformVisualizer(analyser);
+            initSpeechRec();
             document.getElementById('st-mic').querySelector('.status-led-indicator').classList.add('active');
         } catch(e) { 
-            console.error("Mic denied", e); 
-            alert("Permiso de micrófono necesario para comandos de voz.");
+            alert("Activa el micrófono para usar la Spirit Box");
         }
     }
 
-    function initVUMeter(analyser) {
+    function initWaveformVisualizer(analyser) {
         const cv = document.getElementById('vu-meter-canvas');
         const ctx = cv.getContext('2d');
-        if(!analyser) return;
-        analyser.fftSize = 32; const da = new Uint8Array(analyser.frequencyBinCount);
-        function d() {
-            if(!cv.offsetParent) return requestAnimationFrame(d);
-            const w = cv.width = cv.clientWidth; const h = cv.height = cv.clientHeight;
-            analyser.getByteFrequencyData(da); const avg = da.reduce((a,b)=>a+b,0)/da.length;
-            ctx.clearRect(0,0,w,h);
-            const bars=20, barW=(w/bars)-1, act=Math.floor((avg/255)*bars*1.5);
-            for(let i=0;i<bars;i++) { ctx.fillStyle=i<act?(i>14?'#F00':(i>10?'#FC0':'#0F0')):'#222'; ctx.fillRect(i*(barW+1),0,barW,h); }
-            requestAnimationFrame(d);
-        } d();
+        analyser.fftSize = 2048;
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        function draw() {
+            if(!cv.offsetParent) return requestAnimationFrame(draw);
+            const w = cv.width = cv.clientWidth;
+            const h = cv.height = cv.clientHeight;
+            analyser.getByteTimeDomainData(dataArray);
+
+            ctx.fillStyle = '#000'; ctx.fillRect(0, 0, w, h);
+            ctx.lineWidth = 2; ctx.strokeStyle = 'var(--neon-green)'; ctx.beginPath();
+
+            const sliceWidth = w * 1.0 / bufferLength;
+            let x = 0;
+            for(let i = 0; i < bufferLength; i++) {
+                const v = dataArray[i] / 128.0;
+                const y = v * h / 2;
+                if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                x += sliceWidth;
+            }
+            ctx.lineTo(cv.width, cv.height / 2); ctx.stroke();
+            requestAnimationFrame(draw);
+        }
+        draw();
     }
 
     function initSpeechRec() {
@@ -392,43 +419,17 @@
             recognition.continuous = false; 
             recognition.interimResults = false;
             
-            // REINICIO AUTOMÁTICO SI SE CORTA EL MIC
-            recognition.onend = () => { 
-                if(isRunning) { 
-                    try { recognition.start(); } catch(e){} 
-                }
-            };
-            
-            recognition.onresult = (e) => { 
-                const transcript = e.results[0][0].transcript.toLowerCase();
-                console.log("Voz detectada:", transcript);
-                processSpiritBoxResponse(transcript); 
-            };
-            
-            recognition.onerror = (e) => { console.log("Error voz", e); };
+            recognition.onend = () => { if(isRunning) { try{ recognition.start(); }catch(e){} } };
+            recognition.onresult = (e) => { processSpiritBoxResponse(e.results[0][0].transcript.toLowerCase()); };
         }
     }
 
     function processSpiritBoxResponse(text) {
-        // 1. Pausar ruido
-        if(scanTimer) clearTimeout(scanTimer);
-        
+        if(scanTimer) clearTimeout(scanTimer); // Silencio
         let found = false;
-        // 2. Buscar coincidencia
-        for (let [key, value] of programadoData) { 
-            if (text.includes(key)) { 
-                speak(value); found = true; break; 
-            } 
-        }
-        // 3. Si no hay coincidencia, usar automático
-        if (!found && automaticoData.length > 0) { 
-            speak(automaticoData[Math.floor(Math.random() * automaticoData.length)]); 
-        } else if (!found) {
-            // Fallback si no hay datos cargados
-            speak("Estoy aquí"); 
-        }
-
-        // 4. Reanudar ruido después de hablar (aprox 4 seg)
+        for (let [key, value] of programadoData) { if (text.includes(key)) { speak(value); found = true; break; } }
+        if (!found && automaticoData.length > 0) { speak(automaticoData[Math.floor(Math.random() * automaticoData.length)]); }
+        else if(!found) { speak("Estoy aquí"); } // Fallback
         setTimeout(playRadioFragment, 4000);
     }
 
@@ -441,28 +442,23 @@
 
     function playRadioFragment() {
         if(!isRunning) return;
-        // Reproducir fragmento de FONDO_2 si existe
         if(audioBuffer_Fondo2) {
             const src = audioCtx.createBufferSource();
             src.buffer = audioBuffer_Fondo2; src.connect(radioGain);
             const duration = audioBuffer_Fondo2.duration;
-            // Fragmento aleatorio corto (0.2s a 0.6s)
-            src.start(0, Math.random()*(duration-1), 0.2 + Math.random()*0.4);
+            src.start(0, Math.random()*(duration-1), 0.2 + Math.random()*0.5);
         }
         scanTimer = setTimeout(playRadioFragment, SCAN_DELAYS[scanSpeed]);
     }
 
-    /* --- CONTROLES --- */
     document.getElementById('knob-power').addEventListener('click', async function() {
         if(!audioCtx) await initAudioSystem();
         if(audioCtx.state === 'suspended') await audioCtx.resume();
-        
         isRunning = !isRunning;
         this.classList.toggle('active', isRunning);
-        
         if(isRunning) {
             playRadioFragment(); 
-            try { recognition.start(); } catch(e){ console.log("Reinicio Mic"); }
+            try { recognition.start(); } catch(e){}
             if(navigator.vibrate) navigator.vibrate([10,50,10]);
         } else {
             if(scanTimer) clearTimeout(scanTimer);
