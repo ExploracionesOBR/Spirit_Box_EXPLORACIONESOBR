@@ -1,1034 +1,4123 @@
 <!DOCTYPE html>
+
 <html lang="es">
+
 <head>
+
     <meta charset="UTF-8">
+
+
+
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+
     <meta http-equiv="Pragma" content="no-cache" />
+
     <meta http-equiv="Expires" content="0" />
+
     <meta name="apple-mobile-web-app-capable" content="yes">
+
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
     <link rel="apple-touch-icon" href="obr-logo.png">
 
-    <title>DETECTOR-OBR ULTRA</title> 
+
+
+    <title>DETECTOR-OBR</title> 
+
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+
     
+
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
 
+
+
     <style>
+
         :root {
+
             --neon-green: #39FF14; 
+
             --alert-red: #FF3333;
+
             --sim-orange: #FFB000;
-            --sensor-blue: #00BFFF; 
-            --panel-bg-dark: #111;
-            --border-color-dark: rgba(57, 255, 20, 0.4);
-            --text-color-light: #E0E0E0; 
-            --text-dim-grey: #777;
-            --panel-width-landscape: 300px;
-            --panel-height-landscape: 160px;
-            --bottom-panel-height-vertical: 220px;
+
+            --sensor-blue: #00BFFF;
+
+            --panel-bg: #0A0F0A;
+
+            --border-color: rgba(57, 255, 20, 0.3);
+
+            --text-color: #E0E0E0;
+
+            --text-dim: #777;
+
+            --panel-width-landscape: 240px; 
+
         }
+
         
+
         body {
+
             font-family: 'Share Tech Mono', monospace;
+
             background-color: #000;
-            color: var(--text-color-light);
+
+            color: var(--neon-green);
+
             overflow: hidden;
+
             width: 100vw;
+
             height: 100vh;
-            user-select: none;
+
         }
+
+
 
         #app-ui {
+
             width: 100%;
+
             height: 100%;
+
             position: relative;
+
             touch-action: none;
+
         }
+
+
 
         #main-view-area {
+
             position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
+
+            top: 0;
+
+            left: 0;
+
+            width: 100%;
+
+            height: 100%;
+
             overflow: hidden;
+
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+            pointer-events: auto;
+
             z-index: 5;
+
             background: #000;
+
         }
+
+
+
+        /* 📍 SOLUCIÓN CÁMARA ESTIRADA (PUNTO 6) */
 
         #bg-camera-feed {
+
             position: absolute;
-            top: 50%; left: 50%;
-            min-width: 100%; min-height: 100%; 
-            width: auto; height: auto;
+
+            top: 50%;
+
+            left: 50%;
+
+            min-width: 100%; 
+
+            min-height: 100%; 
+
+            width: auto;
+
+            height: auto;
+
             object-fit: cover; 
+
             transform: translate(-50%, -50%);
+
             z-index: 1;
-            transition: all 0.5s;
-        }
-        
-        /* CORRECCIÓN 3: Nuevo filtro DTR (Visión Nocturna real) */
-        body.filter-detector #bg-camera-feed {
-            filter: brightness(1.3) contrast(1.4) grayscale(1) sepia(1) hue-rotate(60deg) saturate(4);
-        }
-        body.filter-negative #bg-camera-feed {
-            filter: invert(1) contrast(1.2);
+
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+            opacity: 1;
+
         }
 
-        #main-filter-canvas {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%; 
-            z-index: 2; 
-            pointer-events: none; 
-            display: none;
-        }
         
-        body.filter-sls #main-filter-canvas {
-            display: block;
+
+        #main-filter-canvas {
+
+            position: absolute;
+
+            top: 0;
+
+            left: 0;
+
+            width: 100%; 
+
+            height: 100%; 
+
+            z-index: 2; 
+
+            pointer-events: none; 
+
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
         }
+
+        
+
+        body.panels-active #main-filter-canvas {
+
+            left: 0 !important;
+
+            width: 100% !important;
+
+        }
+
+
 
         .hidden-canvas { display: none; }
 
-        #left-panel, #bottom-panel {
+        .hidden { display: none !important; }
+
+
+
+        /* --- Panel y Controles (Rediseño P1) --- */
+
+        #side-panel-container {
+
             position: fixed;
+
             display: flex;
+
             flex-direction: column;
+
             z-index: 20;
+
             pointer-events: none; 
-            clip-path: circle(0% at 50% 50%);
-            transition: clip-path 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+
+            transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
             box-sizing: border-box; 
-            overflow: hidden;
+
         }
-        
-        body.panels-active #left-panel,
-        body.panels-active #bottom-panel {
-            clip-path: circle(150% at 50% 50%);
+
+
+
+        body.panels-active #side-panel-container {
+
+            transform: translateX(0) translateY(0);
+
             pointer-events: auto;
-        }
-        
-        #camera-frame {
-            position: fixed; top: 0; left: 0;
-            width: 100%; height: 100%;
-            border: 4px solid transparent;
-            pointer-events: none; z-index: 10;
-            transition: border-color 0.3s;
-            opacity: 0;
-        }
-        
-        body.panels-active #camera-frame {
-            opacity: 1;
-            border-color: var(--neon-green);
-            box-shadow: inset 0 0 20px rgba(57, 255, 20, 0.2);
+
         }
 
-        /* CORRECCIÓN 7: Animación DECODING (Matriz inversa subiendo) */
-        #decoding-matrix {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            pointer-events: none;
-            overflow: hidden;
-            z-index: 0;
-            opacity: 0;
-            transition: opacity 0.5s;
-        }
-        body.panels-active #decoding-matrix { opacity: 1; }
 
-        .decoding-text {
-            position: absolute;
-            color: var(--neon-green);
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 0.7rem;
-            white-space: nowrap;
-            opacity: 0;
-            animation: moveUp var(--duration) linear infinite;
-            text-shadow: 0 0 5px var(--neon-green);
-        }
-        .decoding-text.alt-color {
-            color: var(--sim-orange); /* Palabras AUTOMÁTICO en otro color */
-            text-shadow: 0 0 5px var(--sim-orange);
-            font-weight: bold;
-        }
 
-        @keyframes moveUp {
-            0% { transform: translateY(120%); opacity: 0; }
-            10% { opacity: 0.6; }
-            90% { opacity: 0.6; }
-            100% { transform: translateY(-20%); opacity: 0; }
-        }
+        /* Panel Rediseñado (P1) */
 
         .panel {
-            background-color: var(--panel-bg-dark); 
-            background-image: radial-gradient(circle, #222 1px, transparent 1px);
-            background-size: 10px 10px;
-            border: 1px solid var(--border-color-dark);
-            box-shadow: 0 0 15px rgba(0,0,0,0.9);
+
+            background-color: var(--panel-bg);
+
+            border: 1px solid var(--border-color);
+
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.2) inset;
+
             display: flex;
+
             flex-direction: column;
-            padding: 6px; 
+
+            padding: 6px; /* Más compacto */
+
             pointer-events: auto;
+
             flex-grow: 1;
-            overflow: hidden;
-            gap: 6px; 
-            position: relative;
+
+            overflow-y: auto;
+
+            gap: 6px; /* Más compacto */
+
         }
+
         
+
         .panel.alert {
+
             border-color: var(--alert-red);
-            box-shadow: 0 0 30px var(--alert-red) inset;
+
+            box-shadow: 0 0 15px var(--alert-red) inset;
+
         }
+
+
 
         .panel-header-main {
+
             font-family: 'Orbitron', sans-serif;
+
             font-size: 0.8rem;
+
             text-align: center;
-            color: #000;
-            background: var(--neon-green);
+
+            color: var(--neon-green);
+
+            text-shadow: 0 0 5px var(--neon-green);
+
+            border: 1px solid var(--border-color);
+
             padding: 4px 0;
-            letter-spacing: 2px;
-            font-weight: bold;
-            text-transform: uppercase;
-            box-shadow: 0 0 10px var(--neon-green);
+
+            border-radius: 4px;
+
+            background: rgba(57, 255, 20, 0.05);
+
+            letter-spacing: 1px;
+
+            flex-shrink: 0;
+
         }
+
         
+
         .panel-section {
-            border: 1px solid #333;
-            background: rgba(0, 0, 0, 0.8); 
+
+            border: 1px solid var(--border-color);
+
+            border-radius: 4px;
+
+            padding: 6px; /* Más compacto */
+
+            background: rgba(0, 0, 0, 0.2);
+
             display: flex;
+
             flex-direction: column;
-            padding: 6px; 
-            flex-grow: 1;
-            z-index: 2;
-            position: relative;
+
         }
+
         
+
         .section-title {
+
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.65rem;
+
+            font-size: 0.6rem;
+
+            color: var(--text-dim);
+
             text-transform: uppercase;
-            margin-bottom: 5px; 
+
+            margin-bottom: 6px; /* Más compacto */
+
             text-align: center;
-            border-bottom: 1px solid #333;
-            color: var(--sim-orange);
+
+            border-bottom: 1px solid var(--border-color);
+
+            padding-bottom: 3px; /* Más compacto */
+
         }
+
         
-        .panel-button-torch {
-            background: #222;
-            border: 1px solid var(--border-color-dark);
-            color: var(--text-dim-grey);
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 10px;
-            transition: all 0.2s;
-            text-shadow: none;
-        }
-        .panel-button-torch.active {
-            background: var(--neon-green);
-            color: #000;
-            box-shadow: 0 0 15px var(--neon-green);
-            border-color: #fff;
-        }
 
         .sensor-status-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 5px;
-            text-align: center;
-        }
-        .status-light-group {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            font-size: 0.6rem;
-        }
-        .status-led-indicator {
-            width: 10px; height: 10px;
-            border-radius: 50%;
-            background-color: #333;
-            border: 1px solid #555;
-            margin-bottom: 4px;
-        }
-        
-        .status-light-group[data-status="connected"] .status-led-indicator { background-color: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); }
-        .status-light-group[data-status="simulated"] .status-led-indicator { background-color: var(--sensor-blue); box-shadow: 0 0 8px var(--sensor-blue); animation: pulseSlow 2s infinite; }
-        .status-light-group[data-status="unavailable"] .status-led-indicator { background-color: var(--alert-red); }
-        
-        .dials-grid {
-            display: grid;
-            grid-template-columns: 1fr 1.2fr 1fr;
-            gap: 5px;
-            align-items: center;
-            justify-items: center;
-            height: 100%;
-        }
-        
-        .dial-container {
-            position: relative;
-            width: 65px; height: 65px;
-            background: #000;
-            border-radius: 50%;
-            border: 1px solid #444;
-            box-shadow: inset 0 0 10px #000;
-        }
-        .dial-needle {
-            width: 2px; height: 45%;
-            position: absolute;
-            bottom: 50%; left: 50%;
-            transform-origin: bottom center;
-            transition: transform 0.5s cubic-bezier(0.4, 2.5, 0.5, 0.5);
-        }
-        #compass-needle { background: var(--neon-green); transform: translateX(-50%) rotate(0deg); }
-        #main-needle { background: var(--alert-red); transform: translateX(-50%) rotate(-60deg); }
 
-        #detector-dial-container { width: 85px; height: 85px; border-color: var(--border-color-dark); }
-        
-        #temp-val {
-            font-size: 1.3rem;
-            font-family: 'Orbitron', sans-serif;
-            color: var(--neon-green);
-        }
-        
-        #bottom-panel .panel { flex-direction: row; }
-        #bottom-panel .panel-section { height: 100%; justify-content: center; }
-        
-        #panel-cam-stats {
-            font-family: 'Orbitron', sans-serif;
-            color: var(--text-dim-grey);
+            display: grid;
+
+            grid-template-columns: 1fr 1fr 1fr;
+
+            gap: 5px;
+
             text-align: center;
-            display: flex; flex-direction: column;
-            justify-content: center; height: 100%;
+
         }
-        #panel-cam-stats span { color: #fff; font-size: 1rem; }
+
+        .status-light-group {
+
+            display: flex;
+
+            flex-direction: column;
+
+            align-items: center;
+
+            font-size: 0.6rem;
+
+        }
+
+        .status-light-group .emoji {
+
+            font-size: 1.2rem;
+
+            line-height: 1;
+
+        }
+
+        .status-led-indicator {
+
+            width: 10px;
+
+            height: 10px;
+
+            border-radius: 50%;
+
+            background-color: #222;
+
+            border: 1px solid #444;
+
+            margin-bottom: 4px;
+
+            transition: all 0.3s;
+
+        }
+
+        .status-light-group[data-status="connected"] .status-led-indicator {
+
+            background-color: var(--neon-green);
+
+            box-shadow: 0 0 8px var(--neon-green);
+
+            animation: pulseGlow 1.5s infinite;
+
+        }
+
+        .status-light-group[data-status="fallback"] .status-led-indicator {
+
+            background-color: var(--sensor-blue);
+
+            box-shadow: 0 0 8px var(--sensor-blue);
+
+            animation: pulseGlow 1.5s infinite;
+
+        }
+
+        .status-light-group[data-status="simulated"] .status-led-indicator {
+
+            background-color: var(--sim-orange);
+
+            box-shadow: 0 0 8px var(--sim-orange);
+
+            animation: pulseGlow 2s infinite;
+
+        }
+
+        .status-light-group[data-status="unavailable"] .status-led-indicator {
+
+            background-color: var(--alert-red);
+
+            box-shadow: 0 0 8px var(--alert-red);
+
+        }
+
+        .status-light-group[data-status="off"] .status-led-indicator {
+
+            background-color: #333;
+
+        }
+
+        
+
+        .status-light-group span { color: var(--text-dim); }
+
+        .status-light-group[data-status="connected"] span { color: var(--neon-green); }
+
+        .status-light-group[data-status="fallback"] span { color: var(--sensor-blue); }
+
+        .status-light-group[data-status="simulated"] span { color: var(--sim-orange); }
+
+        .status-light-group[data-status="unavailable"] span { color: var(--alert-red); }
+
+
+
+        /* Lecturas de Campo (Rediseño P1) */
+
+        .dials-grid {
+
+            display: grid;
+
+            grid-template-columns: 1fr 1.5fr 1fr;
+
+            gap: 10px;
+
+            align-items: center;
+
+            justify-items: center;
+
+            padding: 5px 0; /* Más compacto */
+
+        }
+
+        
+
+        .dial-container {
+
+            position: relative;
+
+            width: 70px;
+
+            height: 70px;
+
+            background: radial-gradient(circle, #111, #000);
+
+            border-radius: 50%;
+
+            border: 1px solid var(--border-color);
+
+            box-shadow: 0 0 5px rgba(57, 255, 20, 0.3) inset;
+
+        }
+
+        .dial-needle {
+
+            width: 2px;
+
+            height: 40%;
+
+            background: var(--neon-green);
+
+            box-shadow: 0 0 5px var(--neon-green);
+
+            position: absolute;
+
+            bottom: 50%;
+
+            left: 50%;
+
+            transform-origin: bottom center;
+
+            transform: translateX(-50%) rotate(-45deg);
+
+            transition: transform 0.5s cubic-bezier(0.2, 1.5, 0.5, 1);
+
+        }
+
+        .dial-label {
+
+            font-size: 0.6rem;
+
+            color: var(--text-dim);
+
+            margin-top: 4px;
+
+            text-align: center;
+
+        }
+
+        
+
+        #detector-dial-container {
+
+            width: 100px;
+
+            height: 100px;
+
+        }
+
+        #detector-dial-needle {
+
+            height: 45%;
+
+            background: var(--alert-red);
+
+            box-shadow: 0 0 8px var(--alert-red);
+
+            transform: translateX(-50%) rotate(-60deg);
+
+        }
+
+        
+
+        #temp-readout { text-align: center; }
+
+        #temp-val {
+
+            font-size: 1.8rem;
+
+            font-family: 'Orbitron', sans-serif;
+
+            color: var(--neon-green);
+
+            line-height: 1;
+
+        }
+
+        .temp-label {
+
+            font-size: 0.6rem;
+
+            color: var(--text-dim);
+
+        }
+
+        
+
+        /* Spirit Box (Compacto P1) */
 
         .spirit-box-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            align-items: center;
-        }
-        
-        /* Botón REC grande */
-        #knob-power {
-            width: 60px; height: 60px;
-            border-radius: 50%;
-            border: 2px solid #444;
-            background: #111;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer;
-            margin: 0 auto;
-            color: #555;
-            font-family: 'Orbitron';
-            transition: 0.2s;
-        }
-        #knob-power.active {
-            border-color: var(--alert-red);
-            background: #400;
-            color: var(--alert-red);
-            box-shadow: 0 0 20px var(--alert-red);
-            animation: pulseRec 1s infinite;
-        }
-        @keyframes pulseRec { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
-        #knob-scan {
-            width: 50px; height: 50px;
-            border-radius: 50%;
-            border: 1px solid #444;
-            background: #111;
-            display: flex; align-items: center; justify-content: center;
-            margin: 0 auto;
-            font-size: 0.7rem;
-            color: #777;
-            cursor: pointer;
+            display: grid;
+
+            grid-template-columns: 1fr 1fr;
+
+            gap: 10px;
+
+            align-items: center;
+
         }
-        #knob-scan.speed-1 { color: var(--sensor-blue); border-color: var(--sensor-blue); }
-        #knob-scan.speed-2 { color: var(--sim-orange); border-color: var(--sim-orange); }
-        #knob-scan.speed-3 { color: var(--alert-red); border-color: var(--alert-red); }
+
+        .knob-container {
+
+            display: flex;
+
+            flex-direction: column;
+
+            align-items: center;
+
+        }
+
+        .knob-label {
+
+            font-size: 0.6rem;
+
+            color: var(--text-dim);
+
+            margin-top: 4px;
+
+        }
+
+        .knob-circle {
+
+            width: 55px;
+
+            height: 55px;
+
+            border-radius: 50%;
+
+            border: 2px solid var(--border-color);
+
+            position: relative;
+
+            cursor: pointer;
+
+            background: radial-gradient(circle, #222, #000);
+
+            box-shadow: 0 3px 5px #000, 0 0 5px rgba(57, 255, 20, 0.3) inset;
+
+            transition: all 0.3s;
+
+        }
+
+        .knob-circle.active {
+
+            border-color: var(--neon-green);
+
+            box-shadow: 0 3px 5px #000, 0 0 10px var(--neon-green) inset, 0 0 10px var(--neon-green);
+
+        }
+
+        .knob-indicator {
+
+            position: absolute;
+
+            top: 6px;
+
+            left: 50%;
+
+            width: 3px;
+
+            height: 15px;
+
+            background: var(--neon-green);
+
+            transform: translateX(-50%);
+
+            border-radius: 2px;
+
+            box-shadow: 0 0 5px var(--neon-green);
+
+        }
+
+        #pwr-knob-indicator {
+
+            height: 8px;
+
+            width: 8px;
+
+            border-radius: 50%;
+
+            top: 8px;
+
+            background: var(--alert-red);
+
+            box-shadow: 0 0 5px var(--alert-red);
+
+        }
+
+        #pwr-knob.active #pwr-knob-indicator {
+
+            background: var(--neon-green);
+
+            box-shadow: 0 0 8px var(--neon-green);
+
+        }
+
+
 
         #activity-graph-container {
-            width: 100%; height: 50px;
+
+            width: 100%;
+
+            height: 55px;
+
             background: #000;
-            border: 1px solid #333;
-            grid-column: span 2;
+
+            border: 1px solid var(--border-color);
+
+            border-radius: 4px;
+
+            overflow: hidden;
+
         }
 
-        #vu-meter-container {
-            width: 100%; height: 60px;
-            background: #000;
-            border: 1px solid #333;
+        #energy-canvas {
+
+            width: 100%;
+
+            height: 100%;
+
         }
 
-        #filter-controls-container {
-            position: fixed; top: 50%; right: 10px;
-            transform: translateY(-50%);
-            display: flex; flex-direction: column;
-            gap: 15px; z-index: 100;
-            transition: opacity 0.3s;
+
+
+        .volume-control-group {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 8px;
+
+            width: 100%;
+
+            grid-column: 1 / -1;
+
         }
-        .filter-btn {
-            width: 50px; height: 50px;
-            background: rgba(0,0,0,0.7);
-            border: 1px solid var(--neon-green);
+
+        .vol-label {
+
+            font-size: 0.6rem;
+
+            color: var(--text-dim);
+
+            white-space: nowrap;
+
+        }
+
+        #vol-percent {
+
+            font-size: 0.6rem;
+
             color: var(--neon-green);
-            font-family: 'Share Tech Mono';
-            font-weight: bold;
-        }
-        .filter-btn.active {
-            background: var(--neon-green); color: #000;
-            box-shadow: 0 0 15px var(--neon-green);
+
+            width: 30px;
+
         }
 
-        #follow-container {
-            position: absolute; bottom: 20px; left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
-            display: flex; flex-direction: column; align-items: center;
-            background: rgba(0,0,0,0.5);
-            padding: 8px 15px;
-            border-radius: 10px;
-            border: 1px solid #333;
-            opacity: 0; transition: 0.5s;
+
+
+        input[type=range] {
+
+            flex-grow: 1; -webkit-appearance: none; height: 15px; 
+
+            background: #111; border: 1px solid var(--border-color);
+
+            border-radius: 10px; overflow: hidden;
+
         }
-        #follow-container.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-        #follow-container.hide { opacity: 0; transform: translateX(-50%) translateY(20px); }
-        
-        .social-icons { display: flex; gap: 15px; margin-bottom: 5px; font-size: 1.2rem; color: #fff; }
-        
-        #pip-camera-feed {
-            position: fixed; bottom: 230px; left: 50%; transform: translateX(-50%);
-            width: 100px; height: 100px; border-radius: 50%;
-            border: 2px solid var(--neon-green); object-fit: cover;
-            display: none; z-index: 999;
+
+        input[type=range]::-webkit-slider-thumb {
+
+            -webkit-appearance: none; width: 25px; height: 25px;
+
+            background: #444; border: 1px solid #666;
+
+            border-radius: 50%;
+
+            box-shadow: -100vw 0 0 100vw var(--neon-green);
+
+            cursor: pointer;
+
         }
+
+
+
+        /* --- UI Persistente (Logo, Linterna, Stats) --- */
+
+        .persistent-ui {
+
+            position: fixed;
+
+            z-index: 100;
+
+            pointer-events: none;
+
+            opacity: 1;
+
+            transform: scale(1);
+
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+
+        }
+
+
+
+        #logo-image {
+
+            top: 20px; right: 20px;
+
+            width: 60px; height: 60px;
+
+            animation: logo-effects 7s infinite linear; 
+
+        }
+
+
+
+        /* 📍 NUEVO: Botón Linterna (P9) */
+
+        #btn-torch {
+
+            position: fixed;
+
+            top: 20px; left: 20px;
+
+            width: 50px; height: 50px;
+
+            z-index: 100;
+
+            background: rgba(0, 50, 50, 0.7);
+
+            border: 2px solid var(--neon-green);
+
+            color: var(--neon-green);
+
+            border-radius: 50%;
+
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
+
+            transition: all 0.2s;
+
+            pointer-events: auto; /* Siempre clickeable */
+
+            opacity: 1;
+
+            transform: scale(1);
+
+        }
+
+        #btn-torch svg {
+
+            width: 24px; height: 24px;
+
+            margin: auto;
+
+            fill: currentColor;
+
+        }
+
+        #btn-torch:active, #btn-torch.active {
+
+            background: var(--neon-green);
+
+            color: #000;
+
+            box-shadow: 0 0 20px #fff;
+
+        }
+
+
+
+        /* 📍 NUEVO: Stats de Cámara (P6) */
+
+        #cam-stats-display {
+
+            bottom: 15px; right: 15px;
+
+            font-family: 'Orbitron', sans-serif;
+
+            font-size: 0.7rem;
+
+            font-weight: 700;
+
+            color: var(--neon-green);
+
+            text-shadow: 0 0 3px var(--neon-green), 0 0 5px #000;
+
+            padding: 2px 5px;
+
+            background: rgba(0,0,0,0.3);
+
+            border-radius: 3px;
+
+        }
+
+
+
+        /* Lógica de ocultar UI (P10) */
+
+        #logo-image.visible {
+
+            transform: scale(1); opacity: 1;
+
+            animation: popIn 0.3s ease-out forwards, logo-effects 7s infinite linear 0.3s;
+
+        }
+
+        #logo-image.hiding, #btn-torch.hiding, #cam-stats-display.hiding {
+
+            animation: waterDrop 0.5s ease-out forwards;
+
+        }
+
+
+
+        @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 1; } }
+
+        @keyframes logo-effects { 0%, 90% { transform: scale(1); opacity: 1; filter: none; } 91% { transform: scale(1.1) translateX(-5px); opacity: 0.8; filter: drop-shadow(2px 0 red) drop-shadow(-2px 0 blue); } 92% { transform: scale(0.9) translateX(5px); opacity: 1; filter: drop-shadow(-2px 0 red) drop-shadow(2px 0 blue); } 93% { transform: scale(1); opacity: 1; filter: none; } 94% { transform: scale(1); opacity: 0.5; filter: blur(2px); } 95% { transform: scale(1); opacity: 1; filter: none; } 96% { transform: scale(1) translateY(-3px); } 97% { transform: scale(1) translateY(3px); } 98%, 100% { transform: scale(1) translateY(0); } }
+
+        @keyframes waterDrop { 0% { opacity: 1; transform: scale(1); filter: blur(0); } 100% { opacity: 0; transform: scale(2.5); filter: blur(5px); } }
+
+        
 
         #kinect-banner {
-            position: fixed; top: 20px; width: 100%; text-align: center;
-            color: var(--neon-green); font-family: 'Orbitron'; font-weight: bold;
-            text-shadow: 0 0 5px #000; display: none; z-index: 50;
+
+            position: fixed; top: 20px; left: 50%;
+
+            transform: translateX(-50%);
+
+            z-index: 100; font-family: 'Orbitron', sans-serif;
+
+            font-size: 1.0rem; font-weight: 700;
+
+            color: var(--neon-green);
+
+            text-shadow: 0 0 5px var(--neon-green), 0 0 10px #000;
+
+            display: none; pointer-events: none;
+
         }
 
-        /* Ajustes Responsivos */
+        #kinect-banner .led-red {
+
+            animation: pulseGlow 1.5s infinite ease-in-out;
+
+            text-shadow: 0 0 8px var(--alert-red), 0 0 10px #000;
+
+        }
+
+
+
+        @keyframes pulseGlow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1.0; } }
+
+
+
+        #filter-controls-container {
+
+            position: fixed; top: 50%; right: 15px;
+
+            transform: translateY(-50%);
+
+            display: flex; flex-direction: column;
+
+            gap: 10px; z-index: 100;
+
+            pointer-events: auto; opacity: 1;
+
+            transition: opacity 0.5s ease-in-out, top 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+        }
+
+        .filter-btn {
+
+            width: 50px; height: 50px;
+
+            border-radius: 50%;
+
+            background: rgba(0, 50, 50, 0.7);
+
+            border: 2px solid var(--neon-green);
+
+            color: var(--neon-green);
+
+            font-family: 'Share Tech Mono', monospace;
+
+            font-weight: bold; cursor: pointer;
+
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
+
+            transition: all 0.2s;
+
+        }
+
+        .filter-btn:active {
+
+            background: var(--neon-green); color: #000;
+
+        }
+
+        .filter-btn.active {
+
+            background: var(--neon-green); color: #000;
+
+            box-shadow: 0 0 20px #fff;
+
+        }
+
+
+
+        /* --- Loading y Follow (Sin cambios) --- */
+
+        #loading-overlay {
+
+            position: fixed; top: 0; left: 0;
+
+            width: 100%; height: 100%;
+
+            background: #000; z-index: 9999;
+
+            display: flex; justify-content: center;
+
+            align-items: center;
+
+            transition: opacity 0.5s ease-out;
+
+        }
+
+        #loading-content { text-align: center; }
+
+        #loading-text {
+
+            font-family: 'Orbitron', sans-serif;
+
+            font-size: 1.2rem;
+
+            color: var(--neon-green);
+
+            text-shadow: 0 0 10px var(--neon-green);
+
+            animation: pulseGlow 2s infinite ease-in-out;
+
+            transition: all 0.3s;
+
+        }
+
+        #loading-bar-container {
+
+            width: 250px; height: 10px;
+
+            border: 1px solid var(--neon-green);
+
+            border-radius: 5px; margin-top: 15px;
+
+            overflow: hidden;
+
+            background: rgba(0, 50, 50, 0.3);
+
+        }
+
+        #loading-bar {
+
+            width: 0%; height: 100%;
+
+            background-color: var(--neon-green);
+
+            transition: width 0.4s ease-out;
+
+            animation: loading-shimmer 2s infinite linear;
+
+            background-image: linear-gradient(90deg, var(--neon-green) 0%, #fff 50%, var(--neon-green) 100%);
+
+            background-size: 200% 100%;
+
+        }
+
+        @keyframes loading-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+
+
+        #follow-container {
+
+            position: fixed; bottom: 80px; left: 50%;
+
+            transform: translateX(-50%); 
+
+            z-index: 200; pointer-events: none;
+
+            opacity: 1; width: 100%;
+
+            transition: opacity 0.5s ease-out;
+
+        }
+
+        #follow-container.hiding {
+
+            animation: waterDrop 0.5s ease-out forwards;
+
+        }
+
+        .follow-step {
+
+            display: none; 
+
+            color: var(--neon-green);
+
+            font-size: 1.5rem;
+
+            font-family: 'Orbitron', sans-serif;
+
+            text-shadow: 0 0 10px var(--neon-green);
+
+            text-align: center; opacity: 0;
+
+        }
+
+        #follow-icons {
+
+            display: none; align-items: center;
+
+            justify-content: center;
+
+        }
+
+        #follow-icons svg {
+
+            width: 50px; height: 50px;
+
+            margin: 0 15px;
+
+            fill: var(--neon-green);
+
+            filter: drop-shadow(0 0 5px var(--neon-green));
+
+        }
+
+        
+
+        .fade-in { animation: fadeIn 1s ease-out forwards; }
+
+        .fade-out { animation: fadeOut 1s ease-out forwards; }
+
+        .water-drop { animation: waterDrop 0.5s ease-out forwards; }
+
+        
+
+        @keyframes fadeIn { 0% { opacity: 0; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
+
+        @keyframes fadeOut { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+
+
+        /* --- 📍 CSS Horizontal/Vertical (PUNTO 2 Y 5) --- */
+
+        
+
+        /* --- MODO MÓVIL VERTICAL (PORTRAIT) --- */
+
         @media (max-aspect-ratio: 1/1) {
-            #left-panel { top: 0; width: 100vw; height: calc(100vh - var(--bottom-panel-height-vertical)); border-bottom: 1px solid #333; }
-            #bottom-panel { bottom: 0; width: 100vw; height: var(--bottom-panel-height-vertical); }
-            #bottom-panel .panel { flex-wrap: wrap; }
-            #section-vu-meter { width: 100%; flex-basis: 100%; height: 70px; order: 1; }
-            #section-field-readings { width: 60%; order: 2; }
-            #section-performance { width: 40%; order: 3; }
+
+            #side-panel-container {
+
+                top: 0; left: 0;
+
+                width: 100vw;
+
+                height: 100vh;
+
+                transform: translateY(100%); /* Sale por abajo */
+
+                padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
+
+            }
+
+            .panel {
+
+                width: 100%;
+
+                height: 100%;
+
+                margin: 0;
+
+                border-radius: 0;
+
+                border: none;
+
+            }
+
+
+
+            /* 📍 NUEVO: Slot para PiP (P5) */
+
+            #pip-placeholder-section {
+
+                display: block; /* Solo visible en vertical */
+
+                order: -1; /* Ponerlo justo debajo del header */
+
+            }
+
+            #pip-placeholder {
+
+                width: 100%;
+
+                height: 140px; 
+
+                background: #050505;
+
+                border: 1px dashed var(--border-color);
+
+                border-radius: 4px;
+
+            }
+
+
+
+            /* 📍 Cámara Flotante (PiP) (P5) */
+
+            body.panels-active #main-view-area {
+
+                /* Se posiciona exactamente sobre el placeholder */
+
+                top: calc(env(safe-area-inset-top) + 110px); /* Ajustado manualmente */
+
+                left: 6px; /* Padding del panel */
+
+                right: 6px; /* Padding del panel */
+
+                width: calc(100% - 12px); /* Ancho del placeholder */
+
+                height: 140px; /* Alto del placeholder */
+
+                border: 1px solid var(--neon-green);
+
+                border-radius: 4px;
+
+                box-shadow: 0 0 10px var(--neon-green);
+
+                z-index: 25; /* Encima del panel */
+
+                filter: none !important;
+
+                transform: scale(1) !important;
+
+            }
+
             
-            body.panels-active #pip-camera-feed { display: block; }
-            body.panels-active #main-view-area { display: none; }
+
+            body.panels-active #filter-controls-container {
+
+                top: calc(env(safe-area-inset-top) + 260px); /* Debajo del PiP */
+
+                right: 15px;
+
+            }
+
+
+
+            body.panels-active #logo-image,
+
+            body.panels-active #btn-torch,
+
+            body.panels-active #cam-stats-display {
+
+                display: none;
+
+            }
+
         }
+
+
+
+        /* --- MODO MÓVIL HORIZONTAL (LANDSCAPE) --- */
+
         @media (min-aspect-ratio: 1/1) {
-            #left-panel { width: var(--panel-width-landscape); height: 100vh; }
-            #bottom-panel { left: var(--panel-width-landscape); width: calc(100% - var(--panel-width-landscape)); height: var(--panel-height-landscape); bottom: 0; }
-            body.panels-active #main-view-area { left: var(--panel-width-landscape); width: calc(100% - var(--panel-width-landscape)); }
+
+            :root { --panel-width-landscape: 240px; }
+
+
+
+            /* 📍 NUEVO: Ocultar slot de PiP (P5) */
+
+            #pip-placeholder-section {
+
+                display: none; 
+
+            }
+
+
+
+            #side-panel-container {
+
+                width: var(--panel-width-landscape);
+
+                height: 100vh;
+
+                top: 0;
+
+                left: 0;
+
+                transform: translateX(calc(var(--panel-width-landscape) * -1));
+
+                padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
+
+            }
+
+            
+
+            .panel {
+
+                height: 100%;
+
+                flex-grow: 1;
+
+                flex-shrink: 0;
+
+                margin: 0;
+
+                border-radius: 0;
+
+                border-right: 1px solid var(--border-color);
+
+            }
+
+
+
+            /* 📍 Efecto "enfoque" (PUNTO 2) - Corregido */
+
+            body.panels-active #main-view-area {
+
+                left: var(--panel-width-landscape);
+
+                width: calc(100% - var(--panel-width-landscape));
+
+                height: 100%;
+
+                /* Se eliminan 'filter' y 'transform' para que no se opaque */
+
+                filter: none;
+
+                transform: none;
+
+            }
+
         }
+
     </style>
+
 </head>
+
 <body>
 
-<div id="app-ui" onclick="handleInteraction()">
-    
-    <div id="main-view-area">
+
+
+<div id="app-ui"> 
+
+
+
+    <div id="loading-overlay">
+
+        <div id="loading-content">
+
+            <div id="loading-text">SINCRONIZANDO GUIONES...</div>
+
+            <div id="loading-bar-container">
+
+                <div id="loading-bar"></div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <div id="main-view-area" onclick="handleUITap(event)">
+
         <video id="bg-camera-feed" playsinline autoplay muted></video>
+
         <canvas id="main-filter-canvas"></canvas>
-        <div id="camera-frame"></div>
+
+    </div>
+
+    
+
+    <canvas id="temp-canvas" class="hidden-canvas"></canvas>
+
+    <canvas id="ai-canvas" class="hidden-canvas"></canvas>
+
+
+
+    <img id="logo-image" src="obr-logo.png" alt="Logo OBR" class="persistent-ui">
+
+
+
+    <button id="btn-torch" class="persistent-ui" onclick="toggleTorch(event)">
+
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M342.6 38.6c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L380.7 167H256c-17.7 0-32 14.3-32 32s14.3 32 32 32h124.7l-83.4 83.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l144-144c12.5-12.5 12.5-32.8 0-45.3l-144-144zM160 80c0-17.7-14.3-32-32-32s-32 14.3-32 32v144H64c-17.7 0-32 14.3-32 32s14.3 32 32 32h32v144c0 17.7 14.3 32 32 32s32-14.3 32-32V288h32c17.7 0 32-14.3 32-32s-14.3-32-32-32H160V80z"/></svg>
+
+    </button>
+
+    
+
+    <div id="cam-stats-display" class="persistent-ui">
+
+        <span id="cam-fps">--</span> FPS / <span id="cam-res">----p</span>
+
+    </div>
+
+
+
+    <div id="kinect-banner">KINEC ACTIVO <span class="led-red">🔴</span></div>
+
+    
+
+    <div id="follow-container">
+
+        <div id="follow-text" class="follow-step">SÍGUENOS EN</div>
+
+        <div id="follow-icons" class="follow-step">
+
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M448 209.9a210.1 210.1 0 0 1 -122.8-39.3V349.4A162.6 162.6 0 1 1 185 188.3V277.2a74.6 74.6 0 1 0 52.2 71.2V0l88 0a121.2 121.2 0 0 0 122.8 122.1v87.8z"/></svg>
+
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path d="M549.7 124.1c-6.3-23.7-24.8-42.3-48.3-48.6C458.8 64 288 64 288 64S117.2 64 74.6 75.5c-23.5 6.3-42 24.9-48.3 48.6-11.4 42.9-11.4 132.3-11.4 132.3s0 89.4 11.4 132.3c6.3 23.7 24.8 42.3 48.3 48.6C117.2 448 288 448 288 448s170.8 0 213.4-11.5c23.5-6.3 42-24.9 48.3-48.6 11.4-42.9 11.4-132.3 11.4-132.3s0-89.4-11.4-132.3zM232 341.5V170.5l145.2 85.5-145.2 85.5z"/></svg>
+
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M504 256C504 119 393 8 256 8S8 119 8 256c0 123.8 90.7 226.4 209.3 245V327.7h-63V256h63v-54.6c0-62.2 37-96.5 93.7-96.5 27.1 0 55.5 4.8 55.5 4.8v61h-31.3c-30.8 0-40.4 19.1-40.4 38.7V256h68.8l-11 71.7h-57.8V501C413.3 482.4 504 379.8 504 256z"/></svg>
+
+        </div>
+
+        <div id="follow-handle" class="follow-step">@EXPLORACIONESOBR</div>
+
+    </div>
+
+
+
+    <div id="side-panel-container">
+
         
-        <div id="follow-container">
-            <div class="social-icons">
-                <i class="fab fa-tiktok"></i>
-                <i class="fab fa-youtube"></i>
-                <i class="fab fa-facebook"></i>
-            </div>
-            <div style="font-family:'Orbitron'; font-size:0.8rem; color:var(--neon-green);">@EXPLORACIONESOBR</div>
-        </div>
-    </div>
 
-    <img id="logo-image" src="obr-logo.png" style="position:fixed; top:20px; right:20px; width:60px; z-index:100; opacity:0.8;">
-    <video id="pip-camera-feed" playsinline autoplay muted></video>
-    <div id="kinect-banner">SISTEMA SLS ACTIVO <span style="color:red">●</span></div>
+        <div class="panel" id="p-unified">
 
-    <div id="left-panel">
-        <div class="panel">
-            <div id="decoding-matrix"></div>
+            <div class="panel-header-main">PANEL DE MANDO</div>
+
             
-            <div class="panel-header-main">PANEL DE CONTROL</div>
-            
-            <div class="panel-section">
-                <div class="section-title">DISPOSITIVOS</div>
-                <button id="btn-torch" class="panel-button-torch" onclick="toggleTorch(event)">
-                    <i class="fas fa-lightbulb"></i>
-                </button>
+
+            <div class="panel-section" id="pip-placeholder-section">
+
+                <div class="section-title">VISTA DE CÁMARA PIP</div>
+
+                <div id="pip-placeholder"></div>
+
             </div>
 
+
+
             <div class="panel-section">
-                <div class="section-title">ESTADO SENSORES</div>
+
+                <div class="section-title">Estado de Sensores</div>
+
                 <div class="sensor-status-grid">
+
                     <div class="status-light-group" id="mic-status" data-status="off">
+
                         <div class="status-led-indicator"></div>
+
+                        <div class="emoji">🎙️</div>
+
                         <span>MIC</span>
+
                     </div>
+
                     <div class="status-light-group" id="mag-status" data-status="off">
+
                         <div class="status-led-indicator"></div>
+
+                        <div class="emoji">🧭</div>
+
                         <span>MAG</span>
+
                     </div>
+
                     <div class="status-light-group" id="prox-status" data-status="off">
+
                         <div class="status-led-indicator"></div>
+
+                        <div class="emoji">⚡</div>
+
                         <span>EMF</span>
+
                     </div>
+
                 </div>
+
             </div>
+
+            
 
             <div class="panel-section">
-                <div class="section-title">SPIRIT BOX</div>
-                <div class="spirit-box-grid">
-                    <div style="text-align:center;">
-                        <div id="knob-power">REC</div>
-                    </div>
-                    <div style="text-align:center;">
-                        <div id="knob-scan">SCAN</div>
-                    </div>
-                    <div id="activity-graph-container">
-                        <canvas id="energy-canvas"></canvas>
-                    </div>
-                    <div class="volume-control-group" style="grid-column: span 2; display:flex; align-items:center; gap:5px;">
-                        <span style="font-size:0.6rem; color:#777;">VOL</span>
-                        <input type="range" id="vol-slider" style="flex-grow:1;">
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <div id="bottom-panel">
-        <div class="panel">
-            <div id="decoding-matrix-bottom" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; opacity:0.3;"></div>
+                <div class="section-title">Lecturas de Campo</div>
 
-            <div class="panel-section" id="section-vu-meter">
-                <div class="section-title">AUDIO INPUT (VU)</div>
-                <div id="vu-meter-container">
-                    <canvas id="vu-meter-canvas"></canvas>
-                </div>
-            </div>
-
-            <div class="panel-section" id="section-field-readings">
-                <div class="section-title">LECTURAS DE CAMPO</div>
                 <div class="dials-grid">
-                    <div class="dial-container" id="mag-dial-container">
-                        <div id="compass-needle" class="dial-needle"></div>
-                        <div class="dial-label" style="position:absolute; bottom:15px; width:100%; text-align:center; font-size:0.5rem; color:#777;">MAG</div>
+
+                    <div id="mag-dial-container" class="dial-container">
+
+                        <div id="compass-needle" class="dial-needle" style="transform: translateX(-50%) rotate(0deg);"></div>
+
+                        <div class="dial-label">MAG</div>
+
                     </div>
-                    <div class="dial-container" id="detector-dial-container">
-                        <div id="main-needle" class="dial-needle"></div>
-                        <div class="dial-label" style="position:absolute; bottom:20px; width:100%; text-align:center; font-size:0.5rem; color:#777;">DETECTOR</div>
+
+                    <div id="detector-dial-container" class="dial-container">
+
+                        <div id="main-needle" class="dial-needle" style="transform: translateX(-50%) rotate(-60deg);"></div>
+
+                        <div class="dial-label">DETECTOR</div>
+
                     </div>
+
                     <div id="temp-readout">
-                        <div id="temp-val">--°C</div>
-                        <div style="font-size:0.6rem; color:#777;">TEMP</div>
+
+                        <div id="temp-val">--.-°C</div>
+
+                        <div class="temp-label">AMBIENTE</div>
+
                     </div>
+
                 </div>
+
             </div>
 
-            <div class="panel-section" id="section-performance">
-                <div class="section-title">SISTEMA</div>
-                <div id="panel-cam-stats">
-                    <span id="cam-fps-panel">60</span>
-                    <span style="font-size:0.7rem; color:#555;">FPS</span>
+            
+
+            <div class="panel-section">
+
+                <div class="section-title">Spirit Box</div>
+
+                <div class="spirit-box-grid">
+
+                    <div class="knob-container">
+
+                        <div class="knob-circle" id="knob-power">
+
+                            <div id="pwr-knob-indicator" class="knob-indicator" style="transform: rotate(135deg);"></div>
+
+                        </div>
+
+                        <div class="knob-label">ENCENDER</div>
+
+                    </div>
+
+                    <div class="knob-container">
+
+                        <div class="knob-circle" id="knob-scan">
+
+                            <div class="knob-indicator" style="transform: rotate(135deg);"></div>
+
+                        </div>
+
+                        <div class="knob-label">FRECUENCIA</div>
+
+                    </div>
+
+                    
+
+                    <div id="activity-graph-container" title="Gráfica de Actividad EMF">
+
+                        <canvas id="energy-canvas"></canvas>
+
+                    </div>
+
+                    <div class="knob-label" style="text-align: center;">ACTIVIDAD</div>
+
+
+
+                    <div class="volume-control-group">
+
+                        <span class="vol-label">VOL</span>
+
+                        <input type="range" min="0" max="100" value="80" id="vol-slider">
+
+                        <span id="vol-percent" class="vol-label">80%</span>
+
+                    </div>
+
                 </div>
+
             </div>
+
+            
+
         </div>
-    </div>
+
+        </div>
+
+
 
     <div id="filter-controls-container">
-        <button class="filter-btn" onclick="setFilter('detector')">DTR</button>
+
+        <button class="filter-btn" onclick="setFilter('night-vision')">VNO</button>
+
         <button class="filter-btn" onclick="setFilter('sls')">SLS</button>
-        <button class="filter-btn" onclick="setFilter('negative')">NEG</button>
-        <button class="filter-btn" id="btn-panel" onclick="togglePanels()">PAN</button>
+
+        <button class="filter-btn" onclick="setFilter('relief')">RLV</button>
+
+        <button class="filter-btn" id="btn-panel" onclick="togglePanel('p-unified')">PAN</button>
+
     </div>
 
-</div>
 
-<script>
-    /* --- CONFIGURACIÓN GENERAL --- */
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzOf3crQxBdPylwMTAd34W-nBShN31MkIUtaMdKsZHMZVVniI2HjMesD6DpOlO363T1/exec";
-    let isRunning = false;
-    let currentFilter = 'none';
-    let scanSpeed = 1;
-    
-    /* --- ELEMENTOS DOM --- */
-    const videoBg = document.getElementById('bg-camera-feed');
-    const pipVideo = document.getElementById('pip-camera-feed');
-    const mainFilterCanvas = document.getElementById('main-filter-canvas');
-    const mainFilterCtx = mainFilterCanvas.getContext('2d', { willReadFrequently: true });
-    
-    /* --- VARIABLES DE AUDIO (Spirit Box) --- */
-    let audioCtx, masterGain, micStreamSource, vuAnalyserNode;
-    let audioBuffer_Fondo1, audioBuffer_Fondo2;
-    let gain_Fondo1, gain_Fondo2;
-    let vuDataArray;
-    let recognition;
-    let isRecognizing = false;
-    let automaticoData = ["ESTOY AQUI", "AYUDA", "DETRAS", "FRIO", "CORRE", "SOTANO", "NIÑO", "OSCURIDAD"]; // Default
-    let programadoData = new Map();
-    let automaticoCounter = 0;
-    let speechTimeout;
-    let isSpeaking = false;
 
-    /* --- VARIABLES SENSORES --- */
-    let emfValue = 0;
-    let orientationSensor;
-    
-    /* --- VARIABLES VISUALES --- */
-    let lastFrameTime = 0;
-    let frameCount = 0;
-    let poseDetector = null;
-    let isTorchOn = false;
-    let videoTrack;
+</div> 
 
-    /* --- INICIO SISTEMA --- */
-    window.onload = async () => {
-        startCamera();
-        loadSheetData();
-        initSensor(); 
-        startDecodingAnimation(); // CORRECCIÓN 7
-        
-        // Intervalo para actualizar datos simulados y gráficos
-        setInterval(() => {
-            updateSimulations();
-        }, 100);
 
-        // Intervalo redes sociales (cada 30s)
-        setInterval(cycleSocialMedia, 30000);
-    };
 
-    /* --- 1. CÁMARA Y LINTERNA (CORRECCIÓN 1) --- */
-    async function startCamera() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: "environment", width: {ideal:1920}, height: {ideal:1080} }, 
-                audio: false 
-            });
-            videoBg.srcObject = stream;
-            videoTrack = stream.getVideoTracks()[0];
-            
-            // Inicializar PIP
-            const pipStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
-            pipVideo.srcObject = pipStream;
-            pipVideo.play();
+    <script>
 
-            // Cargar Modelo SLS
-            await initSLS();
-            drawLoop();
+        // 📍 INICIO DE SCRIPT ANTI-CACHÉ (¡NUEVO!)
 
-        } catch (e) { console.error("Error Cámara:", e); }
-    }
+        (function() {
 
-    // CORRECCIÓN 1: Lógica estricta de Linterna
-    async function toggleTorch(e) {
-        if (!videoTrack) return;
-        const btn = e.currentTarget;
-        
-        // Invertir estado
-        isTorchOn = !isTorchOn;
-        
-        try {
-            await videoTrack.applyConstraints({
-                advanced: [{ torch: isTorchOn }]
-            });
-            
-            if (isTorchOn) btn.classList.add('active');
-            else btn.classList.remove('active');
-            
-        } catch (err) {
-            console.warn("Linterna no soportada o error:", err);
-            // Fallback visual si falla el hardware
-            isTorchOn = false;
-            btn.classList.remove('active');
-        }
-    }
+            if ('serviceWorker' in navigator) {
 
-    /* --- 2. SPIRIT BOX & AUDIO (CORRECCIÓN 2 & 6) --- */
-    document.getElementById('knob-power').addEventListener('click', async function() {
-        const btn = this;
-        
-        if (!isRunning) {
-            // ENCENDIDO
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                await loadAudioFiles();
-                await initMicrophone(); // CORRECCIÓN 6
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+
+                    if (registrations.length) {
+
+                        console.log('[ANTI-CACHE] Des-registrando Service Workers...');
+
+                        for(let registration of registrations) {
+
+                            registration.unregister();
+
+                        }
+
+                        console.log('[ANTI-CACHE] Service Workers eliminados. Recargando...');
+
+                        location.reload(true); // Forzar recarga
+
+                    } else {
+
+                        console.log('[ANTI-CACHE] No se encontraron Service Workers.');
+
+                    }
+
+                });
+
             }
-            
-            if (audioCtx.state === 'suspended') await audioCtx.resume();
-            
-            // CORRECCIÓN 2: Desbloquear Audio Móvil inmediatamente
-            const silent = new SpeechSynthesisUtterance("");
-            window.speechSynthesis.speak(silent);
-            
-            btn.classList.add('active');
-            isRunning = true;
-            
-            // Iniciar sonidos fondo
-            startBackgroundNoise();
-            runSpiritBoxLogic(); // Iniciar bucle lógico
-            
-        } else {
-            // APAGADO
-            btn.classList.remove('active');
-            isRunning = false;
-            stopBackgroundNoise();
-            window.speechSynthesis.cancel();
-            clearTimeout(speechTimeout);
-            setSensorStatus('mic', 'off');
-        }
-    });
 
-    async function loadAudioFiles() {
-        // Carga simulada (reemplazar con URLs reales si existen)
-        // Aquí creamos osciladores para simular el ruido blanco si no hay archivos
-        masterGain = audioCtx.createGain();
-        masterGain.connect(audioCtx.destination);
-        gain_Fondo1 = audioCtx.createGain(); gain_Fondo1.connect(masterGain);
-        gain_Fondo2 = audioCtx.createGain(); gain_Fondo2.connect(masterGain);
-    }
-
-    function startBackgroundNoise() {
-        // Simulación ruido blanco simple si no hay mp3
-        const osc = audioCtx.createOscillator();
-        const noiseGain = audioCtx.createGain();
-        osc.frequency.value = 100; // Ruido grave
-        noiseGain.gain.value = 0.1;
-        osc.connect(noiseGain);
-        noiseGain.connect(gain_Fondo2);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 9999); // Loop infinito
-    }
-    function stopBackgroundNoise() {
-        gain_Fondo1.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
-        gain_Fondo2.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
-    }
-
-    // CORRECCIÓN 6: Micrófono sin Feedback pero con Gráficos
-    async function initMicrophone() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            micStreamSource = audioCtx.createMediaStreamSource(stream);
-            vuAnalyserNode = audioCtx.createAnalyser();
-            vuAnalyserNode.fftSize = 256;
-            vuDataArray = new Uint8Array(vuAnalyserNode.frequencyBinCount);
             
-            micStreamSource.connect(vuAnalyserNode);
-            
-            // TRUCO PARA MÓVILES: Conectar a destino con ganancia 0 para mantenerlo vivo
-            const muteGain = audioCtx.createGain();
-            muteGain.gain.value = 0;
-            micStreamSource.connect(muteGain);
-            muteGain.connect(audioCtx.destination);
 
-            // Iniciar Reconocimiento Voz
-            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-                const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-                recognition = new SR();
-                recognition.continuous = false;
-                recognition.lang = 'es-MX';
-                recognition.onresult = (e) => handleVoiceCommand(e.results[0][0].transcript);
-                recognition.onend = () => { if(isRunning && !isSpeaking) try{recognition.start()}catch(e){} };
-                recognition.onstart = () => setSensorStatus('mic', 'connected'); // Verde cuando escucha
+            if (window.caches) {
+
+                caches.keys().then(function(names) {
+
+                    for (let name of names) {
+
+                        console.log('[ANTI-CACHE] Eliminando caché:', name);
+
+                        caches.delete(name);
+
+                    }
+
+                });
+
             }
-        } catch (e) { console.error("Error Mic:", e); }
-    }
 
-    function handleVoiceCommand(text) {
-        text = text.toUpperCase().trim();
-        console.log("Comando oído:", text);
-        
-        // Resetear contador automático
-        automaticoCounter = 0;
-        
-        // Lógica Búsqueda
-        let respuesta = null;
-        
-        // Búsqueda aproximada
-        for (let [pregunta, resp] of programadoData) {
-            if (text.includes(pregunta)) {
-                respuesta = resp;
-                break;
-            }
-        }
-        
-        if (respuesta) {
-            speak(respuesta);
-        } else {
-            // Si no entiende, responde automático al azar
-            const azar = automaticoData[Math.floor(Math.random() * automaticoData.length)];
-            speak(azar);
-        }
-    }
+        })();
 
-    function runSpiritBoxLogic() {
-        if (!isRunning) return;
-        
-        // Intentar iniciar reconocimiento si no está activo
-        try { recognition.start(); } catch(e){}
+        // 📍 FIN DE SCRIPT ANTI-CACHÉ
 
-        // Lógica Automática (si hay silencio)
-        speechTimeout = setTimeout(() => {
-            if (isRunning && !isSpeaking) {
-                automaticoCounter++;
-                if (automaticoCounter > 3) { // Cada ~15 seg
-                    const azar = automaticoData[Math.floor(Math.random() * automaticoData.length)];
-                    speak(azar);
-                    automaticoCounter = 0;
+    
+
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzOf3crQxBdPylwMTAd34W-nBShN31MkIUtaMdKsZHMZVVniI2HjMesD6DpOlO363T1/exec";
+
+        
+
+        let isRunning = false;
+
+        let currentFilter = 'none'; 
+
+        let scanSpeed = 0; 
+
+        
+
+        const videoBg = document.getElementById('bg-camera-feed');
+
+        
+
+        const mainFilterCanvas = document.getElementById('main-filter-canvas');
+
+        const mainFilterCtx = mainFilterCanvas.getContext('2d', { willReadFrequently: true });
+
+
+
+        const tempCanvas = document.getElementById('temp-canvas');
+
+        const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+
+        const aiCanvas = document.getElementById('ai-canvas');
+
+        const aiCtx = aiCanvas.getContext('2d', { willReadFrequently: true });
+
+        
+
+        const detectorPanel = document.getElementById('p-unified');
+
+        const sensorPanel = document.getElementById('p-unified');
+
+        
+
+        const micStatus = document.getElementById('mic-status');
+
+        const magStatus = document.getElementById('mag-status');
+
+        const proxStatus = document.getElementById('prox-status');
+
+        
+
+        let energyHistory = new Array(50).fill(0);
+
+        let energyCanvas, energyCtx;
+
+        
+
+        // 📍 AUDIO RECONFIGURADO (P11)
+
+        let audioCtx, masterGain;
+
+        let audioSource_Fondo1, gain_Fondo1, audioBuffer_Fondo1;
+
+        let audioSource_Fondo2, gain_Fondo2, audioBuffer_Fondo2;
+
+        let reverb, reverbGain, distortionNode; // Para la voz
+
+        let scanTimer = null; // Timer para el scanner
+
+        
+
+        let isSpeaking = false; 
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        let recognition, isRecognizing = false;
+
+        let programadoData = new Map();
+
+        let automaticoData = [];
+
+        let currentTemp = 19.8;
+
+        
+
+        let proximitySensor;
+
+        let magnetometer;
+
+        let orientationSensor;
+
+        
+
+        let emfValue = 0;
+
+        let emfSimInterval = null;
+
+        let visualLoopInterval; 
+
+
+
+        let poseDetector; 
+
+        let latestPoses = []; 
+
+        let isDetectingPose = false; 
+
+        
+
+        let spiritBoxState = "OFF";
+
+        let spiritBoxTimeout = null;
+
+        
+
+        let uiHideTimeout;
+
+        let uiVisible = false;
+
+
+
+        let zoom = 1.0;
+
+        let maxZoom = 5.0;
+
+        let initialPinchDist = 0;
+
+        let lastPan = { x: 0, y: 0 };
+
+        let currentPan = { x: 0, y: 0 };
+
+        let isPinching = false;
+
+        let isPanning = false;
+
+
+
+        // 📍 NUEVO: Variables de Cámara (P6, P9)
+
+        let videoTrack;
+
+        let isTorchOn = false;
+
+        let lastFrameTime = 0;
+
+        let frameCount = 0;
+
+        let lastFpsUpdate = 0;
+
+
+
+        async function startCamera() {
+
+            try {
+
+                // 📍 SOLUCIÓN CÁMARA (P6, P7)
+
+                const constraints = {
+
+                    video: {
+
+                        facingMode: { ideal: "environment" }, // P7: Forzar trasera
+
+                        width: { ideal: 4096 },  // P6/P7: Forzar 4K
+
+                        height: { ideal: 2160 },
+
+                        frameRate: { ideal: 60 } // P6/P7: Forzar 60 FPS
+
+                    },
+
+                    audio: false
+
+                };
+
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+                
+
+                videoTrack = stream.getVideoTracks()[0]; // P9: Guardar el track
+
+                
+
+                if (videoTrack && typeof videoTrack.applyConstraints === 'function') {
+
+                    videoTrack.applyConstraints({
+
+                        advanced: [{ focusMode: 'continuous' }]
+
+                    }).catch(e => console.warn("No se pudo aplicar 'focusMode: continuous'", e));
+
+                    
+
+                    // P9: Verificar si la linterna es soportada
+
+                    const capabilities = videoTrack.getCapabilities();
+
+                    if (!capabilities.torch) {
+
+                        document.getElementById('btn-torch').style.display = 'none';
+
+                    }
+
                 }
-                runSpiritBoxLogic();
-            }
-        }, 5000);
-    }
 
-    function speak(text) {
-        isSpeaking = true;
-        if (recognition) recognition.abort(); // Parar de escuchar mientras habla
-        setSensorStatus('mic', 'off'); // Apagar indicador verde
+                
 
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'es-MX';
-        u.rate = 0.9;
-        u.pitch = 0.8;
-        
-        u.onend = () => {
-            isSpeaking = false;
-            if(isRunning) runSpiritBoxLogic();
-        };
-        
-        window.speechSynthesis.speak(u);
-        
-        // Feedback visual en gráficos
-        triggerVisualResponse();
-    }
+                videoBg.srcObject = stream;
 
-    /* --- 3. FILTROS & SLS (CORRECCIÓN 3 & 4) --- */
-    async function initSLS() {
-        const model = poseDetection.SupportedModels.MoveNet;
-        poseDetector = await poseDetection.createDetector(model, {modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING});
-    }
+                videoBg.onloadedmetadata = () => {
 
-    function setFilter(f) {
-        document.body.classList.remove('filter-detector', 'filter-sls', 'filter-negative');
-        currentFilter = (currentFilter === f) ? 'none' : f;
-        
-        if (currentFilter !== 'none') document.body.classList.add('filter-' + currentFilter);
-        
-        // Actualizar botones
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        if (currentFilter !== 'none') event.target.classList.add('active');
-        
-        // Mostrar banner SLS
-        document.getElementById('kinect-banner').style.display = (currentFilter === 'sls') ? 'block' : 'none';
-    }
+                    resizeAllCanvas(); 
 
-    async function drawLoop() {
-        // Dibujar Filtro SLS
-        if (currentFilter === 'sls' && poseDetector) {
-            const poses = await poseDetector.estimatePoses(videoBg);
-            mainFilterCtx.clearRect(0, 0, mainFilterCanvas.width, mainFilterCanvas.height);
-            
-            poses.forEach(pose => {
-                if (pose.score > 0.3) {
-                    drawSkeleton(pose.keypoints);
-                }
-            });
-        } else {
-            mainFilterCtx.clearRect(0, 0, mainFilterCanvas.width, mainFilterCanvas.height);
+                    energyCanvas = document.getElementById('energy-canvas');
+
+                    if (energyCanvas) { 
+
+                        energyCtx = energyCanvas.getContext('2d');
+
+                        resizeEnergyCanvas();
+
+                    }
+
+                    
+
+                    // P6: Actualizar stats de cámara
+
+                    try {
+
+                        const settings = videoTrack.getSettings();
+
+                        const res = settings.height || videoBg.videoHeight;
+
+                        document.getElementById('cam-res').innerText = `${res}p`;
+
+                    } catch(e) {
+
+                        document.getElementById('cam-res').innerText = `${videoBg.videoHeight}p`;
+
+                    }
+
+                    
+
+                    drawLoop(); 
+
+                };
+
+            } catch (e) { console.log("Error de cámara", e); }
+
         }
+
         
-        // Dibujar VU Meter (CORRECCIÓN 6)
-        drawVUMeter();
+
+        function resizeAllCanvas() {
+
+            const viewArea = document.getElementById('main-view-area');
+
+            const w = viewArea.clientWidth; 
+
+            const h = viewArea.clientHeight; 
+
+            
+
+            mainFilterCanvas.width = w;
+
+            mainFilterCanvas.height = h;
+
+            
+
+            tempCanvas.width = w;
+
+            tempCanvas.height = h;
+
+
+
+            const aiWidth = 640;
+
+            aiCanvas.width = aiWidth;
+
+            aiCanvas.height = (aiWidth / w) * h;
+
+            
+
+            if(energyCanvas && !document.getElementById('p-unified').classList.contains('hidden')) {
+
+                resizeEnergyCanvas();
+
+            }
+
+        }
+
+
+
+        async function initMLModel() {
+
+            try {
+
+                const model = poseDetection.SupportedModels.MoveNet;
+
+                const detectorConfig = {
+
+                    modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING,
+
+                    maxPoses: 6 
+
+                };
+
+                poseDetector = await poseDetection.createDetector(model, detectorConfig);
+
+                console.log("MoveNet (IA Multi-Pose) cargado.");
+
+            } catch (e) {
+
+                console.error("Error al cargar modelo de IA:", e);
+
+            }
+
+        }
+
+
+
+        // 📍 Dibuja el video en el canvas con 'object-fit: cover'
+
+        function drawVideoWithCover(ctx, video, z, pan) {
+
+            const canvasW = ctx.canvas.width;
+
+            const canvasH = ctx.canvas.height;
+
+            const videoW = video.videoWidth;
+
+            const videoH = video.videoHeight;
+
+            
+
+            if (!videoW || !videoH) return; 
+
+
+
+            const videoAspect = videoW / videoH;
+
+            const canvasAspect = canvasW / canvasH;
+
+
+
+            let sWidth = videoW / z;
+
+            let sHeight = videoH / z;
+
+            
+
+            if (canvasAspect > videoAspect) {
+
+                sHeight = sWidth / canvasAspect;
+
+            } else {
+
+                sWidth = sHeight * canvasAspect;
+
+            }
+
+
+
+            let sx = (videoW - sWidth) / 2 + pan.x;
+
+            let sy = (videoH - sHeight) / 2 + pan.y;
+
+
+
+            sx = Math.max(0, Math.min(sx, videoW - sWidth));
+
+            sy = Math.max(0, Math.min(sy, videoH - sHeight));
+
+            currentPan.x = sx - (videoW - sWidth) / 2;
+
+            currentPan.y = sy - (videoH - sHeight) / 2;
+
+
+
+            ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, canvasW, canvasH);
+
+        }
+
+
+
         
-        // Contador FPS
-        const now = performance.now();
-        if (now - lastFrameTime >= 1000) {
-            document.getElementById('cam-fps-panel').innerText = frameCount;
-            frameCount = 0;
+
+        async function drawLoop() {
+
+            // 📍 Contador de FPS (P6)
+
+            const now = performance.now();
+
+            const delta = now - lastFrameTime;
+
             lastFrameTime = now;
-        }
-        frameCount++;
-        
-        requestAnimationFrame(drawLoop);
-    }
 
-    function drawSkeleton(keypoints) {
-        mainFilterCtx.lineWidth = 4;
-        mainFilterCtx.strokeStyle = '#39FF14'; // Verde Neon
-        mainFilterCtx.fillStyle = '#FF0000'; // Puntos Rojos
-        
-        // Dibujar puntos
-        keypoints.forEach(p => {
-            if(p.score > 0.3) {
-                mainFilterCtx.beginPath();
-                mainFilterCtx.arc(p.x, p.y, 5, 0, 2*Math.PI);
-                mainFilterCtx.fill();
-            }
-        });
-        
-        // Conectar líneas (simplificado)
-        const pairs = [[5,7],[7,9],[6,8],[8,10],[5,6],[5,11],[6,12],[11,13],[13,15],[12,14],[14,16],[11,12]];
-        pairs.forEach(pair => {
-            const p1 = keypoints[pair[0]];
-            const p2 = keypoints[pair[1]];
-            if(p1.score > 0.3 && p2.score > 0.3) {
-                mainFilterCtx.beginPath();
-                mainFilterCtx.moveTo(p1.x, p1.y);
-                mainFilterCtx.lineTo(p2.x, p2.y);
-                mainFilterCtx.stroke();
-            }
-        });
-    }
+            frameCount++;
 
-    /* --- 5. SENSORES (CORRECCIÓN 5) --- */
-    function initSensor() {
-        // Fallback Universal para MAG
-        if (window.DeviceOrientationEvent) {
-            window.addEventListener('deviceorientation', (e) => {
-                if(e.alpha) {
-                    const rot = e.alpha;
-                    document.getElementById('compass-needle').style.transform = `translateX(-50%) rotate(${-rot}deg)`;
-                    setSensorStatus('mag', 'connected');
+        
+
+            if (now - lastFpsUpdate > 1000) { // Actualizar cada segundo
+
+                const fps = frameCount;
+
+                document.getElementById('cam-fps').innerText = fps;
+
+                frameCount = 0;
+
+                lastFpsUpdate = now;
+
+            }
+
+
+
+            if (videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
+
+                
+
+                const w = mainFilterCanvas.width;
+
+                const h = mainFilterCanvas.height;
+
+
+
+                mainFilterCtx.clearRect(0, 0, w, h);
+
+                
+
+                const kinectBanner = document.getElementById('kinect-banner');
+
+                
+
+                if (currentFilter === 'sls') {
+
+                    kinectBanner.style.display = 'block';
+
+                    if (latestPoses) {
+
+                        drawAllSkeletons(latestPoses); 
+
+                    }
+
+                } else {
+
+                    kinectBanner.style.display = 'none';
+
+                    if (currentFilter === 'relief') {
+
+                        drawVideoWithCover(tempCtx, videoBg, zoom, currentPan);
+
+                        let frame = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+
+                        let data = frame.data;
+
+                        let copy = new Uint8ClampedArray(data);
+
+                        
+
+                        for (let y = 1; y < tempCanvas.height - 1; y++) {
+
+                            for (let x = 1; x < tempCanvas.width - 1; x++) {
+
+                                let i = (y * tempCanvas.width + x) * 4;
+
+                                let hpx = -copy[((y-1)*tempCanvas.width+(x-1))*4] + copy[((y-1)*tempCanvas.width+(x+1))*4]
+
+                                        -2*copy[(y*tempCanvas.width+(x-1))*4] + 2*copy[(y*tempCanvas.width+(x+1))*4]
+
+                                        -copy[((y+1)*tempCanvas.width+(x-1))*4] + copy[((y+1)*tempCanvas.width+(x+1))*4];
+
+                                let vpx = -copy[((y-1)*tempCanvas.width+(x-1))*4] - 2*copy[((y-1)*tempCanvas.width+x)*4] - copy[((y-1)*tempCanvas.width+(x+1))*4]
+
+                                        +copy[((y+1)*tempCanvas.width+(x-1))*4] + 2*copy[((y+1)*tempCanvas.width+x)*4] + copy[((y+1)*tempCanvas.width+(x+1))*4];
+
+                                
+
+                                let diff = Math.sqrt(hpx*hpx + vpx*vpx);
+
+                                if (diff > 30) { 
+
+                                    data[i] = diff; data[i+1] = 255; data[i+2] = 255;
+
+                                } else {
+
+                                    data[i] = 10; data[i+1] = 10; data[i+2] = 10;
+
+                                }
+
+                            }
+
+                        }
+
+                        tempCtx.putImageData(frame, 0, 0);
+
+                        mainFilterCtx.drawImage(tempCanvas, 0, 0, w, h);
+
+
+
+                    } else if (currentFilter === 'night-vision') {
+
+                        drawVideoWithCover(mainFilterCtx, videoBg, zoom, currentPan);
+
+                        let frame = mainFilterCtx.getImageData(0, 0, w, h);
+
+                        let data = frame.data;
+
+                        for (let i = 0; i < data.length; i += 4) {
+
+                            let l = (data[i] * 0.3) + (data[i+1] * 0.59) + (data[i+2] * 0.11);
+
+                            data[i] = 0; 
+
+                            data[i+1] = l * 1.2; 
+
+                            data[i+2] = 0; 
+
+                            let y = Math.floor((i / 4) / w);
+
+                            if (y % 4 === 0) { data[i+1] *= 0.8; }
+
+                        }
+
+                        for (let y = 0; y < h; y++) {
+
+                            for (let x = 0; x < w; x++) {
+
+                                let i = (y * w + x) * 4;
+
+                                let dx = (x / w) - 0.5;
+
+                                let dy = (y / h) - 0.5;
+
+                                let dist = Math.sqrt(dx*dx + dy*dy) * 2;
+
+                                let factor = Math.max(0, 1.0 - dist * 0.8);
+
+                                data[i+1] *= factor;
+
+                            }
+
+                        }
+
+                        mainFilterCtx.putImageData(frame, 0, 0);
+
+                    
+
+                    } else if (currentFilter === 'none') {
+
+                        // No se dibuja nada en el canvas, se ve el video de fondo
+
+                    }
+
                 }
+
+            }
+
+            requestAnimationFrame(drawLoop);
+
+        }
+
+        
+
+        async function detectPoseLoop() {
+
+            while (true) {
+
+                if (currentFilter === 'sls' && poseDetector && videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
+
+                    if (!isDetectingPose) {
+
+                        isDetectingPose = true;
+
+                        
+
+                        const poses = await poseDetector.estimatePoses(videoBg); 
+
+                        latestPoses = poses; 
+
+                        
+
+                        isDetectingPose = false;
+
+                    }
+
+                    await new Promise(r => setTimeout(r, 100)); // 10 FPS
+
+                } else {
+
+                    latestPoses = []; 
+
+                    await new Promise(r => setTimeout(r, 500));
+
+                }
+
+            }
+
+        }
+
+
+
+        const confidenceThreshold = 0.3; 
+
+        const skeletonMap = [
+
+            ['left_shoulder', 'right_shoulder'], ['left_shoulder', 'left_elbow'],
+
+            ['left_elbow', 'left_wrist'], ['right_shoulder', 'right_elbow'],
+
+            ['right_elbow', 'right_wrist'], ['left_shoulder', 'left_hip'],
+
+            ['right_shoulder', 'right_hip'], ['left_hip', 'right_hip'],
+
+            ['left_hip', 'left_knee'], ['left_knee', 'left_ankle'],
+
+            ['right_hip', 'right_knee'], ['right_knee', 'right_ankle']
+
+        ];
+
+        
+
+        function drawAllSkeletons(poses) {
+
+            const ctx = mainFilterCtx; 
+
+            
+
+            ctx.strokeStyle = 'var(--neon-green)'; // LÍNEAS VERDES
+
+            ctx.fillStyle = 'var(--alert-red)';   // PUNTOS ROJOS
+
+            
+
+            ctx.lineWidth = 2.5;
+
+            ctx.filter = 'drop-shadow(0 0 4px var(--neon-green))';
+
+
+
+            // Escalar para 'object-fit: cover'
+
+            const videoW = videoBg.videoWidth;
+
+            const videoH = videoBg.videoHeight;
+
+            const canvasW = mainFilterCanvas.width;
+
+            const canvasH = mainFilterCanvas.height;
+
+            
+
+            const videoAspect = videoW / videoH;
+
+            const canvasAspect = canvasW / canvasH;
+
+            
+
+            let scale, offsetX, offsetY;
+
+            
+
+            if (canvasAspect > videoAspect) {
+
+                // El canvas es más ancho que el video
+
+                scale = canvasW / videoW;
+
+                offsetX = 0;
+
+                offsetY = (canvasH - videoH * scale) / 2;
+
+            } else {
+
+                // El canvas es más alto que el video
+
+                scale = canvasH / videoH;
+
+                offsetX = (canvasW - videoW * scale) / 2;
+
+                offsetY = 0;
+
+            }
+
+
+
+            poses.forEach(pose => {
+
+                if (pose.score > confidenceThreshold) {
+
+                    drawKeypoints(pose.keypoints, scale, offsetX, offsetY);
+
+                    drawConnections(pose.keypoints, scale, offsetX, offsetY);
+
+                }
+
             });
-        } else {
-            setSensorStatus('mag', 'unavailable');
+
+            ctx.filter = 'none';
+
         }
-        
-        // Simulación EMF si no hay hardware
-        setSensorStatus('prox', 'simulated');
-    }
 
-    /* --- 6. VISUALES & UTILS --- */
-    function drawVUMeter() {
-        if (!vuAnalyserNode) return;
-        vuAnalyserNode.getByteFrequencyData(vuDataArray);
-        
-        const canvas = document.getElementById('vu-meter-canvas');
-        const ctx = canvas.getContext('2d');
-        const w = canvas.width = canvas.offsetWidth;
-        const h = canvas.height = canvas.offsetHeight;
-        
-        ctx.clearRect(0,0,w,h);
-        const barWidth = (w / vuDataArray.length) * 2.5;
-        let x = 0;
-        
-        for(let i=0; i<vuDataArray.length; i++) {
-            const barHeight = vuDataArray[i] / 2;
-            ctx.fillStyle = `rgb(${barHeight + 100}, 50, 50)`;
-            ctx.fillRect(x, h-barHeight, barWidth, barHeight);
-            x += barWidth + 1;
+
+
+        function drawKeypoints(keypoints, scale, offsetX, offsetY) {
+
+            const ctx = mainFilterCtx;
+
+            for (let i = 0; i < keypoints.length; i++) {
+
+                const keypoint = keypoints[i];
+
+                if (keypoint.score > confidenceThreshold) {
+
+                    ctx.beginPath();
+
+                    ctx.arc(keypoint.x * scale + offsetX, keypoint.y * scale + offsetY, 4, 0, 2 * Math.PI); 
+
+                    ctx.fill();
+
+                }
+
+            }
+
         }
-        
-        // Actualizar Gráfico Lineal también
-        updateEnergyGraph(vuDataArray[10] || 0);
-    }
-    
-    function updateEnergyGraph(val) {
-        const canvas = document.getElementById('energy-canvas');
-        const ctx = canvas.getContext('2d');
-        // Lógica simple de dibujo de línea histórica...
-        // (Simplificado para ahorrar espacio, usar lógica previa)
-    }
 
-    function triggerVisualResponse() {
-        // Sacudida visual cuando habla el spirit box
-        document.getElementById('energy-canvas').style.border = "1px solid #FF0000";
-        setTimeout(() => document.getElementById('energy-canvas').style.border = "1px solid #333", 500);
-    }
 
-    function updateSimulations() {
-        // Temp Random
-        const temp = (18 + Math.random()).toFixed(1);
-        document.getElementById('temp-val').innerText = temp + "°C";
-        
-        // Aguja Detector (Simulada si no hay sensor prox)
-        const needle = document.getElementById('main-needle');
-        const rot = -60 + (Math.random() * 10); // Vibración base
-        needle.style.transform = `translateX(-50%) rotate(${rot}deg)`;
-    }
 
-    function setSensorStatus(id, status) {
-        const el = document.getElementById(id);
-        el.dataset.status = status;
-    }
+        function drawConnections(keypoints, scale, offsetX, offsetY) {
 
-    /* --- 7. ANIMACIÓN MATRIX (CORRECCIÓN 7) --- */
-    function startDecodingAnimation() {
-        const container = document.getElementById('decoding-matrix');
-        const container2 = document.getElementById('decoding-matrix-bottom');
-        
-        setInterval(() => {
-            if (!document.body.classList.contains('panels-active')) return;
-            spawnWord(container);
-            spawnWord(container2);
-        }, 400);
-    }
+            const ctx = mainFilterCtx;
 
-    function spawnWord(container) {
-        const el = document.createElement('div');
-        const isAuto = Math.random() > 0.8;
-        
-        el.classList.add('decoding-text');
-        if (isAuto) {
-            el.innerText = automaticoData[Math.floor(Math.random() * automaticoData.length)];
-            el.classList.add('alt-color');
-        } else {
-            el.innerText = Math.random().toString(36).substring(7).toUpperCase(); // Random code
+            const keypointMap = new Map();
+
+            keypoints.forEach(keypoint => {
+
+                keypointMap.set(keypoint.name, keypoint);
+
+            });
+
+
+
+            skeletonMap.forEach(connection => {
+
+                const start = keypointMap.get(connection[0]);
+
+                const end = keypointMap.get(connection[1]);
+
+
+
+                if (start && end && start.score > confidenceThreshold && end.score > confidenceThreshold) {
+
+                    ctx.beginPath();
+
+                    ctx.moveTo(start.x * scale + offsetX, start.y * scale + offsetY);
+
+                    ctx.lineTo(end.x * scale + offsetX, end.y * scale + offsetY);
+
+                    ctx.stroke();
+
+                }
+
+            });
+
         }
+
         
-        el.style.left = Math.random() * 100 + '%';
-        el.style.setProperty('--duration', (3 + Math.random() * 4) + 's');
+
+        function setFilter(f) {
+
+            document.querySelectorAll('.filter-btn').forEach(b => {
+
+                if (b.id !== 'btn-panel') {
+
+                    b.classList.remove('active');
+
+                }
+
+            });
+
+            
+
+            if (currentFilter === f) {
+
+                currentFilter = 'none';
+
+            } else {
+
+                currentFilter = f;
+
+                const targetBtn = event ? event.target : document.querySelector(`.filter-btn[onclick="setFilter('${f}')"]`);
+
+                if(targetBtn) targetBtn.classList.add('active');
+
+            }
+
+            
+
+            // Si el filtro aplica efectos, oculta el video base. Si no (sls, none), lo muestra.
+
+            if (currentFilter === 'relief' || currentFilter === 'night-vision') {
+
+                videoBg.style.opacity = '0';
+
+            } else {
+
+                videoBg.style.opacity = '1';
+
+            }
+
+        }
+
+
+
+        function setSensorStatus(sensorName, status) {
+
+            let el;
+
+            if (sensorName === 'mic') el = micStatus;
+
+            else if (sensorName === 'mag') el = magStatus;
+
+            else if (sensorName === 'prox') el = proxStatus;
+
+            
+
+            if (el) {
+
+                el.dataset.status = status;
+
+            }
+
+        }
+
+
+
+        // 📍 NUEVO: Función Linterna (P9, P10)
+
+        async function toggleTorch(event) {
+
+            event.stopPropagation(); // P10: Evitar que el clic active la UI
+
+            
+
+            if (!videoTrack || typeof videoTrack.applyConstraints !== 'function') {
+
+                console.log("Linterna no soportada");
+
+                document.getElementById('btn-torch').style.display = 'none';
+
+                return;
+
+            }
+
         
-        container.appendChild(el);
-        setTimeout(() => el.remove(), 7000);
-    }
 
-    /* --- INTEGRACIÓN GOOGLE SHEETS --- */
-    async function loadSheetData() {
-        try {
-            const res = await fetch(GOOGLE_SCRIPT_URL);
-            const data = await res.json();
-            automaticoData = data.automatico.map(r => r.TEXTO);
-            data.programado.forEach(r => programadoData.set(r.PREGUNTA.toUpperCase(), r.RESPUESTA));
-            console.log("Datos cargados");
-        } catch(e) { console.log("Usando datos offline"); }
-    }
+            try {
 
-    /* --- INTERFAZ --- */
-    function togglePanels() {
-        document.body.classList.toggle('panels-active');
-        document.getElementById('btn-panel').classList.toggle('active');
-    }
+                isTorchOn = !isTorchOn;
 
-    function cycleSocialMedia() {
-        const div = document.getElementById('follow-container');
-        div.classList.remove('hide');
-        div.classList.add('show');
-        setTimeout(() => {
-            div.classList.remove('show');
-            div.classList.add('hide');
-        }, 5000);
-    }
-    
-    function handleInteraction() {
-        // Mostrar controles UI
-        const ctrls = document.getElementById('filter-controls-container');
-        ctrls.style.opacity = 1;
-        clearTimeout(window.uiTimeout);
-        window.uiTimeout = setTimeout(() => ctrls.style.opacity = 0, 4000);
-    }
-</script>
+                await videoTrack.applyConstraints({
+
+                    advanced: [{ torch: isTorchOn }]
+
+                });
+
+                document.getElementById('btn-torch').classList.toggle('active', isTorchOn);
+
+            } catch (e) {
+
+                console.error("Error al activar linterna:", e);
+
+                isTorchOn = false; 
+
+                document.getElementById('btn-torch').classList.toggle('active', false);
+
+                document.getElementById('btn-torch').style.display = 'none';
+
+            }
+
+        }
+
+
+
+        // 📍 NUEVO: Cargar Audios (P11)
+
+        async function loadAudio(url) {
+
+            try {
+
+                const response = await fetch(url);
+
+                const arrayBuffer = await response.arrayBuffer();
+
+                return await audioCtx.decodeAudioData(arrayBuffer);
+
+            } catch (e) {
+
+                console.error(`Error cargando audio: ${url}`, e);
+
+                throw e; // Relanzar el error
+
+            }
+
+        }
+
+
+
+        // 📍 NUEVO: initAudio con FONDO_1 y FONDO_2 (P11)
+
+        async function initAudio() {
+
+            if (audioCtx) return;
+
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+            masterGain = audioCtx.createGain();
+
+            masterGain.connect(audioCtx.destination);
+
+            
+
+            // Cargar los nuevos audios
+
+            try {
+
+                updateLoadingProgress(55, "CARGANDO AUDIO...");
+
+                [audioBuffer_Fondo1, audioBuffer_Fondo2] = await Promise.all([
+
+                    loadAudio('FONDO_1.mp3'),
+
+                    loadAudio('FONDO_2.mp3')
+
+                ]);
+
+                console.log("Audios de fondo cargados.");
+
+                updateLoadingProgress(65, "AUDIO CARGADO");
+
+            } catch (e) {
+
+                console.error("Error al cargar audios de fondo:", e);
+
+                updateLoadingProgress(65, "ERROR DE AUDIO");
+
+                return; 
+
+            }
+
+        
+
+            // Configurar Fondo 1 (Estática)
+
+            gain_Fondo1 = audioCtx.createGain();
+
+            gain_Fondo1.gain.value = 0; // Empieza apagado
+
+            gain_Fondo1.connect(masterGain);
+
+        
+
+            // Configurar Fondo 2 (Sintonía)
+
+            gain_Fondo2 = audioCtx.createGain();
+
+            gain_Fondo2.gain.value = 0; // Empieza apagado
+
+            gain_Fondo2.connect(masterGain);
+
+        
+
+            // Configurar Reverb y Distorsión (para la voz)
+
+            reverbGain = audioCtx.createGain();
+
+            reverbGain.gain.value = 0.8; // Más reverb
+
+            let delay = audioCtx.createDelay(1.0); delay.delayTime.value = 0.5; 
+
+            let fb = audioCtx.createGain(); fb.gain.value = 0.6;
+
+            
+
+            reverbGain.connect(delay);
+
+            delay.connect(fb);
+
+            fb.connect(delay);
+
+            delay.connect(masterGain); // Conectar reverb al master
+
+
+
+            distortionNode = audioCtx.createWaveShaper();
+
+            distortionNode.curve = makeDistortionCurve(50); // Distorsión sutil
+
+            distortionNode.oversample = '4x';
+
+            
+
+            distortionNode.connect(reverbGain); // La distorsión alimenta la reverb
+
+            
+
+            initSpeechRec();
+
+        }
+
+
+
+        function playFondo1() {
+
+            if (!audioBuffer_Fondo1) return;
+
+            if (audioSource_Fondo1) { try { audioSource_Fondo1.stop(); } catch(e){} }
+
+            audioSource_Fondo1 = audioCtx.createBufferSource();
+
+            audioSource_Fondo1.buffer = audioBuffer_Fondo1;
+
+            audioSource_Fondo1.loop = true;
+
+            audioSource_Fondo1.connect(gain_Fondo1);
+
+            audioSource_Fondo1.start();
+
+        }
+
+
+
+        function playFondo2_Fragment() {
+
+            if (!audioBuffer_Fondo2 || !isRunning || spiritBoxState !== "SCANNING") return;
+
+            if (audioSource_Fondo2) {
+
+                try { audioSource_Fondo2.stop(); } catch(e){}
+
+            }
+
+            audioSource_Fondo2 = audioCtx.createBufferSource();
+
+            audioSource_Fondo2.buffer = audioBuffer_Fondo2;
+
+            audioSource_Fondo2.connect(gain_Fondo2);
+
+        
+
+            // P11: Saltar a un punto aleatorio
+
+            const duration = audioBuffer_Fondo2.duration;
+
+            const startTime = Math.random() * (duration - 2); // Asegurar que no empiece al final
+
+            const fragmentDuration = 0.8 + Math.random() * 1.2; // Duración de 0.8 a 2.0 seg
+
+        
+
+            audioSource_Fondo2.start(0, startTime, fragmentDuration);
+
+        
+
+            // Programar el siguiente fragmento
+
+            if (scanTimer) clearTimeout(scanTimer);
+
+            scanTimer = setTimeout(playFondo2_Fragment, fragmentDuration * 1000 + (Math.random() * 300)); // Pausa corta
+
+        }
+
+        
+
+        function makeDistortionCurve(amount) {
+
+            let k = typeof amount === 'number' ? amount : 50,
+
+                n_samples = 44100,
+
+                curve = new Float32Array(n_samples),
+
+                deg = Math.PI / 180,
+
+                i = 0, x;
+
+            for ( ; i < n_samples; ++i ) {
+
+                x = i * 2 / n_samples - 1;
+
+                curve[i] = ( 3 + k ) * x * 20 * deg / ( Math.PI + k * Math.abs(x) );
+
+            }
+
+            return curve;
+
+        }
+
+
+
+        // 📍 SOLUCIÓN SENSORES (PUNTO 4)
+
+        let sensorPermissionsRequested = false;
+
+        async function requestAllPermissions() {
+
+            if (sensorPermissionsRequested) {
+
+                initSensor();
+
+                return;
+
+            }
+
+            sensorPermissionsRequested = true;
+
+            
+
+            console.log("Solicitando permisos de sensores...");
+
+            
+
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+
+                try {
+
+                    const status = await DeviceOrientationEvent.requestPermission();
+
+                    if (status === 'granted') {
+
+                        initSensor();
+
+                    } else {
+
+                        setSensorStatus('mag', 'unavailable');
+
+                        setSensorStatus('prox', 'simulated');
+
+                        startEmfSimulation();
+
+                    }
+
+                } catch (e) {
+
+                    console.warn("Error al pedir permiso de orientación, iniciando sensores de todas formas...", e);
+
+                    initSensor();
+
+                }
+
+            } else {
+
+                console.log("Permiso de orientación no requerido (ej. Android), iniciando sensores.");
+
+                initSensor();
+
+            }
+
+        }
+
+        
+
+        function initSensor() {
+
+            // 1. Sensor de Orientación (Dial Brújula)
+
+            if ('AbsoluteOrientationSensor' in window) {
+
+                try {
+
+                    orientationSensor = new AbsoluteOrientationSensor({ frequency: 10 });
+
+                    orientationSensor.onreading = () => {
+
+                        let q = orientationSensor.quaternion;
+
+                        let yaw = Math.atan2(2 * (q[0] * q[1] + q[2] * q[3]), 1 - 2 * (q[1] * q[1] + q[2] * q[2])) * (180 / Math.PI);
+
+                        document.getElementById('compass-needle').style.transform = `translateX(-50%) rotate(${-yaw}deg)`;
+
+                        setSensorStatus('mag', 'connected'); // VERDE
+
+                    };
+
+                    orientationSensor.onerror = (e) => {
+
+                        console.warn("Error de Brújula (Orientación):", e.error.name);
+
+                        setSensorStatus('mag', 'unavailable'); // ROJO
+
+                    };
+
+                    orientationSensor.start();
+
+                } catch (e) {
+
+                    console.warn("Sensor de Orientación no soportado.", e);
+
+                    setSensorStatus('mag', 'unavailable');
+
+                }
+
+            } else {
+
+                console.warn("Sensor de Orientación no soportado.");
+
+                setSensorStatus('mag', 'unavailable');
+
+            }
+
+
+
+            // 2. Sensor EMF (Magnetómetro)
+
+            if ('Magnetometer' in window) {
+
+                try {
+
+                    magnetometer = new Magnetometer({ frequency: 10 });
+
+                    magnetometer.onreading = () => {
+
+                        let strength = Math.sqrt(magnetometer.x**2 + magnetometer.y**2 + magnetometer.z**2);
+
+                        emfValue = Math.min(100, (strength / 100) * 100); 
+
+                        setSensorStatus('prox', 'connected'); // VERDE
+
+                    };
+
+                    magnetometer.onerror = (e) => {
+
+                        console.warn("Magnetómetro (EMF) no disponible:", e.error.name, ". Probando Proximidad.");
+
+                        initProximitySensor();
+
+                    };
+
+                    magnetometer.start();
+
+                } catch (e) {
+
+                    console.warn("Magnetómetro (EMF) falló. Probando Proximidad.", e);
+
+                    initProximitySensor();
+
+                }
+
+            } else {
+
+                console.warn("Magnetómetro (EMF) no soportado. Probando Proximidad.");
+
+                initProximitySensor();
+
+            }
+
+        }
+
+
+
+        function initProximitySensor() {
+
+            if ('ProximitySensor' in window) {
+
+                try {
+
+                    proximitySensor = new ProximitySensor();
+
+                    proximitySensor.onreading = () => {
+
+                        const maxDist = 10, minDist = 2;  
+
+                        let dist = proximitySensor.value;
+
+                        if (dist <= minDist) emfValue = 100;
+
+                        else if (dist >= maxDist) emfValue = 0;
+
+                        else emfValue = 100 * (1 - (dist - minDist) / (maxDist - minDist));
+
+                        setSensorStatus('prox', 'fallback'); // AZUL
+
+                    };
+
+                    proximitySensor.onerror = (e) => {
+
+                        console.warn("Proximidad no disponible:", e.error.name, "Iniciando simulador.");
+
+                        setSensorStatus('prox', 'simulated'); // NARANJA
+
+                        startEmfSimulation(); 
+
+                    };
+
+                    proximitySensor.start();
+
+                } catch(e) {
+
+                    console.warn("Sensor de Proximidad falló. Iniciando simulador.");
+
+                    setSensorStatus('prox', 'simulated'); // NARANJA
+
+                    startEmfSimulation(); 
+
+                }
+
+            } else {
+
+                console.warn("Sensor de Proximidad no soportado. Iniciando simulador.");
+
+                setSensorStatus('prox', 'simulated'); // NARANJA
+
+                startEmfSimulation(); 
+
+            }
+
+        }
+
+        
+
+        function startEmfSimulation() {
+
+            if (emfSimInterval) return;
+
+            emfSimInterval = setInterval(() => {
+
+                emfValue = Math.random() * 100;
+
+            }, 200);
+
+        }
+
+        
+
+        function stopSensor() {
+
+            if (proximitySensor) proximitySensor.stop();
+
+            if (magnetometer) magnetometer.stop();
+
+            if (orientationSensor) orientationSensor.stop();
+
+            if (emfSimInterval) clearInterval(emfSimInterval);
+
+            emfSimInterval = null;
+
+            emfValue = 0;
+
+            setSensorStatus('prox', 'off');
+
+            setSensorStatus('mag', 'off');
+
+        }
+
+
+
+        
+
+        function startVisualLoop() {
+
+            if (visualLoopInterval) clearInterval(visualLoopInterval); 
+
+            visualLoopInterval = setInterval(() => {
+
+                let intensity = emfValue; 
+
+                
+
+                const needle = document.getElementById('main-needle');
+
+                if (needle) {
+
+                    needle.style.transform = `translateX(-50%) rotate(${-60 + (intensity/100)*120}deg)`;
+
+                }
+
+                
+
+                updateEnergyGraph(intensity); 
+
+            }, 150); 
+
+        }
+
+        
+
+        function stopVisualLoop() {
+
+            const needle = document.getElementById('main-needle');
+
+            if (needle) {
+
+                needle.style.transform = `translateX(-50%) rotate(-60deg)`;
+
+            }
+
+        }
+
+
+
+        // --- SPIRIT BOX (Lógica P11) ---
+
+        
+
+        const pwr = document.getElementById('knob-power');
+
+        pwr.addEventListener('click', async () => {
+
+            if(!audioCtx) await initAudio(); // Esperar a que el audio cargue
+
+            if(!audioCtx) return; // Si falló la carga, no continuar
+
+
+
+            isRunning = !isRunning;
+
+            
+
+            pwr.classList.toggle('active', isRunning);
+
+            
+
+            if(isRunning) {
+
+                pwr.style.transform = 'rotate(0deg)';
+
+                
+
+                if(audioCtx.state === 'suspended') {
+
+                    audioCtx.resume();
+
+                    const silentUtterance = new SpeechSynthesisUtterance(" ");
+
+                    silentUtterance.volume = 0;
+
+                    window.speechSynthesis.speak(silentUtterance);
+
+                }
+
+                
+
+                // P11: Iniciar audios de fondo
+
+                playFondo1();
+
+                gain_Fondo1.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.5); // Estática
+
+                gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 0.5); // Sintonía
+
+
+
+                // P4: Solicitar sensores
+
+                requestAllPermissions();
+
+
+
+                spiritBoxState = "SCANNING";
+
+                playFondo2_Fragment(); // Iniciar bucle de sintonía
+
+                runSpiritBoxLoop(); // Iniciar bucle de escucha
+
+                
+
+            } else {
+
+                pwr.style.transform = 'rotate(135deg)';
+
+                
+
+                // P11: Parar audios
+
+                gain_Fondo1.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+
+                gain_Fondo2.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+
+                if (audioSource_Fondo1) { try { audioSource_Fondo1.stop(); } catch(e){} }
+
+                if (audioSource_Fondo2) { try { audioSource_Fondo2.stop(); } catch(e){} }
+
+                if (scanTimer) clearTimeout(scanTimer);
+
+                
+
+                spiritBoxState = "OFF";
+
+                if (spiritBoxTimeout) clearTimeout(spiritBoxTimeout);
+
+                if (isRecognizing) recognition.abort();
+
+                window.speechSynthesis.cancel();
+
+                
+
+                isSpeaking = false;
+
+                isRecognizing = false;
+
+                setSensorStatus('mic', 'off');
+
+                stopSensor();
+
+            }
+
+        });
+
+
+
+        document.getElementById('knob-scan').addEventListener('click', function() {
+
+            // Esta perilla ahora es simbólica, pero podemos atarla a la velocidad de sintonía
+
+            scanSpeed = (scanSpeed+1)%3;
+
+            this.style.transform = `rotate(${-135 + scanSpeed*135}deg)`;
+
+            // (La velocidad real ahora se maneja en playFondo2_Fragment)
+
+        });
+
+
+
+        document.getElementById('vol-slider').addEventListener('input', (e) => {
+
+            const vol = e.target.value;
+
+            if(masterGain) masterGain.gain.value = vol/100;
+
+            document.getElementById('vol-percent').innerText = `${vol}%`;
+
+        });
+
+
+
+        function hideLoadingScreen() {
+
+            const overlay = document.getElementById('loading-overlay');
+
+            if (overlay) {
+
+                overlay.style.opacity = '0';
+
+                setTimeout(() => {
+
+                    overlay.style.display = 'none';
+
+                }, 500); 
+
+            }
+
+        }
+
+        
+
+        const loadingText = document.getElementById('loading-text');
+
+        const loadingBar = document.getElementById('loading-bar');
+
+        
+
+        function updateLoadingProgress(percent, text) {
+
+            if (loadingBar) loadingBar.style.width = percent + '%';
+
+            if (loadingText) loadingText.innerText = `${text} [ ${percent}% ]`;
+
+        }
+
+
+
+        async function loadSheetData() {
+
+            try {
+
+                updateLoadingProgress(25, "CONECTANDO CON API-OBR");
+
+                
+
+                const response = await fetch(GOOGLE_SCRIPT_URL);
+
+                updateLoadingProgress(50, "RECIBIENDO DATOS");
+
+
+
+                if (!response.ok) {
+
+                    throw new Error(`Error de red: ${response.statusText}`);
+
+                }
+
+                
+
+                const data = await response.json();
+
+                
+
+                // Esperar a que el audio termine si aún no lo ha hecho
+
+                if (!audioCtx) await initAudio(); 
+
+                
+
+                updateLoadingProgress(75, "PROCESANDO RESPUESTAS");
+
+
+
+                automaticoData = data.automatico.map(r => r.TEXTO).filter(t => t);
+
+                
+
+                data.programado.forEach(r => {
+
+                    let p = (r.PREGUNTA || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+                    let res = r.RESPUESTA;
+
+                    if (p && res) {
+
+                        programadoData.set(p, res);
+
+                    }
+
+                });
+
+                
+
+                updateLoadingProgress(100, "SINCRONIZACIÓN COMPLETA");
+
+                
+
+                console.log(`%c[SISTEMA OBR] Sincronización completa: ${automaticoData.length} SENSORES AUTOMÁTICOS ACTIVOS | ${programadoData.size} SENSORES PROGRAMADOS CONECTADOS.`, "color: #39FF14; font-weight: bold;");
+
+
+
+            } catch (e) { 
+
+                console.error("Error cargando datos de Google Apps Script", e); 
+
+                updateLoadingProgress(100, "ERROR DE SINCRONIZACIÓN");
+
+            } finally {
+
+                setTimeout(hideLoadingScreen, 500); 
+
+            }
+
+        }
+
+
+
+        // 📍 FUNCIÓN SPEAK (PUNTO 3) - Efecto PSB7 mejorado
+
+        function speak(text) {
+
+            if (!text || isSpeaking) return;
+
+            
+
+            spiritBoxState = "SPEAKING";
+
+            isSpeaking = true;
+
+            if (scanTimer) clearTimeout(scanTimer); // Parar sintonía
+
+            
+
+            const words = text.split(' ');
+
+            let wordIndex = 0;
+
+
+
+            function speakWordByWord() {
+
+                if (wordIndex >= words.length || !isRunning) {
+
+                    isSpeaking = false;
+
+                    spiritBoxState = "SCANNING";
+
+                    gain_Fondo1.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.2); // Subir estática
+
+                    gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 0.2); // Subir sintonía
+
+                    
+
+                    if (isRunning) {
+
+                        playFondo2_Fragment(); // Reanudar sintonía
+
+                        setTimeout(runSpiritBoxLoop, 2000); // Reanudar escucha
+
+                    }
+
+                    return;
+
+                }
+
+
+
+                const word = words[wordIndex];
+
+                const u = new SpeechSynthesisUtterance(word);
+
+                u.lang = 'es-MX';
+
+                u.volume = 1.0;
+
+                u.pitch = 0.1 + Math.random() * 0.7; // Tono bajo y variable
+
+                u.rate = 0.9 + Math.random() * 0.4; // Velocidad variable
+
+
+
+                u.onstart = () => {
+
+                    // Bajar fondos para que la voz se oiga
+
+                    gain_Fondo1.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime); 
+
+                    gain_Fondo2.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime);
+
+                };
+
+
+
+                u.onend = () => {
+
+                    wordIndex++;
+
+                    // Subir fondos entre palabras
+
+                    gain_Fondo1.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime);
+
+                    gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime);
+
+                    
+
+                    setTimeout(speakWordByWord, 100 + Math.random() * 400); // Pausa aleatoria
+
+                };
+
+                
+
+                window.speechSynthesis.speak(u);
+
+            }
+
+
+
+            speakWordByWord(); // Inicia la secuencia
+
+            
+
+            sensorPanel.classList.add('alert');
+
+            emfValue = 80 + Math.random() * 20; 
+
+            setTimeout(() => sensorPanel.classList.remove('alert'), 500);
+
+        }
+
+
+
+        function runSpiritBoxLoop() {
+
+            if (!isRunning || spiritBoxState === "SPEAKING") return;
+
+            spiritBoxState = "LISTENING";
+
+            
+
+            // P11: Parar el scanner de sintonía para escuchar
+
+            if (audioSource_Fondo2) { try { audioSource_Fondo2.stop(); } catch(e){} }
+
+            if (scanTimer) clearTimeout(scanTimer);
+
+            gain_Fondo2.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+
+            
+
+            try {
+
+                if (!isRecognizing) recognition.start();
+
+            } catch(e) {
+
+                console.warn("Error al iniciar recognition", e);
+
+                setSensorStatus('mic', 'unavailable');
+
+                if (isRunning) setTimeout(runSpiritBoxLoop, 2000);
+
+                return;
+
+            }
+
+
+
+            spiritBoxTimeout = setTimeout(() => {
+
+                if (spiritBoxState !== "LISTENING") return; 
+
+                
+
+                console.log("Timeout: No se detectó comando de voz.");
+
+                if (isRecognizing) recognition.abort();
+
+                isRecognizing = false;
+
+
+
+                // Reanudar scanner
+
+                gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 0.2);
+
+                spiritBoxState = "SCANNING";
+
+                playFondo2_Fragment(); 
+
+
+
+                if (automaticoData.length > 0) {
+
+                    // Hablar después de un breve escaneo
+
+                    setTimeout(() => {
+
+                        if (isRunning) {
+
+                            speak(automaticoData[Math.floor(Math.random() * automaticoData.length)]);
+
+                        }
+
+                    }, 1000 + Math.random() * 2000);
+
+                } else {
+
+                    // Si no hay nada que decir, simplemente re-iniciar el loop de escucha
+
+                    setTimeout(runSpiritBoxLoop, 3000);
+
+                }
+
+            }, 5000); // 5 segundos para hablar
+
+        }
+
+
+
+        function initSpeechRec() {
+
+            if(!SpeechRecognition) {
+
+                console.error("SpeechRecognition no soportado.");
+
+                setSensorStatus('mic', 'unavailable');
+
+                return;
+
+            }
+
+            recognition = new SpeechRecognition(); 
+
+            recognition.lang = 'es-MX'; 
+
+            recognition.continuous = false;
+
+
+
+            recognition.onstart = () => { 
+
+                isRecognizing = true;
+
+                setSensorStatus('mic', 'connected');
+
+            };
+
+            
+
+            recognition.onend = () => { 
+
+                isRecognizing = false;
+
+                setSensorStatus('mic', 'off');
+
+            };
+
+            
+
+            recognition.onerror = (e) => {
+
+                isRecognizing = false;
+
+                setSensorStatus('mic', 'unavailable');
+
+                console.warn("Error de Recognition:", e.error);
+
+            };
+
+
+
+            recognition.onresult = (e) => {
+
+                if (spiritBoxTimeout) clearTimeout(spiritBoxTimeout); 
+
+                
+
+                let t = e.results[0][0].transcript.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+
+                console.log("Comando detectado:", t);
+
+
+
+                if (programadoData.has(t)) {
+
+                    speak(programadoData.get(t));
+
+                } else {
+
+                    if (automaticoData.length > 0) {
+
+                        speak(automaticoData[Math.floor(Math.random() * automaticoData.length)]);
+
+                    }
+
+                }
+
+            };
+
+        }
+
+
+
+        function updateEnergyGraph(value) {
+
+            if (!energyCtx || !energyCanvas) return; 
+
+            
+
+            energyHistory.push(value);
+
+            if (energyHistory.length > 50) energyHistory.shift();
+
+
+
+            let w = energyCanvas.width;
+
+            let h = energyCanvas.height;
+
+            if (w === 0 || h === 0) {
+
+                resizeEnergyCanvas();
+
+                w = energyCanvas.width;
+
+                h = energyCanvas.height;
+
+                if(w === 0 || h === 0) return;
+
+            }
+
+            
+
+            energyCtx.clearRect(0, 0, w, h);
+
+            let step = w / energyHistory.length;
+
+
+
+            energyCtx.beginPath();
+
+            energyCtx.strokeStyle = 'var(--neon-green)';
+
+            energyCtx.lineWidth = 1.5;
+
+            energyCtx.moveTo(0, h - (energyHistory[0] / 100 * h));
+
+            for(let i=1; i<energyHistory.length; i++) {
+
+                energyCtx.lineTo(i * step, h - (energyHistory[i] / 100 * h));
+
+            }
+
+            energyCtx.stroke();
+
+            
+
+            energyCtx.beginPath();
+
+            energyCtx.strokeStyle = 'var(--alert-red)';
+
+            energyCtx.lineWidth = 1; 
+
+            let inPeak = false;
+
+            for(let i=0; i<energyHistory.length; i++) {
+
+                let val = energyHistory[i];
+
+                let y = h - (val / 100 * h);
+
+                if (val > 80) { 
+
+                    if (!inPeak) {
+
+                        energyCtx.moveTo(i * step, y);
+
+                        inPeak = true;
+
+                    } else {
+
+                        energyCtx.lineTo(i * step, y);
+
+                    }
+
+                } else {
+
+                    inPeak = false;
+
+                }
+
+            }
+
+            energyCtx.stroke(); 
+
+        }
+
+
+
+        function resizeEnergyCanvas() {
+
+            if(energyCanvas && energyCanvas.parentElement) {
+
+                energyCanvas.width = energyCanvas.parentElement.offsetWidth;
+
+                energyCanvas.height = energyCanvas.parentElement.offsetHeight;
+
+            }
+
+        }
+
+
+
+        function updateSensorReadings() {
+
+            if (!isRunning) {
+
+                currentTemp += (Math.random()*0.04 - 0.02); 
+
+                document.getElementById('temp-val').innerText = currentTemp.toFixed(1)+"°C";
+
+            }
+
+        }
+
+
+
+        // --- UI Lógica y Eventos de Zoom/Pan ---
+
+        
+
+        const filterControls = document.getElementById('filter-controls-container');
+
+        const logoImage = document.getElementById('logo-image');
+
+        const followContainer = document.getElementById('follow-container');
+
+        const torchButton = document.getElementById('btn-torch');
+
+        const camStats = document.getElementById('cam-stats-display');
+
+        
+
+        // 📍 UI (P10)
+
+        function showControls() {
+
+            filterControls.style.opacity = '1';
+
+            logoImage.classList.add('hiding'); 
+
+            followContainer.classList.add('hiding');
+
+            torchButton.classList.add('hiding'); // Ocultar linterna
+
+            camStats.classList.add('hiding');    // Ocultar stats
+
+            filterControls.style.pointerEvents = 'auto';
+
+            clearTimeout(uiHideTimeout);
+
+            uiHideTimeout = setTimeout(hideControls, 4000); 
+
+            uiVisible = true;
+
+        }
+
+
+
+        function hideControls() {
+
+            filterControls.style.opacity = '0';
+
+            logoImage.classList.remove('hiding'); 
+
+            logoImage.classList.add('visible'); 
+
+            torchButton.classList.remove('hiding'); // Mostrar linterna
+
+            camStats.classList.remove('hiding');    // Mostrar stats
+
+            filterControls.style.pointerEvents = 'none';
+
+            uiVisible = false;
+
+        }
+
+        
+
+        followContainer.addEventListener('animationend', (e) => {
+
+            if (e.animationName === 'waterDrop') {
+
+                followContainer.classList.remove('hiding');
+
+                followSteps.forEach(s => {
+
+                    s.style.display = 'none';
+
+                    s.classList.remove('fade-in', 'fade-out', 'water-drop');
+
+                });
+
+                followContainer.style.opacity = '0';
+
+                followAnimationRunning = false;
+
+            }
+
+        });
+
+
+
+        function handleUITap(event) {
+
+            // 📍 SOLUCIÓN SENSORES (PUNTO 4)
+
+            requestAllPermissions();
+
+
+
+            if (isPinching || isPanning) return; // No hacer nada si es zoom/pan
+
+            
+
+            // P10: El botón de linterna maneja su propio clic
+
+            if (event.target.closest('#btn-torch')) return;
+
+
+
+            if (!event.target.closest('.panel') && !event.target.closest('.filter-btn')) {
+
+                if (uiVisible) {
+
+                    hideControls(); 
+
+                } else {
+
+                    showControls(); 
+
+                }
+
+            } else {
+
+                showControls();
+
+            }
+
+        }
+
+        
+
+        function checkPanelState() {
+
+            const p1 = document.getElementById('p-unified').classList.contains('hidden');
+
+            if (!p1) { 
+
+                document.body.classList.add('panels-active');
+
+            } else {
+
+                document.body.classList.remove('panels-active');
+
+            }
+
+            // Retrasar el re-cálculo del canvas para dar tiempo a la animación CSS
+
+            setTimeout(resizeAllCanvas, 500);
+
+        }
+
+
+
+        function togglePanel(id) {
+
+            const p = document.getElementById(id);
+
+            const btn = document.getElementById('btn-panel');
+
+            
+
+            p.classList.toggle('hidden');
+
+            
+
+            if (btn) {
+
+                btn.classList.toggle('active', !p.classList.contains('hidden'));
+
+            }
+
+            
+
+            checkPanelState(); 
+
+            
+
+            if(id === 'p-unified' && !p.classList.contains('hidden')) {
+
+                resizeEnergyCanvas();
+
+            }
+
+        }
+
+
+
+        const followSteps = document.querySelectorAll('.follow-step');
+
+        let followAnimationRunning = false;
+
+        
+
+        async function runFollowAnimation() {
+
+            if (uiVisible || followAnimationRunning) return; 
+
+            followAnimationRunning = true;
+
+            followContainer.classList.remove('hiding'); 
+
+            followContainer.style.opacity = '1';
+
+            
+
+            const text = document.getElementById('follow-text');
+
+            text.style.display = 'block'; text.classList.add('fade-in');
+
+            await new Promise(r => setTimeout(r, 2500)); 
+
+            if(uiVisible) { followContainer.classList.add('hiding'); return; } 
+
+            text.classList.remove('fade-in'); text.classList.add('water-drop'); 
+
+            await new Promise(r => setTimeout(r, 500));
+
+            text.style.display = 'none'; text.classList.remove('water-drop');
+
+            
+
+            const icons = document.getElementById('follow-icons');
+
+            icons.style.display = 'flex'; icons.classList.add('fade-in');
+
+            await new Promise(r => setTimeout(r, 2500)); 
+
+            if(uiVisible) { followContainer.classList.add('hiding'); return; } 
+
+            icons.classList.remove('fade-in'); icons.classList.add('fade-out');
+
+            await new Promise(r => setTimeout(r, 1000));
+
+            icons.style.display = 'none'; icons.classList.remove('fade-out');
+
+
+
+            const handle = document.getElementById('follow-handle');
+
+            handle.style.display = 'block'; handle.classList.add('fade-in');
+
+            await new Promise(r => setTimeout(r, 2500)); 
+
+            if(uiVisible) { followContainer.classList.add('hiding'); return; } 
+
+            handle.classList.remove('fade-in'); handle.classList.add('fade-out');
+
+            await new Promise(r => setTimeout(r, 1000));
+
+            handle.style.display = 'none'; handle.classList.remove('fade-out');
+
+
+
+            followContainer.style.opacity = '0';
+
+            followAnimationRunning = false;
+
+        }
+
+
+
+        const appUI = document.getElementById('app-ui');
+
+        
+
+        function getPinchDist(e) {
+
+            const t1 = e.touches[0];
+
+            const t2 = e.touches[1];
+
+            return Math.sqrt(Math.pow(t1.clientX - t2.clientX, 2) + Math.pow(t1.clientY - t2.clientY, 2));
+
+        }
+
+        
+
+        function getPanCenter(e) {
+
+            return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+
+        }
+
+
+
+        appUI.addEventListener('touchstart', (e) => {
+
+            if (e.touches.length === 2) {
+
+                isPinching = true;
+
+                isPanning = false;
+
+                initialPinchDist = getPinchDist(e);
+
+            } else if (e.touches.length === 1 && zoom > 1) {
+
+                isPinching = false;
+
+                isPanning = true;
+
+                lastPan = getPanCenter(e);
+
+            }
+
+        });
+
+
+
+        appUI.addEventListener('touchmove', (e) => {
+
+            if (!e.target.closest('.panel')) {
+
+                e.preventDefault(); 
+
+            }
+
+            if (isPinching && e.touches.length === 2) {
+
+                const newPinchDist = getPinchDist(e);
+
+                const zoomFactor = newPinchDist / initialPinchDist;
+
+                let newZoom = zoom * zoomFactor;
+
+                newZoom = Math.max(1.0, Math.min(newZoom, maxZoom));
+
+                zoom = newZoom;
+
+                initialPinchDist = newPinchDist;
+
+            } else if (isPanning && e.touches.length === 1) {
+
+                const newPan = getPanCenter(e);
+
+                const deltaX = (newPan.x - lastPan.x);
+
+                const deltaY = (newPan.y - lastPan.y);
+
+                const panSensibility = 2.0 / zoom; 
+
+                currentPan.x -= deltaX * panSensibility;
+
+                currentPan.y -= deltaY * panSensibility;
+
+                lastPan = newPan;
+
+            }
+
+        });
+
+
+
+        appUI.addEventListener('touchend', (e) => {
+
+            if (e.touches.length < 2) isPinching = false;
+
+            if (e.touches.length < 1) isPanning = false;
+
+        });
+
+
+
+
+
+        window.onload = () => {
+
+            startCamera();
+
+            startVisualLoop(); 
+
+            initMLModel(); 
+
+            detectPoseLoop(); 
+
+            
+
+            setInterval(updateSensorReadings, 2000); 
+
+            setInterval(runFollowAnimation, 30000); 
+
+            
+
+            document.getElementById('p-unified').classList.add('hidden');
+
+            const panelBtn = document.getElementById('btn-panel');
+
+            if (panelBtn) {
+
+                panelBtn.classList.remove('active');
+
+            }
+
+            checkPanelState();
+
+            
+
+            hideControls();
+
+            
+
+            loadSheetData();
+
+        };
+
+        
+
+        window.onresize = () => {
+
+            resizeAllCanvas(); 
+
+        };
+
+    </script>
+
 </body>
+
 </html>
