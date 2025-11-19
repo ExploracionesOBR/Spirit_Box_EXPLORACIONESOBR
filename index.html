@@ -7,7 +7,7 @@
     <meta http-equiv="Expires" content="0" />
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>DETECTOR-OBR v2.0</title> 
+    <title>DETECTOR-OBR v2.5</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
@@ -23,16 +23,20 @@
             0% { border-color: rgba(57, 255, 20, 0.4); box-shadow: 0 0 5px rgba(57, 255, 20, 0.2) inset; }
             100% { border-color: rgba(57, 255, 20, 0.9); box-shadow: 0 0 20px rgba(57, 255, 20, 0.6) inset; }
         }
+        @keyframes ledPulse {
+            0% { opacity: 0.5; box-shadow: 0 0 2px var(--alert-red); }
+            50% { opacity: 1; box-shadow: 0 0 10px var(--alert-red); }
+            100% { opacity: 0.5; box-shadow: 0 0 2px var(--alert-red); }
+        }
         
         :root {
             --neon-green: #39FF14; 
             --alert-red: #FF3333;
             --sim-orange: #FFB000;
             --sensor-blue: #00BFFF; 
-            --panel-bg-dark: #111;
+            --panel-bg-dark: #0a0a0a;
             --border-color-dark: rgba(57, 255, 20, 0.4);
             --text-color-light: #E0E0E0; 
-            --text-dim-grey: #777;
             --panel-width-landscape: 300px;
             --panel-height-landscape: 160px;
         }
@@ -41,97 +45,88 @@
             font-family: 'Share Tech Mono', monospace;
             background-color: #000;
             color: var(--text-color-light);
-            overflow: hidden;
-            width: 100vw;
-            height: 100vh;
-            margin: 0;
+            overflow: hidden; width: 100vw; height: 100vh; margin: 0;
         }
 
-        #app-ui {
-            width: 100%; height: 100%; position: relative; touch-action: none;
-        }
+        #app-ui { width: 100%; height: 100%; position: relative; touch-action: none; }
 
-        /* VISTA PRINCIPAL (CÁMARA) */
+        /* VISTA CÁMARA */
         #main-view-area {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            overflow: hidden; z-index: 5; background: #000;
-            transition: all 0.5s ease;
+            overflow: hidden; z-index: 5; background: #000; transition: all 0.5s ease;
         }
-
         #bg-camera-feed {
             position: absolute; top: 50%; left: 50%;
             min-width: 100%; min-height: 100%; width: auto; height: auto;
-            object-fit: cover; transform: translate(-50%, -50%);
-            z-index: 1;
+            object-fit: cover; transform: translate(-50%, -50%); z-index: 1;
         }
 
-        /* --- FILTROS CSS --- */
-        /* VNO MEJORADO: Más verde, más contraste */
+        /* FILTROS */
         body.filter-night-vision #bg-camera-feed {
-            filter: grayscale(100%) sepia(100%) hue-rotate(90deg) brightness(1.2) contrast(1.5) saturate(500%);
+            filter: grayscale(100%) sepia(100%) hue-rotate(90deg) brightness(1.1) contrast(1.4) saturate(400%);
         }
-        /* NEGATIVO */
-        body.filter-negative #bg-camera-feed {
-            filter: invert(1);
-        }
-
-        /* CANVAS SLS (PINTURA ESQUELETO) */
+        body.filter-negative #bg-camera-feed { filter: invert(1); }
         #main-filter-canvas {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 3; pointer-events: none; display: none;
         }
         body.filter-sls #main-filter-canvas { display: block; }
-
-        /* CANVAS BLUE WAVE (WEBGL) */
         #gl-bluewave {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 4; pointer-events: none; display: none; mix-blend-mode: screen;
         }
         body.filter-bluewave #gl-bluewave { display: block; }
 
-        /* PANELES (Izquierdo e Inferior) */
+        /* PANELES */
         #left-panel, #bottom-panel {
             position: fixed; display: flex; flex-direction: column;
             z-index: 20; pointer-events: none; 
             transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            background-color: rgba(10, 10, 10, 0.85);
-            backdrop-filter: blur(5px);
+            background-color: rgba(5, 5, 5, 0.9); backdrop-filter: blur(4px);
         }
 
-        body.panels-active #left-panel,
-        body.panels-active #bottom-panel {
+        body.panels-active #left-panel, body.panels-active #bottom-panel {
             transform: translate(0, 0); pointer-events: auto;
         }
 
         .panel {
-            border: 2px solid var(--border-color-dark);
-            box-shadow: 0 0 15px rgba(57, 255, 20, 0.1) inset;
-            padding: 8px; display: flex; flex-direction: column; gap: 8px;
+            border: 1px solid var(--border-color-dark);
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.1) inset;
+            padding: 6px; display: flex; flex-direction: column; gap: 4px;
             height: 100%; box-sizing: border-box;
         }
 
-        .panel.alert { border-color: var(--alert-red); box-shadow: 0 0 20px var(--alert-red) inset; }
-
         .panel-section {
-            border: 1px solid #333; background: rgba(0, 0, 0, 0.5);
-            padding: 6px; margin-bottom: 5px;
+            border: 1px solid #222; background: rgba(20, 20, 20, 0.6);
+            padding: 4px; margin-bottom: 2px;
         }
         
         .section-title {
-            font-family: 'Orbitron', sans-serif; font-size: 0.7rem;
-            color: var(--sim-orange); text-align: center; border-bottom: 1px dashed #444;
-            margin-bottom: 5px; letter-spacing: 1px;
+            font-family: 'Orbitron', sans-serif; font-size: 0.65rem;
+            color: var(--sim-orange); text-align: center; border-bottom: 1px dotted #444;
+            margin-bottom: 4px; letter-spacing: 1px;
         }
 
-        /* SPIRIT BOX UI */
+        /* SPIRIT BOX & LED */
+        .spirit-box-header { display: flex; justify-content: space-between; align-items: center; padding: 0 5px; }
+        .led-indicator {
+            width: 12px; height: 12px; border-radius: 50%; background: #333;
+            border: 1px solid #555; transition: all 0.2s;
+        }
+        .led-indicator.active {
+            background: var(--alert-red); box-shadow: 0 0 8px var(--alert-red);
+            animation: ledPulse 1s infinite;
+        }
+        .led-indicator.listening {
+            background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green);
+        }
+
+        /* CONTROLES SPIRIT BOX */
         .spirit-box-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: center;
+            display: grid; grid-template-columns: 1fr 2fr; gap: 8px; align-items: center;
         }
-        
         .switch-container { display: flex; flex-direction: column; align-items: center; }
-        .switch {
-            position: relative; display: inline-block; width: 40px; height: 24px;
-        }
+        .switch { position: relative; display: inline-block; width: 40px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider {
             position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
@@ -147,34 +142,45 @@
         
         .knob-label { font-size: 0.6rem; color: #aaa; margin-top: 4px; text-align: center; }
 
-        /* VU METER */
-        #vu-meter-container { width: 100%; height: 30px; background: #000; border: 1px solid #333; }
-        #vu-meter-canvas { width: 100%; height: 100%; }
-
-        /* VOLUMEN */
-        .volume-control-group {
-            display: flex; align-items: center; gap: 5px; grid-column: 1 / -1; margin-top: 5px;
+        /* GRAFICO ENERGIA (BARRAS) */
+        #energy-graph-container { 
+            width: 100%; height: 40px; background: #000; border: 1px solid #333; 
+            background-image: linear-gradient(rgba(0,50,0,0.2) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0,50,0,0.2) 1px, transparent 1px);
+            background-size: 10px 10px;
         }
-        input[type=range] { width: 100%; accent-color: var(--neon-green); }
+        #energy-canvas { width: 100%; height: 100%; }
 
-        /* DIALES Y SENSORES */
-        .dials-grid { display: flex; justify-content: space-around; align-items: center; }
+        .volume-control-group { display: flex; align-items: center; gap: 5px; margin-top: 5px; }
+        input[type=range] { width: 100%; accent-color: var(--neon-green); height: 4px; }
+
+        /* DIALES CON TEXTURA */
+        .dials-grid { display: flex; justify-content: space-between; align-items: center; padding: 0 10px; }
         .dial-container {
-            width: 60px; height: 60px; border-radius: 50%; border: 2px solid #333;
-            position: relative; background: #000;
+            width: 65px; height: 65px; border-radius: 50%; border: 2px solid #444;
+            position: relative; 
+            /* TEXTURA INTERIOR */
+            background: radial-gradient(circle, #1a1a1a 60%, #000 100%);
+            background-size: 100% 100%;
+            box-shadow: inset 0 0 10px #000;
+        }
+        /* Marcas del dial */
+        .dial-container::before {
+            content: ''; position: absolute; top: 5px; left: 5px; right: 5px; bottom: 5px;
+            border-radius: 50%;
+            border: 1px dashed #333;
         }
         .dial-needle {
             position: absolute; bottom: 50%; left: 50%; width: 2px; height: 45%;
             background: var(--alert-red); transform-origin: bottom center;
-            transition: transform 0.2s;
+            transition: transform 0.1s cubic-bezier(0.1, 0.7, 1.0, 0.1);
+            z-index: 2;
         }
-        #compass-needle { background: var(--neon-green); }
+        #compass-needle { background: var(--neon-green); box-shadow: 0 0 5px var(--neon-green); }
         
-        #temp-val { font-family: 'Orbitron'; font-size: 1.4rem; color: var(--neon-green); text-align: center; }
-
-        /* FPS & STATUS */
-        #panel-cam-stats {
-            text-align: center; font-family: 'Orbitron'; font-size: 0.9rem; color: var(--neon-green);
+        #readings-text {
+            font-family: 'Orbitron'; font-size: 0.7rem; color: var(--neon-green); 
+            text-align: right; white-space: pre-line; line-height: 1.4;
         }
         
         /* CONTROLES FLOTANTES */
@@ -186,42 +192,35 @@
             width: 50px; height: 50px; background: rgba(0,20,0,0.8);
             border: 2px solid var(--neon-green); color: var(--neon-green);
             font-weight: bold; cursor: pointer; font-family: 'Share Tech Mono';
+            font-size: 0.8rem;
         }
         .filter-btn.active { background: var(--neon-green); color: #000; box-shadow: 0 0 15px var(--neon-green); }
 
-        /* LOADING */
         #loading-overlay {
             position: fixed; inset: 0; background: #000; z-index: 9999;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
-        #loading-bar-container { width: 70%; height: 4px; background: #333; margin-top: 20px; }
-        #loading-bar { width: 0%; height: 100%; background: var(--neon-green); transition: width 0.3s; }
+        #loading-bar { width: 0%; height: 4px; background: var(--neon-green); transition: width 0.3s; margin-top: 20px; width: 200px;}
         
-        /* MARCO CÁMARA (SOLO PANELES ACTIVOS) */
+        /* MARCO CÁMARA */
         #camera-frame {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; border: 4px solid transparent; z-index: 10;
         }
         body.panels-active #camera-frame { animation: cameraFrameGlow 2s infinite alternate; }
 
-        /* RESPONSIVE LAYOUT */
+        /* RESPONSIVE */
         @media (min-aspect-ratio: 1/1) { /* LANDSCAPE */
             #left-panel { top: 0; left: 0; width: var(--panel-width-landscape); height: 100vh; transform: translateX(-100%); }
-            #bottom-panel { bottom: 0; right: 0; width: calc(100% - var(--panel-width-landscape)); height: var(--panel-height-landscape); transform: translateY(100%); }
-            
-            body.panels-active #main-view-area {
-                left: var(--panel-width-landscape); width: calc(100% - var(--panel-width-landscape)); height: calc(100% - var(--panel-height-landscape));
-            }
-            body.panels-active #camera-frame {
-                left: var(--panel-width-landscape); width: calc(100% - var(--panel-width-landscape)); height: calc(100% - var(--panel-height-landscape));
+            #bottom-panel { bottom: 0; right: 0; width: calc(100% - var(--panel-width-landscape)); height: 100px; transform: translateY(100%); justify-content: center;}
+            body.panels-active #main-view-area, body.panels-active #camera-frame {
+                left: var(--panel-width-landscape); width: calc(100% - var(--panel-width-landscape)); height: calc(100% - 100px);
             }
         }
 
         @media (max-aspect-ratio: 1/1) { /* PORTRAIT */
-            #left-panel { top: 0; left: 0; width: 100vw; height: 50vh; transform: translateY(-100%); }
-            #bottom-panel { bottom: 0; left: 0; width: 100vw; height: 25vh; transform: translateY(100%); }
-            
-            /* En vertical ocultamos la cámara si abres paneles para no deformar */
+            #left-panel { top: 0; left: 0; width: 100vw; height: auto; transform: translateY(-100%); padding-bottom: 10px;}
+            #bottom-panel { bottom: 0; left: 0; width: 100vw; height: 120px; transform: translateY(100%); }
             body.panels-active #main-view-area { display: none; }
         }
     </style>
@@ -229,8 +228,8 @@
 <body>
 
 <div id="loading-overlay">
-    <div style="color: var(--neon-green); font-family: 'Orbitron';">INICIANDO SISTEMA OBR...</div>
-    <div id="loading-bar-container"><div id="loading-bar"></div></div>
+    <div style="color: var(--neon-green); font-family: 'Orbitron';">INICIANDO DETECTOR OBR...</div>
+    <div style="width: 200px; background: #333; height: 4px; margin-top: 10px;"><div id="loading-bar" style="width:0%; height:100%; background:var(--neon-green);"></div></div>
 </div>
 
 <div id="app-ui">
@@ -243,15 +242,20 @@
     <div id="left-panel">
         <div class="panel">
             <div class="panel-section">
-                <div class="section-title">SENSORES</div>
-                <div style="display:flex; justify-content:space-around; color:var(--neon-green); font-size:0.8rem;">
-                    <div id="mic-status">MIC: OFF</div>
-                    <div id="mag-status">MAG: --</div>
+                <div class="section-title">DATOS SENSORES</div>
+                <div style="display:flex; justify-content:space-between; color:#777; font-size:0.6rem; padding:0 5px;">
+                    <span id="sens-acc">ACC: 0.0</span>
+                    <span id="sens-gyr">GYR: 0.0</span>
+                    <span id="mic-status">MIC: OFF</span>
                 </div>
             </div>
             
             <div class="panel-section">
-                <div class="section-title">SPIRIT BOX</div>
+                <div class="spirit-box-header">
+                    <div class="section-title" style="border:none; margin:0; text-align:left;">SPIRIT BOX</div>
+                    <div id="command-led" class="led-indicator" title="Indicador de Comandos"></div>
+                </div>
+                
                 <div class="spirit-box-grid">
                     <div class="switch-container">
                         <label class="switch">
@@ -262,48 +266,53 @@
                     </div>
                     
                     <div style="width:100%">
-                        <div class="knob-label" style="text-align:left">NIVEL VOZ</div>
-                        <div id="vu-meter-container">
-                            <canvas id="vu-meter-canvas"></canvas>
+                        <div class="knob-label" style="text-align:left; color:var(--sim-orange);">ENERGÍA DEL LUGAR</div>
+                        <div id="energy-graph-container">
+                            <canvas id="energy-canvas"></canvas>
                         </div>
                     </div>
-                    
-                    <div class="volume-control-group">
-                        <span class="knob-label">VOL</span>
-                        <input type="range" id="vol-slider" min="0" max="100" value="80">
-                    </div>
+                </div>
+                
+                <div class="volume-control-group">
+                    <span class="knob-label">VOL</span>
+                    <input type="range" id="vol-slider" min="0" max="100" value="100">
                 </div>
             </div>
         </div>
     </div>
 
     <div id="bottom-panel">
-        <div class="panel" style="flex-direction:row; align-items:center;">
-            <div class="panel-section" style="flex:1;">
-                <div class="section-title">LECTURAS</div>
-                <div class="dials-grid">
+        <div class="panel" style="flex-direction:row; justify-content: space-between;">
+            
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <div style="text-align:center;">
                     <div class="dial-container">
                         <div id="compass-needle" class="dial-needle"></div>
                     </div>
-                    <div class="dial-container" style="width:70px; height:70px;">
-                        <div id="emf-needle" class="dial-needle" style="background:var(--alert-red); height:48%;"></div>
+                    <div class="knob-label">MAG</div>
+                </div>
+                <div style="text-align:center;">
+                    <div class="dial-container">
+                        <div id="emf-needle" class="dial-needle"></div>
                     </div>
-                    <div id="temp-val">--°C</div>
+                    <div class="knob-label">EMF</div>
                 </div>
             </div>
-            
-            <div class="panel-section" style="width:100px;">
-                <div class="section-title">SISTEMA</div>
-                <div id="panel-cam-stats">-- FPS</div>
+
+            <div class="panel-section" style="flex-grow: 1; margin-left: 10px; display:flex; align-items:center; justify-content:flex-end;">
+                <div id="readings-text">
+                    FPS: -- / RES: --x--<br>
+                    TEMP: --.-°C
+                </div>
             </div>
         </div>
     </div>
 
     <div id="filter-controls-container">
-        <button class="filter-btn" onclick="setFilter('night-vision')">VNO</button>
-        <button class="filter-btn" onclick="setFilter('sls')">SLS</button>
-        <button class="filter-btn" onclick="setFilter('negative')">NEG</button>
-        <button class="filter-btn" onclick="setFilter('bluewave')">BLUE</button>
+        <button class="filter-btn" onclick="toggleFilter('night-vision')">VNO</button>
+        <button class="filter-btn" onclick="toggleFilter('sls')">SLS</button>
+        <button class="filter-btn" onclick="toggleFilter('negative')">NEG</button>
+        <button class="filter-btn" onclick="toggleFilter('bluewave')">BLUE</button>
         <button class="filter-btn" id="btn-panel" onclick="togglePanels()">PAN</button>
     </div>
 
@@ -319,19 +328,21 @@
     const videoBg = document.getElementById('bg-camera-feed');
     const canvasSLS = document.getElementById('main-filter-canvas');
     const ctxSLS = canvasSLS.getContext('2d');
-    const canvasVU = document.getElementById('vu-meter-canvas');
-    const ctxVU = canvasVU.getContext('2d');
+    const canvasEnergy = document.getElementById('energy-canvas');
+    const ctxEnergy = canvasEnergy.getContext('2d');
+    const ledIndicator = document.getElementById('command-led');
     
     // Audio vars
-    let audioCtx, masterGain, micSource, analyserVU;
-    let gainFondo1, gainFondo2;
-    let bufferFondo1, bufferFondo2;
+    let audioCtx, masterGain, micSource, analyserEnergy;
+    let gainFondo1; 
+    let bufferFondo1;
     let recognition; 
     let automaticoData = [], programadoData = new Map();
     
-    // FPS vars
+    // Stats vars
     let lastFpsTime = 0;
     let frameCount = 0;
+    let camRes = "Loading...";
 
     // Pose Detection (SLS)
     let poseDetector;
@@ -344,12 +355,14 @@
         updateLoad(30);
         await initMoveNet();
         updateLoad(60);
-        await loadGoogleData(); // Carga datos del sheet
+        await loadGoogleData(); 
+        updateLoad(80);
+        initSensorListeners(); // Listeners para todos los sensores
         updateLoad(100);
         
         setTimeout(() => {
             document.getElementById('loading-overlay').style.display = 'none';
-            loop(); // Inicia bucle principal
+            loop(); 
         }, 500);
     };
 
@@ -368,105 +381,133 @@
             videoBg.srcObject = stream;
             videoTrack = stream.getVideoTracks()[0];
             
-            // Esperar a que cargue metadata para ajustar canvas
-            await new Promise(r => videoBg.onloadedmetadata = r);
-            resizeCanvas();
+            videoBg.onloadedmetadata = () => {
+                camRes = `${videoBg.videoWidth}x${videoBg.videoHeight}`;
+                resizeCanvas();
+            };
             window.addEventListener('resize', resizeCanvas);
         } catch (e) {
             console.error("Error Cámara", e);
-            alert("Error al acceder a la cámara. Revisa permisos.");
+            camRes = "Error";
         }
     }
 
     function resizeCanvas() {
         canvasSLS.width = window.innerWidth;
         canvasSLS.height = window.innerHeight;
+        canvasEnergy.width = document.getElementById('energy-graph-container').offsetWidth;
+        canvasEnergy.height = document.getElementById('energy-graph-container').offsetHeight;
         if(window.BlueWave) window.BlueWave.resize();
     }
 
-    // --- 3. BUCLE PRINCIPAL (FPS, DIBUJO) ---
+    // --- 3. BUCLE PRINCIPAL ---
     function loop() {
         const now = performance.now();
         frameCount++;
         
-        // Calculo FPS (Corregido 7)
+        // Actualizar FPS cada segundo
         if (now - lastFpsTime >= 1000) {
-            document.getElementById('panel-cam-stats').innerText = frameCount + " FPS";
+            const fps = frameCount;
+            // ACTUALIZACIÓN DATOS LECTURA (Solicitud 4)
+            let temp = (20 + Math.random()).toFixed(1); // Temp simulada
+            document.getElementById('readings-text').innerHTML = `FPS: ${fps} / RES: ${camRes}<br>TEMP: ${temp}°C`;
             frameCount = 0;
             lastFpsTime = now;
         }
 
-        // Lógica SLS
+        // SLS
         if (currentFilter === 'sls') {
             ctxSLS.clearRect(0, 0, canvasSLS.width, canvasSLS.height);
             if (latestPoses.length > 0) drawSLS(latestPoses);
         }
         
-        // VU Meter Loop
-        if (isRunning && analyserVU) drawVUMeter();
-
-        // Datos ficticios sensores (si no hay reales)
-        updateSensorsFake();
+        // Gráfico Energía (Barras)
+        if (isRunning && analyserEnergy) drawEnergyGraph();
 
         requestAnimationFrame(loop);
     }
 
-    function updateSensorsFake() {
-        // Temperatura aleatoria
-        if(Math.random() > 0.9) {
-            let t = 19 + Math.random() * 2;
-            document.getElementById('temp-val').innerText = t.toFixed(1) + "°C";
+    // --- 4. SISTEMA DE FILTROS INTELIGENTE (Solicitud 5) ---
+    async function toggleFilter(f) {
+        // Si clicas el mismo filtro activo -> APAGAR TODO
+        if (currentFilter === f) {
+            deactivateAllFilters();
+            return; 
         }
-        // EMF Aguja aleatoria
-        if(Math.random() > 0.8) {
-            let rot = -60 + Math.random() * 120;
-            document.getElementById('emf-needle').style.transform = `translateX(-50%) rotate(${rot}deg)`;
+
+        // Cambiar filtro
+        deactivateAllFilters(); // Limpia previos
+        currentFilter = f;
+        
+        // UI Botón
+        const btn = document.querySelector(`button[onclick="toggleFilter('${f}')"]`);
+        if(btn) btn.classList.add('active');
+        
+        // Activar lógica especifica
+        if (f !== 'none') document.body.classList.add('filter-' + f);
+        
+        if (f === 'sls') canvasSLS.style.display = 'block';
+        if (f === 'bluewave' && window.BlueWave) window.BlueWave.start();
+
+        // Lógica Linterna (Solo para VNO)
+        if (f === 'night-vision' && videoTrack) {
+            try { await videoTrack.applyConstraints({ advanced: [{ torch: true }] }); } catch(e){}
         }
     }
 
-    // --- 4. SISTEMA DE FILTROS Y LINTERNA (Corregido 3) ---
-    async function setFilter(f) {
-        // Limpieza previa
-        document.body.className = ''; // Quita clases anteriores
-        if(f !== 'none') document.body.classList.add('filter-' + f);
-        
-        canvasSLS.style.display = (f === 'sls') ? 'block' : 'none';
-        
-        // Blue Filter (Corregido 2)
-        if (f === 'bluewave') {
-             if(window.BlueWave) window.BlueWave.start(); 
-        } else {
-             if(window.BlueWave) window.BlueWave.stop();
-        }
-
-        currentFilter = f;
-        
-        // Highlight Botón
+    async function deactivateAllFilters() {
+        document.body.className = ''; // Quita todas las clases filter-
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        const btn = document.querySelector(`button[onclick="setFilter('${f}')"]`);
-        if(btn) btn.classList.add('active');
+        canvasSLS.style.display = 'none';
+        if(window.BlueWave) window.BlueWave.stop();
+        
+        currentFilter = 'none';
 
-        // LINTERNA AUTOMÁTICA PARA VNO (Corregido 3)
+        // APAGAR LINTERNA FORZOSAMENTE
         if (videoTrack) {
-            try {
-                // Si es night-vision, enciende antorcha. Si no, apaga.
-                const torchOn = (f === 'night-vision');
-                await videoTrack.applyConstraints({ advanced: [{ torch: torchOn }] });
-            } catch(e) { console.log("Linterna no soportada o error", e); }
+            try { await videoTrack.applyConstraints({ advanced: [{ torch: false }] }); } catch(e){}
         }
     }
     
     function togglePanels() {
         document.body.classList.toggle('panels-active');
         document.getElementById('btn-panel').classList.toggle('active');
+        setTimeout(resizeCanvas, 500); // Reajustar canvas al abrir panel
     }
 
-    // --- 5. SLS / MOVENET (Corregido 1: Tamaño y Color) ---
+    // --- 5. SENSORES REALES (Solicitud 3) ---
+    function initSensorListeners() {
+        // Giroscopio / Orientación
+        if (window.DeviceOrientationEvent) {
+            window.addEventListener("deviceorientation", (event) => {
+                const alpha = event.alpha || 0; // Compass
+                const beta = event.beta || 0;
+                
+                // Aguja Brújula
+                document.getElementById('compass-needle').style.transform = `translateX(-50%) rotate(${-alpha}deg)`;
+                document.getElementById('sens-gyr').innerText = `GYR: ${Math.round(alpha)}`;
+            }, true);
+        }
+
+        // Acelerómetro (Movimiento para EMF Fake effect + Datos reales)
+        if (window.DeviceMotionEvent) {
+            window.addEventListener("devicemotion", (event) => {
+                let acc = event.accelerationIncludingGravity;
+                let totalAcc = Math.abs(acc.x) + Math.abs(acc.y) + Math.abs(acc.z);
+                
+                document.getElementById('sens-acc').innerText = `ACC: ${totalAcc.toFixed(1)}`;
+                
+                // Mover aguja EMF basado en movimiento brusco
+                let rot = (totalAcc * 5) % 180 - 90; 
+                document.getElementById('emf-needle').style.transform = `translateX(-50%) rotate(${rot}deg)`;
+            }, true);
+        }
+    }
+
+    // --- 6. SLS DRAWING ---
     async function initMoveNet() {
         const model = poseDetection.SupportedModels.MoveNet;
-        const config = { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING };
-        poseDetector = await poseDetection.createDetector(model, config);
-        // Detect loop
+        poseDetector = await poseDetection.createDetector(model, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING });
         setInterval(async () => {
             if (currentFilter === 'sls' && videoBg.readyState === 4) {
                 latestPoses = await poseDetector.estimatePoses(videoBg);
@@ -474,179 +515,143 @@
         }, 100);
     }
 
-    // MAPA DE CONEXIONES DEL ESQUELETO
-    const connections = [
-        ['left_shoulder','right_shoulder'], ['left_shoulder','left_hip'], ['right_shoulder','right_hip'],
-        ['left_hip','right_hip'], ['left_shoulder','left_elbow'], ['left_elbow','left_wrist'],
-        ['right_shoulder','right_elbow'], ['right_elbow','right_wrist'], ['left_hip','left_knee'],
-        ['left_knee','left_ankle'], ['right_hip','right_knee'], ['right_knee','right_ankle']
-    ];
+    const connections = [['left_shoulder','right_shoulder'],['left_shoulder','left_hip'],['right_shoulder','right_hip'],['left_hip','right_hip'],['left_shoulder','left_elbow'],['left_elbow','left_wrist'],['right_shoulder','right_elbow'],['right_elbow','right_wrist'],['left_hip','left_knee'],['left_knee','left_ankle'],['right_hip','right_knee'],['right_knee','right_ankle']];
 
     function drawSLS(poses) {
-        // MATEMÁTICAS CRÍTICAS: Ajustar coordenadas del video al object-fit: cover del CSS
-        const vidW = videoBg.videoWidth;
-        const vidH = videoBg.videoHeight;
-        const canW = canvasSLS.width;
-        const canH = canvasSLS.height;
+        const vidW = videoBg.videoWidth; const vidH = videoBg.videoHeight;
+        const canW = canvasSLS.width; const canH = canvasSLS.height;
+        const scale = Math.max(canW / vidW, canH / vidH);
+        const xOffset = (canW - vidW * scale) / 2;
+        const yOffset = (canH - vidH * scale) / 2;
 
-        const vidRatio = vidW / vidH;
-        const canRatio = canW / canH;
-
-        let scale, startX, startY;
-
-        if (canRatio > vidRatio) {
-            // Pantalla más ancha que el video (corta arriba/abajo)
-            scale = canW / vidW;
-            startX = 0;
-            startY = (canH - (vidH * scale)) / 2;
-        } else {
-            // Pantalla más alta que el video (corta lados)
-            scale = canH / vidH;
-            startX = (canW - (vidW * scale)) / 2;
-            startY = 0;
-        }
-
-        ctxSLS.lineWidth = 4; // LÍNEA GRUESA
-        ctxSLS.strokeStyle = '#39FF14'; // NEON VERDE
-        ctxSLS.fillStyle = '#FF0000'; // PUNTOS ROJOS
+        ctxSLS.lineWidth = 4; ctxSLS.strokeStyle = '#39FF14'; ctxSLS.fillStyle = '#FF0000';
 
         poses.forEach(pose => {
             if (pose.score < 0.25) return;
+            const kp = pose.keypoints;
+            const map = {}; kp.forEach(k => map[k.name] = k);
 
-            // Convertir Keypoints a Mapa para acceso rápido
-            const kpMap = {};
-            pose.keypoints.forEach(kp => { kpMap[kp.name] = kp; });
-
-            // Dibujar Líneas
-            connections.forEach(([startName, endName]) => {
-                const p1 = kpMap[startName];
-                const p2 = kpMap[endName];
-                if (p1 && p2 && p1.score > 0.3 && p2.score > 0.3) {
+            connections.forEach(([a,b]) => {
+                const p1 = map[a]; const p2 = map[b];
+                if(p1 && p2 && p1.score>0.3 && p2.score>0.3) {
                     ctxSLS.beginPath();
-                    ctxSLS.moveTo(p1.x * scale + startX, p1.y * scale + startY);
-                    ctxSLS.lineTo(p2.x * scale + startX, p2.y * scale + startY);
+                    ctxSLS.moveTo(p1.x*scale+xOffset, p1.y*scale+yOffset);
+                    ctxSLS.lineTo(p2.x*scale+xOffset, p2.y*scale+yOffset);
                     ctxSLS.stroke();
                 }
             });
-
-            // Dibujar Puntos
-            pose.keypoints.forEach(kp => {
-                if (kp.score > 0.3) {
-                    ctxSLS.beginPath();
-                    ctxSLS.arc(kp.x * scale + startX, kp.y * scale + startY, 5, 0, 2 * Math.PI);
-                    ctxSLS.fill();
-                }
+            kp.forEach(p => {
+                if(p.score>0.3) { ctxSLS.beginPath(); ctxSLS.arc(p.x*scale+xOffset, p.y*scale+yOffset, 4, 0, 2*Math.PI); ctxSLS.fill(); }
             });
         });
     }
 
-    // --- 6. SPIRIT BOX & AUDIO (Corregido 4 y 5) ---
+    // --- 7. SPIRIT BOX, AUDIO DUCKING & GRÁFICO (Solicitud 1, 2, 6) ---
     
-    // Cargar Sonidos
     async function loadAudio(url) {
-        const resp = await fetch(url);
-        const arr = await resp.arrayBuffer();
-        return await audioCtx.decodeAudioData(arr);
+        try {
+            const resp = await fetch(url);
+            const arr = await resp.arrayBuffer();
+            return await audioCtx.decodeAudioData(arr);
+        } catch(e) { return null; }
     }
 
     document.getElementById('knob-power').addEventListener('change', async (e) => {
         isRunning = e.target.checked;
         
         if (isRunning) {
-            // INICIO DE AUDIO (Importante: Resume context)
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 masterGain = audioCtx.createGain();
                 masterGain.connect(audioCtx.destination);
-                
-                // Cargar archivo local o remoto
-                try {
-                    bufferFondo1 = await loadAudio('FONDO_1.mp3'); // Asegúrate que este archivo exista o pon URL
-                } catch (err) { console.log("No se cargó audio fondo, usando silencio"); }
+                bufferFondo1 = await loadAudio('FONDO_1.mp3'); 
             }
-            
-            if (audioCtx.state === 'suspended') await audioCtx.resume(); // SOLUCIÓN BLOQUEO
+            if (audioCtx.state === 'suspended') await audioCtx.resume();
 
-            // Iniciar Micrófono para VU Meter y Reconocimiento
             try {
+                // Mic Input para Gráfico Energía
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 micSource = audioCtx.createMediaStreamSource(stream);
-                analyserVU = audioCtx.createAnalyser();
-                analyserVU.fftSize = 64;
-                micSource.connect(analyserVU);
+                analyserEnergy = audioCtx.createAnalyser();
+                analyserEnergy.fftSize = 64; // Barras gruesas
+                micSource.connect(analyserEnergy);
                 
-                initRecognition(); // Iniciar escucha voz
+                initRecognition();
                 
-                // Reproducir Fondo Loop
+                // FONDO_1 con Ganancia Controlable (Para Ducking)
                 if(bufferFondo1) {
                     let src = audioCtx.createBufferSource();
                     src.buffer = bufferFondo1;
                     src.loop = true;
                     gainFondo1 = audioCtx.createGain();
-                    gainFondo1.gain.value = 0.2;
+                    gainFondo1.gain.value = 0.15; // Volumen base bajo para que no sature
                     src.connect(gainFondo1);
                     gainFondo1.connect(masterGain);
                     src.start(0);
                 }
                 
-                // Loop Automático (Preguntas aleatorias)
                 startAutoSpiritLoop();
+                ledIndicator.classList.add('active'); // LED ON
                 
-            } catch(err) { console.error("Error Micrófono", err); }
-            
+            } catch(err) { console.error("Error Mic", err); }
             document.getElementById('mic-status').innerText = "MIC: ON";
-            
         } else {
-            // APAGAR
             if(audioCtx) audioCtx.suspend();
             if(recognition) recognition.stop();
+            ledIndicator.className = 'led-indicator'; // LED OFF
             document.getElementById('mic-status').innerText = "MIC: OFF";
         }
     });
 
-    // Control de Volumen
     document.getElementById('vol-slider').addEventListener('input', (e) => {
         if(masterGain) masterGain.gain.value = e.target.value / 100;
     });
 
-    // VU Meter Draw
-    function drawVUMeter() {
-        const w = canvasVU.width;
-        const h = canvasVU.height;
-        const dataArray = new Uint8Array(analyserVU.frequencyBinCount);
-        analyserVU.getByteFrequencyData(dataArray);
+    // GRÁFICO DE BARRAS (ENERGÍA DEL LUGAR)
+    function drawEnergyGraph() {
+        const w = canvasEnergy.width;
+        const h = canvasEnergy.height;
+        const bufferLength = analyserEnergy.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        analyserEnergy.getByteFrequencyData(dataArray);
         
-        // Promedio simple volumen
-        let sum = 0;
-        for(let i=0; i<dataArray.length; i++) sum += dataArray[i];
-        let avg = sum / dataArray.length;
+        ctxEnergy.clearRect(0, 0, w, h);
         
-        ctxVU.fillStyle = '#000';
-        ctxVU.fillRect(0, 0, w, h);
-        
-        let barW = w * (avg / 128); // Escala a ancho
-        
-        // Color dinámico
-        ctxVU.fillStyle = (avg > 100) ? 'var(--alert-red)' : 'var(--neon-green)';
-        ctxVU.fillRect(0, 0, barW, h);
+        const barWidth = (w / bufferLength) * 2.5;
+        let x = 0;
+
+        for(let i = 0; i < bufferLength; i++) {
+            const barHeight = (dataArray[i] / 255) * h;
+            
+            // Color gradiente basado en intensidad
+            const r = barHeight + (25 * (i/bufferLength));
+            const g = 250 * (i/bufferLength);
+            const b = 50;
+
+            ctxEnergy.fillStyle = `rgb(${r},${g},${b})`;
+            ctxEnergy.fillRect(x, h - barHeight, barWidth, barHeight);
+            x += barWidth + 1;
+        }
     }
 
-    // RECONOCIMIENTO DE VOZ Y RESPUESTAS
+    // RECONOCIMIENTO & DUCKING
     function initRecognition() {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) return;
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) return;
         
-        recognition = new SpeechRecognition();
+        recognition = new SR();
         recognition.lang = 'es-MX';
         recognition.continuous = true;
         recognition.interimResults = false;
         
+        // LED STATE: Listening
+        recognition.onstart = () => ledIndicator.classList.add('listening');
+        recognition.onend = () => { if(isRunning) recognition.start(); }; // Reiniciar si se corta
+        
         recognition.onresult = (event) => {
             const last = event.results.length - 1;
             const text = event.results[last][0].transcript.toLowerCase().trim();
-            console.log("Escuchado:", text);
-            
-            // Buscar coincidencia exacta
+            console.log("CMD:", text);
             if (programadoData.has(text)) {
                 speak(programadoData.get(text));
             }
@@ -656,163 +661,81 @@
 
     function speak(text) {
         if(!window.speechSynthesis) return;
+        
+        // AUDIO DUCKING: Bajar fondo
+        if(gainFondo1) {
+            gainFondo1.gain.setTargetAtTime(0.02, audioCtx.currentTime, 0.1); // Bajar al 2%
+        }
+
         const u = new SpeechSynthesisUtterance(text);
         u.lang = 'es-MX';
-        u.pitch = 0.5; // Voz fantasmal grave
-        u.rate = 0.8;
+        u.pitch = 0.6;
+        u.rate = 0.85;
+        u.volume = 1.0; // Máximo volumen voz
+
+        u.onend = () => {
+            // Restaurar fondo al terminar
+            if(gainFondo1) {
+                gainFondo1.gain.setTargetAtTime(0.15, audioCtx.currentTime, 0.5);
+            }
+        };
+
         window.speechSynthesis.speak(u);
     }
 
     function startAutoSpiritLoop() {
-        // Cada 8-15 segundos dice algo random si está activo
         setTimeout(() => {
             if (isRunning && automaticoData.length > 0) {
                 const r = Math.floor(Math.random() * automaticoData.length);
                 speak(automaticoData[r]);
             }
             if (isRunning) startAutoSpiritLoop();
-        }, 8000 + Math.random() * 7000);
+        }, 10000 + Math.random() * 10000);
     }
 
     async function loadGoogleData() {
         try {
             const res = await fetch(GOOGLE_SCRIPT_URL);
             const data = await res.json();
-            
-            // Cargar Automáticos
             automaticoData = data.automatico.map(x => x.TEXTO);
-            
-            // Cargar Programados (Pregunta -> Respuesta)
             data.programado.forEach(item => {
-                if(item.PREGUNTA && item.RESPUESTA) {
-                    programadoData.set(item.PREGUNTA.toLowerCase().trim(), item.RESPUESTA);
-                }
+                if(item.PREGUNTA && item.RESPUESTA) programadoData.set(item.PREGUNTA.toLowerCase().trim(), item.RESPUESTA);
             });
-            console.log("Datos cargados: " + automaticoData.length + " auto.");
-        } catch(e) { console.log("Error cargando datos Google, modo offline"); }
+        } catch(e) { console.log("Offline Mode"); }
     }
-
 </script>
 
 <script>
-/* --- BLUE WAVE WEBGL MODULE (Corregido 2) --- */
+/* --- BLUE WAVE WEBGL --- */
 (function() {
-    let gl, program, positionLocation, texCoordLocation;
-    let positionBuffer, texCoordBuffer, texture;
-    let startTime;
-    let active = false;
+    let gl, program, positionLocation, texCoordLocation, texture, active=false;
     const canvas = document.getElementById("gl-bluewave");
     const video = document.getElementById("bg-camera-feed");
 
     function initGL() {
         gl = canvas.getContext("webgl");
         if (!gl) return;
-
-        // Shader Sources
-        const vsSrc = `
-            attribute vec2 a_position;
-            attribute vec2 a_texCoord;
-            varying vec2 v_texCoord;
-            void main() {
-                gl_Position = vec4(a_position, 0, 1);
-                v_texCoord = a_texCoord;
-            }
-        `;
-        // Shader Azulado con ondas
-        const fsSrc = `
-            precision mediump float;
-            uniform sampler2D u_image;
-            uniform float u_time;
-            varying vec2 v_texCoord;
-            void main() {
-                vec2 uv = v_texCoord;
-                // Onda distorsión
-                uv.x += sin(uv.y * 10.0 + u_time) * 0.01;
-                
-                vec4 color = texture2D(u_image, uv);
-                // Tinte Azul Fantasma
-                gl_FragColor = vec4(color.r * 0.2, color.g * 0.5, color.b * 1.5, 1.0);
-            }
-        `;
-
-        const vs = createShader(gl, gl.VERTEX_SHADER, vsSrc);
-        const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSrc);
+        const vsSrc = `attribute vec2 a_position; attribute vec2 a_texCoord; varying vec2 v_texCoord; void main() { gl_Position = vec4(a_position, 0, 1); v_texCoord = a_texCoord; }`;
+        const fsSrc = `precision mediump float; uniform sampler2D u_image; uniform float u_time; varying vec2 v_texCoord; void main() { vec2 uv = v_texCoord; uv.x += sin(uv.y * 10.0 + u_time) * 0.01; vec4 color = texture2D(u_image, uv); gl_FragColor = vec4(color.r * 0.1, color.g * 0.4, color.b * 1.8, 1.0); }`;
+        const vs = createShader(gl, gl.VERTEX_SHADER, vsSrc); const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSrc);
         program = createProgram(gl, vs, fs);
-
-        positionLocation = gl.getAttribLocation(program, "a_position");
-        texCoordLocation = gl.getAttribLocation(program, "a_texCoord");
-
-        positionBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-            -1, -1, -1, 1, 1, -1,
-            1, -1, -1, 1, 1, 1
-        ]), gl.STATIC_DRAW);
-
-        texCoordBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-            0, 1, 0, 0, 1, 1,
-            1, 1, 0, 0, 1, 0
-        ]), gl.STATIC_DRAW);
-
-        texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        positionLocation = gl.getAttribLocation(program, "a_position"); texCoordLocation = gl.getAttribLocation(program, "a_texCoord");
+        const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,-1,1,1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
+        const tBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, tBuf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0,1,0,0,1,1,1,1,0,0,1,0]), gl.STATIC_DRAW);
+        texture = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, texture); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     }
-
     function render(time) {
-        if (!active) return;
-        if (!gl) initGL();
-        
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-
+        if (!active) return; if (!gl) initGL();
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight; gl.viewport(0,0,gl.drawingBufferWidth,gl.drawingBufferHeight);
         gl.useProgram(program);
-
-        gl.enableVertexAttribArray(positionLocation);
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
-
-        gl.enableVertexAttribArray(texCoordLocation);
-        gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
-        gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
-
-        // Update texture from video
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        if (video.readyState >= 2) {
-             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
-        }
-
-        const timeLoc = gl.getUniformLocation(program, "u_time");
-        gl.uniform1f(timeLoc, time * 0.001);
-
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
-        requestAnimationFrame(render);
+        gl.enableVertexAttribArray(positionLocation); gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,-1,1,1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW); gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(texCoordLocation); gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0,1,0,0,1,1,1,1,0,0,1,0]), gl.STATIC_DRAW); gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
+        gl.bindTexture(gl.TEXTURE_2D, texture); if(video.readyState>=2) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
+        gl.uniform1f(gl.getUniformLocation(program, "u_time"), time*0.001); gl.drawArrays(gl.TRIANGLES, 0, 6); requestAnimationFrame(render);
     }
-
-    function createShader(gl, type, source) {
-        const s = gl.createShader(type);
-        gl.shaderSource(s, source);
-        gl.compileShader(s);
-        return s;
-    }
-    function createProgram(gl, vs, fs) {
-        const p = gl.createProgram();
-        gl.attachShader(p, vs);
-        gl.attachShader(p, fs);
-        gl.linkProgram(p);
-        return p;
-    }
-
-    window.BlueWave = {
-        start: () => { active = true; startTime = Date.now(); render(0); },
-        stop: () => { active = false; gl.clear(gl.COLOR_BUFFER_BIT); },
-        resize: () => { if(canvas) { canvas.width=window.innerWidth; canvas.height=window.innerHeight; }}
-    };
+    function createShader(gl,t,s){ const x=gl.createShader(t); gl.shaderSource(x,s); gl.compileShader(x); return x; }
+    function createProgram(gl,v,f){ const p=gl.createProgram(); gl.attachShader(p,v); gl.attachShader(p,f); gl.linkProgram(p); return p; }
+    window.BlueWave = { start:()=>{active=true; render(0);}, stop:()=>{active=false;}, resize:()=>{ if(canvas){canvas.width=window.innerWidth; canvas.height=window.innerHeight;} } };
 })();
 </script>
 
