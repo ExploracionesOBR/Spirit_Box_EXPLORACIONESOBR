@@ -35,7 +35,28 @@
             overflow: hidden; width: 100vw; height: 100dvh;
         }
 
-        /* --- CÁMARA --- */
+        /* --- PANTALLA DE CARGA (RESTAURADA) --- */
+        #loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 0.5s ease-out;
+        }
+        #loading-logo { width: 100px; height: 100px; margin-bottom: 20px; filter: drop-shadow(0 0 10px var(--neon-green)); animation: pulse 2s infinite; }
+        #loading-text {
+            font-family: 'Orbitron', sans-serif; font-size: 1rem; color: var(--neon-green);
+            letter-spacing: 2px; margin-bottom: 10px; text-shadow: 0 0 5px var(--neon-green);
+        }
+        #loading-bar-container {
+            width: 80%; max-width: 300px; height: 4px; background: #222; border-radius: 2px; overflow: hidden;
+        }
+        #loading-bar {
+            width: 0%; height: 100%; background: var(--neon-green);
+            transition: width 0.3s ease-out; box-shadow: 0 0 10px var(--neon-green);
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* --- CÁMARA Y VISUALIZACIÓN --- */
         #main-view-area {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             overflow: hidden; z-index: 1; background: #000;
@@ -49,18 +70,17 @@
             z-index: 1;
         }
         
-        /* Canvas SLS (Kinect) - Z-Index alto para estar sobre video */
-        #main-filter-canvas { 
+        /* Filtros */
+        body.filter-night #bg-camera-feed { filter: grayscale(1) sepia(1) hue-rotate(50deg) contrast(1.2) brightness(1.3); }
+        body.filter-negative #bg-camera-feed { filter: invert(1) contrast(1.2); }
+        
+        #main-filter-canvas { /* SLS Canvas */
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 3; pointer-events: none; display: none;
         }
         body.filter-sls #main-filter-canvas { display: block; }
 
-        /* Filtros CSS */
-        body.filter-night #bg-camera-feed { filter: grayscale(1) sepia(1) hue-rotate(50deg) contrast(1.2) brightness(1.3); }
-        body.filter-negative #bg-camera-feed { filter: invert(1) contrast(1.2); }
-
-        /* --- UI ELEMENTS --- */
+        /* --- LOGO FLOTANTE --- */
         #logo-image {
             position: fixed; top: 20px; right: 20px; width: 70px; height: 70px;
             z-index: 50; pointer-events: none;
@@ -68,14 +88,21 @@
         }
         #logo-image.hiding { transform: scale(0) rotate(180deg); opacity: 0; }
 
+        /* --- SOCIAL OVERLAY (DENTRO DE CÁMARA) --- */
         #social-overlay {
-            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            position: absolute; 
+            bottom: 30px; 
+            left: 50%; 
+            transform: translateX(-50%); /* Centrado perfecto relativo a la cámara */
             z-index: 40; pointer-events: none; text-align: center; width: 100%;
             opacity: 0; transition: opacity 0.5s;
         }
         #social-overlay.visible { opacity: 1; animation: glitch-anim 0.3s infinite; }
         
-        .social-title { font-family: 'Creepster', cursive; color: #FF0000; font-size: 1.4rem; text-shadow: 2px 0 #000; margin-bottom: 5px; letter-spacing: 2px; }
+        .social-title {
+            font-family: 'Creepster', cursive; color: #FF0000; font-size: 1.4rem;
+            text-shadow: 2px 0 #000; margin-bottom: 5px; letter-spacing: 2px;
+        }
         .social-icons { display: flex; gap: 15px; justify-content: center; margin-bottom: 5px; }
         .social-icon-svg { width: 24px; height: 24px; fill: #fff; filter: drop-shadow(0 0 5px red); }
         .social-handle { font-family: 'Orbitron', sans-serif; color: #fff; font-size: 0.9rem; text-shadow: 0 0 10px red; }
@@ -89,7 +116,7 @@
             100% { transform: translateX(-50%) skewX(0deg); }
         }
 
-        /* --- CONTROLES --- */
+        /* --- CONTROLES FLOTANTES --- */
         #filter-controls-container {
             position: absolute; top: 50%; right: 10px; transform: translateY(-50%) scale(0);
             display: flex; flex-direction: column; gap: 12px; z-index: 45;
@@ -107,7 +134,7 @@
         }
         .filter-btn:active, .filter-btn.active { background: var(--neon-green); color: #000; box-shadow: 0 0 15px var(--neon-green); }
 
-        /* --- PANELES --- */
+        /* --- PANELES UI --- */
         .panel {
             background: var(--panel-bg-dark) !important; 
             border-right: 1px solid var(--border-color-dark);
@@ -115,7 +142,11 @@
             box-shadow: 0 0 20px rgba(0,0,0,0.8);
             position: relative; overflow: hidden;
         }
-        #matrix-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; opacity: 0.15; pointer-events: none; }
+        
+        #matrix-canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; opacity: 0.15; pointer-events: none;
+        }
 
         #left-panel {
             position: fixed; top: 0; left: 0; height: 100%; width: var(--panel-width-landscape);
@@ -127,13 +158,20 @@
             display: flex; z-index: 20;
             transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
+        /* ESTADOS ACTIVOS */
         body.panels-active #left-panel { transform: translateX(0); }
         body.panels-active #bottom-panel { transform: translateY(0); }
 
         .panel-content { position: relative; z-index: 1; padding: 10px; display: flex; flex-direction: column; gap: 10px; height: 100%; overflow-y: auto; }
-        .section-title { font-family: 'Orbitron'; font-size: 0.65rem; color: var(--sim-orange); font-weight: 700; border-bottom: 1px dashed rgba(57,255,20,0.3); margin-bottom: 5px; }
+        
+        .section-title {
+            font-family: 'Orbitron', sans-serif; font-size: 0.65rem; color: var(--sim-orange);
+            text-transform: uppercase; font-weight: 700; letter-spacing: 1px;
+            border-bottom: 1px dashed rgba(57,255,20,0.3); margin-bottom: 5px; padding-bottom: 2px;
+        }
 
-        /* Componentes Panel */
+        /* Componentes Internos */
         .sensor-row { display: flex; justify-content: space-around; margin-bottom: 5px; }
         .status-item { display: flex; flex-direction: column; align-items: center; font-size: 0.6rem; color: #777; }
         .led { width: 8px; height: 8px; border-radius: 50%; background: #333; margin-bottom: 4px; border: 1px solid #555; }
@@ -141,6 +179,7 @@
 
         .spirit-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: center; }
         .knob-wrapper { display: flex; flex-direction: column; align-items: center; }
+        
         #knob-power, #knob-scan {
             width: 55px; height: 55px; border-radius: 50%; border: 2px solid #333;
             background: radial-gradient(circle, #222 30%, #000 100%);
@@ -148,35 +187,49 @@
             font-family: 'Orbitron'; font-size: 0.7rem; color: #555;
             box-shadow: 0 2px 5px #000; transition: all 0.2s;
         }
-        #knob-power.active { border-color: var(--alert-red); color: var(--alert-red); background: radial-gradient(circle, #410000 30%, #1a0000 100%); }
+        #knob-power.active { border-color: var(--alert-red); color: var(--alert-red); text-shadow: 0 0 5px var(--alert-red); background: radial-gradient(circle, #410000 30%, #1a0000 100%); }
         #knob-scan.active { border-color: var(--sim-orange); color: var(--sim-orange); }
 
         .vol-wrapper { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; margin-top: 5px; }
         input[type=range] { flex: 1; height: 4px; background: #333; -webkit-appearance: none; border-radius: 2px; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: var(--neon-green); border-radius: 50%; box-shadow: 0 0 5px var(--neon-green); }
+
         #vu-container { width: 100%; height: 30px; background: #000; border: 1px solid #333; margin-top: 2px; }
         #vu-canvas { width: 100%; height: 100%; }
 
         #bottom-content { display: flex; width: 100%; height: 100%; align-items: center; justify-content: space-around; padding: 0 10px; }
         .dial-box { position: relative; width: 70px; height: 70px; border: 1px solid #444; border-radius: 50%; background: #000; }
         .dial-needle { position: absolute; top: 50%; left: 50%; width: 50%; height: 2px; background: red; transform-origin: 0% 50%; transform: rotate(-90deg); transition: transform 0.2s; }
+        
         #seismic-container { width: 100px; height: 60px; background: #000; border: 1px solid #333; position: relative; overflow: hidden; }
         #seismic-canvas { width: 100%; height: 100%; }
 
-        /* RESPONSIVE */
-        @media (min-aspect-ratio: 1/1) {
-            body.panels-active #main-view-area { left: var(--panel-width-landscape); width: calc(100% - var(--panel-width-landscape)); }
+        /* --- RESPONSIVE (Redimensión Real) --- */
+        @media (min-aspect-ratio: 1/1) { /* Horizontal */
+            body.panels-active #main-view-area {
+                left: var(--panel-width-landscape);
+                width: calc(100% - var(--panel-width-landscape));
+            }
         }
-        @media (max-aspect-ratio: 1/1) {
+
+        @media (max-aspect-ratio: 1/1) { /* Vertical */
             #left-panel { width: 100%; height: auto; bottom: var(--bottom-panel-height-vertical); top: 0; transform: translateY(-100%); border-right: none; border-bottom: 1px solid var(--border-color-dark); }
             #bottom-panel { left: 0; height: var(--bottom-panel-height-vertical); }
+            
             body.panels-active #left-panel { transform: translateY(0); }
+            
             #bottom-content { display: grid; grid-template-columns: 1fr 1fr; justify-items: center; gap: 10px; }
             #seismic-container { grid-column: span 2; width: 90%; }
         }
     </style>
 </head>
 <body>
+
+<div id="loading-overlay">
+    <img id="loading-logo" src="obr-logo.png" alt="Logo" onerror="this.style.display='none'">
+    <div id="loading-text">INICIANDO SISTEMA...</div>
+    <div id="loading-bar-container"><div id="loading-bar"></div></div>
+</div>
 
 <div id="main-view-area">
     <video id="bg-camera-feed" playsinline autoplay muted></video>
@@ -242,6 +295,7 @@
 </div>
 
 <script>
+    /* --- CONFIG --- */
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzOf3crQxBdPylwMTAd34W-nBShN31MkIUtaMdKsZHMZVVniI2HjMesD6DpOlO363T1/exec";
     const SOCIAL_INTERVAL = 15000; 
     
@@ -250,8 +304,25 @@
     let programadoData = new Map(), automaticoData = [];
     let uiHideTimeout, currentFilter = 'none';
     let recognition;
-    
-    // ================= SLS KINECT LOGIC (RESTAURADO DE VERSIÓN ESTABLE) =================
+
+    /* --- LOADING SCREEN CONTROL --- */
+    function updateLoading(percent, text) {
+        const bar = document.getElementById('loading-bar');
+        const txt = document.getElementById('loading-text');
+        const overlay = document.getElementById('loading-overlay');
+        
+        if(bar) bar.style.width = percent + '%';
+        if(txt) txt.innerText = text;
+        
+        if(percent >= 100) {
+            setTimeout(() => {
+                overlay.style.opacity = 0;
+                setTimeout(() => overlay.style.display = 'none', 500);
+            }, 800);
+        }
+    }
+
+    /* --- SLS KINECT LOGIC (Fixed) --- */
     let poseDetector, latestPoses = [];
     const skeletonMap = [
         ['left_shoulder', 'right_shoulder'], ['left_shoulder', 'left_elbow'],
@@ -274,7 +345,7 @@
             if(currentFilter === 'sls' && poseDetector && video.readyState >= 2) {
                 try { latestPoses = await poseDetector.estimatePoses(video); } catch(e){}
             }
-            await new Promise(r => setTimeout(r, 100)); // Throttle
+            await new Promise(r => setTimeout(r, 100));
         }
     }
 
@@ -283,13 +354,12 @@
         const ctx = canvas.getContext('2d');
         const video = document.getElementById('bg-camera-feed');
         
-        // Ajustar tamaño de canvas al video real
         canvas.width = document.getElementById('main-view-area').clientWidth;
         canvas.height = document.getElementById('main-view-area').clientHeight;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         if (currentFilter === 'sls' && latestPoses.length > 0 && video.readyState >= 2) {
-            // Cálculo de escala robusto (Versión Estable)
+            // Cálculo de escala CORRECTO
             const videoAspect = video.videoWidth / video.videoHeight;
             const canvasAspect = canvas.width / canvas.height;
             let scale, offsetX, offsetY;
@@ -305,22 +375,17 @@
             }
 
             latestPoses.forEach(pose => {
-                // Convertir keypoints a mapa para acceso rápido
                 const keypointMap = new Map();
                 pose.keypoints.forEach(kp => keypointMap.set(kp.name, kp));
 
-                // 1. DIBUJAR PUNTOS (ROJOS)
-                ctx.fillStyle = '#FF0000';
+                ctx.fillStyle = '#FF0000'; // Puntos ROJOS
                 pose.keypoints.forEach(kp => {
                     if(kp.score > 0.3) {
-                        ctx.beginPath();
-                        ctx.arc(kp.x * scale + offsetX, kp.y * scale + offsetY, 5, 0, 2 * Math.PI);
-                        ctx.fill();
+                        ctx.beginPath(); ctx.arc(kp.x * scale + offsetX, kp.y * scale + offsetY, 5, 0, 2 * Math.PI); ctx.fill();
                     }
                 });
 
-                // 2. DIBUJAR LINEAS (VERDE NEON) - Forzando unión
-                ctx.strokeStyle = '#39FF14';
+                ctx.strokeStyle = '#39FF14'; // Lineas VERDE NEON
                 ctx.lineWidth = 3;
                 skeletonMap.forEach(conn => {
                     const p1 = keypointMap.get(conn[0]);
@@ -336,17 +401,21 @@
         }
         requestAnimationFrame(drawLoop);
     }
-    // ================= END SLS LOGIC =================
 
     window.onload = async () => {
+        updateLoading(10, "INICIANDO HARDWARE...");
         await startCamera();
-        initMLModel(); 
-        drawLoop(); // Iniciar loop de dibujo
+        updateLoading(30, "CARGANDO IA...");
+        await initMLModel(); 
+        drawLoop(); 
         initMatrixEffect();
         initSeismicGraph();
         startSensors();
         startVisualLoops();
-        loadSheetData();
+        
+        // Carga de datos con actualización de pantalla
+        await loadSheetData();
+        
         initSocialTimer();
         
         document.getElementById('main-view-area').addEventListener('click', (e) => {
@@ -360,7 +429,7 @@
         });
     };
 
-    /* --- SPIRIT BOX LOGIC --- */
+    /* --- SPIRIT BOX --- */
     async function initAudioAndSpeech() {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         audioCtx = new AudioContext();
@@ -431,7 +500,7 @@
         window.speechSynthesis.speak(u);
     }
 
-    /* --- UI & VISUALS --- */
+    /* --- UI --- */
     function initMatrixEffect() {
         const cvs = document.getElementById('matrix-canvas');
         const ctx = cvs.getContext('2d');
@@ -449,9 +518,8 @@
             ctx.fillStyle = '#0F0'; ctx.font = '12px monospace';
             ypos.forEach((y, i) => {
                 const text = Math.random() > 0.98 && automaticoData.length ? automaticoData[Math.floor(Math.random()*automaticoData.length)].charAt(0) : (Math.random()>0.5?'1':'0');
-                const x = i * 15;
-                ctx.fillText(text, x, y);
-                ypos[i] = y < 0 ? h : y - (Math.random() * 10 + 5); // UPWARD
+                const x = i * 15; ctx.fillText(text, x, y);
+                ypos[i] = y < 0 ? h : y - (Math.random() * 10 + 5);
             });
             requestAnimationFrame(matrixDraw);
         }
@@ -507,7 +575,18 @@
             requestAnimationFrame(d);
         } d();
     }
-    async function loadSheetData() { try { const r = await fetch(GOOGLE_SCRIPT_URL).then(res => res.json()); if(r.automatico) automaticoData = r.automatico.map(x => x.TEXTO); if(r.programado) r.programado.forEach(x => programadoData.set(x.PREGUNTA.toLowerCase(), x.RESPUESTA)); }catch(e){} }
+    async function loadSheetData() { 
+        updateLoading(50, "CONECTANDO CON GOOGLE...");
+        try { 
+            const r = await fetch(GOOGLE_SCRIPT_URL).then(res => res.json()); 
+            updateLoading(80, "PROCESANDO DATOS...");
+            if(r.automatico) automaticoData = r.automatico.map(x => x.TEXTO); 
+            if(r.programado) r.programado.forEach(x => programadoData.set(x.PREGUNTA.toLowerCase(), x.RESPUESTA)); 
+            updateLoading(100, "SISTEMA LISTO");
+        }catch(e){ 
+            updateLoading(100, "ERROR DE CONEXIÓN (MODO OFFLINE)"); 
+        } 
+    }
     function startVisualLoops() { setInterval(() => { let rot = Math.random() * 120 - 60; document.getElementById('emf-arrow').style.transform = `rotate(${rot}deg)`; }, 150); }
 </script>
 </body>
