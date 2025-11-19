@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>DETECTOR OBR PRO</title>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>DETECTOR OBR</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700&family=Creepster&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
@@ -16,206 +17,344 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
 
     <style>
-        /* --- ESTILOS CLÁSICOS (NO MODIFICAR) --- */
         :root {
             --neon-green: #39FF14;
             --alert-red: #FF3333;
             --sim-orange: #FFB000;
             --sensor-blue: #00BFFF; 
-            --panel-bg-dark: rgba(10, 15, 10, 0.9);
+            --panel-bg-dark: #1A1A1A;
             --border-color-dark: rgba(57, 255, 20, 0.4);
+            --text-color-light: #E0E0E0; 
+            --text-dim-grey: #777;
             --panel-width-landscape: 300px;
-            --bottom-panel-height-vertical: 180px;
+            --panel-height-landscape: 160px;
+            --bottom-panel-height-vertical: 200px;
         }
         
+        /* --- RESET & BASE --- */
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
         
         body {
             font-family: 'Share Tech Mono', monospace;
-            background-color: #000; color: #E0E0E0;
-            overflow: hidden; width: 100vw; height: 100dvh;
+            background-color: #000;
+            color: var(--text-color-light);
+            overflow: hidden;
+            width: 100vw;
+            height: 100dvh; /* dvh para mejor soporte móvil */
         }
 
-        /* PANTALLA DE CARGA */
-        #loading-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 9999;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            transition: opacity 0.5s ease-out;
+        #app-ui {
+            width: 100%; height: 100%; position: relative; touch-action: none;
+            /* Respetar Notch e Islas Dinámicas */
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
         }
-        #loading-logo { width: 100px; height: 100px; margin-bottom: 20px; filter: drop-shadow(0 0 10px var(--neon-green)); animation: pulse 2s infinite; }
-        #loading-text { font-family: 'Orbitron'; color: var(--neon-green); letter-spacing: 2px; margin-bottom: 10px; font-size: 0.9rem; }
-        #loading-bar-container { width: 70%; max-width: 250px; height: 4px; background: #222; border-radius: 2px; overflow: hidden; }
-        #loading-bar { width: 0%; height: 100%; background: var(--neon-green); transition: width 0.3s; box-shadow: 0 0 10px var(--neon-green); }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
-        /* CÁMARA */
+        /* --- CÁMARA Y FILTROS --- */
         #main-view-area {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            overflow: hidden; z-index: 1; background: #000;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            overflow: hidden; z-index: 5; background: #000;
         }
+
         #bg-camera-feed {
             position: absolute; top: 50%; left: 50%;
             min-width: 100%; min-height: 100%; width: auto; height: auto;
-            object-fit: cover; transform: translate(-50%, -50%); z-index: 1;
+            object-fit: cover; transform: translate(-50%, -50%);
+            z-index: 1;
+            transition: filter 0.3s ease;
         }
         
-        body.filter-night #bg-camera-feed { filter: grayscale(1) sepia(1) hue-rotate(50deg) contrast(1.2) brightness(1.3); }
-        body.filter-negative #bg-camera-feed { filter: invert(1) contrast(1.2); }
-        
-        #main-filter-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; display: none; }
+        /* Filtros CSS */
+        body.filter-night #bg-camera-feed {
+            filter: grayscale(1) sepia(1) hue-rotate(50deg) contrast(1.5) saturate(3) brightness(1.5);
+        }
+        body.filter-sls #bg-camera-feed {
+            filter: grayscale(1) contrast(1.2) brightness(0.8);
+        }
+        body.filter-negative #bg-camera-feed {
+            filter: invert(1) contrast(1.1);
+        }
+
+        #main-filter-canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 2; pointer-events: none; display: none;
+        }
         body.filter-sls #main-filter-canvas { display: block; }
 
-        /* SOCIAL OVERLAY */
-        #social-overlay {
-            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
-            z-index: 40; pointer-events: none; text-align: center; width: 100%;
-            opacity: 0; transition: opacity 0.5s;
+        /* --- ESTILOS APP PRO (Glassmorphism) --- */
+        .panel, .panel-section, #panel-cam-stats {
+            background: rgba(10, 15, 10, 0.75) !important; 
+            backdrop-filter: blur(12px); 
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(57, 255, 20, 0.3) !important;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5) !important;
         }
-        #social-overlay.visible { opacity: 1; animation: glitch 0.3s infinite; }
-        .social-title { font-family: 'Creepster'; color: #F00; font-size: 1.4rem; text-shadow: 2px 0 #000; }
-        .social-icons { display: flex; gap: 15px; justify-content: center; margin: 5px 0; }
-        .social-icon-svg { width: 24px; fill: #fff; filter: drop-shadow(0 0 5px red); }
-        .social-handle { font-family: 'Orbitron'; color: #fff; font-size: 0.9rem; text-shadow: 0 0 10px red; }
-        @keyframes glitch { 0% { transform: translateX(-50%); } 20% { transform: translateX(-51%) skewX(-5deg); } 100% { transform: translateX(-50%); } }
 
-        /* CONTROLES FLOTANTES */
-        #filter-controls-container {
-            position: absolute; top: 50%; right: 10px; transform: translateY(-50%) scale(0);
-            display: flex; flex-direction: column; gap: 12px; z-index: 45;
-            padding: 8px; opacity: 0; pointer-events: none; transition: all 0.3s;
+        /* Botones con efecto de presión */
+        .filter-btn, #knob-scan, #knob-power {
+            transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s !important;
+            touch-action: manipulation;
         }
-        #filter-controls-container.visible { opacity: 1; pointer-events: auto; transform: translateY(-50%) scale(1); }
+        .filter-btn:active, #knob-scan:active, #knob-power:active {
+            transform: scale(0.92);
+            box-shadow: 0 0 5px var(--neon-green) inset !important;
+        }
+
+        /* --- PANELES --- */
+        #left-panel, #bottom-panel {
+            position: fixed; display: flex; flex-direction: column;
+            z-index: 20; pointer-events: none;
+            /* Animación Burbuja */
+            clip-path: circle(0% at 50% 50%);
+            transition: clip-path 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
         
-        .filter-btn {
-            width: 45px; height: 45px; border-radius: 50%;
-            background: rgba(0, 20, 0, 0.6); border: 1px solid var(--neon-green);
-            color: var(--neon-green); font-family: 'Share Tech Mono'; font-weight: bold; font-size: 0.7rem;
-            display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);
+        body.panels-active #left-panel,
+        body.panels-active #bottom-panel {
+            clip-path: circle(150% at 50% 50%);
+            pointer-events: auto;
         }
-        .filter-btn.active { background: var(--neon-green); color: #000; box-shadow: 0 0 15px var(--neon-green); }
 
-        #logo-image {
-            position: fixed; top: 20px; right: 20px; width: 70px; height: 70px;
-            z-index: 50; pointer-events: none; transition: all 0.5s; filter: drop-shadow(0 0 5px var(--neon-green));
-        }
-        #logo-image.hiding { transform: scale(0) rotate(180deg); opacity: 0; }
-
-        /* --- ESTRUCTURA DE PANELES (ESTABLE) --- */
         .panel {
-            background: var(--panel-bg-dark) !important; 
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            border-right: 1px solid var(--border-color-dark);
-            border-top: 1px solid var(--border-color-dark);
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
-            position: relative; overflow: hidden;
+            display: flex; flex-direction: column; padding: 8px; 
+            flex-grow: 1; gap: 8px; overflow: hidden; position: relative;
         }
+        .panel.alert { border-color: var(--alert-red) !important; box-shadow: 0 0 20px var(--alert-red) inset !important; }
 
-        #left-panel {
-            position: fixed; top: 0; left: 0; height: 100%; width: var(--panel-width-landscape);
-            display: flex; flex-direction: column; z-index: 20; 
-            transform: translateX(-100%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        .panel-header-main {
+            font-family: 'Orbitron', sans-serif; font-size: 0.9rem; text-align: center;
+            color: var(--neon-green); text-shadow: 0 0 8px var(--neon-green);
+            border-bottom: 1px solid var(--border-color-dark); padding: 6px 0;
+            background: rgba(57, 255, 20, 0.08); letter-spacing: 2px;
         }
-        #bottom-panel {
-            position: fixed; bottom: 0; left: var(--panel-width-landscape); right: 0; height: 160px; /* Altura estable */
-            display: flex; z-index: 20;
-            transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        body.panels-active #left-panel { transform: translateX(0); }
-        body.panels-active #bottom-panel { transform: translateY(0); }
-
-        #matrix-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; opacity: 0.15; pointer-events: none; }
         
-        /* Contenido del Panel (Padding arreglado) */
-        .panel-content { position: relative; z-index: 1; padding: 15px; display: flex; flex-direction: column; gap: 15px; height: 100%; overflow-y: auto; }
-
         .section-title {
-            font-family: 'Orbitron'; font-size: 0.7rem; color: var(--sim-orange);
-            text-transform: uppercase; font-weight: 700; letter-spacing: 1px;
-            border-bottom: 1px dashed rgba(57,255,20,0.3); margin-bottom: 5px;
+            font-family: 'Orbitron', sans-serif; font-size: 0.7rem;
+            color: var(--sim-orange); text-transform: uppercase; margin-bottom: 5px; 
+            text-align: center; letter-spacing: 1.5px; font-weight: 700;
+            background: rgba(57, 255, 20, 0.1) !important; padding: 4px !important; border-radius: 4px;
+        }
+        
+        .panel-section {
+            display: flex; flex-direction: column; padding: 8px; flex-shrink: 0;
+            border-radius: 8px;
         }
 
-        /* --- ELEMENTOS VISUALES ESTABLES --- */
-        .sensor-status-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center; margin-bottom: 5px; }
-        .status-light-group { display: flex; flex-direction: column; align-items: center; font-size: 0.65rem; color: #999; }
-        .status-led-indicator { width: 12px; height: 12px; border-radius: 50%; background: #333; margin-bottom: 5px; border: 1px solid #555; }
-        .status-led-indicator.active { background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); }
+        /* --- COMPONENTES UI --- */
+        .sensor-status-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center; }
+        .status-light-group { display: flex; flex-direction: column; align-items: center; font-size: 0.65rem; }
+        .status-light-group .emoji { font-size: 1.4rem; margin-bottom: 2px; }
+        .status-led-indicator { width: 12px; height: 12px; border-radius: 50%; background-color: #222; border: 1px solid #444; margin-bottom: 6px; transition: all 0.3s; }
         
-        /* Layout de Spirit Box (GRID FIJO) */
-        .spirit-box-grid { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 15px; 
-            justify-items: center;
-            align-items: start;
-        }
-        
-        .knob-container { display: flex; flex-direction: column; align-items: center; }
-        
-        #knob-power, #knob-scan {
-            width: 65px; height: 65px; /* Tamaño original */
-            border-radius: 50%; border: 2px solid #444;
-            background: radial-gradient(circle, #222 30%, #000 100%);
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
-            font-family: 'Orbitron'; font-size: 0.8rem; color: #777;
-            box-shadow: 0 4px 8px #000;
-            transition: all 0.2s;
-        }
-        #knob-power.active { border-color: var(--alert-red); color: var(--alert-red); text-shadow: 0 0 8px var(--alert-red); background: radial-gradient(circle, #410000 30%, #1a0000 100%); }
-        #knob-scan.active { border-color: var(--sim-orange); color: var(--sim-orange); }
+        /* Colores de estado */
+        .status-light-group[data-status="connected"] .status-led-indicator { background-color: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); animation: pulseGlow 1.5s infinite; }
+        .status-light-group[data-status="fallback"] .status-led-indicator { background-color: var(--sensor-blue); box-shadow: 0 0 10px var(--sensor-blue); }
+        .status-light-group[data-status="simulated"] .status-led-indicator { background-color: var(--sim-orange); box-shadow: 0 0 10px var(--sim-orange); }
+        .status-light-group[data-status="unavailable"] .status-led-indicator { background-color: var(--alert-red); box-shadow: 0 0 10px var(--alert-red); }
 
-        .volume-control-group { 
-            grid-column: 1 / -1; /* Ocupa todo el ancho */
-            display: flex; align-items: center; gap: 10px; width: 100%; 
-            margin-top: 5px;
-        }
-        input[type=range] { flex: 1; height: 5px; background: #333; -webkit-appearance: none; border-radius: 3px; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: var(--neon-green); border-radius: 50%; box-shadow: 0 0 5px var(--neon-green); }
+        /* Spirit Box UI */
+        .spirit-box-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: center; }
         
-        /* Onda Topográfica (Osciloscopio) */
-        #vu-meter-container { width: 100%; height: 50px; background: #050505; border: 1px solid #333; margin-top: 5px; position: relative; border-radius: 4px; }
+        #knob-scan, #knob-power {
+            width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--border-color-dark);
+            position: relative; cursor: pointer; background: #111;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Orbitron', sans-serif; font-size: 0.8rem; color: var(--text-dim-grey);
+            box-shadow: 0 4px 6px #000, 0 0 8px rgba(57, 255, 20, 0.3) inset;
+        }
+        
+        #knob-scan::before { content: "SCAN"; }
+        #knob-scan.speed-1 { border-color: var(--sensor-blue); color: var(--sensor-blue); box-shadow: 0 0 15px var(--sensor-blue) inset; }
+        #knob-scan.speed-2 { border-color: var(--sim-orange); color: var(--sim-orange); box-shadow: 0 0 15px var(--sim-orange) inset; }
+        #knob-scan.speed-3 { border-color: var(--alert-red); color: var(--alert-red); box-shadow: 0 0 15px var(--alert-red) inset; }
+
+        #knob-power::before { content: "REC"; color: var(--alert-red); }
+        #knob-power.active { border-color: var(--alert-red); background: #330000; box-shadow: 0 0 20px var(--alert-red) inset; }
+        #knob-power.active::before { text-shadow: 0 0 10px var(--alert-red); animation: pulseRec 1.5s infinite; }
+
+        .volume-control-group { display: flex; align-items: center; gap: 10px; width: 100%; grid-column: 1 / -1; margin-top: 10px; }
+        input[type=range] { flex-grow: 1; -webkit-appearance: none; height: 6px; background: #333; border-radius: 3px; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: var(--neon-green); border-radius: 50%; box-shadow: 0 0 10px var(--neon-green); }
+
+        /* Diales y Medidores */
+        .dials-grid { display: grid; grid-template-columns: 1fr 1.5fr 1fr; gap: 12px; align-items: center; justify-items: center; }
+        .dial-container { position: relative; width: 75px; height: 75px; background: #000; border-radius: 50%; border: 2px solid var(--border-color-dark); overflow: hidden; }
+        .dial-needle { width: 3px; height: 40%; position: absolute; bottom: 50%; left: 50%; transform-origin: bottom center; transition: transform 0.5s; z-index: 10; }
+        
+        #compass-needle { background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); }
+        #main-needle { background: var(--alert-red); box-shadow: 0 0 8px var(--alert-red); transform: rotate(-60deg); }
+
+        #temp-val { font-size: 1.6rem; font-family: 'Orbitron', sans-serif; color: var(--neon-green); text-align: center; }
+        
+        #vu-meter-container { width: 100%; height: 45px; background: #000; border: 1px solid var(--border-color-dark); padding: 4px; }
         #vu-meter-canvas { width: 100%; height: 100%; }
 
-        /* Diales Inferiores */
-        .dials-grid { display: flex; width: 100%; height: 100%; justify-content: space-around; align-items: center; padding: 0 10px; }
-        .dial-container { position: relative; width: 85px; height: 85px; border: 2px solid #444; border-radius: 50%; background: #000; }
-        .dial-needle { position: absolute; top: 50%; left: 50%; width: 45%; height: 2px; background: red; transform-origin: 0% 50%; transform: rotate(-90deg); transition: transform 0.3s; }
-        .dial-label { position: absolute; bottom: 18px; width: 100%; text-align: center; font-size: 0.6rem; color: #666; font-weight: bold; }
+        /* --- CONTROLES FLOTANTES (Mejorados) --- */
+        #filter-controls-container {
+            position: fixed; top: 50%; right: 15px; transform: translateY(-50%);
+            display: flex; flex-direction: column; gap: 15px; z-index: 100;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
+            padding: 10px; border-radius: 30px;
+            border: 1px solid rgba(57, 255, 20, 0.3);
+            transition: opacity 0.3s;
+        }
+        
+        .filter-btn {
+            width: 50px; height: 50px; border-radius: 50%;
+            background: rgba(0, 50, 50, 0.7); border: 2px solid var(--neon-green);
+            color: var(--neon-green); font-family: 'Share Tech Mono', monospace;
+            font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.3);
+        }
+        .filter-btn.active { background: var(--neon-green); color: #000; box-shadow: 0 0 20px var(--neon-green); }
 
-        /* RESPONSIVE */
-        @media (min-aspect-ratio: 1/1) {
-            body.panels-active #main-view-area { left: var(--panel-width-landscape); width: calc(100% - var(--panel-width-landscape)); }
+        /* --- LOADING SCREEN (Estilo Glitch) --- */
+        #loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #1a201a 0%, #000000 100%);
+            z-index: 9999; display: flex; justify-content: center; align-items: center;
+            transition: opacity 0.5s ease-out;
         }
-        @media (max-aspect-ratio: 1/1) {
-            #left-panel { width: 100%; height: auto; bottom: 180px; top: 0; transform: translateY(-100%); border-right: none; border-bottom: 1px solid var(--border-color-dark); }
-            #bottom-panel { left: 0; height: 180px; }
-            body.panels-active #left-panel { transform: translateY(0); }
-            .dials-grid { display: grid; grid-template-columns: 1fr 1fr; justify-items: center; gap: 10px; }
+        #loading-text {
+            font-family: 'Orbitron', sans-serif; font-size: 1.5rem; letter-spacing: 3px;
+            color: var(--neon-green); animation: textGlitch 3s infinite alternate;
         }
+        @keyframes textGlitch {
+            0% { text-shadow: 2px 0 red, -2px 0 blue; opacity: 1; }
+            95% { text-shadow: 4px 0 red, -4px 0 blue; opacity: 0.8; transform: skewX(10deg); }
+            100% { text-shadow: 0 0 0; opacity: 1; transform: skewX(0); }
+        }
+
+        /* --- RESPONSIVE --- */
+        @media (max-aspect-ratio: 1/1) { /* Vertical */
+            #left-panel { top: 0; left: 0; width: 100vw; height: calc(100vh - var(--bottom-panel-height-vertical)); clip-path: circle(0% at 50% 0%); }
+            body.panels-active #left-panel { clip-path: circle(150% at 50% 0%); }
+            
+            #bottom-panel { bottom: 0; left: 0; width: 100vw; height: var(--bottom-panel-height-vertical); clip-path: circle(0% at 50% 100%); padding-bottom: env(safe-area-inset-bottom); }
+            body.panels-active #bottom-panel { clip-path: circle(150% at 50% 100%); }
+            
+            #bottom-panel .panel { flex-direction: row; }
+            #bottom-panel .dials-grid { grid-template-columns: 1fr 1fr; }
+            #detector-dial-container { grid-column: span 1; width: 80px; height: 80px; }
+            #temp-readout { display: none; } /* Ocultar temp en vertical si falta espacio */
+            #panel-cam-stats { display: none; }
+
+            /* Ocultar vista principal al abrir paneles en vertical */
+            body.panels-active #main-view-area { opacity: 0.1; pointer-events: none; }
+            body.panels-active #filter-controls-container { display: none; }
+        }
+
+        @media (min-aspect-ratio: 1/1) { /* Horizontal */
+            #left-panel { width: var(--panel-width-landscape); height: 100vh; top: 0; left: 0; clip-path: circle(0% at 0% 50%); }
+            body.panels-active #left-panel { clip-path: circle(150% at 0% 50%); }
+            
+            #bottom-panel { width: calc(100% - var(--panel-width-landscape)); height: var(--panel-height-landscape); bottom: 0; left: var(--panel-width-landscape); clip-path: circle(0% at 50% 100%); }
+            body.panels-active #bottom-panel { clip-path: circle(150% at 50% 100%); }
+            
+            #bottom-panel .panel { flex-direction: row; }
+            body.panels-active #main-view-area { left: var(--panel-width-landscape); width: calc(100% - var(--panel-width-landscape)); height: calc(100% - var(--panel-height-landscape)); }
+        }
+        
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<div id="loading-overlay">
-    <img id="loading-logo" src="obr-logo.png" alt="Logo" onerror="this.style.display='none'">
-    <div id="loading-text">CALIBRANDO SENSORES... 0%</div>
-    <div id="loading-bar-container"><div id="loading-bar"></div></div>
-</div>
+<div id="app-ui"> 
 
-<div id="main-view-area">
-    <video id="bg-camera-feed" playsinline autoplay muted></video>
-    <canvas id="main-filter-canvas"></canvas>
-    
-    <div id="social-overlay">
-        <div class="social-title">SÍGUENOS EN</div>
-        <div class="social-icons">
-            <svg class="social-icon-svg" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>
-            <svg class="social-icon-svg" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-            <svg class="social-icon-svg" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+    <div id="loading-overlay">
+        <div id="loading-content">
+            <div id="loading-text">DETECTOR OBR</div>
+            <div id="loading-bar-container" style="width: 200px; height: 4px; background: #333; margin-top: 20px; border-radius: 2px;">
+                <div id="loading-bar" style="width: 0%; height: 100%; background: var(--neon-green); transition: width 0.3s;"></div>
+            </div>
         </div>
-        <div class="social-handle">@EXPLORACIONESOBR</div>
+    </div>
+
+    <div id="main-view-area" onclick="handleUITap(event)">
+        <video id="bg-camera-feed" playsinline autoplay muted></video>
+        <canvas id="main-filter-canvas"></canvas>
+    </div>
+    
+    <canvas id="ai-canvas" class="hidden"></canvas>
+    
+    <div id="left-panel">
+        <div class="panel">
+            <div class="panel-header-main">PANEL DE MANDO</div>
+            
+            <div class="panel-section">
+                <div class="section-title">Estado de Sensores</div>
+                <div class="sensor-status-grid">
+                    <div class="status-light-group" id="mic-status" data-status="off">
+                        <div class="status-led-indicator"></div>
+                        <div class="emoji">🎙️</div>
+                        <span>MIC</span>
+                    </div>
+                    <div class="status-light-group" id="mag-status" data-status="off">
+                        <div class="status-led-indicator"></div>
+                        <div class="emoji">🧭</div>
+                        <span>MAG</span>
+                    </div>
+                    <div class="status-light-group" id="prox-status" data-status="off">
+                        <div class="status-led-indicator"></div>
+                        <div class="emoji">⚡</div>
+                        <span>EMF</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <div class="section-title">Spirit Box</div>
+                <div class="spirit-box-grid">
+                    <div style="display: flex; flex-direction:column; align-items: center;">
+                        <div id="knob-power"></div>
+                        <div style="font-size: 0.6rem; color: #777; margin-top: 5px;">ENCENDER</div>
+                    </div>
+
+                    <div style="display: flex; flex-direction:column; align-items: center;">
+                        <div id="knob-scan"></div>
+                        <div style="font-size: 0.6rem; color: #777; margin-top: 5px;">FRECUENCIA</div>
+                    </div>
+                    
+                    <div class="volume-control-group">
+                        <span style="font-size: 0.7rem;">VOL</span>
+                        <input type="range" min="0" max="100" value="80" id="vol-slider">
+                        <span id="vol-percent" style="font-size: 0.7rem; width: 30px; text-align: right; color: var(--neon-green);">80%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="bottom-panel">
+        <div class="panel">
+            <div class="panel-section">
+                <div class="section-title">Lecturas de Campo</div>
+                <div class="dials-grid">
+                    <div id="mag-dial-container" class="dial-container">
+                        <div id="compass-needle" class="dial-needle"></div>
+                        <div style="position:absolute; bottom: 5px; width: 100%; text-align: center; font-size: 0.5rem; color: #777;">MAG</div>
+                    </div>
+                    <div id="detector-dial-container" class="dial-container">
+                        <div id="main-needle" class="dial-needle"></div>
+                        <div style="position:absolute; bottom: 5px; width: 100%; text-align: center; font-size: 0.5rem; color: #777;">DET</div>
+                    </div>
+                    <div id="temp-readout">
+                        <div id="temp-val">--.-°C</div>
+                        <div style="font-size: 0.6rem; text-align:center; color: #777;">AMB</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section" style="flex-grow: 1.5;">
+                <div class="section-title">Audio (VU)</div>
+                <div id="vu-meter-container">
+                    <canvas id="vu-meter-canvas"></canvas>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="filter-controls-container">
@@ -224,301 +363,432 @@
         <button class="filter-btn" onclick="setFilter('negative')">NEG</button>
         <button class="filter-btn" id="btn-panel" onclick="togglePanels()">PAN</button>
     </div>
-</div>
 
-<img id="logo-image" src="obr-logo.png" alt="Logo">
-
-<div id="left-panel" class="panel">
-    <canvas id="matrix-canvas"></canvas>
-    <div class="panel-content">
-        <div class="section-title">Sensores</div>
-        <div class="sensor-status-grid">
-            <div class="status-light-group" id="st-mic"><div class="status-led-indicator"></div><span>MIC</span></div>
-            <div class="status-light-group" id="st-mag"><div class="status-led-indicator"></div><span>MAG</span></div>
-            <div class="status-light-group" id="st-prox"><div class="status-led-indicator"></div><span>EMF</span></div>
-        </div>
-
-        <div class="section-title">Spirit Box</div>
-        <div class="spirit-box-grid">
-            <div class="knob-container">
-                <div id="knob-power">REC</div>
-                <span style="font-size:0.6rem; color:#555; margin-top:4px;">POWER</span>
-            </div>
-            <div class="knob-container">
-                <div id="knob-scan" class="speed-1">SCAN</div>
-                <span style="font-size:0.6rem; color:#555; margin-top:4px;" id="speed-label">NORMAL</span>
-            </div>
-            
-            <div class="volume-control-group">
-                <span style="font-size:0.7rem">VOL</span>
-                <input type="range" id="vol-slider" min="0" max="100" value="80">
-                <span id="vol-text" style="font-size:0.7rem; width:30px; text-align:right; color:var(--neon-green)">80%</span>
-            </div>
-        </div>
-        
-        <div class="section-title">Espectro</div>
-        <div id="vu-meter-container"><canvas id="vu-meter-canvas"></canvas></div>
-    </div>
-</div>
-
-<div id="bottom-panel" class="panel">
-    <div class="dials-grid">
-        <div class="dial-container">
-            <div id="compass-arrow" class="dial-needle" style="background:var(--neon-green)"></div><div class="dial-label">MAG</div>
-        </div>
-        <div class="dial-container">
-            <div id="emf-arrow" class="dial-needle"></div><div class="dial-label">EMF</div>
-        </div>
-        <div class="dial-container">
-            <div id="temp-needle" class="dial-needle" style="transform:rotate(-45deg)"></div><div class="dial-label">TEMP</div>
-        </div>
-    </div>
-</div>
+</div> 
 
 <script>
+    /* --- LÓGICA PRINCIPAL --- */
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzOf3crQxBdPylwMTAd34W-nBShN31MkIUtaMdKsZHMZVVniI2HjMesD6DpOlO363T1/exec";
-    const SOCIAL_INTERVAL = 15000;
-    const SCAN_DELAYS = [1500, 700, 300];
     
+    let videoTrack;
     let isRunning = false;
-    let audioCtx, masterGain, radioGain;
-    let audioBuffer_Fondo2; 
-    let programadoData = new Map(), automaticoData = [];
-    let uiHideTimeout, currentFilter = 'none';
+    let currentFilter = 'none';
+    let scanSpeed = 1; 
+    const videoBg = document.getElementById('bg-camera-feed');
+    const mainFilterCanvas = document.getElementById('main-filter-canvas');
+    const mainFilterCtx = mainFilterCanvas.getContext('2d');
+    
+    // Audio Contexts
+    let audioCtx, masterGain, micStreamSource;
+    let vuAnalyserNode, vuDataArray, vuCanvas, vuCtx;
+    let audioSource_Fondo1, gain_Fondo1, audioBuffer_Fondo1;
+    let audioSource_Fondo2, gain_Fondo2, audioBuffer_Fondo2;
+    
     let recognition;
-    let scanTimer;
-    let scanSpeed = 1;
+    let programadoData = new Map();
+    let automaticoData = [];
+    let scanTimer = null;
+    let spiritBoxState = "OFF";
+    let spiritBoxTimeout = null;
+    
+    // Sensores
+    let magnetometer, proximitySensor, orientationSensor;
+    let emfValue = 0;
+    let currentTemp = 19.8;
+    let visualLoopInterval;
 
-    function updateLoading(percent, text) {
-        const bar = document.getElementById('loading-bar');
-        const txt = document.getElementById('loading-text');
-        const overlay = document.getElementById('loading-overlay');
-        if(bar) bar.style.width = percent + '%';
-        if(txt) txt.innerText = text + " " + percent + "%";
-        if(percent >= 100) {
-            setTimeout(() => { overlay.style.opacity = 0; setTimeout(() => overlay.style.display = 'none', 500); }, 800);
-        }
-    }
+    // IA Pose
+    let poseDetector, latestPoses = [], isDetectingPose = false;
 
-    /* --- SLS KINECT LOGIC (Fixed Scaling) --- */
-    let poseDetector, latestPoses = [];
-    const skeletonMap = [['left_shoulder', 'right_shoulder'], ['left_shoulder', 'left_elbow'], ['left_elbow', 'left_wrist'], ['right_shoulder', 'right_elbow'], ['right_elbow', 'right_wrist'], ['left_shoulder', 'left_hip'], ['right_shoulder', 'right_hip'], ['left_hip', 'right_hip'], ['left_hip', 'left_knee'], ['left_knee', 'left_ankle'], ['right_hip', 'right_knee'], ['right_knee', 'right_ankle']];
-
-    async function initMLModel() {
-        const model = poseDetection.SupportedModels.MoveNet;
-        poseDetector = await poseDetection.createDetector(model, {modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING});
-        detectPoseLoop();
-    }
-
-    async function detectPoseLoop() {
-        const video = document.getElementById('bg-camera-feed');
-        while(true) {
-            if(currentFilter === 'sls' && poseDetector && video.readyState >= 2) {
-                try { latestPoses = await poseDetector.estimatePoses(video); } catch(e){}
-            }
-            await new Promise(r => setTimeout(r, 100));
-        }
-    }
-
-    function drawLoop() {
-        const canvas = document.getElementById('main-filter-canvas');
-        const ctx = canvas.getContext('2d');
-        const video = document.getElementById('bg-camera-feed');
-        
-        canvas.width = document.getElementById('main-view-area').clientWidth;
-        canvas.height = document.getElementById('main-view-area').clientHeight;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        if (currentFilter === 'sls' && latestPoses.length > 0 && video.readyState >= 2) {
-            const videoAspect = video.videoWidth / video.videoHeight;
-            const canvasAspect = canvas.width / canvas.height;
-            let scale, offsetX, offsetY;
-            if (canvasAspect > videoAspect) {
-                scale = canvas.width / video.videoWidth;
-                offsetX = 0; offsetY = (canvas.height - video.videoHeight * scale) / 2;
-            } else {
-                scale = canvas.height / video.videoHeight;
-                offsetX = (canvas.width - video.videoWidth * scale) / 2; offsetY = 0;
-            }
-
-            latestPoses.forEach(pose => {
-                const keypointMap = new Map(); pose.keypoints.forEach(kp => keypointMap.set(kp.name, kp));
-                ctx.fillStyle = '#FF0000';
-                pose.keypoints.forEach(kp => { if(kp.score > 0.3) { ctx.beginPath(); ctx.arc(kp.x * scale + offsetX, kp.y * scale + offsetY, 5, 0, 2 * Math.PI); ctx.fill(); } });
-                ctx.strokeStyle = '#39FF14'; ctx.lineWidth = 3;
-                skeletonMap.forEach(conn => {
-                    const p1 = keypointMap.get(conn[0]); const p2 = keypointMap.get(conn[1]);
-                    if(p1 && p2 && p1.score > 0.3 && p2.score > 0.3) { ctx.beginPath(); ctx.moveTo(p1.x * scale + offsetX, p1.y * scale + offsetY); ctx.lineTo(p2.x * scale + offsetX, p2.y * scale + offsetY); ctx.stroke(); }
-                });
-            });
-        }
-        requestAnimationFrame(drawLoop);
-    }
-
-    /* --- AUDIO SYSTEM --- */
-    async function initAudioSystem() {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        audioCtx = new AudioContext();
-        masterGain = audioCtx.createGain(); masterGain.gain.value = 0.8;
-        masterGain.connect(audioCtx.destination);
-        radioGain = audioCtx.createGain(); radioGain.connect(masterGain);
-        
+    /* --- FUNCIÓN HÁPTICA (Vibración) --- */
+    function vibrar(tipo) {
+        if (!window.navigator.vibrate) return;
         try {
-            const b2 = await fetch('FONDO_2.mp3').then(r => r.arrayBuffer());
-            audioBuffer_Fondo2 = await audioCtx.decodeAudioData(b2);
-        } catch(e) { console.warn("No audio files"); }
-
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const micSrc = audioCtx.createMediaStreamSource(stream);
-            const analyser = audioCtx.createAnalyser();
-            micSrc.connect(analyser);
-            initWaveformVisualizer(analyser);
-            initSpeechRec();
-            document.getElementById('st-mic').querySelector('.status-led-indicator').classList.add('active');
-        } catch(e) { 
-            alert("Activa el micrófono para usar la Spirit Box");
-        }
-    }
-
-    function initWaveformVisualizer(analyser) {
-        const cv = document.getElementById('vu-meter-canvas');
-        const ctx = cv.getContext('2d');
-        analyser.fftSize = 2048;
-        const bufferLength = analyser.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
-
-        function draw() {
-            if(!cv.offsetParent) return requestAnimationFrame(draw);
-            const w = cv.width = cv.clientWidth;
-            const h = cv.height = cv.clientHeight;
-            analyser.getByteTimeDomainData(dataArray);
-
-            ctx.fillStyle = '#000'; ctx.fillRect(0, 0, w, h);
-            ctx.lineWidth = 2; ctx.strokeStyle = 'var(--neon-green)'; ctx.beginPath();
-
-            const sliceWidth = w * 1.0 / bufferLength;
-            let x = 0;
-            for(let i = 0; i < bufferLength; i++) {
-                const v = dataArray[i] / 128.0;
-                const y = v * h / 2;
-                if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-                x += sliceWidth;
+            switch(tipo) {
+                case 'click': navigator.vibrate(15); break;
+                case 'success': navigator.vibrate([10, 30, 10]); break;
+                case 'alert': navigator.vibrate([50, 50, 50]); break;
+                default: navigator.vibrate(15);
             }
-            ctx.lineTo(cv.width, cv.height / 2); ctx.stroke();
-            requestAnimationFrame(draw);
-        }
-        draw();
+        } catch(e){}
     }
 
-    function initSpeechRec() {
-        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if(SR) {
-            recognition = new SR(); 
-            recognition.lang = 'es-MX'; 
-            recognition.continuous = false; 
-            recognition.interimResults = false;
+    /* --- INICIO CÁMARA --- */
+    async function startCamera() {
+        try {
+            const constraints = {
+                video: {
+                    facingMode: { ideal: "environment" }, 
+                    width: { ideal: 1920 }, height: { ideal: 1080 },
+                    frameRate: { ideal: 30 }
+                },
+                audio: false
+            };
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            videoTrack = stream.getVideoTracks()[0];
             
-            recognition.onend = () => { if(isRunning) { try{ recognition.start(); }catch(e){} } };
-            recognition.onresult = (e) => { processSpiritBoxResponse(e.results[0][0].transcript.toLowerCase()); };
-        }
+            // Intentar enfoque continuo
+            if (videoTrack && typeof videoTrack.applyConstraints === 'function') {
+                videoTrack.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(e=>{});
+            }
+            
+            videoBg.srcObject = stream;
+            videoBg.onloadedmetadata = () => {
+                resizeAllCanvas();
+                drawLoop();
+            };
+        } catch (e) { console.log("Error cámara", e); }
     }
 
-    function processSpiritBoxResponse(text) {
-        if(scanTimer) clearTimeout(scanTimer); // Silencio
-        let found = false;
-        for (let [key, value] of programadoData) { if (text.includes(key)) { speak(value); found = true; break; } }
-        if (!found && automaticoData.length > 0) { speak(automaticoData[Math.floor(Math.random() * automaticoData.length)]); }
-        else if(!found) { speak("Estoy aquí"); } // Fallback
-        setTimeout(playRadioFragment, 4000);
+    /* --- CONTROL DE LINTERNA (Auxiliar) --- */
+    async function controlTorch(state) {
+        if (!videoTrack) return;
+        try {
+            const capabilities = videoTrack.getCapabilities();
+            if (capabilities.torch) {
+                await videoTrack.applyConstraints({ advanced: [{ torch: state }] });
+            }
+        } catch (e) { console.warn("No se pudo controlar la linterna", e); }
     }
 
-    function speak(text) {
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'es-MX'; u.pitch = Math.random() * 0.4 + 0.6; u.rate = 0.9;
-        window.speechSynthesis.speak(u);
-    }
+    /* --- SISTEMA DE FILTROS (MODIFICADO) --- */
+    function setFilter(f) {
+        vibrar('click');
+        
+        // Limpiar estados anteriores
+        document.querySelectorAll('.filter-btn').forEach(b => { if(b.id !== 'btn-panel') b.classList.remove('active'); });
+        document.body.classList.remove('filter-night', 'filter-sls', 'filter-negative');
+        mainFilterCanvas.style.display = 'none';
 
-    function playRadioFragment() {
-        if(!isRunning) return;
-        if(audioBuffer_Fondo2) {
-            const src = audioCtx.createBufferSource();
-            src.buffer = audioBuffer_Fondo2; src.connect(radioGain);
-            const duration = audioBuffer_Fondo2.duration;
-            src.start(0, Math.random()*(duration-1), 0.2 + Math.random()*0.5);
-        }
-        scanTimer = setTimeout(playRadioFragment, SCAN_DELAYS[scanSpeed]);
-    }
-
-    document.getElementById('knob-power').addEventListener('click', async function() {
-        if(!audioCtx) await initAudioSystem();
-        if(audioCtx.state === 'suspended') await audioCtx.resume();
-        isRunning = !isRunning;
-        this.classList.toggle('active', isRunning);
-        if(isRunning) {
-            playRadioFragment(); 
-            try { recognition.start(); } catch(e){}
-            if(navigator.vibrate) navigator.vibrate([10,50,10]);
+        // Si tocamos el mismo filtro, lo desactivamos
+        if (currentFilter === f) {
+            currentFilter = 'none';
+            controlTorch(false); // Apagar linterna al salir
         } else {
+            currentFilter = f;
+            const targetBtn = event.target;
+            if(targetBtn) targetBtn.classList.add('active');
+            
+            document.body.classList.add('filter-' + f);
+            
+            // Lógica Específica
+            if (f === 'sls') {
+                mainFilterCanvas.style.display = 'block';
+                controlTorch(false); // Asegurar apagado en SLS
+            } else if (f === 'night') {
+                // Visión Nocturna: Activar Linterna
+                controlTorch(true);
+            } else {
+                controlTorch(false);
+            }
+        }
+    }
+
+    /* --- UI & EVENTOS --- */
+    function togglePanels() {
+        vibrar('click');
+        document.body.classList.toggle('panels-active');
+        document.getElementById('btn-panel').classList.toggle('active', document.body.classList.contains('panels-active'));
+        
+        if (document.body.classList.contains('panels-active')) {
+            setTimeout(resizeAllCanvas, 500);
+        }
+    }
+
+    function handleUITap(event) {
+        if (!event.target.closest('.panel') && !event.target.closest('.filter-btn')) {
+            const controls = document.getElementById('filter-controls-container');
+            controls.style.opacity = controls.style.opacity === '0' ? '1' : '0';
+            controls.style.pointerEvents = controls.style.opacity === '0' ? 'none' : 'auto';
+        }
+    }
+
+    /* --- SPIRIT BOX (Resumido) --- */
+    document.getElementById('knob-power').addEventListener('click', async function() {
+        if (!audioCtx) await initAudio();
+        
+        isRunning = !this.classList.contains('active');
+        this.classList.toggle('active', isRunning);
+        
+        if(isRunning) {
+            vibrar('success');
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            playFondo1();
+            spiritBoxState = "SCANNING";
+            playFondo2_Fragment();
+            runSpiritBoxLoop();
+        } else {
+            vibrar('click');
+            spiritBoxState = "OFF";
+            if(audioSource_Fondo1) try{audioSource_Fondo1.stop()}catch(e){}
             if(scanTimer) clearTimeout(scanTimer);
-            try { recognition.abort(); } catch(e){}
-            window.speechSynthesis.cancel();
-            if(navigator.vibrate) navigator.vibrate(20);
+            if(recognition) recognition.abort();
         }
     });
 
     document.getElementById('knob-scan').addEventListener('click', function() {
+        vibrar('click');
         scanSpeed = (scanSpeed + 1) % 3;
-        const labels = ["LENTO", "NORMAL", "RÁPIDO"];
-        document.getElementById('speed-label').innerText = labels[scanSpeed];
-        this.style.borderColor = scanSpeed === 2 ? 'var(--alert-red)' : (scanSpeed === 1 ? 'var(--sim-orange)' : 'var(--sensor-blue)');
+        this.className = ''; // reset classes
+        if(scanSpeed === 0) this.classList.add('speed-1');
+        else if(scanSpeed === 1) this.classList.add('speed-2');
+        else this.classList.add('speed-3');
     });
 
+    /* --- INICIALIZACIÓN --- */
     window.onload = async () => {
-        updateLoading(10, "INICIANDO HARDWARE");
+        updateLoading(10, "INICIANDO CÁMARA");
         await startCamera();
-        updateLoading(30, "CALIBRANDO SENSORES");
-        await initMLModel(); 
-        drawLoop(); 
-        initMatrixEffect();
-        startSensors();
-        startVisualLoops();
-        await loadSheetData();
-        initSocialTimer();
-        document.getElementById('main-view-area').addEventListener('click', (e) => { if(e.target.id !== 'btn-panel') toggleControls(true); });
-        document.getElementById('vol-slider').addEventListener('input', (e) => {
-            const val = e.target.value; document.getElementById('vol-text').innerText = val + "%";
-            if(masterGain) masterGain.gain.value = val / 100;
-        });
+        
+        updateLoading(30, "CARGANDO IA");
+        await initMLModel();
+        detectPoseLoop();
+        
+        updateLoading(60, "CONECTANDO SENSORES");
+        requestSensorPermissions();
+        startVisualLoop();
+        setInterval(updateTemp, 2000);
+        
+        updateLoading(80, "SINCRONIZANDO DATOS");
+        loadSheetData(); // Esta función termina cerrando el loading
+        
+        document.getElementById('knob-scan').classList.add('speed-2');
     };
 
-    function initMatrixEffect() {
-        const cvs = document.getElementById('matrix-canvas'); const ctx = cvs.getContext('2d');
-        let w, h; const resize = () => { w = cvs.width = document.getElementById('left-panel').clientWidth || 300; h = cvs.height = window.innerHeight; };
-        window.addEventListener('resize', resize); setTimeout(resize, 500);
-        const cols = Math.floor(300/15)+1; const ypos = Array(cols).fill(0).map(()=>Math.random()*500);
-        function draw() { ctx.fillStyle='rgba(0,10,0,0.1)'; ctx.fillRect(0,0,w,h); ctx.fillStyle='#0F0'; ctx.font='12px monospace'; ypos.forEach((y,i)=>{ const t=Math.random()>0.98?'1':'0'; ctx.fillText(t,i*15,y); ypos[i]=y<0?h:y-(Math.random()*10+5); }); requestAnimationFrame(draw); } draw();
+    function updateLoading(percent, text) {
+        document.getElementById('loading-bar').style.width = percent + '%';
+        document.getElementById('loading-text').innerText = text;
+        if(percent >= 100) {
+            setTimeout(() => { document.getElementById('loading-overlay').style.opacity = '0'; }, 500);
+            setTimeout(() => { document.getElementById('loading-overlay').style.display = 'none'; }, 1000);
+        }
     }
-    function toggleControls(show) {
-        const ctrls = document.getElementById('filter-controls-container'); const logo = document.getElementById('logo-image');
-        if(show) { ctrls.classList.add('visible'); logo.classList.add('hiding'); clearTimeout(uiHideTimeout); uiHideTimeout = setTimeout(()=>toggleControls(false),2000); }
-        else { ctrls.classList.remove('visible'); logo.classList.remove('hiding'); }
+
+    /* --- FUNCIONES DE APOYO (Simplificadas para caber) --- */
+    function resizeAllCanvas() {
+        const w = document.getElementById('main-view-area').clientWidth;
+        const h = document.getElementById('main-view-area').clientHeight;
+        mainFilterCanvas.width = w; mainFilterCanvas.height = h;
+        
+        const vuContainer = document.getElementById('vu-meter-container');
+        if(vuContainer) {
+            vuCanvas = document.getElementById('vu-meter-canvas');
+            vuCanvas.width = vuContainer.clientWidth; vuCanvas.height = vuContainer.clientHeight;
+            vuCtx = vuCanvas.getContext('2d');
+        }
     }
-    function togglePanels() { document.body.classList.toggle('panels-active'); document.getElementById('btn-panel').classList.toggle('active'); }
-    function setFilter(f) {
-        document.body.className = document.body.className.replace(/filter-\w+/g, '');
-        if(currentFilter !== f) { document.body.classList.add('filter-'+f); currentFilter=f; } else { currentFilter='none'; }
-        toggleControls(true);
+
+    async function initMLModel() {
+        try {
+            const model = poseDetection.SupportedModels.MoveNet;
+            poseDetector = await poseDetection.createDetector(model, {modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING});
+        } catch(e){ console.log("IA Error", e); }
     }
-    async function startCamera() { try { const s = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}); document.getElementById('bg-camera-feed').srcObject = s; }catch(e){} }
-    function startSensors() { window.addEventListener('deviceorientation', (e)=>{ if(e.alpha) document.getElementById('compass-arrow').style.transform = `rotate(${-e.alpha}deg)`; }, true); }
-    function initSocialTimer() { setInterval(() => { const el = document.getElementById('social-overlay'); el.classList.add('visible'); setTimeout(()=>el.classList.remove('visible'),4000); }, SOCIAL_INTERVAL); }
-    async function loadSheetData() { 
-        updateLoading(50, "SINTONIZANDO ESPECTRO");
-        try { const r = await fetch(GOOGLE_SCRIPT_URL).then(res => res.json()); updateLoading(80, "RECIBIENDO DATOS"); if(r.automatico) automaticoData = r.automatico.map(x => x.TEXTO); if(r.programado) r.programado.forEach(x => programadoData.set(x.PREGUNTA.toLowerCase(), x.RESPUESTA)); updateLoading(100, "SISTEMA LISTO"); } catch(e) { updateLoading(100, "MODO OFFLINE"); }
+
+    function requestSensorPermissions() {
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+            DeviceOrientationEvent.requestPermission().then(res => {
+                if(res==='granted') initSensors();
+                else startSimulatedSensors();
+            }).catch(() => startSimulatedSensors());
+        } else { initSensors(); }
     }
-    function startVisualLoops() { setInterval(()=>{ document.getElementById('emf-arrow').style.transform = `rotate(${Math.random()*120-60}deg)`; }, 150); }
+
+    function initSensors() {
+        try {
+            orientationSensor = new AbsoluteOrientationSensor({ frequency: 10 });
+            orientationSensor.onreading = () => {
+                let q = orientationSensor.quaternion;
+                let yaw = Math.atan2(2 * (q[0] * q[1] + q[2] * q[3]), 1 - 2 * (q[1] * q[1] + q[2] * q[2])) * (180 / Math.PI);
+                document.getElementById('compass-needle').style.transform = `translateX(-50%) rotate(${-yaw}deg)`;
+                document.getElementById('mag-status').dataset.status = 'connected';
+            };
+            orientationSensor.start();
+        } catch(e) { document.getElementById('mag-status').dataset.status = 'unavailable'; }
+
+        try {
+            // Simulación de EMF usando magnetómetro raw si existe
+            magnetometer = new Magnetometer({ frequency: 10 });
+            magnetometer.onreading = () => {
+                let str = Math.sqrt(magnetometer.x**2 + magnetometer.y**2 + magnetometer.z**2);
+                emfValue = Math.min(100, (str/100)*100);
+                document.getElementById('prox-status').dataset.status = 'connected';
+            };
+            magnetometer.start();
+        } catch(e) {
+             startEmfSimulation(); 
+             document.getElementById('prox-status').dataset.status = 'simulated';
+        }
+    }
+    
+    function startSimulatedSensors() {
+        document.getElementById('mag-status').dataset.status = 'unavailable';
+        document.getElementById('prox-status').dataset.status = 'simulated';
+        startEmfSimulation();
+    }
+    
+    function startEmfSimulation() {
+        setInterval(() => { emfValue = Math.random() * 20; }, 200);
+    }
+    
+    function startVisualLoop() {
+        setInterval(() => {
+            const needle = document.getElementById('main-needle');
+            if(needle) needle.style.transform = `translateX(-50%) rotate(${-60 + (emfValue/100)*120}deg)`;
+        }, 100);
+    }
+    
+    function updateTemp() {
+        if (!isRunning) {
+            currentTemp += (Math.random()*0.2 - 0.1);
+            document.getElementById('temp-val').innerText = currentTemp.toFixed(1)+"°C";
+        }
+    }
+
+    /* --- AUDIO ENGINE (Carga de archivos y mic) --- */
+    async function initAudio() {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        masterGain = audioCtx.createGain(); masterGain.connect(audioCtx.destination);
+        
+        // Cargar Audios (Debes tener FONDO_1.mp3 y FONDO_2.mp3 en la misma carpeta)
+        try {
+            const b1 = await fetch('FONDO_1.mp3').then(r=>r.arrayBuffer());
+            audioBuffer_Fondo1 = await audioCtx.decodeAudioData(b1);
+            const b2 = await fetch('FONDO_2.mp3').then(r=>r.arrayBuffer());
+            audioBuffer_Fondo2 = await audioCtx.decodeAudioData(b2);
+            
+            gain_Fondo1 = audioCtx.createGain(); gain_Fondo1.connect(masterGain); gain_Fondo1.gain.value = 0;
+            gain_Fondo2 = audioCtx.createGain(); gain_Fondo2.connect(masterGain); gain_Fondo2.gain.value = 0;
+        } catch(e) { console.log("Falta audio mp3"); }
+
+        // Micrófono
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+            micStreamSource = audioCtx.createMediaStreamSource(stream);
+            vuAnalyserNode = audioCtx.createAnalyser(); vuAnalyserNode.fftSize = 256;
+            micStreamSource.connect(vuAnalyserNode);
+            vuDataArray = new Uint8Array(vuAnalyserNode.frequencyBinCount);
+            drawVUMeter();
+            document.getElementById('mic-status').dataset.status = 'connected';
+            
+            // Speech Rec
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if(SpeechRecognition) {
+                recognition = new SpeechRecognition();
+                recognition.lang = 'es-MX'; recognition.continuous = false;
+                recognition.onresult = (e) => {
+                    let t = e.results[0][0].transcript.toLowerCase();
+                    console.log("Voz:", t);
+                    // Lógica simple de respuesta
+                    if(programadoData.has(t)) speak(programadoData.get(t));
+                    else if(automaticoData.length) speak(automaticoData[Math.floor(Math.random()*automaticoData.length)]);
+                };
+                recognition.onend = () => { if(spiritBoxState === "LISTENING") recognition.start(); };
+            }
+        } catch(e) { document.getElementById('mic-status').dataset.status = 'unavailable'; }
+    }
+
+    function playFondo1() {
+        if(!audioBuffer_Fondo1) return;
+        audioSource_Fondo1 = audioCtx.createBufferSource();
+        audioSource_Fondo1.buffer = audioBuffer_Fondo1; audioSource_Fondo1.loop = true;
+        audioSource_Fondo1.connect(gain_Fondo1); audioSource_Fondo1.start();
+        gain_Fondo1.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 1);
+    }
+
+    function playFondo2_Fragment() {
+        if(!isRunning || !audioBuffer_Fondo2) return;
+        audioSource_Fondo2 = audioCtx.createBufferSource();
+        audioSource_Fondo2.buffer = audioBuffer_Fondo2;
+        audioSource_Fondo2.connect(gain_Fondo2);
+        const dur = 0.5 + Math.random();
+        audioSource_Fondo2.start(0, Math.random()*(audioBuffer_Fondo2.duration-2), dur);
+        gain_Fondo2.gain.value = 0.8;
+        
+        const delays = [1500, 700, 200];
+        scanTimer = setTimeout(playFondo2_Fragment, dur*1000 + delays[scanSpeed]);
+    }
+
+    function runSpiritBoxLoop() {
+        if(!isRunning) return;
+        // Lógica simplificada: cada 5-8s intenta escuchar
+        spiritBoxTimeout = setTimeout(() => {
+            if(!isRunning) return;
+            spiritBoxState = "LISTENING";
+            gain_Fondo2.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime); // Bajar ruido
+            try { recognition.start(); } catch(e){}
+            
+            setTimeout(() => {
+                if(!isRunning) return;
+                spiritBoxState = "SCANNING";
+                gain_Fondo2.gain.linearRampToValueAtTime(0.8, audioCtx.currentTime);
+                try { recognition.stop(); } catch(e){}
+                runSpiritBoxLoop();
+            }, 4000);
+        }, 5000 + Math.random()*3000);
+    }
+
+    function speak(text) {
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'es-MX'; u.rate = 0.8; u.pitch = 0.2;
+        window.speechSynthesis.speak(u);
+    }
+
+    async function loadSheetData() {
+        try {
+            const res = await fetch(GOOGLE_SCRIPT_URL).then(r=>r.json());
+            automaticoData = res.automatico.map(r=>r.TEXTO);
+            res.programado.forEach(r => programadoData.set(r.PREGUNTA.toLowerCase(), r.RESPUESTA));
+            updateLoading(100, "LISTO");
+        } catch(e) { updateLoading(100, "OFFLINE MODE"); }
+    }
+
+    function drawVUMeter() {
+        if(!vuCtx) return requestAnimationFrame(drawVUMeter);
+        vuAnalyserNode.getByteTimeDomainData(vuDataArray);
+        let sum = 0; for(let i=0; i<vuDataArray.length; i++) sum += Math.pow((vuDataArray[i]/128.0)-1, 2);
+        let rms = Math.sqrt(sum/vuDataArray.length);
+        let vol = Math.min(100, rms*1000); // escala simple
+        
+        let w = vuCanvas.width, h = vuCanvas.height;
+        vuCtx.fillStyle = '#000'; vuCtx.fillRect(0,0,w,h);
+        
+        let bars = 20, barW = w/bars;
+        for(let i=0; i<bars; i++) {
+            let barH = (i/bars) * vol * (h/50);
+            vuCtx.fillStyle = i > 15 ? 'red' : (i > 10 ? 'orange' : 'lime');
+            if(barH > 5) vuCtx.fillRect(i*barW, h-barH, barW-2, barH);
+        }
+        requestAnimationFrame(drawVUMeter);
+    }
+
+    /* --- LOOP DE DIBUJO (SLS) --- */
+    async function drawLoop() {
+        if (videoBg.readyState >= 2 && currentFilter === 'sls' && latestPoses.length) {
+            mainFilterCtx.clearRect(0, 0, mainFilterCanvas.width, mainFilterCanvas.height);
+            // Dibujo de esqueleto (Simplificado)
+            mainFilterCtx.strokeStyle = '#39FF14'; mainFilterCtx.lineWidth = 4;
+            latestPoses.forEach(pose => {
+                 pose.keypoints.forEach(kp => {
+                     if(kp.score > 0.3) {
+                         mainFilterCtx.beginPath(); mainFilterCtx.arc(kp.x, kp.y, 4, 0, 2*Math.PI); mainFilterCtx.stroke();
+                     }
+                 });
+            });
+        } else {
+            mainFilterCtx.clearRect(0, 0, mainFilterCanvas.width, mainFilterCanvas.height);
+        }
+        requestAnimationFrame(drawLoop);
+    }
+
+    async function detectPoseLoop() {
+        while(true) {
+            if(currentFilter === 'sls' && poseDetector && videoBg.readyState >= 2) {
+                try { latestPoses = await poseDetector.estimatePoses(videoBg); } catch(e){}
+            }
+            await new Promise(r => setTimeout(r, 100));
+        }
+    }
 </script>
 </body>
 </html>
