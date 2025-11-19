@@ -1,8245 +1,1961 @@
 <!DOCTYPE html>
-
-
-
 <html lang="es">
-
-
-
 <head>
-
-
-
     <meta charset="UTF-8">
-
-
-
-
-
-
-
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-
-
-
     <meta http-equiv="Pragma" content="no-cache" />
-
-
-
     <meta http-equiv="Expires" content="0" />
-
-
-
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
-
-
-
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-
-
-
     <link rel="apple-touch-icon" href="obr-logo.png">
 
-
-
-
-
-
-
-    <title>DETECTOR-OBR</title> 
-
-
-
+    <title>DETECTOR-OBR (FUSION)</title> 
     <script src="https://cdn.tailwindcss.com"></script>
-
-
-
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-
-
-
     
-
-
-
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
-
-
-
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
-
-
-
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
-
-
-
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
 
-
-
-
-
-
-
     <style>
-
-
-
         :root {
-
-
-
-            --neon-green: #39FF14; 
-
-
-
+            --neon-green: #39FF14;
             --alert-red: #FF3333;
-
-
-
             --sim-orange: #FFB000;
-
-
-
-            --sensor-blue: #00BFFF;
-
-
-
-            --panel-bg: #0A0F0A;
-
-
-
-            --border-color: rgba(57, 255, 20, 0.3);
-
-
-
-            --text-color: #E0E0E0;
-
-
-
-            --text-dim: #777;
-
-
-
-            --panel-width-landscape: 240px; 
-
-
-
+            --sensor-blue: #00BFFF; 
+            --panel-bg-dark: #1A1A1A;
+            --border-color-dark: rgba(57, 255, 20, 0.4);
+            --text-color-light: #E0E0E0; 
+            --text-dim-grey: #777;
+            --panel-width-landscape: 300px;
+            --panel-height-landscape: 160px;
         }
-
-
-
         
-
-
-
         body {
-
-
-
             font-family: 'Share Tech Mono', monospace;
-
-
-
             background-color: #000;
-
-
-
-            color: var(--neon-green);
-
-
-
+            color: var(--text-color-light);
             overflow: hidden;
-
-
-
             width: 100vw;
-
-
-
             height: 100vh;
-
-
-
         }
-
-
-
-
-
-
 
         #app-ui {
-
-
-
             width: 100%;
-
-
-
             height: 100%;
-
-
-
             position: relative;
-
-
-
             touch-action: none;
-
-
-
         }
-
-
-
-
-
-
 
         #main-view-area {
-
-
-
             position: fixed;
-
-
-
             top: 0;
-
-
-
             left: 0;
-
-
-
             width: 100%;
-
-
-
             height: 100%;
-
-
-
             overflow: hidden;
-
-
-
             transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-
-
-
             pointer-events: auto;
-
-
-
             z-index: 5;
-
-
-
             background: #000;
-
-
-
         }
-
-
-
-
-
-
-
-        /* 📍 SOLUCIÓN CÁMARA ESTIRADA (PUNTO 6) */
-
-
 
         #bg-camera-feed {
-
-
-
             position: absolute;
-
-
-
             top: 50%;
-
-
-
             left: 50%;
-
-
-
             min-width: 100%; 
-
-
-
             min-height: 100%; 
-
-
-
             width: auto;
-
-
-
             height: auto;
-
-
-
             object-fit: cover; 
-
-
-
             transform: translate(-50%, -50%);
-
-
-
             z-index: 1;
-
-
-
-            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-
-
-
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), filter 0.3s ease;
             opacity: 1;
-
-
-
+            filter: none;
         }
-
-
-
         
-
-
+        body.filter-detector #bg-camera-feed {
+            filter: grayscale(1) contrast(3) sepia(1) hue-rotate(-30deg) saturate(5);
+        }
+        body.filter-negative #bg-camera-feed {
+            filter: invert(1) contrast(1.1);
+        }
 
         #main-filter-canvas {
-
-
-
             position: absolute;
-
-
-
             top: 0;
-
-
-
             left: 0;
-
-
-
             width: 100%; 
-
-
-
             height: 100%; 
-
-
-
             z-index: 2; 
-
-
-
             pointer-events: none; 
-
-
-
             transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-
-
-
+            display: none;
         }
-
-
-
         
-
-
-
-        body.panels-active #main-filter-canvas {
-
-
-
-            left: 0 !important;
-
-
-
-            width: 100% !important;
-
-
-
+        body.filter-sls #main-filter-canvas {
+            display: block;
         }
-
-
-
-
-
-
 
         .hidden-canvas { display: none; }
-
-
-
         .hidden { display: none !important; }
 
-
-
-
-
-
-
-        /* --- Panel y Controles (Rediseño P1) --- */
-
-
-
-        #side-panel-container {
-
-
-
+        #left-panel, #bottom-panel {
             position: fixed;
-
-
-
             display: flex;
-
-
-
             flex-direction: column;
-
-
-
             z-index: 20;
-
-
-
             pointer-events: none; 
-
-
-
             transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-
-
-
             box-sizing: border-box; 
-
-
-
+            overflow: hidden;
         }
-
-
-
-
-
-
-
-        body.panels-active #side-panel-container {
-
-
-
+        
+        body.panels-active #left-panel,
+        body.panels-active #bottom-panel {
             transform: translateX(0) translateY(0);
-
-
-
             pointer-events: auto;
-
-
-
+        }
+        
+        #camera-frame {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+            border: 4px solid transparent;
+            pointer-events: none;
+            z-index: 10;
+            transition: border-color 0.3s ease-in-out;
+            animation: none;
+            opacity: 0;
+        }
+        
+        body.panels-active #camera-frame {
+            opacity: 1;
+            border-color: var(--neon-green);
+            animation: cameraFrameGlow 2s infinite alternate;
         }
 
+        @keyframes cameraFrameGlow {
+            0% { border-color: rgba(57, 255, 20, 0.4); box-shadow: 0 0 5px rgba(57, 255, 20, 0.2); }
+            100% { border-color: rgba(57, 255, 20, 0.8); box-shadow: 0 0 15px rgba(57, 255, 20, 0.5); }
+        }
+        
+        #processing-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        
+        body.panels-active #processing-lines { opacity: 1; }
 
+        .processing-line {
+            position: absolute;
+            background: var(--neon-green);
+            box-shadow: 0 0 5px var(--neon-green), 0 0 10px var(--neon-green);
+            width: 2px;
+            height: 100px;
+            opacity: 0.5;
+            animation: scan 4s linear infinite;
+        }
+        .processing-line:nth-child(1) { left: 10%; animation-duration: 4s; animation-delay: 0s; }
+        .processing-line:nth-child(2) { left: 30%; animation-duration: 3.5s; animation-delay: -1s; }
+        .processing-line:nth-child(3) { left: 50%; animation-duration: 4.5s; animation-delay: -2s; }
+        .processing-line:nth-child(4) { left: 70%; animation-duration: 3s; animation-delay: -3s; }
+        .processing-line:nth-child(5) { left: 90%; animation-duration: 4s; animation-delay: -4s; }
 
-
-
-
-
-        /* Panel Rediseñado (P1) */
-
-
+        @keyframes scan {
+            0% { transform: translateY(-100px); opacity: 0; }
+            20% { opacity: 0.5; }
+            80% { opacity: 0.5; }
+            100% { transform: translateY(100vh); opacity: 0; }
+        }
 
         .panel {
-
-
-
-            background-color: var(--panel-bg);
-
-
-
-            border: 1px solid var(--border-color);
-
-
-
-            box-shadow: 0 0 10px rgba(57, 255, 20, 0.2) inset;
-
-
-
+            background-color: var(--panel-bg-dark);
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgMTAwIDEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzFhMWExYSIvPjxwYXRoIGQ9Ik0wIDUwSDEwMFYxMEgwWiIgZmlsbD0iI0EwQTBBMCIgb3BhY2l0eT0iMC4wMiIvPjxwYXRoIGQ9Ik0wIDkwSDEwMFY1MEgwWiIgZmlsbD0iIzEwMTAxMCIgb3BhY2l0eT0iMC4wMyIvPjxwYXRoIGQ9Ik0wIDEwMEgxMFYwSDBaIiBmaWxsPSIjRkZGRkZGIiBvcGFjaXR5PSIwLjAxIi8+PC9zdmc+');
+            border: 2px solid var(--border-color-dark);
+            box-shadow: 0 0 15px rgba(57, 255, 20, 0.2) inset, 0 0 5px rgba(0,0,0,0.8);
             display: flex;
-
-
-
             flex-direction: column;
-
-
-
-            padding: 6px; /* Más compacto */
-
-
-
+            padding: 8px; 
             pointer-events: auto;
-
-
-
             flex-grow: 1;
-
-
-
-            overflow-y: auto;
-
-
-
-            gap: 6px; /* Más compacto */
-
-
-
+            overflow: hidden;
+            gap: 8px; 
+            border-radius: 0;
+            position: relative;
         }
-
-
-
         
-
-
-
         .panel.alert {
-
-
-
             border-color: var(--alert-red);
-
-
-
-            box-shadow: 0 0 15px var(--alert-red) inset;
-
-
-
+            box-shadow: 0 0 20px var(--alert-red) inset, 0 0 8px var(--alert-red);
         }
-
-
-
-
-
-
 
         .panel-header-main {
-
-
-
             font-family: 'Orbitron', sans-serif;
-
-
-
-            font-size: 0.8rem;
-
-
-
+            font-size: 0.9rem;
             text-align: center;
-
-
-
             color: var(--neon-green);
-
-
-
-            text-shadow: 0 0 5px var(--neon-green);
-
-
-
-            border: 1px solid var(--border-color);
-
-
-
-            padding: 4px 0;
-
-
-
-            border-radius: 4px;
-
-
-
-            background: rgba(57, 255, 20, 0.05);
-
-
-
-            letter-spacing: 1px;
-
-
-
+            text-shadow: 0 0 8px var(--neon-green);
+            border: 1px solid var(--border-color-dark);
+            padding: 6px 0;
+            background: rgba(57, 255, 20, 0.08);
+            letter-spacing: 2px;
             flex-shrink: 0;
-
-
-
-        }
-
-
-
-        
-
-
-
-        .panel-section {
-
-
-
-            border: 1px solid var(--border-color);
-
-
-
-            border-radius: 4px;
-
-
-
-            padding: 6px; /* Más compacto */
-
-
-
-            background: rgba(0, 0, 0, 0.2);
-
-
-
-            display: flex;
-
-
-
-            flex-direction: column;
-
-
-
-        }
-
-
-
-        
-
-
-
-        .section-title {
-
-
-
-            font-family: 'Orbitron', sans-serif;
-
-
-
-            font-size: 0.6rem;
-
-
-
-            color: var(--text-dim);
-
-
-
             text-transform: uppercase;
-
-
-
-            margin-bottom: 6px; /* Más compacto */
-
-
-
-            text-align: center;
-
-
-
-            border-bottom: 1px solid var(--border-color);
-
-
-
-            padding-bottom: 3px; /* Más compacto */
-
-
-
         }
-
-
-
         
-
-
+        .panel-section {
+            border: 1px solid var(--border-color-dark);
+            background: rgba(0, 0, 0, 0.6); 
+            display: flex;
+            flex-direction: column;
+            padding: 8px; 
+            flex-shrink: 0;
+            flex-grow: 0;
+            z-index: 2;
+        }
+        
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            color: var(--text-color-light); 
+            text-transform: uppercase;
+            margin-bottom: 8px; 
+            text-align: center;
+            border-bottom: 1px dashed var(--border-color-dark);
+            padding-bottom: 4px; 
+            letter-spacing: 1px;
+            color: var(--sim-orange);
+        }
+        
+        /* Botón Linterna Rediseñado (Fuente 2) */
+        .panel-button-torch {
+            background: rgba(0, 50, 50, 0.7);
+            border: 2px solid var(--border-color-dark);
+            color: var(--neon-green);
+            transition: all 0.2s;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            cursor: pointer;
+            padding: 8px;
+            line-height: 1;
+        }
+        .panel-button-torch:active, .panel-button-torch.active {
+            background: var(--neon-green);
+            color: #000;
+            box-shadow: 0 0 25px #fff;
+            border-color: var(--neon-green);
+        }
 
         .sensor-status-grid {
-
-
-
             display: grid;
-
-
-
             grid-template-columns: 1fr 1fr 1fr;
-
-
-
-            gap: 5px;
-
-
-
+            gap: 8px;
             text-align: center;
-
-
-
         }
-
-
-
         .status-light-group {
-
-
-
             display: flex;
-
-
-
             flex-direction: column;
-
-
-
             align-items: center;
-
-
-
-            font-size: 0.6rem;
-
-
-
+            font-size: 0.65rem;
+            text-transform: uppercase;
         }
-
-
-
         .status-light-group .emoji {
-
-
-
-            font-size: 1.2rem;
-
-
-
+            font-size: 1.4rem;
             line-height: 1;
-
-
-
+            margin-bottom: 2px;
         }
-
-
-
         .status-led-indicator {
-
-
-
-            width: 10px;
-
-
-
-            height: 10px;
-
-
-
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
-
-
-
             background-color: #222;
-
-
-
             border: 1px solid #444;
-
-
-
-            margin-bottom: 4px;
-
-
-
+            margin-bottom: 6px;
             transition: all 0.3s;
-
-
-
         }
-
-
-
-        .status-light-group[data-status="connected"] .status-led-indicator {
-
-
-
-            background-color: var(--neon-green);
-
-
-
-            box-shadow: 0 0 8px var(--neon-green);
-
-
-
-            animation: pulseGlow 1.5s infinite;
-
-
-
-        }
-
-
-
-        .status-light-group[data-status="fallback"] .status-led-indicator {
-
-
-
-            background-color: var(--sensor-blue);
-
-
-
-            box-shadow: 0 0 8px var(--sensor-blue);
-
-
-
-            animation: pulseGlow 1.5s infinite;
-
-
-
-        }
-
-
-
-        .status-light-group[data-status="simulated"] .status-led-indicator {
-
-
-
-            background-color: var(--sim-orange);
-
-
-
-            box-shadow: 0 0 8px var(--sim-orange);
-
-
-
-            animation: pulseGlow 2s infinite;
-
-
-
-        }
-
-
-
-        .status-light-group[data-status="unavailable"] .status-led-indicator {
-
-
-
-            background-color: var(--alert-red);
-
-
-
-            box-shadow: 0 0 8px var(--alert-red);
-
-
-
-        }
-
-
-
-        .status-light-group[data-status="off"] .status-led-indicator {
-
-
-
-            background-color: #333;
-
-
-
-        }
-
-
-
+        .status-light-group[data-status="connected"] .status-led-indicator { background-color: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); animation: pulseGlow 1.5s infinite; }
+        .status-light-group[data-status="fallback"] .status-led-indicator { background-color: var(--sensor-blue); box-shadow: 0 0 10px var(--sensor-blue); animation: pulseGlow 1.5s infinite; }
+        .status-light-group[data-status="simulated"] .status-led-indicator { background-color: var(--sim-orange); box-shadow: 0 0 10px var(--sim-orange); animation: pulseGlow 2s infinite; }
+        .status-light-group[data-status="unavailable"] .status-led-indicator { background-color: var(--alert-red); box-shadow: 0 0 10px var(--alert-red); }
+        .status-light-group[data-status="off"] .status-led-indicator { background-color: #333; }
         
-
-
-
-        .status-light-group span { color: var(--text-dim); }
-
-
-
+        .status-light-group span { color: var(--text-dim-grey); }
         .status-light-group[data-status="connected"] span { color: var(--neon-green); }
-
-
-
         .status-light-group[data-status="fallback"] span { color: var(--sensor-blue); }
-
-
-
         .status-light-group[data-status="simulated"] span { color: var(--sim-orange); }
-
-
-
         .status-light-group[data-status="unavailable"] span { color: var(--alert-red); }
 
-
-
-
-
-
-
-        /* Lecturas de Campo (Rediseño P1) */
-
-
-
         .dials-grid {
-
-
-
             display: grid;
-
-
-
             grid-template-columns: 1fr 1.5fr 1fr;
-
-
-
-            gap: 10px;
-
-
-
+            gap: 12px;
             align-items: center;
-
-
-
             justify-items: center;
-
-
-
-            padding: 5px 0; /* Más compacto */
-
-
-
+            padding: 6px 0;
         }
-
-
-
         
-
-
-
         .dial-container {
-
-
-
             position: relative;
-
-
-
-            width: 70px;
-
-
-
-            height: 70px;
-
-
-
-            background: radial-gradient(circle, #111, #000);
-
-
-
+            width: 75px;
+            height: 75px;
+            background: #000;
             border-radius: 50%;
-
-
-
-            border: 1px solid var(--border-color);
-
-
-
-            box-shadow: 0 0 5px rgba(57, 255, 20, 0.3) inset;
-
-
-
+            border: 2px solid var(--border-color-dark);
+            box-shadow: 0 0 8px rgba(57, 255, 20, 0.3) inset, 0 0 5px #000;
         }
-
-
+        .dial-container::before {
+            content: '';
+            position: absolute;
+            top: 6px; left: 6px; right: 6px; bottom: 6px;
+            border-radius: 50%;
+            background: conic-gradient(
+                var(--neon-green) 0deg 5deg, transparent 5deg 15deg,
+                var(--text-dim-grey) 15deg 18deg, transparent 18deg 60deg,
+                var(--text-dim-grey) 60deg 63deg, transparent 63deg 105deg,
+                var(--alert-red) 105deg 110deg, transparent 110deg 250deg,
+                var(--neon-green) 250deg 255deg, transparent 255deg 360deg
+            );
+            mask-image: radial-gradient(transparent 65%, black 66%);
+        }
+        .dial-container::after {
+            content: '';
+            position: absolute;
+            top: 5%; left: 10%;
+            width: 80%; height: 40%;
+            border-radius: 50% / 100%;
+            border-top-left-radius: 60px;
+            border-top-right-radius: 60px;
+            background: radial-gradient(ellipse at top, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 60%);
+        }
 
         .dial-needle {
-
-
-
-            width: 2px;
-
-
-
-            height: 40%;
-
-
-
-            background: var(--neon-green);
-
-
-
-            box-shadow: 0 0 5px var(--neon-green);
-
-
-
-            position: absolute;
-
-
-
-            bottom: 50%;
-
-
-
-            left: 50%;
-
-
-
-            transform-origin: bottom center;
-
-
-
-            transform: translateX(-50%) rotate(-45deg);
-
-
-
-            transition: transform 0.5s cubic-bezier(0.2, 1.5, 0.5, 1);
-
-
-
-        }
-
-
-
-        .dial-label {
-
-
-
-            font-size: 0.6rem;
-
-
-
-            color: var(--text-dim);
-
-
-
-            margin-top: 4px;
-
-
-
-            text-align: center;
-
-
-
-        }
-
-
-
-        
-
-
-
-        #detector-dial-container {
-
-
-
-            width: 100px;
-
-
-
-            height: 100px;
-
-
-
-        }
-
-
-
-        #detector-dial-needle {
-
-
-
-            height: 45%;
-
-
-
-            background: var(--alert-red);
-
-
-
-            box-shadow: 0 0 8px var(--alert-red);
-
-
-
-            transform: translateX(-50%) rotate(-60deg);
-
-
-
-        }
-
-
-
-        
-
-
-
-        #temp-readout { text-align: center; }
-
-
-
-        #temp-val {
-
-
-
-            font-size: 1.8rem;
-
-
-
-            font-family: 'Orbitron', sans-serif;
-
-
-
-            color: var(--neon-green);
-
-
-
-            line-height: 1;
-
-
-
-        }
-
-
-
-        .temp-label {
-
-
-
-            font-size: 0.6rem;
-
-
-
-            color: var(--text-dim);
-
-
-
-        }
-
-
-
-        
-
-
-
-        /* Spirit Box (Compacto P1) */
-
-
-
-        .spirit-box-grid {
-
-
-
-            display: grid;
-
-
-
-            grid-template-columns: 1fr 1fr;
-
-
-
-            gap: 10px;
-
-
-
-            align-items: center;
-
-
-
-        }
-
-
-
-        .knob-container {
-
-
-
-            display: flex;
-
-
-
-            flex-direction: column;
-
-
-
-            align-items: center;
-
-
-
-        }
-
-
-
-        .knob-label {
-
-
-
-            font-size: 0.6rem;
-
-
-
-            color: var(--text-dim);
-
-
-
-            margin-top: 4px;
-
-
-
-        }
-
-
-
-        .knob-circle {
-
-
-
-            width: 55px;
-
-
-
-            height: 55px;
-
-
-
-            border-radius: 50%;
-
-
-
-            border: 2px solid var(--border-color);
-
-
-
-            position: relative;
-
-
-
-            cursor: pointer;
-
-
-
-            background: radial-gradient(circle, #222, #000);
-
-
-
-            box-shadow: 0 3px 5px #000, 0 0 5px rgba(57, 255, 20, 0.3) inset;
-
-
-
-            transition: all 0.3s;
-
-
-
-        }
-
-
-
-        .knob-circle.active {
-
-
-
-            border-color: var(--neon-green);
-
-
-
-            box-shadow: 0 3px 5px #000, 0 0 10px var(--neon-green) inset, 0 0 10px var(--neon-green);
-
-
-
-        }
-
-
-
-        .knob-indicator {
-
-
-
-            position: absolute;
-
-
-
-            top: 6px;
-
-
-
-            left: 50%;
-
-
-
             width: 3px;
-
-
-
-            height: 15px;
-
-
-
+            height: 40%;
             background: var(--neon-green);
-
-
-
-            transform: translateX(-50%);
-
-
-
-            border-radius: 2px;
-
-
-
-            box-shadow: 0 0 5px var(--neon-green);
-
-
-
-        }
-
-
-
-        #pwr-knob-indicator {
-
-
-
-            height: 8px;
-
-
-
-            width: 8px;
-
-
-
-            border-radius: 50%;
-
-
-
-            top: 8px;
-
-
-
-            background: var(--alert-red);
-
-
-
-            box-shadow: 0 0 5px var(--alert-red);
-
-
-
-        }
-
-
-
-        #pwr-knob.active #pwr-knob-indicator {
-
-
-
-            background: var(--neon-green);
-
-
-
             box-shadow: 0 0 8px var(--neon-green);
-
-
-
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform-origin: bottom center;
+            transform: translateX(-50%) rotate(-45deg);
+            transition: transform 0.5s cubic-bezier(0.2, 1.5, 0.5, 1);
+            z-index: 10;
+        }
+        .dial-label {
+            font-size: 0.65rem;
+            color: var(--text-dim-grey);
+            margin-top: 5px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        
+        #detector-dial-container { width: 95px; height: 95px; }
+        #detector-dial-needle {
+            height: 45%;
+            background: var(--alert-red);
+            box-shadow: 0 0 10px var(--alert-red);
+            transform: translateX(-50%) rotate(-60deg);
+        }
+        
+        #temp-readout { text-align: center; z-index: 5; }
+        #temp-val {
+            font-size: 1.6rem;
+            font-family: 'Orbitron', sans-serif;
+            color: var(--neon-green);
+            line-height: 1.1;
+            text-shadow: 0 0 5px var(--neon-green);
+        }
+        .temp-label {
+            font-size: 0.65rem;
+            color: var(--text-dim-grey);
+            text-transform: uppercase;
+        }
+        
+        /* Layout Panel Inferior */
+        #bottom-panel .panel {
+            flex-direction: row;
+            justify-content: space-around;
+            align-items: center;
+        }
+        #bottom-panel .panel-section {
+            flex-grow: 1;
+            flex-basis: 0;
+            height: 100%;
+            justify-content: center;
+        }
+        #bottom-panel .dials-grid { grid-template-columns: 1fr 1.5fr 1fr; }
+        #detector-dial-container { grid-column: 2 / 3; }
+        #mag-dial-container { grid-column: 1 / 2; }
+        #temp-readout { grid-column: 3 / 4; }
+        #vu-meter-container { height: 100px; }
+        
+        #panel-cam-stats {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-dim-grey);
+            text-shadow: none;
+            padding: 4px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--border-color-dark);
+            text-align: center;
+            letter-spacing: 1px;
+            height: 100px; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #panel-cam-stats span { color: var(--text-color-light); font-size: 1.1rem; }
+        
+        .spirit-box-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            align-items: center;
+        }
+        .knob-container { display: flex; flex-direction: column; align-items: center; }
+        .knob-label { font-size: 0.65rem; color: var(--text-dim-grey); margin-top: 6px; text-transform: uppercase; }
+        
+        .knob-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid var(--border-color-dark);
+            position: relative;
+            cursor: pointer;
+            background: #111;
+            box-shadow: 0 4px 6px #000, 0 0 8px rgba(57, 255, 20, 0.3) inset;
+            transition: all 0.3s;
+        }
+        .knob-circle::before { 
+             content: '';
+             position: absolute; top: 3px; left: 3px; right: 3px; bottom: 3px;
+             border-radius: 50%;
+             background: radial-gradient(circle, #222, #000);
+        }
+        .knob-indicator {
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            width: 4px;
+            height: 18px;
+            background: var(--neon-green);
+            transform: translateX(-50%) rotate(0deg);
+            border-radius: 2px;
+            box-shadow: 0 0 8px var(--neon-green);
+            z-index: 5;
+            clip-path: polygon(0 0, 100% 0, 100% 70%, 50% 100%, 0 70%);
+            transition: transform 0.3s ease;
         }
 
-
-
-
-
-
+        /* Botón de Encender (REC) - Fuente 2 */
+        .power-button-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 60px; 
+        }
+        #knob-power {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid var(--border-color-dark);
+            position: relative;
+            cursor: pointer;
+            background: #111;
+            box-shadow: 0 4px 6px #000, 0 0 8px rgba(57, 255, 20, 0.3) inset;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        #knob-power::before {
+            content: "REC";
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            color: var(--alert-red);
+            text-shadow: 0 0 5px var(--alert-red);
+            transition: all 0.3s;
+        }
+        #knob-power.active {
+            border-color: var(--alert-red);
+            background: #330000;
+        }
+        #knob-power.active::before {
+            color: var(--alert-red);
+            text-shadow: 0 0 10px var(--alert-red), 0 0 15px #fff;
+            animation: pulseRec 1.5s infinite;
+        }
+        @keyframes pulseRec {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
 
         #activity-graph-container {
-
-
-
             width: 100%;
-
-
-
-            height: 55px;
-
-
-
+            height: 60px;
             background: #000;
-
-
-
-            border: 1px solid var(--border-color);
-
-
-
-            border-radius: 4px;
-
-
-
+            border: 1px solid var(--border-color-dark);
             overflow: hidden;
-
-
-
+            grid-column: span 2;
         }
-
-
-
-        #energy-canvas {
-
-
-
-            width: 100%;
-
-
-
-            height: 100%;
-
-
-
-        }
-
-
-
-
-
-
+        #energy-canvas { width: 100%; height: 100%; }
 
         .volume-control-group {
-
-
-
             display: flex;
-
-
-
             align-items: center;
-
-
-
-            gap: 8px;
-
-
-
+            gap: 10px;
             width: 100%;
-
-
-
             grid-column: 1 / -1;
-
-
-
         }
-
-
-
         .vol-label {
-
-
-
-            font-size: 0.6rem;
-
-
-
-            color: var(--text-dim);
-
-
-
+            font-size: 0.65rem;
+            color: var(--text-dim-grey);
             white-space: nowrap;
-
-
-
+            text-transform: uppercase;
         }
-
-
-
         #vol-percent {
-
-
-
-            font-size: 0.6rem;
-
-
-
+            font-size: 0.65rem;
             color: var(--neon-green);
-
-
-
-            width: 30px;
-
-
-
+            width: 35px;
+            text-align: right;
         }
-
-
-
-
-
-
 
         input[type=range] {
-
-
-
-            flex-grow: 1; -webkit-appearance: none; height: 15px; 
-
-
-
-            background: #111; border: 1px solid var(--border-color);
-
-
-
-            border-radius: 10px; overflow: hidden;
-
-
-
+            flex-grow: 1;
+            -webkit-appearance: none; height: 18px; 
+            background: #111; border: 1px solid var(--border-color-dark);
+            border-radius: 2px; overflow: hidden;
         }
-
-
-
         input[type=range]::-webkit-slider-thumb {
-
-
-
-            -webkit-appearance: none; width: 25px; height: 25px;
-
-
-
+            -webkit-appearance: none;
+            width: 30px; height: 30px;
             background: #444; border: 1px solid #666;
-
-
-
-            border-radius: 50%;
-
-
-
+            border-radius: 0;
             box-shadow: -100vw 0 0 100vw var(--neon-green);
-
-
-
             cursor: pointer;
-
-
-
         }
-
-
-
-
-
-
-
-        /* --- UI Persistente (Logo, Linterna, Stats) --- */
-
-
+        
+        #vu-meter-container {
+            width: 100%;
+            height: 45px;
+            background: #000;
+            border: 1px solid var(--border-color-dark);
+            padding: 4px;
+            overflow: hidden;
+        }
+        #vu-meter-canvas { width: 100%; height: 100%; background: #000; }
 
         .persistent-ui {
-
-
-
             position: fixed;
-
-
-
             z-index: 100;
-
-
-
             pointer-events: none;
-
-
-
             opacity: 1;
-
-
-
             transform: scale(1);
-
-
-
             transition: opacity 0.3s ease-out, transform 0.3s ease-out;
-
-
-
         }
-
-
-
-
-
-
 
         #logo-image {
-
-
-
-            top: 20px; right: 20px;
-
-
-
-            width: 60px; height: 60px;
-
-
-
-            animation: logo-effects 7s infinite linear; 
-
-
-
+            top: 20px;
+            right: 20px;
+            width: 70px; height: 70px;
+            animation: logo-effects 7s infinite linear;
         }
 
-
-
-
-
-
-
-        /* 📍 NUEVO: Botón Linterna (P9) */
-
-
-
-        #btn-torch {
-
-
-
-            position: fixed;
-
-
-
-            top: 20px; left: 20px;
-
-
-
-            width: 50px; height: 50px;
-
-
-
-            z-index: 100;
-
-
-
-            background: rgba(0, 50, 50, 0.7);
-
-
-
-            border: 2px solid var(--neon-green);
-
-
-
-            color: var(--neon-green);
-
-
-
-            border-radius: 50%;
-
-
-
-            box-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
-
-
-
-            transition: all 0.2s;
-
-
-
-            pointer-events: auto; /* Siempre clickeable */
-
-
-
-            opacity: 1;
-
-
-
-            transform: scale(1);
-
-
-
-        }
-
-
-
-        #btn-torch svg {
-
-
-
-            width: 24px; height: 24px;
-
-
-
-            margin: auto;
-
-
-
-            fill: currentColor;
-
-
-
-        }
-
-
-
-        #btn-torch:active, #btn-torch.active {
-
-
-
-            background: var(--neon-green);
-
-
-
-            color: #000;
-
-
-
-            box-shadow: 0 0 20px #fff;
-
-
-
-        }
-
-
-
-
-
-
-
-        /* 📍 NUEVO: Stats de Cámara (P6) */
-
-
-
-        #cam-stats-display {
-
-
-
-            bottom: 15px; right: 15px;
-
-
-
+        #floating-cam-stats {
+            bottom: 15px;
+            right: 15px;
             font-family: 'Orbitron', sans-serif;
-
-
-
             font-size: 0.7rem;
-
-
-
             font-weight: 700;
-
-
-
-            color: var(--neon-green);
-
-
-
-            text-shadow: 0 0 3px var(--neon-green), 0 0 5px #000;
-
-
-
+            color: var(--text-dim-grey);
+            text-shadow: none;
             padding: 2px 5px;
-
-
-
-            background: rgba(0,0,0,0.3);
-
-
-
-            border-radius: 3px;
-
-
-
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--border-color-dark);
+            display: none; 
+            letter-spacing: 0.5px;
         }
-
-
-
-
-
-
-
-        /* Lógica de ocultar UI (P10) */
-
-
+        #floating-cam-stats span { color: var(--text-color-light); }
+        
+        body:not(.panels-active) #floating-cam-stats { display: block; }
 
         #logo-image.visible {
-
-
-
-            transform: scale(1); opacity: 1;
-
-
-
+            transform: scale(1);
+            opacity: 1;
             animation: popIn 0.3s ease-out forwards, logo-effects 7s infinite linear 0.3s;
-
-
-
         }
-
-
-
-        #logo-image.hiding, #btn-torch.hiding, #cam-stats-display.hiding {
-
-
-
+        #logo-image.hiding {
             animation: waterDrop 0.5s ease-out forwards;
-
-
-
         }
-
-
-
-
-
-
 
         @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 1; } }
-
-
-
         @keyframes logo-effects { 0%, 90% { transform: scale(1); opacity: 1; filter: none; } 91% { transform: scale(1.1) translateX(-5px); opacity: 0.8; filter: drop-shadow(2px 0 red) drop-shadow(-2px 0 blue); } 92% { transform: scale(0.9) translateX(5px); opacity: 1; filter: drop-shadow(-2px 0 red) drop-shadow(2px 0 blue); } 93% { transform: scale(1); opacity: 1; filter: none; } 94% { transform: scale(1); opacity: 0.5; filter: blur(2px); } 95% { transform: scale(1); opacity: 1; filter: none; } 96% { transform: scale(1) translateY(-3px); } 97% { transform: scale(1) translateY(3px); } 98%, 100% { transform: scale(1) translateY(0); } }
-
-
-
         @keyframes waterDrop { 0% { opacity: 1; transform: scale(1); filter: blur(0); } 100% { opacity: 0; transform: scale(2.5); filter: blur(5px); } }
-
-
-
         
-
-
-
         #kinect-banner {
-
-
-
-            position: fixed; top: 20px; left: 50%;
-
-
-
+            position: fixed;
+            top: 25px; left: 50%;
             transform: translateX(-50%);
-
-
-
             z-index: 100; font-family: 'Orbitron', sans-serif;
-
-
-
-            font-size: 1.0rem; font-weight: 700;
-
-
-
+            font-size: 1.1rem; font-weight: 700;
             color: var(--neon-green);
-
-
-
-            text-shadow: 0 0 5px var(--neon-green), 0 0 10px #000;
-
-
-
+            text-shadow: 0 0 8px var(--neon-green), 0 0 12px #000;
             display: none; pointer-events: none;
-
-
-
+            letter-spacing: 1px;
         }
-
-
-
         #kinect-banner .led-red {
-
-
-
             animation: pulseGlow 1.5s infinite ease-in-out;
-
-
-
-            text-shadow: 0 0 8px var(--alert-red), 0 0 10px #000;
-
-
-
+            text-shadow: 0 0 10px var(--alert-red), 0 0 12px #000;
         }
-
-
-
-
-
-
 
         @keyframes pulseGlow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1.0; } }
 
-
-
-
-
-
-
         #filter-controls-container {
-
-
-
-            position: fixed; top: 50%; right: 15px;
-
-
-
+            position: fixed;
+            top: 50%; right: 15px;
             transform: translateY(-50%);
-
-
-
             display: flex; flex-direction: column;
-
-
-
-            gap: 10px; z-index: 100;
-
-
-
+            gap: 12px; z-index: 100;
             pointer-events: auto; opacity: 1;
-
-
-
-            transition: opacity 0.5s ease-in-out, top 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-
-
-
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
-
-
-
         .filter-btn {
-
-
-
-            width: 50px; height: 50px;
-
-
-
-            border-radius: 50%;
-
-
-
+            width: 55px;
+            height: 55px;
+            border-radius: 0;
             background: rgba(0, 50, 50, 0.7);
-
-
-
             border: 2px solid var(--neon-green);
-
-
-
             color: var(--neon-green);
-
-
-
             font-family: 'Share Tech Mono', monospace;
-
-
-
             font-weight: bold; cursor: pointer;
-
-
-
             box-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
-
-
-
             transition: all 0.2s;
-
-
-
+            font-size: 1rem;
         }
-
-
-
         .filter-btn:active {
-
-
-
-            background: var(--neon-green); color: #000;
-
-
-
+            background: var(--neon-green);
+            color: #000;
         }
-
-
-
         .filter-btn.active {
-
-
-
-            background: var(--neon-green); color: #000;
-
-
-
+            background: var(--neon-green);
+            color: #000;
             box-shadow: 0 0 20px #fff;
-
-
-
         }
-
-
-
-
-
-
-
-        /* --- Loading y Follow (Sin cambios) --- */
-
-
 
         #loading-overlay {
-
-
-
-            position: fixed; top: 0; left: 0;
-
-
-
+            position: fixed;
+            top: 0; left: 0;
             width: 100%; height: 100%;
-
-
-
             background: #000; z-index: 9999;
-
-
-
             display: flex; justify-content: center;
-
-
-
             align-items: center;
-
-
-
             transition: opacity 0.5s ease-out;
-
-
-
         }
-
-
-
         #loading-content { text-align: center; }
-
-
-
         #loading-text {
-
-
-
             font-family: 'Orbitron', sans-serif;
-
-
-
             font-size: 1.2rem;
-
-
-
             color: var(--neon-green);
-
-
-
             text-shadow: 0 0 10px var(--neon-green);
-
-
-
             animation: pulseGlow 2s infinite ease-in-out;
-
-
-
             transition: all 0.3s;
-
-
-
         }
-
-
-
         #loading-bar-container {
-
-
-
-            width: 250px; height: 10px;
-
-
-
+            width: 250px;
+            height: 10px;
             border: 1px solid var(--neon-green);
-
-
-
             border-radius: 5px; margin-top: 15px;
-
-
-
             overflow: hidden;
-
-
-
             background: rgba(0, 50, 50, 0.3);
-
-
-
         }
-
-
-
         #loading-bar {
-
-
-
-            width: 0%; height: 100%;
-
-
-
+            width: 0%;
+            height: 100%;
             background-color: var(--neon-green);
-
-
-
             transition: width 0.4s ease-out;
-
-
-
             animation: loading-shimmer 2s infinite linear;
-
-
-
             background-image: linear-gradient(90deg, var(--neon-green) 0%, #fff 50%, var(--neon-green) 100%);
-
-
-
             background-size: 200% 100%;
-
-
-
         }
-
-
-
         @keyframes loading-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-
-
-
-
-
-
-        #follow-container {
-
-
-
-            position: fixed; bottom: 80px; left: 50%;
-
-
-
-            transform: translateX(-50%); 
-
-
-
-            z-index: 200; pointer-events: none;
-
-
-
-            opacity: 1; width: 100%;
-
-
-
-            transition: opacity 0.5s ease-out;
-
-
-
+        /* 📍 NUEVO: Cámara PiP (Fuente 2) */
+        #pip-camera-feed {
+            display: none;
+            position: fixed;
+            z-index: 999;
+            bottom: 20px;
+            right: 20px;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 2px solid var(--neon-green);
+            box-shadow: 0 0 15px var(--neon-green);
+            object-fit: cover;
+            transform: scale(1);
+            animation: pulseGlow 1.5s infinite;
         }
 
-
-
-        #follow-container.hiding {
-
-
-
-            animation: waterDrop 0.5s ease-out forwards;
-
-
-
-        }
-
-
-
-        .follow-step {
-
-
-
-            display: none; 
-
-
-
-            color: var(--neon-green);
-
-
-
-            font-size: 1.5rem;
-
-
-
-            font-family: 'Orbitron', sans-serif;
-
-
-
-            text-shadow: 0 0 10px var(--neon-green);
-
-
-
-            text-align: center; opacity: 0;
-
-
-
-        }
-
-
-
-        #follow-icons {
-
-
-
-            display: none; align-items: center;
-
-
-
-            justify-content: center;
-
-
-
-        }
-
-
-
-        #follow-icons svg {
-
-
-
-            width: 50px; height: 50px;
-
-
-
-            margin: 0 15px;
-
-
-
-            fill: var(--neon-green);
-
-
-
-            filter: drop-shadow(0 0 5px var(--neon-green));
-
-
-
-        }
-
-
-
+        /* --- CSS RESPONSIVE (Horizontal/Vertical) --- */
         
-
-
-
-        .fade-in { animation: fadeIn 1s ease-out forwards; }
-
-
-
-        .fade-out { animation: fadeOut 1s ease-out forwards; }
-
-
-
-        .water-drop { animation: waterDrop 0.5s ease-out forwards; }
-
-
-
-        
-
-
-
-        @keyframes fadeIn { 0% { opacity: 0; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
-
-
-
-        @keyframes fadeOut { 0% { opacity: 1; } 100% { opacity: 0; } }
-
-
-
-
-
-
-
-        /* --- 📍 CSS Horizontal/Vertical (PUNTO 2 Y 5) --- */
-
-
-
-        
-
-
-
-        /* --- MODO MÓVIL VERTICAL (PORTRAIT) --- */
-
-
-
         @media (max-aspect-ratio: 1/1) {
-
-
-
-            #side-panel-container {
-
-
-
-                top: 0; left: 0;
-
-
-
+            #left-panel {
+                top: 0;
+                left: 0;
                 width: 100vw;
-
-
-
-                height: 100vh;
-
-
-
-                transform: translateY(100%); /* Sale por abajo */
-
-
-
-                padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
-
-
-
+                height: calc(100vh - var(--panel-height-landscape));
+                transform: translateY(-100%);
+                padding: env(safe-area-inset-top) 0 0 0;
             }
-
-
-
-            .panel {
-
-
-
-                width: 100%;
-
-
-
-                height: 100%;
-
-
-
-                margin: 0;
-
-
-
+            #left-panel .panel {
                 border-radius: 0;
-
-
-
-                border: none;
-
-
-
+                border-bottom: none;
+                overflow-y: auto;
             }
-
-
-
-
-
-
-
-            /* 📍 NUEVO: Slot para PiP (P5) */
-
-
-
-            #pip-placeholder-section {
-
-
-
-                display: block; /* Solo visible en vertical */
-
-
-
-                order: -1; /* Ponerlo justo debajo del header */
-
-
-
-            }
-
-
-
-            #pip-placeholder {
-
-
-
-                width: 100%;
-
-
-
-                height: 140px; 
-
-
-
-                background: #050505;
-
-
-
-                border: 1px dashed var(--border-color);
-
-
-
-                border-radius: 4px;
-
-
-
-            }
-
-
-
-
-
-
-
-            /* 📍 Cámara Flotante (PiP) (P5) */
-
-
-
-            body.panels-active #main-view-area {
-
-
-
-                /* Se posiciona exactamente sobre el placeholder */
-
-
-
-                top: calc(env(safe-area-inset-top) + 110px); /* Ajustado manualmente */
-
-
-
-                left: 6px; /* Padding del panel */
-
-
-
-                right: 6px; /* Padding del panel */
-
-
-
-                width: calc(100% - 12px); /* Ancho del placeholder */
-
-
-
-                height: 140px; /* Alto del placeholder */
-
-
-
-                border: 1px solid var(--neon-green);
-
-
-
-                border-radius: 4px;
-
-
-
-                box-shadow: 0 0 10px var(--neon-green);
-
-
-
-                z-index: 25; /* Encima del panel */
-
-
-
-                filter: none !important;
-
-
-
-                transform: scale(1) !important;
-
-
-
-            }
-
-
-
             
-
-
-
-            body.panels-active #filter-controls-container {
-
-
-
-                top: calc(env(safe-area-inset-top) + 260px); /* Debajo del PiP */
-
-
-
-                right: 15px;
-
-
-
+            #bottom-panel {
+                bottom: 0;
+                left: 0;
+                width: 100vw;
+                height: var(--panel-height-landscape);
+                transform: translateY(100%);
+                padding: 0 0 env(safe-area-inset-bottom) 0;
             }
-
-
-
-
-
-
-
-            body.panels-active #logo-image,
-
-
-
-            body.panels-active #btn-torch,
-
-
-
-            body.panels-active #cam-stats-display {
-
-
-
-                display: none;
-
-
-
+            #bottom-panel .panel {
+                border-radius: 0;
+                border-top: none;
+                flex-direction: row;
+                justify-content: space-around;
+                align-items: center;
             }
+            
+            #bottom-panel .panel-section {
+                flex-grow: 1;
+                flex-basis: 0;
+                height: 100%;
+                justify-content: center;
+            }
+            #bottom-panel .dials-grid { grid-template-columns: 1fr 1fr; }
+            .dial-container { width: 60px; height: 60px; }
+            #detector-dial-container { grid-column: span 1; width: 80px; height: 80px; margin-bottom: 0; }
+            #temp-val { font-size: 1.2rem; }
+            #panel-cam-stats { font-size: 0.9rem; }
+            #vu-meter-container { height: 100px; }
 
-
-
+            body.panels-active #main-view-area { display: none; }
+            
+            /* 📍 NUEVO: Mostrar PiP en vertical */
+            body.panels-active #pip-camera-feed { display: block; }
+            
+            body.panels-active #filter-controls-container { display: none; }
         }
-
-
-
-
-
-
-
-        /* --- MODO MÓVIL HORIZONTAL (LANDSCAPE) --- */
-
-
 
         @media (min-aspect-ratio: 1/1) {
-
-
-
-            :root { --panel-width-landscape: 240px; }
-
-
-
-
-
-
-
-            /* 📍 NUEVO: Ocultar slot de PiP (P5) */
-
-
-
-            #pip-placeholder-section {
-
-
-
-                display: none; 
-
-
-
-            }
-
-
-
-
-
-
-
-            #side-panel-container {
-
-
-
+            #left-panel {
                 width: var(--panel-width-landscape);
-
-
-
                 height: 100vh;
-
-
-
                 top: 0;
-
-
-
                 left: 0;
-
-
-
                 transform: translateX(calc(var(--panel-width-landscape) * -1));
-
-
-
                 padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
-
-
-
             }
-
-
-
-            
-
-
-
-            .panel {
-
-
-
-                height: 100%;
-
-
-
-                flex-grow: 1;
-
-
-
-                flex-shrink: 0;
-
-
-
-                margin: 0;
-
-
-
+            #left-panel .panel {
                 border-radius: 0;
-
-
-
-                border-right: 1px solid var(--border-color);
-
-
-
+                border-right: none;
+                overflow-y: auto;
             }
 
-
-
-
-
-
-
-            /* 📍 Efecto "enfoque" (PUNTO 2) - Corregido */
-
-
+            #bottom-panel {
+                width: calc(100% - var(--panel-width-landscape));
+                height: var(--panel-height-landscape);
+                top: auto;
+                bottom: 0;
+                left: var(--panel-width-landscape);
+                transform: translateY(100%);
+                padding: 0 0 env(safe-area-inset-bottom) 0;
+            }
+             #bottom-panel .panel {
+                border-radius: 0;
+                border-top: none;
+                flex-direction: row;
+                justify-content: space-around;
+                align-items: center;
+            }
+            
+            #bottom-panel .panel-section {
+                flex-grow: 1;
+                flex-basis: 0;
+                height: 100%;
+                justify-content: center;
+            }
+            #bottom-panel .dials-grid { grid-template-columns: 1fr 1.5fr 1fr; }
+            #detector-dial-container { grid-column: 2 / 3; }
+            #mag-dial-container { grid-column: 1 / 2; }
+            #temp-readout { grid-column: 3 / 4; }
+            #vu-meter-container { height: 100px; }
+            #panel-cam-stats { height: 100px; display: flex; flex-direction:column; align-items: center; justify-content: center; }
 
             body.panels-active #main-view-area {
-
-
-
                 left: var(--panel-width-landscape);
-
-
-
+                top: 0;
                 width: calc(100% - var(--panel-width-landscape));
-
-
-
-                height: 100%;
-
-
-
-                /* Se eliminan 'filter' y 'transform' para que no se opaque */
-
-
-
-                filter: none;
-
-
-
-                transform: none;
-
-
-
+                height: calc(100% - var(--panel-height-landscape));
             }
-
-
-
+            
+            body.panels-active #camera-frame {
+                left: var(--panel-width-landscape);
+                top: 0;
+                width: calc(100% - var(--panel-width-landscape));
+                height: calc(100% - var(--panel-height-landscape));
+            }
         }
-
-
-
     </style>
-
-
-
 </head>
-
-
-
 <body>
-
-
-
-
-
-
 
 <div id="app-ui"> 
 
-
-
-
-
-
-
     <div id="loading-overlay">
-
-
-
         <div id="loading-content">
-
-
-
             <div id="loading-text">SINCRONIZANDO GUIONES...</div>
-
-
-
             <div id="loading-bar-container">
-
-
-
                 <div id="loading-bar"></div>
-
-
-
             </div>
-
-
-
         </div>
-
-
-
     </div>
-
-
-
-
-
-
 
     <div id="main-view-area" onclick="handleUITap(event)">
-
-
-
         <video id="bg-camera-feed" playsinline autoplay muted></video>
-
-
-
         <canvas id="main-filter-canvas"></canvas>
-
-
-
+        <div id="camera-frame"></div>
     </div>
-
-
-
     
-
-
-
-    <canvas id="temp-canvas" class="hidden-canvas"></canvas>
-
-
-
     <canvas id="ai-canvas" class="hidden-canvas"></canvas>
 
-
-
-
-
-
-
     <img id="logo-image" src="obr-logo.png" alt="Logo OBR" class="persistent-ui">
-
-
-
-
-
-
-
-    <button id="btn-torch" class="persistent-ui" onclick="toggleTorch(event)">
-
-
-
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M342.6 38.6c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L380.7 167H256c-17.7 0-32 14.3-32 32s14.3 32 32 32h124.7l-83.4 83.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l144-144c12.5-12.5 12.5-32.8 0-45.3l-144-144zM160 80c0-17.7-14.3-32-32-32s-32 14.3-32 32v144H64c-17.7 0-32 14.3-32 32s14.3 32 32 32h32v144c0 17.7 14.3 32 32 32s32-14.3 32-32V288h32c17.7 0 32-14.3 32-32s-14.3-32-32-32H160V80z"/></svg>
-
-
-
-    </button>
-
-
-
     
-
-
-
-    <div id="cam-stats-display" class="persistent-ui">
-
-
-
-        <span id="cam-fps">--</span> FPS / <span id="cam-res">----p</span>
-
-
-
+    <div id="floating-cam-stats" class="persistent-ui">
+        <span id="floating-cam-fps">--</span> FPS / <span id="floating-cam-res">----p</span>
     </div>
 
-
-
-
-
-
+    <video id="pip-camera-feed" playsinline autoplay muted></video>
 
     <div id="kinect-banner">KINEC ACTIVO <span class="led-red">🔴</span></div>
 
-
-
-    
-
-
-
-    <div id="follow-container">
-
-
-
-        <div id="follow-text" class="follow-step">SÍGUENOS EN</div>
-
-
-
-        <div id="follow-icons" class="follow-step">
-
-
-
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M448 209.9a210.1 210.1 0 0 1 -122.8-39.3V349.4A162.6 162.6 0 1 1 185 188.3V277.2a74.6 74.6 0 1 0 52.2 71.2V0l88 0a121.2 121.2 0 0 0 122.8 122.1v87.8z"/></svg>
-
-
-
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path d="M549.7 124.1c-6.3-23.7-24.8-42.3-48.3-48.6C458.8 64 288 64 288 64S117.2 64 74.6 75.5c-23.5 6.3-42 24.9-48.3 48.6-11.4 42.9-11.4 132.3-11.4 132.3s0 89.4 11.4 132.3c6.3 23.7 24.8 42.3 48.3 48.6C117.2 448 288 448 288 448s170.8 0 213.4-11.5c23.5-6.3 42-24.9 48.3-48.6 11.4-42.9 11.4-132.3 11.4-132.3s0-89.4-11.4-132.3zM232 341.5V170.5l145.2 85.5-145.2 85.5z"/></svg>
-
-
-
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M504 256C504 119 393 8 256 8S8 119 8 256c0 123.8 90.7 226.4 209.3 245V327.7h-63V256h63v-54.6c0-62.2 37-96.5 93.7-96.5 27.1 0 55.5 4.8 55.5 4.8v61h-31.3c-30.8 0-40.4 19.1-40.4 38.7V256h68.8l-11 71.7h-57.8V501C413.3 482.4 504 379.8 504 256z"/></svg>
-
-
-
-        </div>
-
-
-
-        <div id="follow-handle" class="follow-step">@EXPLORACIONESOBR</div>
-
-
-
-    </div>
-
-
-
-
-
-
-
-    <div id="side-panel-container">
-
-
-
-        
-
-
-
+    <div id="left-panel">
         <div class="panel" id="p-unified">
-
-
-
+            <div id="processing-lines">
+                <div class="processing-line"></div>
+                <div class="processing-line"></div>
+                <div class="processing-line"></div>
+                <div class="processing-line"></div>
+                <div class="processing-line"></div>
+            </div>
             <div class="panel-header-main">PANEL DE MANDO</div>
-
-
-
             
-
-
-
-            <div class="panel-section" id="pip-placeholder-section">
-
-
-
-                <div class="section-title">VISTA DE CÁMARA PIP</div>
-
-
-
-                <div id="pip-placeholder"></div>
-
-
-
-            </div>
-
-
-
-
-
-
-
             <div class="panel-section">
-
-
-
+                <div class="section-title">Controles de Dispositivo</div>
+                <button id="btn-torch" class="panel-button-torch" onclick="toggleTorch(event)">🔦</button>
+            </div>
+            
+            <div class="panel-section">
                 <div class="section-title">Estado de Sensores</div>
-
-
-
                 <div class="sensor-status-grid">
-
-
-
                     <div class="status-light-group" id="mic-status" data-status="off">
-
-
-
                         <div class="status-led-indicator"></div>
-
-
-
                         <div class="emoji">🎙️</div>
-
-
-
                         <span>MIC</span>
-
-
-
                     </div>
-
-
-
                     <div class="status-light-group" id="mag-status" data-status="off">
-
-
-
                         <div class="status-led-indicator"></div>
-
-
-
                         <div class="emoji">🧭</div>
-
-
-
                         <span>MAG</span>
-
-
-
                     </div>
-
-
-
                     <div class="status-light-group" id="prox-status" data-status="off">
-
-
-
                         <div class="status-led-indicator"></div>
-
-
-
                         <div class="emoji">⚡</div>
-
-
-
                         <span>EMF</span>
-
-
-
                     </div>
-
-
-
                 </div>
-
-
-
             </div>
-
-
-
             
-
-
-
             <div class="panel-section">
-
-
-
-                <div class="section-title">Lecturas de Campo</div>
-
-
-
-                <div class="dials-grid">
-
-
-
-                    <div id="mag-dial-container" class="dial-container">
-
-
-
-                        <div id="compass-needle" class="dial-needle" style="transform: translateX(-50%) rotate(0deg);"></div>
-
-
-
-                        <div class="dial-label">MAG</div>
-
-
-
-                    </div>
-
-
-
-                    <div id="detector-dial-container" class="dial-container">
-
-
-
-                        <div id="main-needle" class="dial-needle" style="transform: translateX(-50%) rotate(-60deg);"></div>
-
-
-
-                        <div class="dial-label">DETECTOR</div>
-
-
-
-                    </div>
-
-
-
-                    <div id="temp-readout">
-
-
-
-                        <div id="temp-val">--.-°C</div>
-
-
-
-                        <div class="temp-label">AMBIENTE</div>
-
-
-
-                    </div>
-
-
-
-                </div>
-
-
-
-            </div>
-
-
-
-            
-
-
-
-            <div class="panel-section">
-
-
-
                 <div class="section-title">Spirit Box</div>
-
-
-
                 <div class="spirit-box-grid">
-
-
-
-                    <div class="knob-container">
-
-
-
-                        <div class="knob-circle" id="knob-power">
-
-
-
-                            <div id="pwr-knob-indicator" class="knob-indicator" style="transform: rotate(135deg);"></div>
-
-
-
-                        </div>
-
-
-
+                    <div class="power-button-container">
+                        <div id="knob-power"></div>
                         <div class="knob-label">ENCENDER</div>
-
-
-
                     </div>
-
-
 
                     <div class="knob-container">
-
-
-
                         <div class="knob-circle" id="knob-scan">
-
-
-
-                            <div class="knob-indicator" style="transform: rotate(135deg);"></div>
-
-
-
+                            <div class="knob-indicator" style="transform: rotate(0deg);"></div>
                         </div>
-
-
-
                         <div class="knob-label">FRECUENCIA</div>
-
-
-
                     </div>
-
-
-
                     
-
-
-
-                    <div id="activity-graph-container" title="Gráfica de Actividad EMF">
-
-
-
+                    <div id="activity-graph-container" title="Gráfica de Actividad de Sonido">
                         <canvas id="energy-canvas"></canvas>
-
-
-
                     </div>
-
-
-
-                    <div class="knob-label" style="text-align: center;">ACTIVIDAD</div>
-
-
-
-
-
-
 
                     <div class="volume-control-group">
-
-
-
                         <span class="vol-label">VOL</span>
-
-
-
                         <input type="range" min="0" max="100" value="80" id="vol-slider">
-
-
-
                         <span id="vol-percent" class="vol-label">80%</span>
-
-
-
                     </div>
-
-
-
                 </div>
+            </div>
+        </div>
+    </div>
 
-
-
+    <div id="bottom-panel">
+        <div class="panel" id="p-bottom">
+            <div id="processing-lines">
+                <div class="processing-line"></div>
+                <div class="processing-line"></div>
             </div>
 
-
-
+            <div class="panel-section">
+                <div class="section-title">Lecturas de Campo</div>
+                <div class="dials-grid">
+                    <div id="mag-dial-container" class="dial-container">
+                        <div id="compass-needle" class="dial-needle" style="transform: translateX(-50%) rotate(0deg);"></div>
+                        <div class="dial-label">MAG</div>
+                    </div>
+                    <div id="detector-dial-container" class="dial-container">
+                        <div id="main-needle" class="dial-needle" style="transform: translateX(-50%) rotate(-60deg);"></div>
+                        <div class="dial-label">DETECTOR</div>
+                    </div>
+                    <div id="temp-readout">
+                        <div id="temp-val">--.-°C</div>
+                        <div class="temp-label">AMBIENTE</div>
+                    </div>
+                </div>
+            </div>
             
-
-
+            <div class="panel-section">
+                <div class="section-title">Medidor de Sonido (VU)</div>
+                <div id="vu-meter-container">
+                    <canvas id="vu-meter-canvas"></canvas>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Rendimiento</div>
+                <div id="panel-cam-stats">
+                    <span id="cam-fps-panel">--</span>
+                    <span>FPS</span>
+                    <span id="cam-res-panel">----p</span>
+                </div>
+            </div>
 
         </div>
-
-
-
-        </div>
-
-
-
-
-
+    </div>
 
 
     <div id="filter-controls-container">
-
-
-
-        <button class="filter-btn" onclick="setFilter('night-vision')">VNO</button>
-
-
-
+        <button class="filter-btn" onclick="setFilter('detector')">DTR</button>
         <button class="filter-btn" onclick="setFilter('sls')">SLS</button>
-
-
-
-        <button class="filter-btn" onclick="setFilter('relief')">RLV</button>
-
-
-
-        <button class="filter-btn" id="btn-panel" onclick="togglePanel('p-unified')">PAN</button>
-
-
-
+        <button class="filter-btn" onclick="setFilter('negative')">NEG</button>
+        <button class="filter-btn" id="btn-panel" onclick="togglePanels()">PAN</button>
     </div>
-
-
-
-
-
-
 
 </div> 
 
-
-
-
-
-
-
     <script>
-
-
-
-        // 📍 INICIO DE SCRIPT ANTI-CACHÉ (¡NUEVO!)
-
-
-
         (function() {
-
-
-
             if ('serviceWorker' in navigator) {
-
-
-
                 navigator.serviceWorker.getRegistrations().then(function(registrations) {
-
-
-
                     if (registrations.length) {
-
-
-
                         console.log('[ANTI-CACHE] Des-registrando Service Workers...');
-
-
-
                         for(let registration of registrations) {
-
-
-
                             registration.unregister();
-
-
-
                         }
-
-
-
                         console.log('[ANTI-CACHE] Service Workers eliminados. Recargando...');
-
-
-
-                        location.reload(true); // Forzar recarga
-
-
-
-                    } else {
-
-
-
-                        console.log('[ANTI-CACHE] No se encontraron Service Workers.');
-
-
-
+                        location.reload(true); 
                     }
-
-
-
                 });
-
-
-
             }
-
-
-
-            
-
-
-
             if (window.caches) {
-
-
-
                 caches.keys().then(function(names) {
-
-
-
                     for (let name of names) {
-
-
-
-                        console.log('[ANTI-CACHE] Eliminando caché:', name);
-
-
-
                         caches.delete(name);
-
-
-
                     }
-
-
-
                 });
-
-
-
             }
-
-
-
         })();
-
-
-
-        // 📍 FIN DE SCRIPT ANTI-CACHÉ
-
-
-
     
-
-
-
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzOf3crQxBdPylwMTAd34W-nBShN31MkIUtaMdKsZHMZVVniI2HjMesD6DpOlO363T1/exec";
-
-
-
         
-
-
-
         let isRunning = false;
-
-
-
         let currentFilter = 'none'; 
-
-
-
-        let scanSpeed = 0; 
-
-
-
         
-
-
-
+        let scanSpeed = 1; 
+        const SCAN_DELAYS = [1500, 700, 200];
         const videoBg = document.getElementById('bg-camera-feed');
-
-
-
+        const pipVideo = document.getElementById('pip-camera-feed');
         
-
-
-
         const mainFilterCanvas = document.getElementById('main-filter-canvas');
-
-
-
         const mainFilterCtx = mainFilterCanvas.getContext('2d', { willReadFrequently: true });
-
-
-
-
-
-
-
-        const tempCanvas = document.getElementById('temp-canvas');
-
-
-
-        const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
-
-
-
         const aiCanvas = document.getElementById('ai-canvas');
-
-
-
         const aiCtx = aiCanvas.getContext('2d', { willReadFrequently: true });
-
-
-
         
-
-
-
-        const detectorPanel = document.getElementById('p-unified');
-
-
-
-        const sensorPanel = document.getElementById('p-unified');
-
-
-
-        
-
-
-
         const micStatus = document.getElementById('mic-status');
-
-
-
         const magStatus = document.getElementById('mag-status');
-
-
-
         const proxStatus = document.getElementById('prox-status');
-
-
-
+        const sensorPanel = document.getElementById('p-unified'); // Para efectos de alerta
         
-
-
-
         let energyHistory = new Array(50).fill(0);
-
-
-
         let energyCanvas, energyCtx;
-
-
-
         
-
-
-
-        // 📍 AUDIO RECONFIGURADO (P11)
-
-
-
+        // --- VARIABLES AUDIO (FUENTE 3) ---
         let audioCtx, masterGain;
-
-
-
         let audioSource_Fondo1, gain_Fondo1, audioBuffer_Fondo1;
-
-
-
         let audioSource_Fondo2, gain_Fondo2, audioBuffer_Fondo2;
-
-
-
-        let reverb, reverbGain, distortionNode; // Para la voz
-
-
-
-        let scanTimer = null; // Timer para el scanner
-
-
-
+        let reverb, reverbGain, distortionNode; 
+        let scanTimer = null;
         
-
-
+        let vuAnalyserNode, vuDataArray, vuCanvas, vuCtx;
+        let micStreamSource = null;
 
         let isSpeaking = false; 
-
-
-
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-
-
         let recognition, isRecognizing = false;
-
-
-
         let programadoData = new Map();
-
-
-
         let automaticoData = [];
-
-
-
         let currentTemp = 19.8;
-
-
-
         
-
-
-
         let proximitySensor;
-
-
-
         let magnetometer;
-
-
-
         let orientationSensor;
-
-
-
         
-
-
-
         let emfValue = 0;
-
-
-
         let emfSimInterval = null;
-
-
-
         let visualLoopInterval; 
 
-
-
-
-
-
-
+        // --- VARIABLES SLS (FUENTE 1) ---
         let poseDetector; 
-
-
-
-        let latestPoses = []; 
-
-
-
+        let latestPoses = [];
         let isDetectingPose = false; 
-
-
-
-        
-
-
-
-        let spiritBoxState = "OFF";
-
-
-
-        let spiritBoxTimeout = null;
-
-
-
-        
-
-
-
-        let uiHideTimeout;
-
-
-
-        let uiVisible = false;
-
-
-
-
-
-
-
-        let zoom = 1.0;
-
-
-
-        let maxZoom = 5.0;
-
-
-
-        let initialPinchDist = 0;
-
-
-
-        let lastPan = { x: 0, y: 0 };
-
-
-
-        let currentPan = { x: 0, y: 0 };
-
-
-
-        let isPinching = false;
-
-
-
-        let isPanning = false;
-
-
-
-
-
-
-
-        // 📍 NUEVO: Variables de Cámara (P6, P9)
-
-
-
-        let videoTrack;
-
-
-
-        let isTorchOn = false;
-
-
-
-        let lastFrameTime = 0;
-
-
-
-        let frameCount = 0;
-
-
-
-        let lastFpsUpdate = 0;
-
-
-
-
-
-
-
-        async function startCamera() {
-
-
-
-            try {
-
-
-
-                // 📍 SOLUCIÓN CÁMARA (P6, P7)
-
-
-
-                const constraints = {
-
-
-
-                    video: {
-
-
-
-                        facingMode: { ideal: "environment" }, // P7: Forzar trasera
-
-
-
-                        width: { ideal: 4096 },  // P6/P7: Forzar 4K
-
-
-
-                        height: { ideal: 2160 },
-
-
-
-                        frameRate: { ideal: 60 } // P6/P7: Forzar 60 FPS
-
-
-
-                    },
-
-
-
-                    audio: false
-
-
-
-                };
-
-
-
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
-
-
-
-                
-
-
-
-                videoTrack = stream.getVideoTracks()[0]; // P9: Guardar el track
-
-
-
-                
-
-
-
-                if (videoTrack && typeof videoTrack.applyConstraints === 'function') {
-
-
-
-                    videoTrack.applyConstraints({
-
-
-
-                        advanced: [{ focusMode: 'continuous' }]
-
-
-
-                    }).catch(e => console.warn("No se pudo aplicar 'focusMode: continuous'", e));
-
-
-
-                    
-
-
-
-                    // P9: Verificar si la linterna es soportada
-
-
-
-                    const capabilities = videoTrack.getCapabilities();
-
-
-
-                    if (!capabilities.torch) {
-
-
-
-                        document.getElementById('btn-torch').style.display = 'none';
-
-
-
-                    }
-
-
-
-                }
-
-
-
-                
-
-
-
-                videoBg.srcObject = stream;
-
-
-
-                videoBg.onloadedmetadata = () => {
-
-
-
-                    resizeAllCanvas(); 
-
-
-
-                    energyCanvas = document.getElementById('energy-canvas');
-
-
-
-                    if (energyCanvas) { 
-
-
-
-                        energyCtx = energyCanvas.getContext('2d');
-
-
-
-                        resizeEnergyCanvas();
-
-
-
-                    }
-
-
-
-                    
-
-
-
-                    // P6: Actualizar stats de cámara
-
-
-
-                    try {
-
-
-
-                        const settings = videoTrack.getSettings();
-
-
-
-                        const res = settings.height || videoBg.videoHeight;
-
-
-
-                        document.getElementById('cam-res').innerText = `${res}p`;
-
-
-
-                    } catch(e) {
-
-
-
-                        document.getElementById('cam-res').innerText = `${videoBg.videoHeight}p`;
-
-
-
-                    }
-
-
-
-                    
-
-
-
-                    drawLoop(); 
-
-
-
-                };
-
-
-
-            } catch (e) { console.log("Error de cámara", e); }
-
-
-
-        }
-
-
-
-        
-
-
-
-        function resizeAllCanvas() {
-
-
-
-            const viewArea = document.getElementById('main-view-area');
-
-
-
-            const w = viewArea.clientWidth; 
-
-
-
-            const h = viewArea.clientHeight; 
-
-
-
-            
-
-
-
-            mainFilterCanvas.width = w;
-
-
-
-            mainFilterCanvas.height = h;
-
-
-
-            
-
-
-
-            tempCanvas.width = w;
-
-
-
-            tempCanvas.height = h;
-
-
-
-
-
-
-
-            const aiWidth = 640;
-
-
-
-            aiCanvas.width = aiWidth;
-
-
-
-            aiCanvas.height = (aiWidth / w) * h;
-
-
-
-            
-
-
-
-            if(energyCanvas && !document.getElementById('p-unified').classList.contains('hidden')) {
-
-
-
-                resizeEnergyCanvas();
-
-
-
-            }
-
-
-
-        }
-
-
-
-
-
-
-
-        async function initMLModel() {
-
-
-
-            try {
-
-
-
-                const model = poseDetection.SupportedModels.MoveNet;
-
-
-
-                const detectorConfig = {
-
-
-
-                    modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING,
-
-
-
-                    maxPoses: 6 
-
-
-
-                };
-
-
-
-                poseDetector = await poseDetection.createDetector(model, detectorConfig);
-
-
-
-                console.log("MoveNet (IA Multi-Pose) cargado.");
-
-
-
-            } catch (e) {
-
-
-
-                console.error("Error al cargar modelo de IA:", e);
-
-
-
-            }
-
-
-
-        }
-
-
-
-
-
-
-
-        // 📍 Dibuja el video en el canvas con 'object-fit: cover'
-
-
-
-        function drawVideoWithCover(ctx, video, z, pan) {
-
-
-
-            const canvasW = ctx.canvas.width;
-
-
-
-            const canvasH = ctx.canvas.height;
-
-
-
-            const videoW = video.videoWidth;
-
-
-
-            const videoH = video.videoHeight;
-
-
-
-            
-
-
-
-            if (!videoW || !videoH) return; 
-
-
-
-
-
-
-
-            const videoAspect = videoW / videoH;
-
-
-
-            const canvasAspect = canvasW / canvasH;
-
-
-
-
-
-
-
-            let sWidth = videoW / z;
-
-
-
-            let sHeight = videoH / z;
-
-
-
-            
-
-
-
-            if (canvasAspect > videoAspect) {
-
-
-
-                sHeight = sWidth / canvasAspect;
-
-
-
-            } else {
-
-
-
-                sWidth = sHeight * canvasAspect;
-
-
-
-            }
-
-
-
-
-
-
-
-            let sx = (videoW - sWidth) / 2 + pan.x;
-
-
-
-            let sy = (videoH - sHeight) / 2 + pan.y;
-
-
-
-
-
-
-
-            sx = Math.max(0, Math.min(sx, videoW - sWidth));
-
-
-
-            sy = Math.max(0, Math.min(sy, videoH - sHeight));
-
-
-
-            currentPan.x = sx - (videoW - sWidth) / 2;
-
-
-
-            currentPan.y = sy - (videoH - sHeight) / 2;
-
-
-
-
-
-
-
-            ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, canvasW, canvasH);
-
-
-
-        }
-
-
-
-
-
-
-
-        
-
-
-
-        async function drawLoop() {
-
-
-
-            // 📍 Contador de FPS (P6)
-
-
-
-            const now = performance.now();
-
-
-
-            const delta = now - lastFrameTime;
-
-
-
-            lastFrameTime = now;
-
-
-
-            frameCount++;
-
-
-
-        
-
-
-
-            if (now - lastFpsUpdate > 1000) { // Actualizar cada segundo
-
-
-
-                const fps = frameCount;
-
-
-
-                document.getElementById('cam-fps').innerText = fps;
-
-
-
-                frameCount = 0;
-
-
-
-                lastFpsUpdate = now;
-
-
-
-            }
-
-
-
-
-
-
-
-            if (videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
-
-
-
-                
-
-
-
-                const w = mainFilterCanvas.width;
-
-
-
-                const h = mainFilterCanvas.height;
-
-
-
-
-
-
-
-                mainFilterCtx.clearRect(0, 0, w, h);
-
-
-
-                
-
-
-
-                const kinectBanner = document.getElementById('kinect-banner');
-
-
-
-                
-
-
-
-                if (currentFilter === 'sls') {
-
-
-
-                    kinectBanner.style.display = 'block';
-
-
-
-                    if (latestPoses) {
-
-
-
-                        drawAllSkeletons(latestPoses); 
-
-
-
-                    }
-
-
-
-                } else {
-
-
-
-                    kinectBanner.style.display = 'none';
-
-
-
-                    if (currentFilter === 'relief') {
-
-
-
-                        drawVideoWithCover(tempCtx, videoBg, zoom, currentPan);
-
-
-
-                        let frame = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-
-
-
-                        let data = frame.data;
-
-
-
-                        let copy = new Uint8ClampedArray(data);
-
-
-
-                        
-
-
-
-                        for (let y = 1; y < tempCanvas.height - 1; y++) {
-
-
-
-                            for (let x = 1; x < tempCanvas.width - 1; x++) {
-
-
-
-                                let i = (y * tempCanvas.width + x) * 4;
-
-
-
-                                let hpx = -copy[((y-1)*tempCanvas.width+(x-1))*4] + copy[((y-1)*tempCanvas.width+(x+1))*4]
-
-
-
-                                        -2*copy[(y*tempCanvas.width+(x-1))*4] + 2*copy[(y*tempCanvas.width+(x+1))*4]
-
-
-
-                                        -copy[((y+1)*tempCanvas.width+(x-1))*4] + copy[((y+1)*tempCanvas.width+(x+1))*4];
-
-
-
-                                let vpx = -copy[((y-1)*tempCanvas.width+(x-1))*4] - 2*copy[((y-1)*tempCanvas.width+x)*4] - copy[((y-1)*tempCanvas.width+(x+1))*4]
-
-
-
-                                        +copy[((y+1)*tempCanvas.width+(x-1))*4] + 2*copy[((y+1)*tempCanvas.width+x)*4] + copy[((y+1)*tempCanvas.width+(x+1))*4];
-
-
-
-                                
-
-
-
-                                let diff = Math.sqrt(hpx*hpx + vpx*vpx);
-
-
-
-                                if (diff > 30) { 
-
-
-
-                                    data[i] = diff; data[i+1] = 255; data[i+2] = 255;
-
-
-
-                                } else {
-
-
-
-                                    data[i] = 10; data[i+1] = 10; data[i+2] = 10;
-
-
-
-                                }
-
-
-
-                            }
-
-
-
-                        }
-
-
-
-                        tempCtx.putImageData(frame, 0, 0);
-
-
-
-                        mainFilterCtx.drawImage(tempCanvas, 0, 0, w, h);
-
-
-
-
-
-
-
-                    } else if (currentFilter === 'night-vision') {
-
-
-
-                        drawVideoWithCover(mainFilterCtx, videoBg, zoom, currentPan);
-
-
-
-                        let frame = mainFilterCtx.getImageData(0, 0, w, h);
-
-
-
-                        let data = frame.data;
-
-
-
-                        for (let i = 0; i < data.length; i += 4) {
-
-
-
-                            let l = (data[i] * 0.3) + (data[i+1] * 0.59) + (data[i+2] * 0.11);
-
-
-
-                            data[i] = 0; 
-
-
-
-                            data[i+1] = l * 1.2; 
-
-
-
-                            data[i+2] = 0; 
-
-
-
-                            let y = Math.floor((i / 4) / w);
-
-
-
-                            if (y % 4 === 0) { data[i+1] *= 0.8; }
-
-
-
-                        }
-
-
-
-                        for (let y = 0; y < h; y++) {
-
-
-
-                            for (let x = 0; x < w; x++) {
-
-
-
-                                let i = (y * w + x) * 4;
-
-
-
-                                let dx = (x / w) - 0.5;
-
-
-
-                                let dy = (y / h) - 0.5;
-
-
-
-                                let dist = Math.sqrt(dx*dx + dy*dy) * 2;
-
-
-
-                                let factor = Math.max(0, 1.0 - dist * 0.8);
-
-
-
-                                data[i+1] *= factor;
-
-
-
-                            }
-
-
-
-                        }
-
-
-
-                        mainFilterCtx.putImageData(frame, 0, 0);
-
-
-
-                    
-
-
-
-                    } else if (currentFilter === 'none') {
-
-
-
-                        // No se dibuja nada en el canvas, se ve el video de fondo
-
-
-
-                    }
-
-
-
-                }
-
-
-
-            }
-
-
-
-            requestAnimationFrame(drawLoop);
-
-
-
-        }
-
-
-
-        
-
-
-
-        async function detectPoseLoop() {
-
-
-
-            while (true) {
-
-
-
-                if (currentFilter === 'sls' && poseDetector && videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
-
-
-
-                    if (!isDetectingPose) {
-
-
-
-                        isDetectingPose = true;
-
-
-
-                        
-
-
-
-                        const poses = await poseDetector.estimatePoses(videoBg); 
-
-
-
-                        latestPoses = poses; 
-
-
-
-                        
-
-
-
-                        isDetectingPose = false;
-
-
-
-                    }
-
-
-
-                    await new Promise(r => setTimeout(r, 100)); // 10 FPS
-
-
-
-                } else {
-
-
-
-                    latestPoses = []; 
-
-
-
-                    await new Promise(r => setTimeout(r, 500));
-
-
-
-                }
-
-
-
-            }
-
-
-
-        }
-
-
-
-
-
-
-
-        const confidenceThreshold = 0.3; 
-
-
-
+        const confidenceThreshold = 0.3;
         const skeletonMap = [
-
-
-
             ['left_shoulder', 'right_shoulder'], ['left_shoulder', 'left_elbow'],
-
-
-
             ['left_elbow', 'left_wrist'], ['right_shoulder', 'right_elbow'],
-
-
-
             ['right_elbow', 'right_wrist'], ['left_shoulder', 'left_hip'],
-
-
-
             ['right_shoulder', 'right_hip'], ['left_hip', 'right_hip'],
-
-
-
             ['left_hip', 'left_knee'], ['left_knee', 'left_ankle'],
-
-
-
             ['right_hip', 'right_knee'], ['right_knee', 'right_ankle']
-
-
-
         ];
 
-
-
+        let spiritBoxState = "OFF";
+        let spiritBoxTimeout = null;
         
+        let uiHideTimeout;
+        let uiVisible = false;
+        let zoom = 1.0;
+        let maxZoom = 5.0;
+        let initialPinchDist = 0;
+        let lastPan = { x: 0, y: 0 };
+        let currentPan = { x: 0, y: 0 };
+        let isPinching = false;
+        let isPanning = false;
 
+        let videoTrack;
+        let isTorchOn = false;
+        let lastFrameTime = 0;
+        let frameCount = 0;
+        let lastFpsUpdate = 0;
 
+        async function startCamera() {
+            try {
+                // Combinación Fuente 1 (Constraints) + Fuente 2 (PiP)
+                const constraints = {
+                    video: {
+                        facingMode: { ideal: "environment" }, 
+                        width: { ideal: 4096 },  
+                        height: { ideal: 2160 },
+                        frameRate: { ideal: 60 } 
+                    },
+                    audio: false
+                };
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                videoTrack = stream.getVideoTracks()[0]; 
+                
+                if (videoTrack && typeof videoTrack.applyConstraints === 'function') {
+                    videoTrack.applyConstraints({
+                        advanced: [{ focusMode: 'continuous' }]
+                    }).catch(e => console.warn("No se pudo aplicar 'focusMode: continuous'", e));
+                    
+                    const capabilities = videoTrack.getCapabilities();
+                    if (!capabilities.torch) {
+                        document.getElementById('btn-torch').style.display = 'none';
+                    }
+                }
+                
+                videoBg.srcObject = stream;
+                if (pipVideo) pipVideo.srcObject = stream; // 📍 Asignar stream al PiP (Fuente 2)
+                
+                videoBg.onloadedmetadata = () => {
+                    resizeAllCanvas();
+                    energyCanvas = document.getElementById('energy-canvas');
+                    if (energyCanvas) { 
+                        energyCtx = energyCanvas.getContext('2d');
+                        resizeEnergyCanvas();
+                    }
+                    vuCanvas = document.getElementById('vu-meter-canvas');
+                    if (vuCanvas) {
+                        vuCtx = vuCanvas.getContext('2d');
+                        resizeVuCanvas();
+                    }
+
+                    try {
+                        const settings = videoTrack.getSettings();
+                        const res = settings.height || videoBg.videoHeight;
+                        document.getElementById('cam-res-panel').innerText = `${res}p`;
+                        document.getElementById('floating-cam-res').innerText = `${res}p`;
+                    } catch(e) {
+                        const res = videoBg.videoHeight;
+                        document.getElementById('cam-res-panel').innerText = `${res}p`;
+                        document.getElementById('floating-cam-res').innerText = `${res}p`;
+                    }
+                    
+                    drawLoop();
+                };
+            } catch (e) { console.log("Error de cámara", e); }
+        }
+        
+        function resizeAllCanvas() {
+            const viewArea = document.getElementById('main-view-area');
+            const w = viewArea.clientWidth; 
+            const h = viewArea.clientHeight; 
+            
+            mainFilterCanvas.width = w;
+            mainFilterCanvas.height = h;
+            
+            const aiWidth = 640;
+            aiCanvas.width = aiWidth;
+            aiCanvas.height = (aiWidth / w) * h;
+            
+            if(energyCanvas && document.body.classList.contains('panels-active')) {
+                resizeEnergyCanvas();
+            }
+            if(vuCanvas && document.body.classList.contains('panels-active')) {
+                resizeVuCanvas();
+            }
+        }
+
+        // --- LÓGICA SLS (FUENTE 1 - KINECT) ---
+        async function initMLModel() {
+            try {
+                const model = poseDetection.SupportedModels.MoveNet;
+                const detectorConfig = {
+                    modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING,
+                    maxPoses: 6 
+                };
+                poseDetector = await poseDetection.createDetector(model, detectorConfig);
+                console.log("MoveNet (IA Multi-Pose) cargado (Fuente 1).");
+            } catch (e) {
+                console.error("Error al cargar modelo de IA:", e);
+            }
+        }
+
+        async function detectPoseLoop() {
+            while (true) {
+                if (currentFilter === 'sls' && poseDetector && videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
+                    if (!isDetectingPose) {
+                         isDetectingPose = true;
+                        const poses = await poseDetector.estimatePoses(videoBg); 
+                        latestPoses = poses; 
+                        isDetectingPose = false;
+                    }
+                    await new Promise(r => setTimeout(r, 100));
+                } else {
+                    latestPoses = [];
+                    await new Promise(r => setTimeout(r, 500));
+                }
+            }
+        }
 
         function drawAllSkeletons(poses) {
-
-
-
-            const ctx = mainFilterCtx; 
-
-
-
+            const ctx = mainFilterCtx; // Usamos el contexto del canvas de Fuente 2
+            ctx.strokeStyle = 'var(--neon-green)'; 
+            ctx.fillStyle = 'var(--alert-red)';    
             
-
-
-
-            ctx.strokeStyle = 'var(--neon-green)'; // LÍNEAS VERDES
-
-
-
-            ctx.fillStyle = 'var(--alert-red)';   // PUNTOS ROJOS
-
-
-
-            
-
-
-
-            ctx.lineWidth = 2.5;
-
-
-
-            ctx.filter = 'drop-shadow(0 0 4px var(--neon-green))';
-
-
-
-
-
-
-
-            // Escalar para 'object-fit: cover'
-
-
+            ctx.lineWidth = 4;
+            ctx.filter = 'drop-shadow(0 0 5px var(--neon-green))';
 
             const videoW = videoBg.videoWidth;
-
-
-
             const videoH = videoBg.videoHeight;
-
-
-
             const canvasW = mainFilterCanvas.width;
-
-
-
             const canvasH = mainFilterCanvas.height;
-
-
-
             
-
-
-
             const videoAspect = videoW / videoH;
-
-
-
             const canvasAspect = canvasW / canvasH;
-
-
-
             
-
-
-
             let scale, offsetX, offsetY;
-
-
-
-            
-
-
-
             if (canvasAspect > videoAspect) {
-
-
-
-                // El canvas es más ancho que el video
-
-
-
                 scale = canvasW / videoW;
-
-
-
                 offsetX = 0;
-
-
-
                 offsetY = (canvasH - videoH * scale) / 2;
-
-
-
             } else {
-
-
-
-                // El canvas es más alto que el video
-
-
-
                 scale = canvasH / videoH;
-
-
-
                 offsetX = (canvasW - videoW * scale) / 2;
-
-
-
                 offsetY = 0;
-
-
-
             }
-
-
-
-
-
-
 
             poses.forEach(pose => {
-
-
-
                 if (pose.score > confidenceThreshold) {
-
-
-
                     drawKeypoints(pose.keypoints, scale, offsetX, offsetY);
-
-
-
                     drawConnections(pose.keypoints, scale, offsetX, offsetY);
-
-
-
                 }
-
-
-
-            });
-
-
-
+             });
             ctx.filter = 'none';
-
-
-
         }
-
-
-
-
-
-
 
         function drawKeypoints(keypoints, scale, offsetX, offsetY) {
-
-
-
             const ctx = mainFilterCtx;
-
-
-
             for (let i = 0; i < keypoints.length; i++) {
-
-
-
                 const keypoint = keypoints[i];
-
-
-
                 if (keypoint.score > confidenceThreshold) {
-
-
-
                     ctx.beginPath();
-
-
-
-                    ctx.arc(keypoint.x * scale + offsetX, keypoint.y * scale + offsetY, 4, 0, 2 * Math.PI); 
-
-
-
+                    ctx.arc(keypoint.x * scale + offsetX, keypoint.y * scale + offsetY, 5, 0, 2 * Math.PI); 
                     ctx.fill();
-
-
-
                 }
-
-
-
             }
-
-
-
         }
-
-
-
-
-
-
 
         function drawConnections(keypoints, scale, offsetX, offsetY) {
-
-
-
             const ctx = mainFilterCtx;
-
-
-
             const keypointMap = new Map();
-
-
-
             keypoints.forEach(keypoint => {
-
-
-
                 keypointMap.set(keypoint.name, keypoint);
-
-
-
             });
-
-
-
-
-
-
-
             skeletonMap.forEach(connection => {
-
-
-
                 const start = keypointMap.get(connection[0]);
-
-
-
                 const end = keypointMap.get(connection[1]);
 
-
-
-
-
-
-
                 if (start && end && start.score > confidenceThreshold && end.score > confidenceThreshold) {
-
-
-
                     ctx.beginPath();
-
-
-
                     ctx.moveTo(start.x * scale + offsetX, start.y * scale + offsetY);
-
-
-
                     ctx.lineTo(end.x * scale + offsetX, end.y * scale + offsetY);
-
-
-
                     ctx.stroke();
-
-
-
                 }
-
-
-
             });
-
-
-
         }
 
-
-
-        
-
-
-
-        function setFilter(f) {
-
-
-
-            document.querySelectorAll('.filter-btn').forEach(b => {
-
-
-
-                if (b.id !== 'btn-panel') {
-
-
-
-                    b.classList.remove('active');
-
-
-
-                }
-
-
-
-            });
-
-
-
+        function drawVideoWithCover(ctx, video, z, pan) {
+            const canvasW = ctx.canvas.width;
+            const canvasH = ctx.canvas.height;
+            const videoW = video.videoWidth;
+            const videoH = video.videoHeight;
             
+            if (!videoW || !videoH) return;
+            const videoAspect = videoW / videoH;
+            const canvasAspect = canvasW / canvasH;
 
+            let sWidth = videoW / z;
+            let sHeight = videoH / z;
+            
+            if (canvasAspect > videoAspect) {
+                sHeight = sWidth / canvasAspect;
+            } else {
+                sWidth = sHeight * canvasAspect;
+            }
 
+            let sx = (videoW - sWidth) / 2 + pan.x;
+            let sy = (videoH - sHeight) / 2 + pan.y;
+
+            sx = Math.max(0, Math.min(sx, videoW - sWidth));
+            sy = Math.max(0, Math.min(sy, videoH - sHeight));
+            currentPan.x = sx - (videoW - sWidth) / 2;
+            currentPan.y = sy - (videoH - sHeight) / 2;
+
+            ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, canvasW, canvasH);
+        }
+
+        async function drawLoop() {
+            const now = performance.now();
+            const delta = now - lastFrameTime;
+            lastFrameTime = now;
+            frameCount++;
+            if (now - lastFpsUpdate > 1000) { 
+                const fps = frameCount;
+                document.getElementById('cam-fps-panel').innerText = fps;
+                document.getElementById('floating-cam-fps').innerText = fps;
+                frameCount = 0;
+                lastFpsUpdate = now;
+            }
+
+            if (videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
+                const w = mainFilterCanvas.width;
+                const h = mainFilterCanvas.height;
+                mainFilterCtx.clearRect(0, 0, w, h);
+                
+                const kinectBanner = document.getElementById('kinect-banner');
+                if (currentFilter === 'sls') {
+                    kinectBanner.style.display = 'block';
+                    if (latestPoses) {
+                        drawAllSkeletons(latestPoses);
+                    }
+                } else {
+                    kinectBanner.style.display = 'none';
+                }
+            }
+            requestAnimationFrame(drawLoop);
+        }
+        
+        function setFilter(f) {
+            document.querySelectorAll('.filter-btn').forEach(b => {
+                if (b.id !== 'btn-panel') { b.classList.remove('active'); }
+            });
+            
+            document.body.classList.remove('filter-detector', 'filter-sls', 'filter-negative');
+            mainFilterCanvas.style.display = 'none';
 
             if (currentFilter === f) {
-
-
-
                 currentFilter = 'none';
-
-
-
             } else {
-
-
-
                 currentFilter = f;
-
-
-
                 const targetBtn = event ? event.target : document.querySelector(`.filter-btn[onclick="setFilter('${f}')"]`);
-
-
-
                 if(targetBtn) targetBtn.classList.add('active');
 
-
-
+                document.body.classList.add('filter-' + f);
+                if (f === 'sls') {
+                    mainFilterCanvas.style.display = 'block';
+                }
             }
-
-
-
-            
-
-
-
-            // Si el filtro aplica efectos, oculta el video base. Si no (sls, none), lo muestra.
-
-
-
-            if (currentFilter === 'relief' || currentFilter === 'night-vision') {
-
-
-
-                videoBg.style.opacity = '0';
-
-
-
-            } else {
-
-
-
-                videoBg.style.opacity = '1';
-
-
-
-            }
-
-
-
         }
-
-
-
-
-
-
 
         function setSensorStatus(sensorName, status) {
-
-
-
             let el;
-
-
-
             if (sensorName === 'mic') el = micStatus;
-
-
-
             else if (sensorName === 'mag') el = magStatus;
-
-
-
             else if (sensorName === 'prox') el = proxStatus;
-
-
-
-            
-
-
-
-            if (el) {
-
-
-
-                el.dataset.status = status;
-
-
-
-            }
-
-
-
+            if (el) el.dataset.status = status;
         }
-
-
-
-
-
-
-
-        // 📍 NUEVO: Función Linterna (P9, P10)
-
-
 
         async function toggleTorch(event) {
-
-
-
-            event.stopPropagation(); // P10: Evitar que el clic active la UI
-
-
-
-            
-
-
-
             if (!videoTrack || typeof videoTrack.applyConstraints !== 'function') {
-
-
-
                 console.log("Linterna no soportada");
-
-
-
                 document.getElementById('btn-torch').style.display = 'none';
-
-
-
                 return;
-
-
-
             }
-
-
-
-        
-
-
-
             try {
-
-
-
                 isTorchOn = !isTorchOn;
-
-
-
-                await videoTrack.applyConstraints({
-
-
-
-                    advanced: [{ torch: isTorchOn }]
-
-
-
-                });
-
-
-
-                document.getElementById('btn-torch').classList.toggle('active', isTorchOn);
-
-
-
+                await videoTrack.applyConstraints({ advanced: [{ torch: isTorchOn }] });
+                event.currentTarget.classList.toggle('active', isTorchOn);
             } catch (e) {
-
-
-
                 console.error("Error al activar linterna:", e);
-
-
-
                 isTorchOn = false; 
-
-
-
-                document.getElementById('btn-torch').classList.toggle('active', false);
-
-
-
+                event.currentTarget.classList.remove('active');
                 document.getElementById('btn-torch').style.display = 'none';
-
-
-
             }
-
-
-
         }
 
-
-
-
-
-
-
-        // 📍 NUEVO: Cargar Audios (P11)
-
-
-
+        // --- AUDIO Y SPIRIT BOX (FUENTE 3 - spiit box.txt) ---
         async function loadAudio(url) {
-
-
-
             try {
-
-
-
                 const response = await fetch(url);
-
-
-
                 const arrayBuffer = await response.arrayBuffer();
-
-
-
                 return await audioCtx.decodeAudioData(arrayBuffer);
-
-
-
             } catch (e) {
-
-
-
                 console.error(`Error cargando audio: ${url}`, e);
-
-
-
-                throw e; // Relanzar el error
-
-
-
+                throw e; 
             }
-
-
-
         }
-
-
-
-
-
-
-
-        // 📍 NUEVO: initAudio con FONDO_1 y FONDO_2 (P11)
-
-
 
         async function initAudio() {
-
-
-
             if (audioCtx) return;
-
-
-
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-
-
             masterGain = audioCtx.createGain();
-
-
-
             masterGain.connect(audioCtx.destination);
-
-
-
             
-
-
-
-            // Cargar los nuevos audios
-
-
-
             try {
-
-
-
                 updateLoadingProgress(55, "CARGANDO AUDIO...");
-
-
-
                 [audioBuffer_Fondo1, audioBuffer_Fondo2] = await Promise.all([
-
-
-
                     loadAudio('FONDO_1.mp3'),
-
-
-
                     loadAudio('FONDO_2.mp3')
-
-
-
                 ]);
-
-
-
                 console.log("Audios de fondo cargados.");
-
-
-
                 updateLoadingProgress(65, "AUDIO CARGADO");
-
-
-
             } catch (e) {
-
-
-
                 console.error("Error al cargar audios de fondo:", e);
-
-
-
                 updateLoadingProgress(65, "ERROR DE AUDIO");
-
-
-
                 return; 
-
-
-
             }
-
-
-
         
-
-
-
-            // Configurar Fondo 1 (Estática)
-
-
-
             gain_Fondo1 = audioCtx.createGain();
-
-
-
-            gain_Fondo1.gain.value = 0; // Empieza apagado
-
-
-
+            gain_Fondo1.gain.value = 0; 
             gain_Fondo1.connect(masterGain);
-
-
-
         
-
-
-
-            // Configurar Fondo 2 (Sintonía)
-
-
-
             gain_Fondo2 = audioCtx.createGain();
-
-
-
-            gain_Fondo2.gain.value = 0; // Empieza apagado
-
-
-
+            gain_Fondo2.gain.value = 0; 
             gain_Fondo2.connect(masterGain);
-
-
-
         
-
-
-
-            // Configurar Reverb y Distorsión (para la voz)
-
-
-
             reverbGain = audioCtx.createGain();
-
-
-
-            reverbGain.gain.value = 0.8; // Más reverb
-
-
-
+            reverbGain.gain.value = 0.8;
             let delay = audioCtx.createDelay(1.0); delay.delayTime.value = 0.5; 
-
-
-
             let fb = audioCtx.createGain(); fb.gain.value = 0.6;
-
-
-
             
-
-
-
             reverbGain.connect(delay);
-
-
-
             delay.connect(fb);
-
-
-
             fb.connect(delay);
-
-
-
-            delay.connect(masterGain); // Conectar reverb al master
-
-
-
-
-
-
-
+            delay.connect(masterGain);
+            
             distortionNode = audioCtx.createWaveShaper();
-
-
-
-            distortionNode.curve = makeDistortionCurve(50); // Distorsión sutil
-
-
-
+            distortionNode.curve = makeDistortionCurve(50); 
             distortionNode.oversample = '4x';
-
-
-
+            distortionNode.connect(reverbGain);
             
-
-
-
-            distortionNode.connect(reverbGain); // La distorsión alimenta la reverb
-
-
-
-            
-
-
-
+            // Inicializar Speech Rec aquí
             initSpeechRec();
-
-
-
         }
-
-
-
-
-
-
 
         function playFondo1() {
-
-
-
             if (!audioBuffer_Fondo1) return;
-
-
-
             if (audioSource_Fondo1) { try { audioSource_Fondo1.stop(); } catch(e){} }
-
-
-
             audioSource_Fondo1 = audioCtx.createBufferSource();
-
-
-
             audioSource_Fondo1.buffer = audioBuffer_Fondo1;
-
-
-
             audioSource_Fondo1.loop = true;
-
-
-
             audioSource_Fondo1.connect(gain_Fondo1);
-
-
-
             audioSource_Fondo1.start();
-
-
-
         }
-
-
-
-
-
-
 
         function playFondo2_Fragment() {
-
-
-
             if (!audioBuffer_Fondo2 || !isRunning || spiritBoxState !== "SCANNING") return;
-
-
-
-            if (audioSource_Fondo2) {
-
-
-
-                try { audioSource_Fondo2.stop(); } catch(e){}
-
-
-
-            }
-
-
-
+            if (audioSource_Fondo2) { try { audioSource_Fondo2.stop(); } catch(e){} }
+            
             audioSource_Fondo2 = audioCtx.createBufferSource();
-
-
-
             audioSource_Fondo2.buffer = audioBuffer_Fondo2;
-
-
-
             audioSource_Fondo2.connect(gain_Fondo2);
-
-
-
         
-
-
-
-            // P11: Saltar a un punto aleatorio
-
-
-
             const duration = audioBuffer_Fondo2.duration;
-
-
-
-            const startTime = Math.random() * (duration - 2); // Asegurar que no empiece al final
-
-
-
-            const fragmentDuration = 0.8 + Math.random() * 1.2; // Duración de 0.8 a 2.0 seg
-
-
-
+            const startTime = Math.random() * (duration - 2);
+            const fragmentDuration = 0.8 + Math.random() * 1.2; 
         
-
-
-
             audioSource_Fondo2.start(0, startTime, fragmentDuration);
-
-
-
         
-
-
-
-            // Programar el siguiente fragmento
-
-
-
             if (scanTimer) clearTimeout(scanTimer);
-
-
-
-            scanTimer = setTimeout(playFondo2_Fragment, fragmentDuration * 1000 + (Math.random() * 300)); // Pausa corta
-
-
-
+            let nextScanDelay = SCAN_DELAYS[scanSpeed] + (Math.random() * 200 - 100);
+            scanTimer = setTimeout(playFondo2_Fragment, fragmentDuration * 1000 + nextScanDelay);
         }
-
-
-
         
-
-
-
         function makeDistortionCurve(amount) {
-
-
-
             let k = typeof amount === 'number' ? amount : 50,
-
-
-
-                n_samples = 44100,
-
-
-
-                curve = new Float32Array(n_samples),
-
-
-
-                deg = Math.PI / 180,
-
-
-
-                i = 0, x;
-
-
-
+                n_samples = 44100, curve = new Float32Array(n_samples),
+                deg = Math.PI / 180, i = 0, x;
             for ( ; i < n_samples; ++i ) {
-
-
-
                 x = i * 2 / n_samples - 1;
-
-
-
                 curve[i] = ( 3 + k ) * x * 20 * deg / ( Math.PI + k * Math.abs(x) );
-
-
-
             }
-
-
-
             return curve;
-
-
-
         }
 
-
-
-
-
-
-
-        // 📍 SOLUCIÓN SENSORES (PUNTO 4)
-
-
-
-        let sensorPermissionsRequested = false;
-
-
-
-        async function requestAllPermissions() {
-
-
-
-            if (sensorPermissionsRequested) {
-
-
-
-                initSensor();
-
-
-
-                return;
-
-
-
-            }
-
-
-
-            sensorPermissionsRequested = true;
-
-
-
-            
-
-
-
-            console.log("Solicitando permisos de sensores...");
-
-
-
-            
-
-
-
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-
-
-
-                try {
-
-
-
-                    const status = await DeviceOrientationEvent.requestPermission();
-
-
-
-                    if (status === 'granted') {
-
-
-
-                        initSensor();
-
-
-
-                    } else {
-
-
-
-                        setSensorStatus('mag', 'unavailable');
-
-
-
-                        setSensorStatus('prox', 'simulated');
-
-
-
-                        startEmfSimulation();
-
-
-
-                    }
-
-
-
-                } catch (e) {
-
-
-
-                    console.warn("Error al pedir permiso de orientación, iniciando sensores de todas formas...", e);
-
-
-
-                    initSensor();
-
-
-
-                }
-
-
-
-            } else {
-
-
-
-                console.log("Permiso de orientación no requerido (ej. Android), iniciando sensores.");
-
-
-
-                initSensor();
-
-
-
-            }
-
-
-
-        }
-
-
-
-        
-
-
-
-        function initSensor() {
-
-
-
-            // 1. Sensor de Orientación (Dial Brújula)
-
-
-
-            if ('AbsoluteOrientationSensor' in window) {
-
-
-
-                try {
-
-
-
-                    orientationSensor = new AbsoluteOrientationSensor({ frequency: 10 });
-
-
-
-                    orientationSensor.onreading = () => {
-
-
-
-                        let q = orientationSensor.quaternion;
-
-
-
-                        let yaw = Math.atan2(2 * (q[0] * q[1] + q[2] * q[3]), 1 - 2 * (q[1] * q[1] + q[2] * q[2])) * (180 / Math.PI);
-
-
-
-                        document.getElementById('compass-needle').style.transform = `translateX(-50%) rotate(${-yaw}deg)`;
-
-
-
-                        setSensorStatus('mag', 'connected'); // VERDE
-
-
-
-                    };
-
-
-
-                    orientationSensor.onerror = (e) => {
-
-
-
-                        console.warn("Error de Brújula (Orientación):", e.error.name);
-
-
-
-                        setSensorStatus('mag', 'unavailable'); // ROJO
-
-
-
-                    };
-
-
-
-                    orientationSensor.start();
-
-
-
-                } catch (e) {
-
-
-
-                    console.warn("Sensor de Orientación no soportado.", e);
-
-
-
-                    setSensorStatus('mag', 'unavailable');
-
-
-
-                }
-
-
-
-            } else {
-
-
-
-                console.warn("Sensor de Orientación no soportado.");
-
-
-
-                setSensorStatus('mag', 'unavailable');
-
-
-
-            }
-
-
-
-
-
-
-
-            // 2. Sensor EMF (Magnetómetro)
-
-
-
-            if ('Magnetometer' in window) {
-
-
-
-                try {
-
-
-
-                    magnetometer = new Magnetometer({ frequency: 10 });
-
-
-
-                    magnetometer.onreading = () => {
-
-
-
-                        let strength = Math.sqrt(magnetometer.x**2 + magnetometer.y**2 + magnetometer.z**2);
-
-
-
-                        emfValue = Math.min(100, (strength / 100) * 100); 
-
-
-
-                        setSensorStatus('prox', 'connected'); // VERDE
-
-
-
-                    };
-
-
-
-                    magnetometer.onerror = (e) => {
-
-
-
-                        console.warn("Magnetómetro (EMF) no disponible:", e.error.name, ". Probando Proximidad.");
-
-
-
-                        initProximitySensor();
-
-
-
-                    };
-
-
-
-                    magnetometer.start();
-
-
-
-                } catch (e) {
-
-
-
-                    console.warn("Magnetómetro (EMF) falló. Probando Proximidad.", e);
-
-
-
-                    initProximitySensor();
-
-
-
-                }
-
-
-
-            } else {
-
-
-
-                console.warn("Magnetómetro (EMF) no soportado. Probando Proximidad.");
-
-
-
-                initProximitySensor();
-
-
-
-            }
-
-
-
-        }
-
-
-
-
-
-
-
-        function initProximitySensor() {
-
-
-
-            if ('ProximitySensor' in window) {
-
-
-
-                try {
-
-
-
-                    proximitySensor = new ProximitySensor();
-
-
-
-                    proximitySensor.onreading = () => {
-
-
-
-                        const maxDist = 10, minDist = 2;  
-
-
-
-                        let dist = proximitySensor.value;
-
-
-
-                        if (dist <= minDist) emfValue = 100;
-
-
-
-                        else if (dist >= maxDist) emfValue = 0;
-
-
-
-                        else emfValue = 100 * (1 - (dist - minDist) / (maxDist - minDist));
-
-
-
-                        setSensorStatus('prox', 'fallback'); // AZUL
-
-
-
-                    };
-
-
-
-                    proximitySensor.onerror = (e) => {
-
-
-
-                        console.warn("Proximidad no disponible:", e.error.name, "Iniciando simulador.");
-
-
-
-                        setSensorStatus('prox', 'simulated'); // NARANJA
-
-
-
-                        startEmfSimulation(); 
-
-
-
-                    };
-
-
-
-                    proximitySensor.start();
-
-
-
-                } catch(e) {
-
-
-
-                    console.warn("Sensor de Proximidad falló. Iniciando simulador.");
-
-
-
-                    setSensorStatus('prox', 'simulated'); // NARANJA
-
-
-
-                    startEmfSimulation(); 
-
-
-
-                }
-
-
-
-            } else {
-
-
-
-                console.warn("Sensor de Proximidad no soportado. Iniciando simulador.");
-
-
-
-                setSensorStatus('prox', 'simulated'); // NARANJA
-
-
-
-                startEmfSimulation(); 
-
-
-
-            }
-
-
-
-        }
-
-
-
-        
-
-
-
-        function startEmfSimulation() {
-
-
-
-            if (emfSimInterval) return;
-
-
-
-            emfSimInterval = setInterval(() => {
-
-
-
-                emfValue = Math.random() * 100;
-
-
-
-            }, 200);
-
-
-
-        }
-
-
-
-        
-
-
-
-        function stopSensor() {
-
-
-
-            if (proximitySensor) proximitySensor.stop();
-
-
-
-            if (magnetometer) magnetometer.stop();
-
-
-
-            if (orientationSensor) orientationSensor.stop();
-
-
-
-            if (emfSimInterval) clearInterval(emfSimInterval);
-
-
-
-            emfSimInterval = null;
-
-
-
-            emfValue = 0;
-
-
-
-            setSensorStatus('prox', 'off');
-
-
-
-            setSensorStatus('mag', 'off');
-
-
-
-        }
-
-
-
-
-
-
-
-        
-
-
-
-        function startVisualLoop() {
-
-
-
-            if (visualLoopInterval) clearInterval(visualLoopInterval); 
-
-
-
-            visualLoopInterval = setInterval(() => {
-
-
-
-                let intensity = emfValue; 
-
-
-
-                
-
-
-
-                const needle = document.getElementById('main-needle');
-
-
-
-                if (needle) {
-
-
-
-                    needle.style.transform = `translateX(-50%) rotate(${-60 + (intensity/100)*120}deg)`;
-
-
-
-                }
-
-
-
-                
-
-
-
-                updateEnergyGraph(intensity); 
-
-
-
-            }, 150); 
-
-
-
-        }
-
-
-
-        
-
-
-
-        function stopVisualLoop() {
-
-
-
-            const needle = document.getElementById('main-needle');
-
-
-
-            if (needle) {
-
-
-
-                needle.style.transform = `translateX(-50%) rotate(-60deg)`;
-
-
-
-            }
-
-
-
-        }
-
-
-
-
-
-
-
-        // --- SPIRIT BOX (Lógica P11) ---
-
-
-
-        
-
-
-
+        // --- LOGICA DEL BOTON ENCENDIDO (Fusión Fuente 2 visual + Fuente 3 lógica) ---
         const pwr = document.getElementById('knob-power');
-
-
-
         pwr.addEventListener('click', async () => {
-
-
-
-            if(!audioCtx) await initAudio(); // Esperar a que el audio cargue
-
-
-
-            if(!audioCtx) return; // Si falló la carga, no continuar
-
-
-
-
-
-
+            if (!audioCtx) await initAudio();
+            if (!audioCtx) return;
 
             isRunning = !isRunning;
-
-
-
-            
-
-
-
             pwr.classList.toggle('active', isRunning);
-
-
-
             
-
-
-
             if(isRunning) {
-
-
-
-                pwr.style.transform = 'rotate(0deg)';
-
-
-
-                
-
-
-
                 if(audioCtx.state === 'suspended') {
-
-
-
                     audioCtx.resume();
-
-
-
                     const silentUtterance = new SpeechSynthesisUtterance(" ");
-
-
-
                     silentUtterance.volume = 0;
-
-
-
                     window.speechSynthesis.speak(silentUtterance);
-
-
-
                 }
-
-
-
                 
-
-
-
-                // P11: Iniciar audios de fondo
-
-
-
+                // Iniciar audios (Lógica Fuente 3)
                 playFondo1();
+                gain_Fondo1.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.5); 
+                gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 0.5); 
 
-
-
-                gain_Fondo1.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.5); // Estática
-
-
-
-                gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 0.5); // Sintonía
-
-
-
-
-
-
-
-                // P4: Solicitar sensores
-
-
-
+                // Solicitar sensores
                 requestAllPermissions();
-
-
-
-
-
-
+                
+                // Iniciar VUMeter si es posible
+                initVUMeterOnly();
 
                 spiritBoxState = "SCANNING";
-
-
-
-                playFondo2_Fragment(); // Iniciar bucle de sintonía
-
-
-
-                runSpiritBoxLoop(); // Iniciar bucle de escucha
-
-
-
-                
-
-
-
-            } else {
-
-
-
-                pwr.style.transform = 'rotate(135deg)';
-
-
-
-                
-
-
-
-                // P11: Parar audios
-
-
-
-                gain_Fondo1.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
-
-
-
-                gain_Fondo2.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
-
-
-
-                if (audioSource_Fondo1) { try { audioSource_Fondo1.stop(); } catch(e){} }
-
-
-
-                if (audioSource_Fondo2) { try { audioSource_Fondo2.stop(); } catch(e){} }
-
-
-
-                if (scanTimer) clearTimeout(scanTimer);
-
-
-
-                
-
-
-
-                spiritBoxState = "OFF";
-
-
-
-                if (spiritBoxTimeout) clearTimeout(spiritBoxTimeout);
-
-
-
-                if (isRecognizing) recognition.abort();
-
-
-
-                window.speechSynthesis.cancel();
-
-
-
-                
-
-
-
-                isSpeaking = false;
-
-
-
-                isRecognizing = false;
-
-
-
-                setSensorStatus('mic', 'off');
-
-
-
-                stopSensor();
-
-
-
-            }
-
-
-
-        });
-
-
-
-
-
-
-
-        document.getElementById('knob-scan').addEventListener('click', function() {
-
-
-
-            // Esta perilla ahora es simbólica, pero podemos atarla a la velocidad de sintonía
-
-
-
-            scanSpeed = (scanSpeed+1)%3;
-
-
-
-            this.style.transform = `rotate(${-135 + scanSpeed*135}deg)`;
-
-
-
-            // (La velocidad real ahora se maneja en playFondo2_Fragment)
-
-
-
-        });
-
-
-
-
-
-
-
-        document.getElementById('vol-slider').addEventListener('input', (e) => {
-
-
-
-            const vol = e.target.value;
-
-
-
-            if(masterGain) masterGain.gain.value = vol/100;
-
-
-
-            document.getElementById('vol-percent').innerText = `${vol}%`;
-
-
-
-        });
-
-
-
-
-
-
-
-        function hideLoadingScreen() {
-
-
-
-            const overlay = document.getElementById('loading-overlay');
-
-
-
-            if (overlay) {
-
-
-
-                overlay.style.opacity = '0';
-
-
-
-                setTimeout(() => {
-
-
-
-                    overlay.style.display = 'none';
-
-
-
-                }, 500); 
-
-
-
-            }
-
-
-
-        }
-
-
-
-        
-
-
-
-        const loadingText = document.getElementById('loading-text');
-
-
-
-        const loadingBar = document.getElementById('loading-bar');
-
-
-
-        
-
-
-
-        function updateLoadingProgress(percent, text) {
-
-
-
-            if (loadingBar) loadingBar.style.width = percent + '%';
-
-
-
-            if (loadingText) loadingText.innerText = `${text} [ ${percent}% ]`;
-
-
-
-        }
-
-
-
-
-
-
-
-        async function loadSheetData() {
-
-
-
-            try {
-
-
-
-                updateLoadingProgress(25, "CONECTANDO CON API-OBR");
-
-
-
-                
-
-
-
-                const response = await fetch(GOOGLE_SCRIPT_URL);
-
-
-
-                updateLoadingProgress(50, "RECIBIENDO DATOS");
-
-
-
-
-
-
-
-                if (!response.ok) {
-
-
-
-                    throw new Error(`Error de red: ${response.statusText}`);
-
-
-
-                }
-
-
-
-                
-
-
-
-                const data = await response.json();
-
-
-
-                
-
-
-
-                // Esperar a que el audio termine si aún no lo ha hecho
-
-
-
-                if (!audioCtx) await initAudio(); 
-
-
-
-                
-
-
-
-                updateLoadingProgress(75, "PROCESANDO RESPUESTAS");
-
-
-
-
-
-
-
-                automaticoData = data.automatico.map(r => r.TEXTO).filter(t => t);
-
-
-
-                
-
-
-
-                data.programado.forEach(r => {
-
-
-
-                    let p = (r.PREGUNTA || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-
-
-                    let res = r.RESPUESTA;
-
-
-
-                    if (p && res) {
-
-
-
-                        programadoData.set(p, res);
-
-
-
-                    }
-
-
-
-                });
-
-
-
-                
-
-
-
-                updateLoadingProgress(100, "SINCRONIZACIÓN COMPLETA");
-
-
-
-                
-
-
-
-                console.log(`%c[SISTEMA OBR] Sincronización completa: ${automaticoData.length} SENSORES AUTOMÁTICOS ACTIVOS | ${programadoData.size} SENSORES PROGRAMADOS CONECTADOS.`, "color: #39FF14; font-weight: bold;");
-
-
-
-
-
-
-
-            } catch (e) { 
-
-
-
-                console.error("Error cargando datos de Google Apps Script", e); 
-
-
-
-                updateLoadingProgress(100, "ERROR DE SINCRONIZACIÓN");
-
-
-
-            } finally {
-
-
-
-                setTimeout(hideLoadingScreen, 500); 
-
-
-
-            }
-
-
-
-        }
-
-
-
-
-
-
-
-        // 📍 FUNCIÓN SPEAK (PUNTO 3) - Efecto PSB7 mejorado
-
-
-
-        function speak(text) {
-
-
-
-            if (!text || isSpeaking) return;
-
-
-
-            
-
-
-
-            spiritBoxState = "SPEAKING";
-
-
-
-            isSpeaking = true;
-
-
-
-            if (scanTimer) clearTimeout(scanTimer); // Parar sintonía
-
-
-
-            
-
-
-
-            const words = text.split(' ');
-
-
-
-            let wordIndex = 0;
-
-
-
-
-
-
-
-            function speakWordByWord() {
-
-
-
-                if (wordIndex >= words.length || !isRunning) {
-
-
-
-                    isSpeaking = false;
-
-
-
-                    spiritBoxState = "SCANNING";
-
-
-
-                    gain_Fondo1.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.2); // Subir estática
-
-
-
-                    gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 0.2); // Subir sintonía
-
-
-
-                    
-
-
-
-                    if (isRunning) {
-
-
-
-                        playFondo2_Fragment(); // Reanudar sintonía
-
-
-
-                        setTimeout(runSpiritBoxLoop, 2000); // Reanudar escucha
-
-
-
-                    }
-
-
-
-                    return;
-
-
-
-                }
-
-
-
-
-
-
-
-                const word = words[wordIndex];
-
-
-
-                const u = new SpeechSynthesisUtterance(word);
-
-
-
-                u.lang = 'es-MX';
-
-
-
-                u.volume = 1.0;
-
-
-
-                u.pitch = 0.1 + Math.random() * 0.7; // Tono bajo y variable
-
-
-
-                u.rate = 0.9 + Math.random() * 0.4; // Velocidad variable
-
-
-
-
-
-
-
-                u.onstart = () => {
-
-
-
-                    // Bajar fondos para que la voz se oiga
-
-
-
-                    gain_Fondo1.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime); 
-
-
-
-                    gain_Fondo2.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime);
-
-
-
-                };
-
-
-
-
-
-
-
-                u.onend = () => {
-
-
-
-                    wordIndex++;
-
-
-
-                    // Subir fondos entre palabras
-
-
-
-                    gain_Fondo1.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime);
-
-
-
-                    gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime);
-
-
-
-                    
-
-
-
-                    setTimeout(speakWordByWord, 100 + Math.random() * 400); // Pausa aleatoria
-
-
-
-                };
-
-
-
-                
-
-
-
-                window.speechSynthesis.speak(u);
-
-
-
-            }
-
-
-
-
-
-
-
-            speakWordByWord(); // Inicia la secuencia
-
-
-
-            
-
-
-
-            sensorPanel.classList.add('alert');
-
-
-
-            emfValue = 80 + Math.random() * 20; 
-
-
-
-            setTimeout(() => sensorPanel.classList.remove('alert'), 500);
-
-
-
-        }
-
-
-
-
-
-
-
-        function runSpiritBoxLoop() {
-
-
-
-            if (!isRunning || spiritBoxState === "SPEAKING") return;
-
-
-
-            spiritBoxState = "LISTENING";
-
-
-
-            
-
-
-
-            // P11: Parar el scanner de sintonía para escuchar
-
-
-
-            if (audioSource_Fondo2) { try { audioSource_Fondo2.stop(); } catch(e){} }
-
-
-
-            if (scanTimer) clearTimeout(scanTimer);
-
-
-
-            gain_Fondo2.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
-
-
-
-            
-
-
-
-            try {
-
-
-
-                if (!isRecognizing) recognition.start();
-
-
-
-            } catch(e) {
-
-
-
-                console.warn("Error al iniciar recognition", e);
-
-
-
-                setSensorStatus('mic', 'unavailable');
-
-
-
-                if (isRunning) setTimeout(runSpiritBoxLoop, 2000);
-
-
-
-                return;
-
-
-
-            }
-
-
-
-
-
-
-
-            spiritBoxTimeout = setTimeout(() => {
-
-
-
-                if (spiritBoxState !== "LISTENING") return; 
-
-
-
-                
-
-
-
-                console.log("Timeout: No se detectó comando de voz.");
-
-
-
-                if (isRecognizing) recognition.abort();
-
-
-
-                isRecognizing = false;
-
-
-
-
-
-
-
-                // Reanudar scanner
-
-
-
-                gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 0.2);
-
-
-
-                spiritBoxState = "SCANNING";
-
-
-
                 playFondo2_Fragment(); 
-
-
-
-
-
-
-
-                if (automaticoData.length > 0) {
-
-
-
-                    // Hablar después de un breve escaneo
-
-
-
-                    setTimeout(() => {
-
-
-
-                        if (isRunning) {
-
-
-
-                            speak(automaticoData[Math.floor(Math.random() * automaticoData.length)]);
-
-
-
-                        }
-
-
-
-                    }, 1000 + Math.random() * 2000);
-
-
-
-                } else {
-
-
-
-                    // Si no hay nada que decir, simplemente re-iniciar el loop de escucha
-
-
-
-                    setTimeout(runSpiritBoxLoop, 3000);
-
-
-
+                runSpiritBoxLoop(); 
+                
+            } else {
+                gain_Fondo1.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+                gain_Fondo2.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+                if (audioSource_Fondo1) { try { audioSource_Fondo1.stop(); } catch(e){} }
+                if (audioSource_Fondo2) { try { audioSource_Fondo2.stop(); } catch(e){} }
+                if (scanTimer) clearTimeout(scanTimer);
+                
+                spiritBoxState = "OFF";
+                if (spiritBoxTimeout) clearTimeout(spiritBoxTimeout);
+                if (isRecognizing && recognition) recognition.abort();
+                window.speechSynthesis.cancel();
+                
+                isSpeaking = false;
+                isRecognizing = false;
+                setSensorStatus('mic', 'off');
+                
+                // Auto-cierre vertical (Fuente 2)
+                const isVertical = window.innerHeight > window.innerWidth;
+                if (isVertical && document.body.classList.contains('panels-active')) {
+                    togglePanels();
                 }
-
-
-
-            }, 5000); // 5 segundos para hablar
-
-
-
-        }
-
-
-
-
-
-
-
-        function initSpeechRec() {
-
-
-
-            if(!SpeechRecognition) {
-
-
-
-                console.error("SpeechRecognition no soportado.");
-
-
-
-                setSensorStatus('mic', 'unavailable');
-
-
-
-                return;
-
-
-
             }
+        });
 
-
-
-            recognition = new SpeechRecognition(); 
-
-
-
+        // --- RECONOCIMIENTO DE VOZ (Fuente 3 mejorada) ---
+        function initSpeechRec() {
+            if(!SpeechRecognition) {
+                console.error("SpeechRecognition no soportado.");
+                setSensorStatus('mic', 'unavailable');
+                return;
+            }
+            recognition = new SpeechRecognition();
             recognition.lang = 'es-MX'; 
-
-
-
             recognition.continuous = false;
 
-
-
-
-
-
-
             recognition.onstart = () => { 
-
-
-
                 isRecognizing = true;
-
-
-
                 setSensorStatus('mic', 'connected');
-
-
-
             };
-
-
-
-            
-
-
-
             recognition.onend = () => { 
-
-
-
                 isRecognizing = false;
-
-
-
                 setSensorStatus('mic', 'off');
-
-
-
             };
-
-
-
-            
-
-
-
             recognition.onerror = (e) => {
-
-
-
                 isRecognizing = false;
-
-
-
                 setSensorStatus('mic', 'unavailable');
-
-
-
                 console.warn("Error de Recognition:", e.error);
-
-
-
             };
-
-
-
-
-
-
-
             recognition.onresult = (e) => {
-
-
-
-                if (spiritBoxTimeout) clearTimeout(spiritBoxTimeout); 
-
-
-
-                
-
-
-
+                if (spiritBoxTimeout) clearTimeout(spiritBoxTimeout);
                 let t = e.results[0][0].transcript.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-
-
-
                 console.log("Comando detectado:", t);
-
-
-
-
-
-
-
                 if (programadoData.has(t)) {
-
-
-
                     speak(programadoData.get(t));
-
-
-
                 } else {
-
-
-
                     if (automaticoData.length > 0) {
-
-
-
                         speak(automaticoData[Math.floor(Math.random() * automaticoData.length)]);
-
-
-
                     }
-
-
-
                 }
-
-
-
             };
-
-
-
         }
 
+        // --- VU METER (Visualización Micrófono - Fuente 2) ---
+        async function initVUMeterOnly() {
+            if (!audioCtx || micStreamSource) return;
+            try {
+                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                 micStreamSource = audioCtx.createMediaStreamSource(stream);
+                 vuAnalyserNode = audioCtx.createAnalyser();
+                 vuAnalyserNode.fftSize = 256;
+                 micStreamSource.connect(vuAnalyserNode);
+                 vuDataArray = new Uint8Array(vuAnalyserNode.frequencyBinCount);
+                 drawVUMeter(); 
+            } catch (e) { console.error("Error VU Meter", e); }
+        }
 
+        function drawVUMeter() {
+            if (!vuCtx || !vuAnalyserNode) { requestAnimationFrame(drawVUMeter); return; }
+            vuAnalyserNode.getByteTimeDomainData(vuDataArray);
+            let sum = 0;
+            for(let i = 0; i < vuDataArray.length; i++) { sum += Math.pow((vuDataArray[i] / 128.0) - 1, 2); }
+            let rms = Math.sqrt(sum / vuDataArray.length);
+            let db = 20 * Math.log10(rms);
+            let minDb = -60; let maxDb = -10;
+            let volumePercent = Math.max(0, Math.min(100, 100 * (db - minDb) / (maxDb - minDb)));
 
+            updateEnergyGraph(volumePercent);
+            
+            let w = vuCanvas.width; let h = vuCanvas.height;
+            vuCtx.clearRect(0, 0, w, h);
+            vuCtx.fillStyle = '#111';
+            vuCtx.fillRect(0, 0, w, h);
 
+            let barCount = 30;
+            let barWidth = (w / barCount) * 0.7;
+            let barSpacing = (w / barCount) * 0.3;
+            let x = barSpacing / 2;
+            
+            let greenLimit = 20; let orangeLimit = 26;
+            for(let i = 0; i < barCount; i++) {
+                let barHeightPercent = (i / (barCount-1)) * (volumePercent / 100);
+                let barHeight = h * barHeightPercent;
+                if (barHeight > 0) {
+                     if (i < greenLimit) { vuCtx.fillStyle = 'var(--neon-green)'; } 
+                     else if (i < orangeLimit) { vuCtx.fillStyle = 'var(--sim-orange)'; } 
+                     else { vuCtx.fillStyle = 'var(--alert-red)'; }
+                    vuCtx.fillRect(x, h - barHeight, barWidth, barHeight);
+                }
+                x += barWidth + barSpacing;
+            }
+            requestAnimationFrame(drawVUMeter);
+        }
 
+        function speak(text) {
+            if (!text || isSpeaking) return;
+            spiritBoxState = "SPEAKING";
+            isSpeaking = true;
+            if (scanTimer) clearTimeout(scanTimer); 
+            
+            const words = text.split(' ');
+            let wordIndex = 0;
+            function speakWordByWord() {
+                if (wordIndex >= words.length || !isRunning) {
+                    isSpeaking = false;
+                    spiritBoxState = "SCANNING";
+                    gain_Fondo1.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.2); 
+                    gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 0.2);
+                    if (isRunning) {
+                        playFondo2_Fragment();
+                        setTimeout(runSpiritBoxLoop, 2000); 
+                    }
+                    return;
+                }
 
+                const word = words[wordIndex];
+                const u = new SpeechSynthesisUtterance(word);
+                u.lang = 'es-MX';
+                u.volume = 1.0;
+                u.pitch = 0.1 + Math.random() * 0.7;
+                u.rate = 0.9 + Math.random() * 0.4; 
+
+                u.onstart = () => {
+                    gain_Fondo1.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime);
+                    gain_Fondo2.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime);
+                };
+
+                u.onend = () => {
+                    wordIndex++;
+                    gain_Fondo1.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime);
+                    gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime);
+                    setTimeout(speakWordByWord, 100 + Math.random() * 400); 
+                };
+                window.speechSynthesis.speak(u);
+            }
+            speakWordByWord(); 
+            sensorPanel.classList.add('alert');
+            emfValue = 80 + Math.random() * 20; 
+            setTimeout(() => sensorPanel.classList.remove('alert'), 500);
+        }
+
+        function runSpiritBoxLoop() {
+            if (!isRunning || spiritBoxState === "SPEAKING") return;
+            spiritBoxState = "LISTENING";
+            
+            if (audioSource_Fondo2) { try { audioSource_Fondo2.stop(); } catch(e){} }
+            if (scanTimer) clearTimeout(scanTimer);
+            gain_Fondo2.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+            
+            try {
+                if (!isRecognizing && recognition) { recognition.start(); } 
+                else if (!recognition) { console.warn("Recognition no inicializado"); }
+            } catch(e) {
+                console.warn("Error al iniciar recognition", e);
+                setSensorStatus('mic', 'unavailable');
+                if (isRunning) setTimeout(runSpiritBoxLoop, 2000);
+                return;
+            }
+
+            spiritBoxTimeout = setTimeout(() => {
+                if (spiritBoxState !== "LISTENING") return; 
+                console.log("Timeout: No se detectó comando de voz.");
+                if (isRecognizing && recognition) recognition.abort();
+                isRecognizing = false;
+
+                gain_Fondo2.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 0.2);
+                spiritBoxState = "SCANNING";
+                playFondo2_Fragment(); 
+
+                if (automaticoData.length > 0) {
+                    setTimeout(() => {
+                        if (isRunning) {
+                            speak(automaticoData[Math.floor(Math.random() * automaticoData.length)]);
+                        }
+                    }, 1000 + Math.random() * 2000);
+                } else {
+                    setTimeout(runSpiritBoxLoop, 3000);
+                }
+            }, 5000);
+        }
+
+        // --- CARGA DE DATOS (FUENTE 3) ---
+        async function loadSheetData() {
+            let response;
+            try {
+                updateLoadingProgress(25, "CONECTANDO CON API-OBR");
+                response = await fetch(GOOGLE_SCRIPT_URL);
+                updateLoadingProgress(50, "RECIBIENDO DATOS");
+
+                if (!response.ok) { throw new Error(`Error de red: ${response.statusText}`); }
+                
+                const data = await response.json();
+                if (!audioCtx) await initAudio(); 
+                
+                updateLoadingProgress(75, "PROCESANDO RESPUESTAS");
+                automaticoData = data.automatico.map(r => r.TEXTO).filter(t => t);
+                data.programado.forEach(r => {
+                    let p = (r.PREGUNTA || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    let res = r.RESPUESTA;
+                    if (p && res) { programadoData.set(p, res); }
+                });
+                updateLoadingProgress(100, "SINCRONIZACIÓN COMPLETA");
+                console.log(`%c[SISTEMA OBR] Sincronización completa: ${automaticoData.length} AUTO | ${programadoData.size} PROG.`, "color: #39FF14; font-weight: bold;");
+            } catch (e) { 
+                console.error("Error cargando datos:", e);
+                updateLoadingProgress(100, "ERROR DE SINCRONIZACIÓN");
+            } finally {
+                setTimeout(hideLoadingScreen, 500);
+                requestAllPermissions(); // Arrancar sensores MAG/EMF al finalizar carga
+            }
+        }
+
+        // --- SENSORES Y UTILS ---
+        let sensorPermissionsRequested = false;
+        async function requestAllPermissions() {
+            if (sensorPermissionsRequested) { initSensor(); return; }
+            sensorPermissionsRequested = true;
+            console.log("Solicitando permisos de sensores...");
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const status = await DeviceOrientationEvent.requestPermission();
+                    if (status === 'granted') { initSensor(); } 
+                    else { setSensorStatus('mag', 'unavailable'); setSensorStatus('prox', 'simulated'); startEmfSimulation(); }
+                } catch (e) {
+                    console.warn("Error al pedir permiso, iniciando fallback...", e);
+                    initSensor();
+                }
+            } else {
+                console.log("Permiso no requerido, iniciando sensores.");
+                initSensor();
+            }
+        }
+        
+        function initSensor() {
+            if ('AbsoluteOrientationSensor' in window) {
+                try {
+                    orientationSensor = new AbsoluteOrientationSensor({ frequency: 10 });
+                    orientationSensor.onreading = () => {
+                        let q = orientationSensor.quaternion;
+                        let yaw = Math.atan2(2 * (q[0] * q[1] + q[2] * q[3]), 1 - 2 * (q[1] * q[1] + q[2] * q[2])) * (180 / Math.PI);
+                        document.getElementById('compass-needle').style.transform = `translateX(-50%) rotate(${-yaw}deg)`;
+                        setSensorStatus('mag', 'connected'); 
+                    };
+                    orientationSensor.onerror = (e) => { setSensorStatus('mag', 'unavailable'); };
+                    orientationSensor.start();
+                } catch (e) { setSensorStatus('mag', 'unavailable'); }
+            } else { setSensorStatus('mag', 'unavailable'); }
+
+            if ('Magnetometer' in window) {
+                try {
+                    magnetometer = new Magnetometer({ frequency: 10 });
+                    magnetometer.onreading = () => {
+                        let strength = Math.sqrt(magnetometer.x**2 + magnetometer.y**2 + magnetometer.z**2);
+                        emfValue = Math.min(100, (strength / 100) * 100); 
+                        setSensorStatus('prox', 'connected'); 
+                    };
+                    magnetometer.onerror = (e) => { initProximitySensor(); };
+                    magnetometer.start();
+                } catch (e) { initProximitySensor(); }
+            } else { initProximitySensor(); }
+        }
+
+        function initProximitySensor() {
+            if ('ProximitySensor' in window) {
+                try {
+                    proximitySensor = new ProximitySensor();
+                    proximitySensor.onreading = () => {
+                        const maxDist = 10, minDist = 2;
+                        let dist = proximitySensor.value;
+                        if (dist <= minDist) emfValue = 100;
+                        else if (dist >= maxDist) emfValue = 0;
+                        else emfValue = 100 * (1 - (dist - minDist) / (maxDist - minDist));
+                        setSensorStatus('prox', 'fallback'); 
+                    };
+                    proximitySensor.onerror = (e) => { setSensorStatus('prox', 'simulated'); startEmfSimulation(); };
+                    proximitySensor.start();
+                } catch(e) { setSensorStatus('prox', 'simulated'); startEmfSimulation(); }
+            } else { setSensorStatus('prox', 'simulated'); startEmfSimulation(); }
+        }
+        
+        function startEmfSimulation() {
+            if (emfSimInterval) return;
+            emfSimInterval = setInterval(() => { emfValue = Math.random() * 100; }, 200);
+        }
+
+        function startVisualLoop() {
+            if (visualLoopInterval) clearInterval(visualLoopInterval);
+            visualLoopInterval = setInterval(() => {
+                let intensity = emfValue; 
+                const needle = document.getElementById('main-needle');
+                if (needle) { needle.style.transform = `translateX(-50%) rotate(${-60 + (intensity/100)*120}deg)`; }
+            }, 150);
+        }
 
         function updateEnergyGraph(value) {
-
-
-
-            if (!energyCtx || !energyCanvas) return; 
-
-
-
-            
-
-
-
+            if (!energyCtx || !energyCanvas) return;
             energyHistory.push(value);
-
-
-
             if (energyHistory.length > 50) energyHistory.shift();
-
-
-
-
-
-
-
-            let w = energyCanvas.width;
-
-
-
-            let h = energyCanvas.height;
-
-
-
-            if (w === 0 || h === 0) {
-
-
-
-                resizeEnergyCanvas();
-
-
-
-                w = energyCanvas.width;
-
-
-
-                h = energyCanvas.height;
-
-
-
-                if(w === 0 || h === 0) return;
-
-
-
-            }
-
-
-
+            let w = energyCanvas.width; let h = energyCanvas.height;
+            if (w === 0 || h === 0) { resizeEnergyCanvas(); w = energyCanvas.width; h = energyCanvas.height; if(w===0||h===0)return; }
             
-
-
-
             energyCtx.clearRect(0, 0, w, h);
-
-
-
             let step = w / energyHistory.length;
-
-
-
-
-
-
-
             energyCtx.beginPath();
-
-
-
             energyCtx.strokeStyle = 'var(--neon-green)';
-
-
-
             energyCtx.lineWidth = 1.5;
-
-
-
             energyCtx.moveTo(0, h - (energyHistory[0] / 100 * h));
-
-
-
-            for(let i=1; i<energyHistory.length; i++) {
-
-
-
-                energyCtx.lineTo(i * step, h - (energyHistory[i] / 100 * h));
-
-
-
-            }
-
-
-
+            for(let i=1; i<energyHistory.length; i++) { energyCtx.lineTo(i * step, h - (energyHistory[i] / 100 * h)); }
             energyCtx.stroke();
-
-
-
-            
-
-
-
-            energyCtx.beginPath();
-
-
-
-            energyCtx.strokeStyle = 'var(--alert-red)';
-
-
-
-            energyCtx.lineWidth = 1; 
-
-
-
-            let inPeak = false;
-
-
-
-            for(let i=0; i<energyHistory.length; i++) {
-
-
-
-                let val = energyHistory[i];
-
-
-
-                let y = h - (val / 100 * h);
-
-
-
-                if (val > 80) { 
-
-
-
-                    if (!inPeak) {
-
-
-
-                        energyCtx.moveTo(i * step, y);
-
-
-
-                        inPeak = true;
-
-
-
-                    } else {
-
-
-
-                        energyCtx.lineTo(i * step, y);
-
-
-
-                    }
-
-
-
-                } else {
-
-
-
-                    inPeak = false;
-
-
-
-                }
-
-
-
-            }
-
-
-
-            energyCtx.stroke(); 
-
-
-
         }
-
-
-
-
-
-
-
-        function resizeEnergyCanvas() {
-
-
-
-            if(energyCanvas && energyCanvas.parentElement) {
-
-
-
-                energyCanvas.width = energyCanvas.parentElement.offsetWidth;
-
-
-
-                energyCanvas.height = energyCanvas.parentElement.offsetHeight;
-
-
-
-            }
-
-
-
-        }
-
-
-
-
-
-
 
         function updateSensorReadings() {
-
-
-
             if (!isRunning) {
-
-
-
-                currentTemp += (Math.random()*0.04 - 0.02); 
-
-
-
+                currentTemp += (Math.random()*0.04 - 0.02);
                 document.getElementById('temp-val').innerText = currentTemp.toFixed(1)+"°C";
-
-
-
             }
-
-
-
         }
 
-
-
-
-
-
-
-        // --- UI Lógica y Eventos de Zoom/Pan ---
-
-
-
-        
-
-
-
+        // --- UI CONTROLS ---
         const filterControls = document.getElementById('filter-controls-container');
-
-
-
         const logoImage = document.getElementById('logo-image');
-
-
-
-        const followContainer = document.getElementById('follow-container');
-
-
-
-        const torchButton = document.getElementById('btn-torch');
-
-
-
-        const camStats = document.getElementById('cam-stats-display');
-
-
-
         
-
-
-
-        // 📍 UI (P10)
-
-
-
         function showControls() {
-
-
-
             filterControls.style.opacity = '1';
-
-
-
             logoImage.classList.add('hiding'); 
-
-
-
-            followContainer.classList.add('hiding');
-
-
-
-            torchButton.classList.add('hiding'); // Ocultar linterna
-
-
-
-            camStats.classList.add('hiding');    // Ocultar stats
-
-
-
             filterControls.style.pointerEvents = 'auto';
-
-
-
             clearTimeout(uiHideTimeout);
-
-
-
             uiHideTimeout = setTimeout(hideControls, 4000); 
-
-
-
             uiVisible = true;
-
-
-
         }
-
-
-
-
-
-
 
         function hideControls() {
-
-
-
             filterControls.style.opacity = '0';
-
-
-
             logoImage.classList.remove('hiding'); 
-
-
-
             logoImage.classList.add('visible'); 
-
-
-
-            torchButton.classList.remove('hiding'); // Mostrar linterna
-
-
-
-            camStats.classList.remove('hiding');    // Mostrar stats
-
-
-
             filterControls.style.pointerEvents = 'none';
-
-
-
             uiVisible = false;
-
-
-
+        }
+        
+        function handleUITap(event) {
+            if (isPinching || isPanning) return;
+            if (!event.target.closest('.panel') && !event.target.closest('.filter-btn')) {
+                if (uiVisible) { hideControls(); } else { showControls(); }
+            } else { showControls(); }
+        }
+        
+        function togglePanels() {
+            document.body.classList.toggle('panels-active');
+            document.getElementById('btn-panel').classList.toggle('active', document.body.classList.contains('panels-active'));
+            
+            const isVertical = window.innerHeight > window.innerWidth;
+            const pwrButton = document.getElementById('knob-power');
+            if (isVertical && document.body.classList.contains('panels-active') && !pwrButton.classList.contains('active')) {
+                console.log("Auto-iniciando Spirit Box en vertical...");
+                pwrButton.click(); 
+            }
+            if (document.body.classList.contains('panels-active')) {
+                setTimeout(resizeEnergyCanvas, 500);
+                setTimeout(resizeVuCanvas, 500);
+            }
+            setTimeout(resizeAllCanvas, 500);
         }
 
-
-
-        
-
-
-
-        followContainer.addEventListener('animationend', (e) => {
-
-
-
-            if (e.animationName === 'waterDrop') {
-
-
-
-                followContainer.classList.remove('hiding');
-
-
-
-                followSteps.forEach(s => {
-
-
-
-                    s.style.display = 'none';
-
-
-
-                    s.classList.remove('fade-in', 'fade-out', 'water-drop');
-
-
-
-                });
-
-
-
-                followContainer.style.opacity = '0';
-
-
-
-                followAnimationRunning = false;
-
-
-
-            }
-
-
-
+        document.getElementById('knob-scan').addEventListener('click', function() {
+            scanSpeed = (scanSpeed + 1) % 3; 
+            let rotation = -120 + (scanSpeed * 120); 
+            this.querySelector('.knob-indicator').style.transform = `translateX(-50%) rotate(${rotation}deg)`;
+        });
+        document.getElementById('vol-slider').addEventListener('input', (e) => {
+            const vol = e.target.value;
+            if(masterGain) masterGain.gain.value = vol/100;
+            document.getElementById('vol-percent').innerText = `${vol}%`;
         });
 
-
-
-
-
-
-
-        function handleUITap(event) {
-
-
-
-            // 📍 SOLUCIÓN SENSORES (PUNTO 4)
-
-
-
-            requestAllPermissions();
-
-
-
-
-
-
-
-            if (isPinching || isPanning) return; // No hacer nada si es zoom/pan
-
-
-
-            
-
-
-
-            // P10: El botón de linterna maneja su propio clic
-
-
-
-            if (event.target.closest('#btn-torch')) return;
-
-
-
-
-
-
-
-            if (!event.target.closest('.panel') && !event.target.closest('.filter-btn')) {
-
-
-
-                if (uiVisible) {
-
-
-
-                    hideControls(); 
-
-
-
-                } else {
-
-
-
-                    showControls(); 
-
-
-
-                }
-
-
-
-            } else {
-
-
-
-                showControls();
-
-
-
-            }
-
-
-
+        function hideLoadingScreen() {
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) { overlay.style.opacity = '0'; setTimeout(() => { overlay.style.display = 'none'; }, 500); }
         }
-
-
-
+        function updateLoadingProgress(percent, text) {
+            if (loadingBar) loadingBar.style.width = percent + '%';
+            if (loadingText) loadingText.innerText = `${text} [ ${percent}% ]`;
+        }
         
-
-
-
-        function checkPanelState() {
-
-
-
-            const p1 = document.getElementById('p-unified').classList.contains('hidden');
-
-
-
-            if (!p1) { 
-
-
-
-                document.body.classList.add('panels-active');
-
-
-
-            } else {
-
-
-
-                document.body.classList.remove('panels-active');
-
-
-
-            }
-
-
-
-            // Retrasar el re-cálculo del canvas para dar tiempo a la animación CSS
-
-
-
-            setTimeout(resizeAllCanvas, 500);
-
-
-
-        }
-
-
-
-
-
-
-
-        function togglePanel(id) {
-
-
-
-            const p = document.getElementById(id);
-
-
-
-            const btn = document.getElementById('btn-panel');
-
-
-
-            
-
-
-
-            p.classList.toggle('hidden');
-
-
-
-            
-
-
-
-            if (btn) {
-
-
-
-                btn.classList.toggle('active', !p.classList.contains('hidden'));
-
-
-
-            }
-
-
-
-            
-
-
-
-            checkPanelState(); 
-
-
-
-            
-
-
-
-            if(id === 'p-unified' && !p.classList.contains('hidden')) {
-
-
-
-                resizeEnergyCanvas();
-
-
-
-            }
-
-
-
-        }
-
-
-
-
-
-
-
-        const followSteps = document.querySelectorAll('.follow-step');
-
-
-
-        let followAnimationRunning = false;
-
-
-
-        
-
-
-
-        async function runFollowAnimation() {
-
-
-
-            if (uiVisible || followAnimationRunning) return; 
-
-
-
-            followAnimationRunning = true;
-
-
-
-            followContainer.classList.remove('hiding'); 
-
-
-
-            followContainer.style.opacity = '1';
-
-
-
-            
-
-
-
-            const text = document.getElementById('follow-text');
-
-
-
-            text.style.display = 'block'; text.classList.add('fade-in');
-
-
-
-            await new Promise(r => setTimeout(r, 2500)); 
-
-
-
-            if(uiVisible) { followContainer.classList.add('hiding'); return; } 
-
-
-
-            text.classList.remove('fade-in'); text.classList.add('water-drop'); 
-
-
-
-            await new Promise(r => setTimeout(r, 500));
-
-
-
-            text.style.display = 'none'; text.classList.remove('water-drop');
-
-
-
-            
-
-
-
-            const icons = document.getElementById('follow-icons');
-
-
-
-            icons.style.display = 'flex'; icons.classList.add('fade-in');
-
-
-
-            await new Promise(r => setTimeout(r, 2500)); 
-
-
-
-            if(uiVisible) { followContainer.classList.add('hiding'); return; } 
-
-
-
-            icons.classList.remove('fade-in'); icons.classList.add('fade-out');
-
-
-
-            await new Promise(r => setTimeout(r, 1000));
-
-
-
-            icons.style.display = 'none'; icons.classList.remove('fade-out');
-
-
-
-
-
-
-
-            const handle = document.getElementById('follow-handle');
-
-
-
-            handle.style.display = 'block'; handle.classList.add('fade-in');
-
-
-
-            await new Promise(r => setTimeout(r, 2500)); 
-
-
-
-            if(uiVisible) { followContainer.classList.add('hiding'); return; } 
-
-
-
-            handle.classList.remove('fade-in'); handle.classList.add('fade-out');
-
-
-
-            await new Promise(r => setTimeout(r, 1000));
-
-
-
-            handle.style.display = 'none'; handle.classList.remove('fade-out');
-
-
-
-
-
-
-
-            followContainer.style.opacity = '0';
-
-
-
-            followAnimationRunning = false;
-
-
-
-        }
-
-
-
-
-
-
-
+        // Touch Logic
         const appUI = document.getElementById('app-ui');
-
-
-
-        
-
-
-
         function getPinchDist(e) {
-
-
-
-            const t1 = e.touches[0];
-
-
-
-            const t2 = e.touches[1];
-
-
-
+            const t1 = e.touches[0]; const t2 = e.touches[1];
             return Math.sqrt(Math.pow(t1.clientX - t2.clientX, 2) + Math.pow(t1.clientY - t2.clientY, 2));
-
-
-
         }
-
-
-
-        
-
-
-
-        function getPanCenter(e) {
-
-
-
-            return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-
-
-
-        }
-
-
-
-
-
-
+        function getPanCenter(e) { return { x: e.touches[0].clientX, y: e.touches[0].clientY }; }
 
         appUI.addEventListener('touchstart', (e) => {
-
-
-
-            if (e.touches.length === 2) {
-
-
-
-                isPinching = true;
-
-
-
-                isPanning = false;
-
-
-
-                initialPinchDist = getPinchDist(e);
-
-
-
-            } else if (e.touches.length === 1 && zoom > 1) {
-
-
-
-                isPinching = false;
-
-
-
-                isPanning = true;
-
-
-
-                lastPan = getPanCenter(e);
-
-
-
-            }
-
-
-
+            if (e.touches.length === 2) { isPinching = true; isPanning = false; initialPinchDist = getPinchDist(e); } 
+            else if (e.touches.length === 1 && zoom > 1) { isPinching = false; isPanning = true; lastPan = getPanCenter(e); }
         });
-
-
-
-
-
-
-
         appUI.addEventListener('touchmove', (e) => {
-
-
-
-            if (!e.target.closest('.panel')) {
-
-
-
-                e.preventDefault(); 
-
-
-
-            }
-
-
-
+            if (!e.target.closest('.panel')) { e.preventDefault(); }
             if (isPinching && e.touches.length === 2) {
-
-
-
                 const newPinchDist = getPinchDist(e);
-
-
-
                 const zoomFactor = newPinchDist / initialPinchDist;
-
-
-
                 let newZoom = zoom * zoomFactor;
-
-
-
                 newZoom = Math.max(1.0, Math.min(newZoom, maxZoom));
-
-
-
                 zoom = newZoom;
-
-
-
                 initialPinchDist = newPinchDist;
-
-
-
             } else if (isPanning && e.touches.length === 1) {
-
-
-
                 const newPan = getPanCenter(e);
-
-
-
                 const deltaX = (newPan.x - lastPan.x);
-
-
-
                 const deltaY = (newPan.y - lastPan.y);
-
-
-
                 const panSensibility = 2.0 / zoom; 
-
-
-
                 currentPan.x -= deltaX * panSensibility;
-
-
-
                 currentPan.y -= deltaY * panSensibility;
-
-
-
                 lastPan = newPan;
-
-
-
             }
-
-
-
         });
-
-
-
-
-
-
-
         appUI.addEventListener('touchend', (e) => {
-
-
-
             if (e.touches.length < 2) isPinching = false;
-
-
-
             if (e.touches.length < 1) isPanning = false;
-
-
-
         });
-
-
-
-
-
-
-
-
-
-
 
         window.onload = () => {
-
-
-
             startCamera();
-
-
-
             startVisualLoop(); 
-
-
-
-            initMLModel(); 
-
-
-
-            detectPoseLoop(); 
-
-
-
-            
-
-
-
+            initMLModel(); // Fuente 1
+            detectPoseLoop(); // Fuente 1
             setInterval(updateSensorReadings, 2000); 
-
-
-
-            setInterval(runFollowAnimation, 30000); 
-
-
-
             
-
-
-
-            document.getElementById('p-unified').classList.add('hidden');
-
-
-
-            const panelBtn = document.getElementById('btn-panel');
-
-
-
-            if (panelBtn) {
-
-
-
-                panelBtn.classList.remove('active');
-
-
-
-            }
-
-
-
-            checkPanelState();
-
-
-
-            
-
-
-
+            document.body.classList.remove('panels-active');
+            document.getElementById('btn-panel').classList.remove('active');
             hideControls();
-
-
-
             
-
-
-
-            loadSheetData();
-
-
-
+            loadSheetData(); 
         };
-
-
-
-        
-
-
-
-        window.onresize = () => {
-
-
-
-            resizeAllCanvas(); 
-
-
-
-        };
-
-
-
+        window.onresize = () => { resizeAllCanvas(); };
     </script>
-
-
-
 </body>
-
-
-
 </html>
