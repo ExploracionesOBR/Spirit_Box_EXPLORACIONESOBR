@@ -21,7 +21,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
 
     <style>
-
 /* Camera neon border sweep for panels-active */
 @keyframes cameraFrameGlow {
   0% {
@@ -58,8 +57,8 @@ body.panels-active #main-view-area::after{
             --alert-red: #FF3333;
             --sim-orange: #FFB000;
             --sensor-blue: #00BFFF; 
-            --panel-bg-dark: #1A1A1A; /* Más oscuro para militar */
-            --border-color-dark: rgba(57, 255, 20, 0.4); /* Borde más sutil */
+            --panel-bg-dark: #1A1A1A;
+            --border-color-dark: rgba(57, 255, 20, 0.4);
             --text-color-light: #E0E0E0; 
             --text-dim-grey: #777;
             --panel-width-landscape: 300px;
@@ -111,7 +110,6 @@ body.panels-active #main-view-area::after{
             filter: none;
         }
         
-        /* Filtros CSS (Alto Rendimiento) */
         body.filter-night-vision #bg-camera-feed {
             filter: brightness(1.7) contrast(2.5) grayscale(1) sepia(0.3) hue-rotate(90deg);
         }
@@ -146,7 +144,7 @@ body.panels-active #main-view-area::after{
             pointer-events: none; 
             transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             box-sizing: border-box; 
-            overflow: hidden; /* Elimina barras deslizadoras */
+            overflow: hidden;
         }
         
         body.panels-active #left-panel,
@@ -155,7 +153,6 @@ body.panels-active #main-view-area::after{
             pointer-events: auto;
         }
         
-        /* 📍 NUEVO: Marco de Cámara cuando paneles activos */
         #camera-frame {
             position: fixed;
             top: 0;
@@ -167,7 +164,7 @@ body.panels-active #main-view-area::after{
             pointer-events: none;
             z-index: 10;
             transition: border-color 0.3s ease-in-out;
-            animation: none; /* Se activa con body.panels-active */
+            animation: none;
             opacity: 0;
         }
         
@@ -182,7 +179,6 @@ body.panels-active #main-view-area::after{
             100% { border-color: rgba(57, 255, 20, 0.8); box-shadow: 0 0 15px rgba(57, 255, 20, 0.5); }
         }
         
-        /* 📍 NUEVO: Líneas de procesamiento animadas */
         #processing-lines {
             position: absolute;
             top: 0;
@@ -223,10 +219,9 @@ body.panels-active #main-view-area::after{
         }
 
 
-        /* 📍 DISEÑO MILITAR */
         .panel {
             background-color: var(--panel-bg-dark); 
-            background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgMTAwIDEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzFhMWExYSIvPjxwYXRoIGQ9Ik0wIDUwSDEwMFYxMEgwWiIgZmlsbD0iI0EwQTBBMCIgb3BhY2l0eT0iMC4wMiIvPjxwYXRoIGQ9Ik0wIDkwSDEwMFY1MEgwWiIgZmlsbD0iIzEwMTAxMCIgb3BhY2l0eT0iMC4wMyIvPjxwYXRoIGQ9Ik0wIDEwMEgxMFYwSDBaIiBmaWxsPSIjRkZGRkZGIiBvcGFjaXR5PSIwLjAxIi8+PC9zdmc+'); /* Textura de carbono sutil */
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgMTAwIDEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzFhMWExYSIvPjxwYXRoIGQ9Ik0wIDUwSDEwMFYxMEgwWiIgZmlsbD0iI0EwQTBBMCIgb3BhY2l0eT0iMC4wMiIvPjxwYXRoIGQ9Ik0wIDkwSDEwMFY1MEgwWiIgZmlsbD0iIzEwMTAxMCIgb3BhY2l0eT0iMC4wMyIvPjxwYXRoIGQ9Ik0wIDEwMEgxMFYwSDBaIiBmaWxsPSIjRkZGRkZGIiBvcGFjaXR5PSIwLjAxIi8+PC9zdmc+');
             border: 2px solid var(--border-color-dark);
             box-shadow: 0 0 15px rgba(57, 255, 20, 0.2) inset, 0 0 5px rgba(0,0,0,0.8);
             display: flex;
@@ -234,10 +229,10 @@ body.panels-active #main-view-area::after{
             padding: 8px; 
             pointer-events: auto;
             flex-grow: 1;
-            overflow: hidden; /* Asegura que no haya scrollbar */
+            overflow: hidden;
             gap: 8px; 
-            border-radius: 0; /* Sin bordes redondeados */
-            position: relative; /* Para las líneas de procesamiento */
+            border-radius: 0;
+            position: relative;
         }
         
         .panel.alert {
@@ -267,7 +262,7 @@ body.panels-active #main-view-area::after{
             padding: 8px; 
             flex-shrink: 0;
             flex-grow: 0;
-            z-index: 2; /* Encima de las líneas */
+            z-index: 2;
         }
         
         .section-title {
@@ -277,10 +272,10 @@ body.panels-active #main-view-area::after{
             text-transform: uppercase;
             margin-bottom: 8px; 
             text-align: center;
-            border-bottom: 1px dashed var(--border-color-dark); /* Línea punteada */
+            border-bottom: 1px dashed var(--border-color-dark);
             padding-bottom: 4px; 
             letter-spacing: 1px;
-            color: var(--sim-orange); /* Color de título más distintivo */
+            color: var(--sim-orange);
         }
         
         .panel-button-torch {
@@ -729,8 +724,6 @@ body.panels-active #main-view-area::after{
         }
         @keyframes loading-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-        /* Contenedor de "Follow" ELIMINADO */
-
         /* --- CSS RESPONSIVE (Horizontal/Vertical) --- */
         
         @media (max-aspect-ratio: 1/1) {
@@ -743,7 +736,7 @@ body.panels-active #main-view-area::after{
             }
             #left-panel .panel {
                 border-radius: 0; border-bottom: none;
-                overflow-y: auto; /* Permite scroll solo en vertical */
+                overflow-y: auto; 
             }
             
             #bottom-panel {
@@ -766,7 +759,6 @@ body.panels-active #main-view-area::after{
                 height: 100%;
                 justify-content: center;
             }
-            /* En vertical, los diales deben ser más pequeños */
             .dial-container {
                  width: 60px;
                  height: 60px;
@@ -799,7 +791,7 @@ body.panels-active #main-view-area::after{
             }
             #left-panel .panel {
                 border-radius: 0; border-right: none;
-                overflow-y: auto; /* Permite scroll si el contenido crece */
+                overflow-y: auto; 
             }
 
             #bottom-panel {
@@ -832,7 +824,6 @@ body.panels-active #main-view-area::after{
                 height: calc(100% - var(--panel-height-landscape));
             }
             
-            /* Marco de cámara para landscape */
             body.panels-active #camera-frame {
                 left: var(--panel-width-landscape);
                 top: 0;
@@ -848,7 +839,7 @@ body.panels-active #main-view-area::after{
 
     <div id="loading-overlay">
         <div id="loading-content">
-            <div id="loading-text">SINCRONIZANDO GUIONES...</div>
+            <div id="loading-text">SINCRONIZANDO SISTEMA...</div>
             <div id="loading-bar-container">
                 <div id="loading-bar"></div>
             </div>
@@ -858,7 +849,7 @@ body.panels-active #main-view-area::after{
     <div id="main-view-area" onclick="handleUITap(event)">
         <video id="bg-camera-feed" playsinline autoplay muted></video>
         <canvas id="main-filter-canvas"></canvas>
-<canvas id="gl-bluewave" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:4;pointer-events:none;display:none;"></canvas>
+        <canvas id="gl-bluewave" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:4;pointer-events:none;display:none;"></canvas>
         <div id="camera-frame"></div> </div>
     
     <canvas id="ai-canvas" class="hidden-canvas"></canvas>
@@ -988,6 +979,7 @@ body.panels-active #main-view-area::after{
         <button class="filter-btn" onclick="setFilter('night-vision')">VNO</button>
         <button class="filter-btn" onclick="setFilter('sls')">SLS</button>
         <button class="filter-btn" onclick="setFilter('negative')">NEG</button>
+        <button class="filter-btn" onclick="setFilter('bluewave')">BLUE</button>
         <button class="filter-btn" id="btn-panel" onclick="togglePanels()">PAN</button>
     </div>
 
@@ -1002,18 +994,13 @@ body.panels-active #main-view-area::after{
                         for(let registration of registrations) {
                             registration.unregister();
                         }
-                        console.log('[ANTI-CACHE] Service Workers eliminados. Recargando...');
                         location.reload(true); 
-                    } else {
-                        console.log('[ANTI-CACHE] No se encontraron Service Workers.');
                     }
                 });
             }
-            
             if (window.caches) {
                 caches.keys().then(function(names) {
                     for (let name of names) {
-                        console.log('[ANTI-CACHE] Eliminando caché:', name);
                         caches.delete(name);
                     }
                 });
@@ -1025,7 +1012,7 @@ body.panels-active #main-view-area::after{
         let isRunning = false;
         let currentFilter = 'none'; 
         
-        let scanSpeed = 1; // 0=Lento, 1=Normal, 2=Rápido
+        let scanSpeed = 1; 
         const SCAN_DELAYS = [1500, 700, 200];
         
         const videoBg = document.getElementById('bg-camera-feed');
@@ -1090,9 +1077,17 @@ body.panels-active #main-view-area::after{
 
         let videoTrack;
         let isTorchOn = false;
-        let lastFrameTime = 0;
-        let frameCount = 0;
-        let lastFpsUpdate = 0;
+        
+        // Skeleton Map
+        const confidenceThreshold = 0.3; 
+        const skeletonMap = [
+            ['left_shoulder', 'right_shoulder'], ['left_shoulder', 'left_elbow'],
+            ['left_elbow', 'left_wrist'], ['right_shoulder', 'right_elbow'],
+            ['right_elbow', 'right_wrist'], ['left_shoulder', 'left_hip'],
+            ['right_shoulder', 'right_hip'], ['left_hip', 'right_hip'],
+            ['left_hip', 'left_knee'], ['left_knee', 'left_ankle'],
+            ['right_hip', 'right_knee'], ['right_knee', 'right_ankle']
+        ];
 
         async function startCamera() {
             try {
@@ -1185,111 +1180,13 @@ body.panels-active #main-view-area::after{
             }
         }
 
-        function drawVideoWithCover(ctx, video, z, pan) {
-            const canvasW = ctx.canvas.width;
-            const canvasH = ctx.canvas.height;
-            const videoW = video.videoWidth;
-            const videoH = video.videoHeight;
+        function drawLoop() {
+            const canvas = document.getElementById('main-filter-canvas');
+            const ctx = canvas.getContext('2d');
             
-            if (!videoW || !videoH) return; 
-
-            const videoAspect = videoW / videoH;
-            const canvasAspect = canvasW / canvasH;
-
-            let sWidth = videoW / z;
-            let sHeight = videoH / z;
-            
-            if (canvasAspect > videoAspect) {
-                sHeight = sWidth / canvasAspect;
-            } else {
-                sWidth = sHeight * canvasAspect;
-            }
-
-            let sx = (videoW - sWidth) / 2 + pan.x;
-            let sy = (videoH - sHeight) / 2 + pan.y;
-
-            sx = Math.max(0, Math.min(sx, videoW - sWidth));
-            sy = Math.max(0, Math.min(sy, videoH - sHeight));
-            currentPan.x = sx - (videoW - sWidth) / 2;
-            currentPan.y = sy - (videoH - sHeight) / 2;
-
-            ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, canvasW, canvasH);
-        }
-
-        
-        async 
-function drawLoop() {
-    const canvas = document.getElementById('main-filter-canvas');
-    const ctx = canvas.getContext('2d');
-    const video = document.getElementById('bg-camera-feed');
-    if(!canvas || !ctx) return requestAnimationFrame(drawLoop);
-    canvas.width = document.getElementById('main-view-area').clientWidth || window.innerWidth;
-    canvas.height = document.getElementById('main-view-area').clientHeight || window.innerHeight;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    if (currentFilter === 'sls' && latestPoses && latestPoses.length > 0 && video && video.readyState >= 2) {
-        const videoAspect = video.videoWidth / video.videoHeight || 1;
-        const canvasAspect = canvas.width / canvas.height;
-        let scale, offsetX=0, offsetY=0;
-        if (canvasAspect > videoAspect) { scale = canvas.width / video.videoWidth; offsetY = (canvas.height - video.videoHeight * scale) / 2; } 
-        else { scale = canvas.height / video.videoHeight; offsetX = (canvas.width - video.videoWidth * scale) / 2; }
-
-        // prepare context for neon lines + red points
-        ctx.lineWidth = 10;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.strokeStyle = 'rgba(50,255,30,0.95)'; // neon green
-        ctx.shadowColor = 'rgba(50,255,30,0.85)';
-        ctx.shadowBlur = 12;
-
-        latestPoses.forEach(pose => {
-            if(!pose) return;
-            const keypointMap = new Map(); pose.keypoints.forEach(kp=> keypointMap.set(kp.name, kp));
-            // draw connections
-            skeletonMap.forEach(conn => {
-                const p1 = keypointMap.get(conn[0]); const p2 = keypointMap.get(conn[1]);
-                if(p1 && p2 && p1.score > 0.3 && p2.score > 0.3) {
-                    const x1 = p1.x * scale + offsetX, y1 = p1.y * scale + offsetY;
-                    const x2 = p2.x * scale + offsetX, y2 = p2.y * scale + offsetY;
-                    ctx.beginPath();
-                    ctx.moveTo(x1,y1);
-                    ctx.lineTo(x2,y2);
-                    ctx.stroke();
-
-                    // midpoint red dot
-                    const mx = (x1+x2)/2, my = (y1+y2)/2;
-                    ctx.fillStyle = 'rgba(200,20,20,0.95)';
-                    ctx.shadowColor = 'rgba(200,20,20,0.9)';
-                    ctx.shadowBlur = 14;
-                    ctx.beginPath();
-                    ctx.arc(mx, my, 5, 0, Math.PI*2);
-                    ctx.fill();
-                }
-            });
-
-            // draw keypoints
-            pose.keypoints.forEach(kp => {
-                if(kp.score > 0.35) {
-                    const x = kp.x * scale + offsetX, y = kp.y * scale + offsetY;
-                    ctx.fillStyle = 'rgba(220,40,40,1)';
-                    ctx.shadowColor = 'rgba(220,40,40,0.95)';
-                    ctx.shadowBlur = 14;
-                    ctx.beginPath(); ctx.arc(x,y,7 + kp.score*4, 0, Math.PI*2); ctx.fill();
-                }
-            });
-        });
-
-        // reset shadow
-        ctx.shadowBlur = 0;
-        ctx.shadowColor = 'transparent';
-    }
-    requestAnimationFrame(drawLoop);
-}
-if (videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
-                
+            if (videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
                 const w = mainFilterCanvas.width;
                 const h = mainFilterCanvas.height;
-
                 mainFilterCtx.clearRect(0, 0, w, h);
                 
                 const kinectBanner = document.getElementById('kinect-banner');
@@ -1311,10 +1208,8 @@ if (videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
                 if (currentFilter === 'sls' && poseDetector && videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
                     if (!isDetectingPose) {
                         isDetectingPose = true;
-                        
                         const poses = await poseDetector.estimatePoses(videoBg); 
                         latestPoses = poses; 
-                        
                         isDetectingPose = false;
                     }
                     await new Promise(r => setTimeout(r, 100)); 
@@ -1324,23 +1219,11 @@ if (videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
                 }
             }
         }
-
-        const confidenceThreshold = 0.3; 
-        const skeletonMap = [
-            ['left_shoulder', 'right_shoulder'], ['left_shoulder', 'left_elbow'],
-            ['left_elbow', 'left_wrist'], ['right_shoulder', 'right_elbow'],
-            ['right_elbow', 'right_wrist'], ['left_shoulder', 'left_hip'],
-            ['right_shoulder', 'right_hip'], ['left_hip', 'right_hip'],
-            ['left_hip', 'left_knee'], ['left_knee', 'left_ankle'],
-            ['right_hip', 'right_knee'], ['right_knee', 'right_ankle']
-        ];
         
         function drawAllSkeletons(poses) {
             const ctx = mainFilterCtx; 
-            
             ctx.strokeStyle = 'var(--neon-green)'; 
             ctx.fillStyle = 'var(--alert-red)';    
-            
             ctx.lineWidth = 6;
             ctx.filter = 'drop-shadow(0 0 5px var(--neon-green))';
 
@@ -1405,58 +1288,43 @@ if (videoBg.readyState === videoBg.HAVE_ENOUGH_DATA) {
             });
         }
         
-        
-function setFilter(f) {
-    try {
-        document.querySelectorAll('.filter-btn').forEach(b => {
-            if (b.id !== 'btn-panel') b.classList.remove('active');
-        });
-    } catch(e){}
-    const mainFilterCanvas = document.getElementById('main-filter-canvas');
-    if (mainFilterCanvas) mainFilterCanvas.style.display = 'none';
-    try { if (window.BlueWave && BlueWave.isActive()) BlueWave.stop(); } catch(e){}
-    document.body.classList.remove('filter-night-vision', 'filter-sls', 'filter-negative', 'filter-bluewave', 'filter-night');
-    if (currentFilter === f) {
-        currentFilter = 'none';
-    } else {
-        currentFilter = f;
-        // mark button active (best effort)
-        try {
-            const btn = document.querySelector(`[onclick="setFilter('${f}')"]`);
-            if(btn) btn.classList.add('active');
-        } catch(e){}
-        if (f === 'sls') {
-            document.body.classList.add('filter-sls');
-            if (mainFilterCanvas) mainFilterCanvas.style.display = 'block';
-        } else if (f === 'negative') {
-            document.body.classList.add('filter-negative');
-        } else if (f === 'bluewave') {
-            document.body.classList.add('filter-bluewave');
-            try { if (window.BlueWave) BlueWave.start(); } catch(e){}
-        } else {
-            document.body.classList.add('filter-' + f);
-        }
-    }
-    try { toggleControls(true); } catch(e){}
-}
-});
+        function setFilter(f) {
+            try {
+                document.querySelectorAll('.filter-btn').forEach(b => {
+                    if (b.id !== 'btn-panel') b.classList.remove('active');
+                });
+            } catch(e){}
             
-            document.body.classList.remove('filter-night-vision', 'filter-sls', 'filter-negative');
-            mainFilterCanvas.style.display = 'none';
-
+            const mainFilterCanvas = document.getElementById('main-filter-canvas');
+            if (mainFilterCanvas) mainFilterCanvas.style.display = 'none';
+            
+            // Stop BlueWave if active
+            try { if (window.BlueWave && window.BlueWave.isActive()) window.BlueWave.stop(); } catch(e){}
+            
+            document.body.classList.remove('filter-night-vision', 'filter-sls', 'filter-negative', 'filter-bluewave');
+            
             if (currentFilter === f) {
                 currentFilter = 'none';
             } else {
                 currentFilter = f;
-                const targetBtn = event ? event.target : document.querySelector(`.filter-btn[onclick="setFilter('${f}')"]`);
-                if(targetBtn) targetBtn.classList.add('active');
-
-                document.body.classList.add('filter-' + f);
+                try {
+                    const btn = document.querySelector(`[onclick="setFilter('${f}')"]`);
+                    if(btn) btn.classList.add('active');
+                } catch(e){}
                 
                 if (f === 'sls') {
-                    mainFilterCanvas.style.display = 'block';
+                    document.body.classList.add('filter-sls');
+                    if (mainFilterCanvas) mainFilterCanvas.style.display = 'block';
+                } else if (f === 'negative') {
+                    document.body.classList.add('filter-negative');
+                } else if (f === 'bluewave') {
+                    document.body.classList.add('filter-bluewave');
+                    try { if (window.BlueWave) window.BlueWave.start(); } catch(e){}
+                } else {
+                    document.body.classList.add('filter-' + f);
                 }
             }
+            try { showControls(); } catch(e){}
         }
 
         function setSensorStatus(sensorName, status) {
@@ -1796,7 +1664,6 @@ function setFilter(f) {
             scanSpeed = (scanSpeed + 1) % 3; // 0, 1, 2
             let rotation = -120 + (scanSpeed * 120); // -120, 0, 120 grados
             this.querySelector('.knob-indicator').style.transform = `translateX(-50%) rotate(${rotation}deg)`;
-            console.log("Velocidad de Scan:", ["LENTO", "NORMAL", "RAPIDO"][scanSpeed]);
         });
 
         document.getElementById('vol-slider').addEventListener('input', (e) => {
@@ -1828,7 +1695,14 @@ function setFilter(f) {
             try {
                 updateLoadingProgress(25, "CONECTANDO CON API-OBR");
                 
-                response = await fetch(GOOGLE_SCRIPT_URL);
+                // Safety Timeout Race
+                const fetchPromise = fetch(GOOGLE_SCRIPT_URL);
+                const timeoutPromise = new Promise((resolve, reject) => {
+                    setTimeout(() => reject(new Error("Tiempo de espera agotado")), 5000);
+                });
+
+                response = await Promise.race([fetchPromise, timeoutPromise]);
+                
                 updateLoadingProgress(50, "RECIBIENDO DATOS");
 
                 if (!response.ok) {
@@ -1852,20 +1726,13 @@ function setFilter(f) {
                 });
                 
                 updateLoadingProgress(100, "SINCRONIZACIÓN COMPLETA");
-                
-                console.log(`%c[SISTEMA OBR] Sincronización completa: ${automaticoData.length} AUTO | ${programadoData.size} PROG.`, "color: #39FF14; font-weight: bold;");
+                console.log(`%c[SISTEMA OBR] Sincronización completa`, "color: #39FF14; font-weight: bold;");
 
             } catch (e) { 
-                console.error("Error cargando datos de Google Apps Script:", e);
-                if (response) {
-                    console.error("Respuesta del servidor:", response.status, response.statusText);
-                    console.error("Asegúrate que tu Script esté desplegado como 'Cualquier Usuario' (Anyone).");
-                } else {
-                    console.error("Error de red. Revisa tu conexión a internet o problemas de CORS.");
-                }
-                updateLoadingProgress(100, "ERROR DE SINCRONIZACIÓN");
+                console.error("Error cargando datos:", e);
+                updateLoadingProgress(100, "INICIANDO SIN CONEXIÓN");
             } finally {
-                setTimeout(hideLoadingScreen, 500); 
+                setTimeout(hideLoadingScreen, 800); 
             }
         }
 
@@ -2180,8 +2047,6 @@ function setFilter(f) {
         
 
         function handleUITap(event) {
-            // requestAllPermissions(); // Movido al botón 'pwr'
-
             if (isPinching || isPanning) return; 
             
             if (!event.target.closest('.panel') && !event.target.closest('.filter-btn')) {
@@ -2272,14 +2137,21 @@ function setFilter(f) {
             hideControls();
             
             loadSheetData();
+            
+            // Safety override: If loading takes more than 7 seconds, force open
+            setTimeout(() => {
+                const overlay = document.getElementById('loading-overlay');
+                if (overlay && overlay.style.display !== 'none') {
+                    console.warn("Carga lenta: Forzando inicio de app.");
+                    hideLoadingScreen();
+                }
+            }, 7000);
         };
         
         window.onresize = () => {
             resizeAllCanvas(); 
         };
-    </script>
 
-<script>
 /* --- BLUE LIGHT WAVE (WebGL) --- */
 (function initBlueWaveModule(){
   const video = document.getElementById('bg-camera-feed');
@@ -2396,6 +2268,5 @@ function setFilter(f) {
 
 })();
 </script>
-
 </body>
 </html>
