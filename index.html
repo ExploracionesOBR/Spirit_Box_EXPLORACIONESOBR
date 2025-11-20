@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v11.0 ZOOM-4K</title> 
+    <title>DETECTOR-OBR v11.2 TIMING-FIX</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&family=Creepster&family=VT323&display=swap" rel="stylesheet">
@@ -25,6 +25,8 @@
             --hud-red: #ff3333;
             --hud-blue: #0088ff;
             --glass-panel: rgba(5, 8, 15, 0.95);
+            
+            /* Dimensiones Base */
             --left-panel-w: 280px;
             --bottom-panel-h: 160px;
         }
@@ -33,7 +35,7 @@
             font-family: 'Share Tech Mono', monospace;
             background-color: #000; color: var(--hud-cyan);
             overflow: hidden; width: 100vw; height: 100vh; margin: 0;
-            touch-action: none; /* Evita gestos del navegador */
+            touch-action: none;
         }
 
         #app-ui { 
@@ -41,45 +43,73 @@
             display: grid;
             grid-template-columns: var(--left-panel-w) 1fr; 
             grid-template-rows: 1fr var(--bottom-panel-h);
-            grid-template-areas: "left cam" "left bottom";
+            grid-template-areas: 
+                "left cam"
+                "left bottom";
             transition: all 0.5s ease;
         }
 
-        body.panels-hidden #app-ui { grid-template-columns: 0px 1fr; grid-template-rows: 1fr 0px; }
+        /* ESTADO SIN HUD */
+        body.panels-hidden #app-ui {
+            grid-template-columns: 0px 1fr;
+            grid-template-rows: 1fr 0px;
+        }
 
-        #left-panel { grid-area: left; border-right: 2px solid var(--hud-cyan); overflow: hidden; transition: all 0.5s ease; }
-        #bottom-panel { grid-area: bottom; border-top: 2px solid var(--hud-cyan); overflow: hidden; transition: all 0.5s ease; }
-        
-        /* CÁMARA Y ZOOM */
+        /* ÁREAS DE LA REJILLA */
+        #left-panel { 
+            grid-area: left; border-right: 2px solid var(--hud-cyan); 
+            overflow: hidden; transition: all 0.5s ease; position: relative;
+        }
+        #bottom-panel { 
+            grid-area: bottom; border-top: 2px solid var(--hud-cyan); 
+            overflow: hidden; transition: all 0.5s ease;
+        }
         #main-view-area { 
-            grid-area: cam; position: relative; overflow: hidden; background: #000; width: 100%; height: 100%; 
-            /* Crucial para el zoom: */
+            grid-area: cam; 
+            position: relative; overflow: hidden; background: #000;
+            width: 100%; height: 100%; 
             touch-action: none;
         }
-        
-        /* Contenedor interno para aplicar transformaciones de zoom */
-        #zoom-container {
-            width: 100%; height: 100%;
-            transform-origin: center center;
-            transition: transform 0.1s linear; /* Suave para pinch, rápido para tap */
+
+        /* Cuando se ocultan */
+        body.panels-hidden #left-panel, body.panels-hidden #bottom-panel {
+            display: none; 
         }
 
-        #bg-camera-feed { 
-            width: 100%; height: 100%; object-fit: cover; 
-            transition: filter 0.3s ease; 
-        }
-        
-        #main-filter-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-
-        /* --- UI ELEMENTS --- */
+        /* ESTILOS COMUNES DE PANELES */
         .panel-container {
             background-color: var(--glass-panel);
             box-shadow: inset 0 0 20px rgba(0, 243, 255, 0.1);
-            padding: 10px; display: flex; flex-direction: column;
-            background-image: linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
-            background-size: 20px 20px; z-index: 20;
+            padding: 10px;
+            display: flex; flex-direction: column;
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+            z-index: 20;
         }
 
+        /* CANVAS MATRIX EN PANEL */
+        #matrix-canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0.3; pointer-events: none; z-index: 0;
+        }
+
+        /* ZOOM CONTAINER */
+        #zoom-container {
+            width: 100%; height: 100%;
+            transform-origin: center center;
+            transition: transform 0.1s linear;
+        }
+
+        /* --- CÁMARA --- */
+        #bg-camera-feed {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: filter 0.3s ease;
+        }
+        #main-filter-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+        /* MARCO DE CÁMARA */
         .camera-border {
             position: absolute; inset: 10px; pointer-events: none; z-index: 5;
             box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1);
@@ -93,9 +123,9 @@
         .cb-inner::before { bottom: 0; left: 0; border-width: 0 0 2px 2px; }
         .cb-inner::after { bottom: 0; right: 0; border-width: 0 2px 2px 0; }
 
-        /* REC & STATS */
+        /* REC INDICATOR */
         .rec-container {
-            position: absolute; top: 20px; left: 25px; 
+            position: absolute; top: 15px; left: 15px; 
             color: var(--hud-red); font-family: 'Orbitron'; font-weight: bold; 
             display: flex; align-items: center; gap: 8px; z-index: 10;
             text-shadow: 0 0 5px var(--hud-red); font-size: 0.8rem; pointer-events: none;
@@ -103,6 +133,7 @@
         .rec-dot { width: 10px; height: 10px; background: var(--hud-red); border-radius: 50%; animation: blinkRed 1s infinite; }
         @keyframes blinkRed { 50% { opacity: 0.3; } }
 
+        /* STATS INDICATOR */
         .stats-container {
             position: absolute; bottom: 15px; right: 20px;
             font-family: 'Share Tech Mono'; font-size: 0.65rem; 
@@ -113,7 +144,7 @@
         }
         .stats-val { color: #fff; font-weight: bold; }
 
-        /* FILTROS */
+        /* FILTROS CSS */
         body.filter-night-vision #bg-camera-feed { filter: grayscale(100%) sepia(100%) hue-rotate(90deg) brightness(0.9) contrast(1.2) saturate(150%); }
         body.filter-night-vision #main-view-area::after {
             content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4;
@@ -122,51 +153,99 @@
         body.filter-negative #bg-camera-feed { filter: invert(1) hue-rotate(180deg); }
         body.filter-sls #main-filter-canvas { display: block; }
 
-        /* LOGO */
+        /* LOGO CON EFECTOS */
         #logo-container { position: absolute; top: 15px; right: 15px; z-index: 50; pointer-events: none; }
-        #logo-image { width: 60px; height: 60px; filter: drop-shadow(0 0 5px var(--hud-cyan)); animation: logoGlitch 5s infinite alternate; }
+        #logo-image { 
+            width: 60px; height: 60px; 
+            filter: drop-shadow(0 0 5px var(--hud-cyan));
+            animation: logoGlitch 5s infinite alternate;
+        }
         @keyframes logoGlitch {
-            0%,100% { transform: scale(1); filter: drop-shadow(0 0 5px var(--hud-cyan)); }
-            92% { transform: scale(1.1) skew(10deg); filter: drop-shadow(0 0 10px var(--hud-pink)); }
-            94% { transform: scale(0.9) skew(-10deg); }
+            0% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 5px var(--hud-cyan)) hue-rotate(0deg); }
+            90% { transform: scale(1.02) rotate(2deg); filter: drop-shadow(0 0 8px var(--hud-cyan)) hue-rotate(0deg); }
+            92% { transform: scale(1.1) skew(10deg); filter: drop-shadow(0 0 10px var(--hud-pink)) hue-rotate(90deg); }
+            94% { transform: scale(0.9) skew(-10deg); filter: drop-shadow(0 0 10px var(--hud-red)) hue-rotate(180deg); }
+            96% { transform: scale(1.02) rotate(-2deg); }
+            100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 5px var(--hud-cyan)); }
         }
 
-        /* BANNER */
+        /* BANNER SÍGUENOS */
         #follow-banner {
             position: absolute; bottom: 20px; left: 0; right: 0;
             display: flex; justify-content: center; pointer-events: none;
             opacity: 0; transition: opacity 1s; z-index: 30;
         }
         #follow-banner.active { opacity: 1; }
-        .banner-content { background: transparent; padding: 0; border: none; display: flex; flex-direction: column; align-items: center; gap: 5px; text-shadow: 0 0 5px #000; }
+        
+        .banner-content {
+            background: transparent; padding: 0; border: none;
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+            text-shadow: 0 0 5px #000; 
+        }
+        
         .seq-step { display: none; animation: fadeIn 0.5s; text-align: center; }
         .seq-step.active { display: block; }
-        #step-1 { font-family: 'Orbitron'; color: #fff; letter-spacing: 2px; font-weight: bold; }
+        
+        #step-1 { font-family: 'Orbitron'; color: #fff; letter-spacing: 2px; font-weight: bold; text-shadow: 0 0 10px var(--hud-cyan); }
         #step-2 { gap: 20px; display: none; filter: drop-shadow(0 0 5px #000); } 
-        #step-3 { font-family: 'Creepster'; color: var(--hud-red); letter-spacing: 2px; font-size: 1.5rem; }
-        .social-icon { font-size: 2rem; color: #fff; }
+        #step-3 { font-family: 'Creepster'; color: var(--hud-red); letter-spacing: 2px; font-size: 1.5rem; text-shadow: 2px 2px 0 #000; }
+        
+        .social-icon { font-size: 2rem; color: #fff; transition: transform 0.2s; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* CONTROLES */
-        .section-title { font-family: 'Orbitron'; font-size: 0.65rem; font-weight: 800; color: var(--hud-cyan); margin-bottom: 5px; border-bottom: 1px solid rgba(0, 243, 255, 0.3); display: flex; justify-content: space-between; align-items: center; padding-bottom: 2px; }
-        #spirit-box-section { border: 1px solid var(--hud-green); background: rgba(0, 15, 5, 0.5); padding: 8px; border-radius: 4px; margin-bottom: 10px; display: flex; flex-direction: column; }
-        .voice-led { width: 10px; height: 10px; border-radius: 50%; background: #222; border: 1px solid #555; }
-        .voice-led.listening { background: var(--hud-green); box-shadow: 0 0 8px var(--hud-green); }
-        .sb-display-area { background: #000; border: 1px inset #333; padding: 10px; margin: 8px 0; font-family: 'Share Tech Mono'; color: var(--hud-green); text-align: center; font-size: 0.9rem; text-transform: uppercase; border-radius: 4px; }
-        .btn-control { background: #111; border: 1px solid #444; color: #aaa; font-family: 'Orbitron'; font-size: 0.8rem; padding: 10px; width: 100%; cursor: pointer; font-weight: bold; }
+        /* --- CONTENIDO PANELES --- */
+        .section-title { 
+            font-family: 'Orbitron'; font-size: 0.65rem; font-weight: 800; 
+            color: var(--hud-cyan); text-transform: uppercase; letter-spacing: 1px; 
+            margin-bottom: 5px; border-bottom: 1px solid rgba(0, 243, 255, 0.3); 
+            display: flex; justify-content: space-between; align-items: center;
+            padding-bottom: 2px; z-index: 2; position: relative;
+        }
+
+        /* SPIRIT BOX */
+        #spirit-box-section {
+            border: 1px solid var(--hud-green); background: rgba(0, 15, 5, 0.5); padding: 8px; border-radius: 4px; margin-bottom: 10px; display: flex; flex-direction: column; z-index: 2; position: relative;
+        }
+        /* ESTILOS DEL LED */
+        .voice-led { width: 12px; height: 12px; border-radius: 50%; background: #222; border: 1px solid #555; transition: 0.3s; box-shadow: 0 0 2px #000; }
+        .voice-led.active { background: var(--hud-blue); box-shadow: 0 0 10px var(--hud-blue); } /* Azul: Encendido */
+        .voice-led.listening { background: var(--hud-green); box-shadow: 0 0 15px var(--hud-green); } /* Verde: Escuchando */
+        
+        .sb-display-area {
+            background: #000; border: 1px inset #333; padding: 10px; margin: 8px 0;
+            font-family: 'Share Tech Mono'; color: var(--hud-green); text-align: center;
+            font-size: 0.9rem; text-transform: uppercase; border-radius: 4px;
+        }
+
+        .btn-control { 
+            background: #111; border: 1px solid #444; color: #aaa; 
+            font-family: 'Orbitron'; font-size: 0.8rem; padding: 10px; width: 100%;
+            cursor: pointer; font-weight: bold;
+        }
         .btn-control.pwr-on { border-color: var(--hud-green); color: var(--hud-green); background: rgba(0,50,0,0.3); box-shadow: 0 0 10px var(--hud-green) inset; }
 
-        /* SENSORES */
-        .sensor-grid { display: flex; flex-direction: column; gap: 4px; }
-        .sensor-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.65rem; padding: 4px 6px; background: rgba(255,255,255,0.03); border-radius: 3px; border-left: 2px solid #333; }
-        .status-green { border-left-color: var(--hud-green); color: var(--hud-green); }
-        .status-blue { border-left-color: var(--hud-blue); color: var(--hud-blue); }
-        .status-orange { border-left-color: var(--hud-orange); color: var(--hud-orange); }
+        /* SENSORES LIST */
+        .panel-section { flex-grow: 1; overflow: hidden; position: relative; padding: 8px; background: rgba(0,0,0,0.4); border-radius: 4px; } 
+        .sensor-grid { display: flex; flex-direction: column; gap: 4px; position: relative; z-index: 2; }
+        .sensor-item { 
+            display: flex; justify-content: space-between; align-items: center; 
+            font-size: 0.65rem; padding: 4px 6px; 
+            background: rgba(20,20,30,0.6); border-radius: 3px; border-left: 2px solid #333; backdrop-filter: blur(2px);
+        }
+        .sensor-icon { width: 15px; text-align: center; margin-right: 5px; display: inline-block; }
+        
+        .status-green { border-left-color: var(--hud-green); color: var(--hud-green); text-shadow: 0 0 5px rgba(0,255,65,0.3); }
+        .status-blue { border-left-color: var(--hud-blue); color: var(--hud-blue); text-shadow: 0 0 5px rgba(0,136,255,0.3); }
+        .status-orange { border-left-color: var(--hud-orange); color: var(--hud-orange); text-shadow: 0 0 5px rgba(255,174,0,0.3); }
         .status-red { border-left-color: var(--hud-red); color: #777; }
 
-        /* INFERIOR */
+        /* PANEL INFERIOR */
         .dials-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; height: 100%; align-items: center; }
-        .instrument-wrapper { background: rgba(0,0,0,0.5); border: 1px solid #333; border-radius: 4px; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; }
+        .instrument-wrapper { 
+            background: rgba(0,0,0,0.5); border: 1px solid #333; border-radius: 4px; height: 100%; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            position: relative;
+        }
         .digital-display { font-family: 'VT323', monospace; font-size: 2.2rem; line-height: 1; text-shadow: 0 0 5px currentColor; }
         .digi-cyan { color: var(--hud-cyan); } .digi-green { color: var(--hud-green); } .digi-orange { color: var(--hud-orange); } .digi-red { color: var(--hud-red); }
         .knob-label { font-size: 0.6rem; color: #777; font-weight: bold; margin-top: 2px; }
@@ -177,8 +256,17 @@
         .energy-bar-seg.high { background: var(--hud-red); }
 
         /* BOTONES FLOTANTES */
-        #filter-controls-container { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
-        .filter-btn { width: 45px; height: 40px; background: rgba(0, 10, 20, 0.9); color: var(--hud-cyan); font-family: 'Orbitron'; font-size: 0.6rem; border: 1px solid var(--hud-cyan); cursor: pointer; clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%); }
+        #filter-controls-container { 
+            position: absolute; top: 50%; right: 10px; transform: translateY(-50%); 
+            display: flex; flex-direction: column; gap: 8px; z-index: 100;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .filter-btn { 
+            width: 45px; height: 40px; background: rgba(0, 10, 20, 0.9); 
+            color: var(--hud-cyan); font-family: 'Orbitron'; font-size: 0.6rem; 
+            border: 1px solid var(--hud-cyan); cursor: pointer;
+            clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%);
+        }
         .filter-btn.active { background: var(--hud-cyan); color: #000; box-shadow: 0 0 10px var(--hud-cyan); }
         #btn-hud.active { background: var(--hud-cyan); color: #000; }
         #btn-hud { background: rgba(0, 10, 20, 0.9); color: var(--hud-cyan); }
@@ -189,13 +277,7 @@
         #loading-overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(#111, #000); }
         #enter-btn { display: none; padding: 15px 40px; border: 2px solid var(--hud-green); color: var(--hud-green); background: transparent; font-family: 'Orbitron'; font-size: 1.2rem; cursor: pointer; margin-top: 30px; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 0 15px var(--hud-green); }
 
-        /* ZOOM OVERLAY MESSAGE */
-        #zoom-msg {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 5px;
-            color: #fff; font-family: 'Share Tech Mono'; font-size: 0.8rem;
-            opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 40;
-        }
+        #zoom-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 5px; color: #fff; font-family: 'Share Tech Mono'; font-size: 0.8rem; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 40; }
 
         @media (max-width: 768px) {
             :root { --left-panel-w: 140px; --bottom-panel-h: 110px; }
@@ -240,7 +322,8 @@
             </div>
         </div>
         
-        <div class="panel-section" style="flex-grow:1; overflow-y:auto;">
+        <div class="panel-section">
+            <canvas id="matrix-canvas"></canvas> <!-- SOPA DE LETRAS -->
             <div class="section-title">SENSORES</div>
             <div class="sensor-grid">
                 <div class="sensor-item status-red" id="sens-mag"><span class="sensor-icon">🧭</span> MAG</div>
@@ -254,7 +337,6 @@
     </div>
 
     <div id="main-view-area">
-        <!-- ZOOM CONTAINER -->
         <div id="zoom-container">
             <video id="bg-camera-feed" playsinline autoplay muted></video>
             <canvas id="main-filter-canvas" style="display:none;"></canvas>
@@ -333,6 +415,7 @@
     let proxSensor, energyBars = [];
     let isRecognizing = false; 
     let scanSpeed = 1.0;
+    let interferenceInterval;
     
     // Variables ZOOM
     let zoomLevel = 1;
@@ -343,6 +426,11 @@
 
     const vid = document.getElementById('bg-camera-feed');
     const canvasSLS = document.getElementById('main-filter-canvas'); const ctxSLS = canvasSLS.getContext('2d');
+    
+    // MATRIX VARS
+    const matrixCanvas = document.getElementById('matrix-canvas');
+    const mCtx = matrixCanvas.getContext('2d');
+    let matrixDrops = [];
 
     window.onload = () => {
         const eContainer = document.getElementById('energy-container');
@@ -354,89 +442,83 @@
         setupZoomEvents();
     };
 
+    function initMatrix() {
+        const pSection = document.querySelector('.panel-section');
+        matrixCanvas.width = pSection.clientWidth;
+        matrixCanvas.height = pSection.clientHeight;
+        const columns = Math.floor(matrixCanvas.width / 15);
+        matrixDrops = Array(columns).fill(1);
+    }
+    
+    function drawMatrix() {
+        mCtx.fillStyle = 'rgba(0, 0, 0, 0.1)'; 
+        mCtx.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height);
+        mCtx.fillStyle = '#00f3ff'; 
+        mCtx.font = '10px Share Tech Mono';
+        
+        for(let i = 0; i < matrixDrops.length; i++) {
+            let text = String.fromCharCode(0x30A0 + Math.random() * 96);
+            if (Math.random() > 0.98 && autoData.length > 0) {
+                text = autoData[Math.floor(Math.random() * autoData.length)].substring(0,5); 
+                mCtx.fillStyle = '#ff0055'; 
+            } else {
+                mCtx.fillStyle = '#00f3ff';
+            }
+            const x = i * 15;
+            const y = matrixCanvas.height - (matrixDrops[i] * 15);
+            mCtx.fillText(text, x, y);
+            if(y < 0 && Math.random() > 0.975) matrixDrops[i] = 0;
+            matrixDrops[i]++;
+        }
+    }
+
     function setupZoomEvents() {
-        // Touch para moviles
         mainView.addEventListener('touchstart', handleTouchStart, {passive: false});
         mainView.addEventListener('touchmove', handleTouchMove, {passive: false});
         mainView.addEventListener('touchend', handleTouchEnd);
-        // Mouse para testing en PC (opcional)
         mainView.addEventListener('mousedown', handleTouchStart);
         mainView.addEventListener('mouseup', handleTouchEnd);
     }
 
     function handleTouchStart(e) {
-        // Long Press Logic (1 dedo)
         if (e.touches && e.touches.length === 1) {
             const t = e.touches[0];
-            longPressTimer = setTimeout(() => {
-                activateSpotZoom(t.clientX, t.clientY);
-            }, 500); // 500ms para activar zoom
+            longPressTimer = setTimeout(() => { activateSpotZoom(t.clientX, t.clientY); }, 500);
         }
-        
-        // Pinch Logic (2 dedos)
         if (e.touches && e.touches.length === 2) {
-            clearTimeout(longPressTimer); // Cancelar long press
-            initialPinchDist = Math.hypot(
-                e.touches[0].pageX - e.touches[1].pageX,
-                e.touches[0].pageY - e.touches[1].pageY
-            );
+            clearTimeout(longPressTimer);
+            initialPinchDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
         }
     }
 
     function handleTouchMove(e) {
-        // Pinch Zoom
         if (e.touches && e.touches.length === 2) {
-            e.preventDefault(); // Evitar scroll nativo
-            clearTimeout(longPressTimer);
-            
-            const dist = Math.hypot(
-                e.touches[0].pageX - e.touches[1].pageX,
-                e.touches[0].pageY - e.touches[1].pageY
-            );
-            
+            e.preventDefault(); clearTimeout(longPressTimer);
+            const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
             if (initialPinchDist > 0) {
                 const delta = dist - initialPinchDist;
-                // Sensibilidad del zoom
-                zoomLevel += delta * 0.01; 
-                zoomLevel = Math.min(Math.max(1, zoomLevel), 5); // Clamp 1x - 5x
-                
-                applyZoom();
-                initialPinchDist = dist; // Reset para movimiento continuo
+                zoomLevel += delta * 0.01; zoomLevel = Math.min(Math.max(1, zoomLevel), 5);
+                applyZoom(); initialPinchDist = dist;
             }
-        } else {
-            // Si se mueve un solo dedo, cancelar long press (es un swipe)
-            clearTimeout(longPressTimer);
-        }
+        } else { clearTimeout(longPressTimer); }
     }
 
     function handleTouchEnd(e) {
         clearTimeout(longPressTimer);
-        // Si soltamos el long press, volver a zoom normal (o mantener el pinch actual)
-        if (zoomContainer.style.transformOrigin !== "center center") {
-             resetSpotZoom();
-        }
+        if (zoomContainer.style.transformOrigin !== "center center") resetSpotZoom();
     }
 
     function activateSpotZoom(x, y) {
-        // Calcular posición relativa dentro del contenedor
         const rect = mainView.getBoundingClientRect();
-        const relX = x - rect.left;
-        const relY = y - rect.top;
-        
         zoomContainer.style.transition = "transform 0.2s ease-out";
-        zoomContainer.style.transformOrigin = `${relX}px ${relY}px`;
-        zoomContainer.style.transform = `scale(3)`; // Zoom fijo de 3x para inspección
-        
-        // Mostrar indicador
-        const msg = document.getElementById('zoom-msg');
-        msg.innerText = "ZOOM x3.0";
-        msg.style.opacity = 1;
+        zoomContainer.style.transformOrigin = `${x - rect.left}px ${y - rect.top}px`;
+        zoomContainer.style.transform = `scale(3)`;
+        const msg = document.getElementById('zoom-msg'); msg.innerText = "ZOOM x3.0"; msg.style.opacity = 1;
     }
 
     function resetSpotZoom() {
         zoomContainer.style.transition = "transform 0.3s ease-in";
         zoomContainer.style.transformOrigin = "center center";
-        // Volver al nivel de zoom que teníamos con el pinch
         applyZoom();
         document.getElementById('zoom-msg').style.opacity = 0;
     }
@@ -453,6 +535,7 @@
         bgBuffer = await loadAudio('FONDO_1.mp3');
         
         initMic(); await startCam(); await initMoveNet(); initSensors();
+        initMatrix();
         startBannerLoop();
         loop();
     }
@@ -472,70 +555,45 @@
 
     async function startCam(){
         try{
-            // INTENTO 4K FORZADO
-            const constraints = {
-                audio: false,
-                video: {
-                    facingMode: { exact: "environment" }, // Forzar trasera
-                    width: { ideal: 3840 },
-                    height: { ideal: 2160 }
-                }
-            };
-            
-            // Fallback si no soporta exact environment
-            try {
-                 const s = await navigator.mediaDevices.getUserMedia(constraints);
-                 handleStream(s);
-            } catch (e) {
-                 const fallbackConstraints = {
-                     audio: false,
-                     video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } }
-                 };
-                 const s = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
-                 handleStream(s);
+            const constraints = { audio: false, video: { facingMode: { exact: "environment" }, width: { ideal: 3840 }, height: { ideal: 2160 } } };
+            try { const s = await navigator.mediaDevices.getUserMedia(constraints); handleStream(s); } 
+            catch (e) { 
+                 const fallbackConstraints = { audio: false, video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } } };
+                 const s = await navigator.mediaDevices.getUserMedia(fallbackConstraints); handleStream(s);
             }
         }catch(e){ console.log("Cam error", e); }
     }
     
     function handleStream(stream) {
-        vid.srcObject = stream; 
-        videoTrack = stream.getVideoTracks()[0];
-        vid.onloadedmetadata = ()=> { 
-            resize();
-            document.getElementById('cam-res').innerText = `${vid.videoWidth}x${vid.videoHeight}`;
-        }; 
+        vid.srcObject = stream; videoTrack = stream.getVideoTracks()[0];
+        vid.onloadedmetadata = ()=> { resize(); document.getElementById('cam-res').innerText = `${vid.videoWidth}x${vid.videoHeight}`; }; 
         window.onresize = resize;
     }
 
     function resize(){
         const area = document.getElementById('main-view-area');
         canvasSLS.width = area.clientWidth; canvasSLS.height = area.clientHeight;
+        const pSection = document.querySelector('.panel-section');
+        if(pSection) { matrixCanvas.width = pSection.clientWidth; matrixCanvas.height = pSection.clientHeight; }
     }
 
     async function toggleFilter(f){
         if(currentFilter===f) f='none';
         document.body.classList.remove('filter-night-vision', 'filter-negative', 'filter-sls');
-        document.querySelectorAll('.filter-btn').forEach(b=> {
-            if(b.id !== 'btn-hud') b.classList.remove('active');
-        });
-
+        document.querySelectorAll('.filter-btn').forEach(b=> { if(b.id !== 'btn-hud') b.classList.remove('active'); });
         if(f!=='none') {
             document.body.classList.add('filter-'+f);
-            const btn = document.querySelector(`button[onclick="toggleFilter('${f}')"]`);
-            if(btn) btn.classList.add('active');
+            document.querySelector(`button[onclick="toggleFilter('${f}')"]`).classList.add('active');
         }
         document.getElementById('main-filter-canvas').style.display = f==='sls'?'block':'none';
-        
         if(videoTrack) try{ await videoTrack.applyConstraints({advanced:[{torch: f==='night-vision'}]}); }catch(e){}
         currentFilter = f;
     }
 
     function toggleHUD(){
-        const body = document.body;
-        const btn = document.getElementById('btn-hud');
+        const body = document.body; const btn = document.getElementById('btn-hud');
         body.classList.toggle('panels-hidden');
-        if(body.classList.contains('panels-hidden')) btn.classList.remove('active');
-        else btn.classList.add('active');
+        if(body.classList.contains('panels-hidden')) btn.classList.remove('active'); else btn.classList.add('active');
         setTimeout(resize, 550);
     }
 
@@ -545,23 +603,18 @@
     }
     function showControls() {
         uiVisible = true;
-        document.getElementById('filter-controls-container').style.opacity = '1';
-        document.getElementById('filter-controls-container').style.pointerEvents = 'auto';
-        document.getElementById('logo-container').classList.add('ui-hiding');
-        document.getElementById('follow-banner').classList.add('ui-hiding');
+        document.getElementById('filter-controls-container').style.opacity = '1'; document.getElementById('filter-controls-container').style.pointerEvents = 'auto';
+        document.getElementById('logo-container').classList.add('ui-hiding'); document.getElementById('follow-banner').classList.add('ui-hiding');
         clearTimeout(hideTimeout); hideTimeout = setTimeout(hideControls, 5000);
     }
     function hideControls() {
         uiVisible = false;
-        document.getElementById('filter-controls-container').style.opacity = '0';
-        document.getElementById('filter-controls-container').style.pointerEvents = 'none';
-        document.getElementById('logo-container').classList.remove('ui-hiding');
-        document.getElementById('follow-banner').classList.remove('ui-hiding');
+        document.getElementById('filter-controls-container').style.opacity = '0'; document.getElementById('filter-controls-container').style.pointerEvents = 'none';
+        document.getElementById('logo-container').classList.remove('ui-hiding'); document.getElementById('follow-banner').classList.remove('ui-hiding');
     }
 
     function setSensorStatus(id, status) {
-        const el = document.getElementById(id);
-        if (!el) return;
+        const el = document.getElementById(id); if (!el) return;
         el.className = 'sensor-item';
         if(status === 'main') el.classList.add('status-green');
         else if(status === 'backup') el.classList.add('status-blue');
@@ -570,61 +623,33 @@
     }
 
     function initSensors(){
-        let magActive = false;
-        let motionActive = false;
-
+        let magActive = false; let motionActive = false;
         const requestAccess = async () => {
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                try {
-                    const permission = await DeviceOrientationEvent.requestPermission();
-                    if (permission === 'granted') window.addEventListener('deviceorientation', handleOrientation);
-                } catch (e) { console.error(e); }
+                try { const p = await DeviceOrientationEvent.requestPermission(); if (p === 'granted') window.addEventListener('deviceorientation', handleOrientation); } catch (e) {}
             } else window.addEventListener('deviceorientation', handleOrientation);
 
             if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-                try {
-                    const permission = await DeviceMotionEvent.requestPermission();
-                    if (permission === 'granted') window.addEventListener('devicemotion', handleMotion);
-                } catch (e) { console.error(e); }
+                try { const p = await DeviceMotionEvent.requestPermission(); if (p === 'granted') window.addEventListener('devicemotion', handleMotion); } catch (e) {}
             } else window.addEventListener('devicemotion', handleMotion);
         };
-
         const handleOrientation = (e) => {
-            if(e.alpha !== null) {
-                document.getElementById('mag-val').innerText = Math.round(e.alpha).toString().padStart(3,'0');
-                setSensorStatus('sens-mag', 'main'); magActive = true;
-            }
+            if(e.alpha !== null) { document.getElementById('mag-val').innerText = Math.round(e.alpha).toString().padStart(3,'0'); setSensorStatus('sens-mag', 'main'); magActive = true; }
         };
-
         const handleMotion = (e) => {
-            const a = e.accelerationIncludingGravity;
-            const r = e.rotationRate;
+            const a = e.accelerationIncludingGravity; const r = e.rotationRate;
             if(a){
                 let t = Math.abs(a.x)+Math.abs(a.y)+Math.abs(a.z);
-                let emf = (t * 2.5).toFixed(1);
-                document.getElementById('emf-val').innerText = emf;
-                setSensorStatus('sens-acc', 'main'); setSensorStatus('sens-lidar', 'sim'); 
-                motionActive = true;
+                let emf = (t * 2.5).toFixed(1); document.getElementById('emf-val').innerText = emf;
+                setSensorStatus('sens-acc', 'main'); setSensorStatus('sens-lidar', 'sim'); motionActive = true;
             }
             if(r && (r.alpha || r.beta || r.gamma)) setSensorStatus('sens-gyro', 'main');
         };
-
-        // VINCULADO AL CLIC DE INICIO (Requisito iOS)
-        // Se llama desde initSensors que se llama desde enterApp
-        requestAccess();
-        initProximity();
+        requestAccess(); initProximity();
 
         setInterval(() => {
-            if(!magActive) {
-                setSensorStatus('sens-mag', 'sim'); 
-                document.getElementById('mag-val').innerText = Math.floor(Math.random()*360).toString().padStart(3,'0');
-            }
-            if(!motionActive) {
-                setSensorStatus('sens-acc', 'sim'); setSensorStatus('sens-gyro', 'sim'); setSensorStatus('sens-lidar', 'status-red');
-                // Fluctuacion EMF
-                let noise = (0.3 + Math.random() * 0.9).toFixed(1);
-                document.getElementById('emf-val').innerText = noise;
-            }
+            if(!magActive) { setSensorStatus('sens-mag', 'sim'); document.getElementById('mag-val').innerText = Math.floor(Math.random()*360).toString().padStart(3,'0'); }
+            if(!motionActive) { setSensorStatus('sens-acc', 'sim'); setSensorStatus('sens-gyro', 'sim'); setSensorStatus('sens-lidar', 'status-red'); let noise = (0.3 + Math.random() * 0.9).toFixed(1); document.getElementById('emf-val').innerText = noise; }
         }, 500);
     }
 
@@ -632,22 +657,12 @@
         if('ProximitySensor' in window){
             try {
                 proxSensor = new ProximitySensor({frequency: 10});
-                proxSensor.addEventListener('reading', () => {
-                    document.getElementById('prox-val').innerText = proxSensor.value ? proxSensor.value.toFixed(0) : "0";
-                    setSensorStatus('sens-prox', 'main'); 
-                });
+                proxSensor.addEventListener('reading', () => { document.getElementById('prox-val').innerText = proxSensor.value ? proxSensor.value.toFixed(0) : "0"; setSensorStatus('sens-prox', 'main'); });
                 proxSensor.start();
-            } catch(e){ 
-                setSensorStatus('sens-prox', 'status-red');
-            }
+            } catch(e){ setSensorStatus('sens-prox', 'status-red'); }
         } else { 
             setSensorStatus('sens-prox', 'sim'); 
-            setInterval(() => {
-                if(Math.random() > 0.95) {
-                    document.getElementById('prox-val').innerText = Math.floor(Math.random() * 5);
-                    setTimeout(() => document.getElementById('prox-val').innerText = "0", 800);
-                }
-            }, 1000);
+            setInterval(() => { if(Math.random() > 0.95) { document.getElementById('prox-val').innerText = Math.floor(Math.random() * 5); setTimeout(() => document.getElementById('prox-val').innerText = "0", 800); } }, 1000);
         }
     }
 
@@ -665,28 +680,30 @@
     function toggleSpirit(){
         isSpiritOn = !isSpiritOn;
         const btn = document.getElementById('btn-pwr');
-        const status = document.getElementById('sb-status');
+        const led = document.getElementById('voice-led');
         if(isSpiritOn){
             btn.innerText="APAGAR"; btn.classList.add('pwr-on');
-            status.innerText = "INICIANDO...";
+            document.getElementById('sb-status').innerText = "INICIANDO...";
+            led.classList.add('active'); // Blue
+            
             if(audioCtx.state==='suspended') audioCtx.resume();
             
             if(bgBuffer){
                 bgNode = audioCtx.createBufferSource(); bgNode.buffer=bgBuffer; bgNode.loop=true;
                 bgNode.playbackRate.value = scanSpeed; 
-                bgGain = audioCtx.createGain(); bgGain.gain.value=0.6; 
+                bgGain = audioCtx.createGain(); bgGain.gain.value=1.0;  
                 bgNode.connect(bgGain); bgGain.connect(masterGain); bgNode.start(0);
-            } else {
-                startFallbackNoise();
-            }
+            } else { startFallbackNoise(); }
             startListeningCycle();
         }else{
             btn.innerText="ENCENDER"; btn.classList.remove('pwr-on');
-            status.innerText = "APAGADO";
+            document.getElementById('sb-status').innerText = "APAGADO";
+            led.className = 'voice-led'; // OFF
+            
             if(bgNode) { bgNode.stop(); bgNode = null; }
             if(noiseNode) { noiseNode.stop(); noiseNode = null; }
+            if(interferenceInterval) clearInterval(interferenceInterval);
             if(window.speechSynthesis) window.speechSynthesis.cancel();
-            document.getElementById('voice-led').classList.remove('listening');
             if(recognition) recognition.stop();
         }
     }
@@ -703,11 +720,7 @@
 
     document.getElementById('speed-slider').addEventListener('input', (e) => {
         scanSpeed = parseFloat(e.target.value);
-        let rate = 1.0;
-        if(scanSpeed === 1) rate = 0.8;
-        if(scanSpeed === 2) rate = 1.0;
-        if(scanSpeed === 3) rate = 1.5;
-        
+        let rate = 1.0; if(scanSpeed === 1) rate = 0.8; if(scanSpeed === 2) rate = 1.0; if(scanSpeed === 3) rate = 1.5;
         document.getElementById('spd-txt').innerText = scanSpeed;
         if(bgNode) bgNode.playbackRate.value = rate;
     });
@@ -716,36 +729,61 @@
         if(!isSpiritOn) return;
         if(isRecognizing) return;
         document.getElementById('sb-status').innerText = "SINTONIZANDO...";
-        document.getElementById('voice-led').classList.add('listening');
+        
+        // LED stays Blue (Active) until actual open
+        
         if(!recognition) {
             const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
             if(SR) {
                 recognition = new SR(); recognition.lang='es-MX'; recognition.continuous=false;
-                recognition.onstart = () => { isRecognizing = true; };
-                recognition.onend = () => { isRecognizing = false; if(isSpiritOn && !window.speechSynthesis.speaking) setTimeout(startListeningCycle, 500); };
+                recognition.onstart = () => { 
+                    isRecognizing = true; 
+                    // NOW turn Green
+                    document.getElementById('voice-led').classList.add('listening');
+                };
+                recognition.onend = () => { 
+                    isRecognizing = false; 
+                    // Back to Blue
+                    document.getElementById('voice-led').classList.remove('listening');
+                    if(isSpiritOn && !window.speechSynthesis.speaking) setTimeout(startListeningCycle, 500); 
+                };
                 recognition.onresult = (e) => { processVoiceCommand(e.results[0][0].transcript.toLowerCase().trim()); };
+                recognition.onerror = () => { isRecognizing = false; if(isSpiritOn) setTimeout(startListeningCycle, 1000); };
             }
         }
         try{ recognition.start(); }catch(e){}
     }
+    
     function processVoiceCommand(txt){
+        // LED Blue again
         document.getElementById('voice-led').classList.remove('listening');
         document.getElementById('sb-status').innerText = "PROCESANDO...";
         let response = progData.has(txt) ? progData.get(txt) : autoData[Math.floor(Math.random()*autoData.length)];
-        setTimeout(() => speak(response), 2000); 
+        setTimeout(() => speak(response), 4000); // 4s processing delay
     }
+    
     function speak(txt){
         if(!window.speechSynthesis) return;
         document.getElementById('sb-status').innerText = "DESCODIFICANDO...";
-        // DUCKING EXTREMO PARA QUE SE ESCUCHE LA VOZ
-        if(bgGain) bgGain.gain.setTargetAtTime(0.05, audioCtx.currentTime, 0.1);
-        if(noiseGain) noiseGain.gain.setTargetAtTime(0.05, audioCtx.currentTime, 0.1);
+        
+        if(bgGain) bgGain.gain.setTargetAtTime(0.6, audioCtx.currentTime, 0.1);
+        
+        if(interferenceInterval) clearInterval(interferenceInterval);
+        interferenceInterval = setInterval(() => {
+            if(!bgGain) return;
+            const randomSpike = 0.6 + (Math.random() * 0.2); 
+            bgGain.gain.setValueAtTime(randomSpike, audioCtx.currentTime);
+            bgGain.gain.setTargetAtTime(0.6, audioCtx.currentTime + 0.1, 0.1);
+        }, 200); 
 
         const u = new SpeechSynthesisUtterance(txt); u.lang='es-MX'; u.rate = 0.9; u.pitch = 0.8;
+        u.volume = 1.0; 
+
         u.onend = () => { 
-            if(bgGain) bgGain.gain.setTargetAtTime(0.6, audioCtx.currentTime, 0.5); 
-            if(noiseGain) noiseGain.gain.setTargetAtTime(0.15, audioCtx.currentTime, 0.5);
-            if(isSpiritOn) startListeningCycle(); 
+            clearInterval(interferenceInterval);
+            if(bgGain) bgGain.gain.setTargetAtTime(1.0, audioCtx.currentTime, 0.5); 
+            // 3s delay after speaking before listening again
+            if(isSpiritOn) setTimeout(startListeningCycle, 3000); 
         };
         window.speechSynthesis.speak(u);
     }
@@ -764,11 +802,12 @@
             document.getElementById('temp-display').innerText = (18+Math.random()*3).toFixed(1);
         }
         
-        // CORRECCION SLS: Limpiar siempre
         if(currentFilter==='sls'){
             ctxSLS.clearRect(0,0,canvasSLS.width,canvasSLS.height);
             if (latestPoses.length > 0) drawSLS(latestPoses);
         }
+        
+        drawMatrix();
         
         if(analyser){
             const data = new Uint8Array(analyser.frequencyBinCount);
@@ -796,13 +835,8 @@
         const detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING });
         setInterval(async () => { 
             if(currentFilter==='sls' && vid.readyState===4) {
-                // Actualizar constantemente, si no detecta devuelve vacio y se limpia
-                try {
-                   latestPoses = await detector.estimatePoses(vid); 
-                } catch(e) { latestPoses = []; }
-            } else {
-                latestPoses = [];
-            }
+                try { latestPoses = await detector.estimatePoses(vid); } catch(e) { latestPoses = []; }
+            } else { latestPoses = []; }
         }, 100);
     }
     const conns = [['left_shoulder','right_shoulder'],['left_shoulder','left_hip'],['right_shoulder','right_hip'],['left_hip','right_hip'],['left_shoulder','left_elbow'],['left_elbow','left_wrist'],['right_shoulder','right_elbow'],['right_elbow','right_wrist'],['left_hip','left_knee'],['left_knee','left_ankle'],['right_hip','right_knee'],['right_knee','right_ankle']];
