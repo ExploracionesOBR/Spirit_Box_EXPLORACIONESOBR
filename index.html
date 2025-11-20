@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v7.1 PRO</title> 
+    <title>DETECTOR-OBR v7.6 FINAL</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&family=Creepster&display=swap" rel="stylesheet">
@@ -22,6 +22,7 @@
             --hud-green: #00ff41; 
             --hud-orange: #ffae00;
             --hud-red: #ff3333;
+            --hud-blue: #0088ff;
             --glass-panel: rgba(6, 10, 20, 0.95);
             --panel-w: 340px; 
             --panel-h: 130px;
@@ -36,7 +37,7 @@
 
         #app-ui { width: 100%; height: 100%; position: relative; touch-action: none; }
 
-        /* --- CÁMARA --- */
+        /* --- CÁMARA Y LAYOUT --- */
         #main-view-area {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             overflow: hidden; z-index: 5; background: #000; 
@@ -48,39 +49,31 @@
             object-fit: cover; transform: translate(-50%, -50%); z-index: 1; opacity: 0.9;
         }
 
-        /* --- INDICADOR REC PROFESIONAL (Top Left) --- */
+        /* --- INDICADOR REC (ANIDADO) --- */
         #rec-indicator {
-            position: fixed; top: 20px; left: 20px; z-index: 50;
+            position: absolute; /* Anidado a la cámara */
+            top: 20px; left: 20px; z-index: 50;
             display: flex; align-items: center; gap: 8px;
             font-family: 'Orbitron'; font-weight: 700; letter-spacing: 2px;
             color: var(--hud-red); text-shadow: 0 0 5px var(--hud-red);
-            pointer-events: none; opacity: 1; transition: opacity 0.3s;
+            pointer-events: none;
         }
-        /* Icono de grabación complejo */
         .rec-icon {
             width: 12px; height: 12px; border-radius: 50%;
-            background: var(--hud-red);
-            position: relative;
+            background: var(--hud-red); position: relative;
             box-shadow: 0 0 5px var(--hud-red);
         }
         .rec-icon::after {
             content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 100%; height: 100%; border-radius: 50%;
-            border: 1px solid var(--hud-red);
-            animation: recWave 1.5s infinite;
+            border: 1px solid var(--hud-red); animation: recWave 1.5s infinite;
         }
-        @keyframes recWave {
-            0% { width: 100%; height: 100%; opacity: 1; }
-            100% { width: 250%; height: 250%; opacity: 0; }
-        }
-        
+        @keyframes recWave { 0% { width: 100%; height: 100%; opacity: 1; } 100% { width: 250%; height: 250%; opacity: 0; } }
         #rec-text { font-size: 0.8rem; animation: blinkText 2s infinite; }
         @keyframes blinkText { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
 
         /* FILTROS */
-        body.filter-night-vision #bg-camera-feed { 
-            filter: grayscale(100%) sepia(100%) hue-rotate(90deg) brightness(0.8) contrast(1.4) saturate(200%); 
-        }
+        body.filter-night-vision #bg-camera-feed { filter: grayscale(100%) sepia(100%) hue-rotate(90deg) brightness(0.8) contrast(1.4) saturate(200%); }
         body.filter-night-vision #main-view-area::after {
             content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
             background: radial-gradient(circle, transparent 50%, #000 100%);
@@ -91,21 +84,25 @@
         body.filter-sls #main-filter-canvas { display: block; z-index: 3; }
         body.filter-spectral #gl-bluewave { display: block; z-index: 4; mix-blend-mode: screen; }
 
-        /* LOGO (Top Right) */
+        /* LOGO */
         #logo-container { position: fixed; top: 15px; right: 15px; z-index: 50; pointer-events: none; transition: opacity 0.3s; }
         #logo-image { width: 55px; height: 55px; filter: drop-shadow(0 0 5px var(--hud-cyan)); animation: float 4s infinite; }
 
-        /* BANNER (Bottom Center) */
+        /* BANNER SÍGUENOS (Horizontal - Restaurado de kineckt.txt) */
         #follow-banner {
-            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 20;
+            position: absolute; bottom: 30px; left: 50%; 
+            transform: translateX(-50%); z-index: 20;
             display: flex; flex-direction: column; align-items: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.5s;
-            background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 20px; border: 1px solid var(--hud-cyan);
+            opacity: 0; pointer-events: none; transition: opacity 1s ease-in-out;
+            text-shadow: 2px 2px 0px #000;
         }
-        #follow-banner.show { opacity: 1; }
-        .social-icons { display: flex; gap: 15px; margin-bottom: 3px; }
-        .social-icons svg { width: 18px; height: 18px; fill: var(--hud-cyan); filter: drop-shadow(0 0 3px var(--hud-cyan)); }
-        .follow-text { font-family: 'Creepster'; font-size: 1rem; color: #fff; letter-spacing: 1px; text-shadow: 2px 0 0 var(--hud-red); }
+        #follow-banner.show-banner { opacity: 1; }
+
+        .social-icons { display: flex; flex-direction: row; gap: 20px; margin-bottom: 5px; filter: drop-shadow(0 0 5px var(--hud-red)); }
+        .social-icons svg { width: 20px; height: 20px; fill: #fff; }
+        
+        .follow-text { font-family: 'Creepster'; font-size: 1.2rem; color: #ff0000; letter-spacing: 2px; text-shadow: 0 0 10px #ff0000; animation: glitchText 3s infinite; }
+        @keyframes glitchText { 0% { transform: skew(0deg); opacity: 1; } 20% { transform: skew(-2deg); opacity: 0.8; } 22% { transform: skew(2deg); opacity: 1; } 60% { transform: skew(0deg); } 62% { transform: skew(5deg); filter: blur(1px); } 64% { transform: skew(0deg); filter: blur(0); } 100% { transform: skew(0deg); } }
 
         /* --- PANELES --- */
         #left-panel, #bottom-panel {
@@ -120,11 +117,7 @@
 
         .panel { padding: 8px; display: flex; flex-direction: column; gap: 5px; height: 100%; box-sizing: border-box; }
         .panel-section { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255,255,255,0.05); padding: 5px; margin-bottom: 2px; }
-        .section-title { 
-            font-family: 'Orbitron'; font-size: 0.6rem; font-weight: 800; 
-            color: var(--hud-cyan); text-transform: uppercase; letter-spacing: 1px; 
-            margin-bottom: 4px; border-bottom: 1px solid rgba(0, 243, 255, 0.2); 
-        }
+        .section-title { font-family: 'Orbitron'; font-size: 0.6rem; font-weight: 800; color: var(--hud-cyan); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; border-bottom: 1px solid rgba(0, 243, 255, 0.2); }
 
         /* SENSORES */
         .sensor-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.6rem; padding: 2px; }
@@ -135,55 +128,23 @@
         .led-red { background: var(--hud-red); }
 
         /* SPIRIT BOX */
-        #spirit-box-section {
-            border: 1px solid var(--hud-green);
-            background: rgba(0, 20, 0, 0.3); 
-            box-shadow: inset 0 0 20px rgba(0, 255, 65, 0.1);
-            padding: 8px;
-        }
+        #spirit-box-section { border: 1px solid var(--hud-green); background: rgba(0, 20, 0, 0.3); box-shadow: inset 0 0 20px rgba(0, 255, 65, 0.1); padding: 8px; }
         .spirit-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-        
         .voice-led { width: 12px; height: 12px; border-radius: 50%; background: #111; border: 1px solid #444; transition: 0.1s; }
-        .voice-led.listening { background: var(--hud-green); box-shadow: 0 0 15px var(--hud-green), inset 0 0 5px #fff; }
+        .voice-led.listening { background: var(--hud-green); box-shadow: 0 0 15px var(--hud-green), inset 0 0 5px #fff; animation: pulseGreen 0.5s infinite; }
         
-        .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin: 5px 0; }
-        .btn-control { background: #111; border: 1px solid #444; color: #888; font-family: 'Orbitron'; font-size: 0.6rem; padding: 8px; cursor: pointer; text-align: center; }
-        .pwr-on { border-color: var(--hud-green); color: var(--hud-green); background: rgba(0,50,0,0.5); }
-        .spd-1 { border-color: var(--hud-blue); color: var(--hud-blue); }
-        .spd-2 { border-color: var(--hud-orange); color: var(--hud-orange); }
-        .spd-3 { border-color: var(--hud-red); color: var(--hud-red); }
-
         /* RADAR */
         #radar-section { display: flex; flex-direction: column; align-items: center; margin-top: 5px; }
         #radar-container {
-            width: 80px; height: 80px; border-radius: 50%;
-            background: radial-gradient(circle, #002 0%, #000 90%);
-            border: 2px solid #333; position: relative; overflow: hidden;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle, #002 0%, #000 90%); border: 2px solid #333; position: relative; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
-        #radar-container::before {
-            content: ''; position: absolute; inset: 0; border-radius: 50%;
-            background: repeating-radial-gradient(transparent 0, transparent 18px, rgba(0, 255, 65, 0.3) 19px, rgba(0, 255, 65, 0.3) 20px);
-        }
-        #radar-container::after {
-            content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 1px; background: rgba(0,255,65,0.3);
-            transform: translateY(-50%);
-        }
-        #radar-scan {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: conic-gradient(from 0deg, transparent 0deg, rgba(0, 255, 65, 0.1) 60deg, rgba(0, 255, 65, 0.8) 90deg, transparent 91deg);
-            border-radius: 50%; animation: radarSpin 2s linear infinite;
-        }
-        #radar-scan.alert {
-             background: conic-gradient(from 0deg, transparent 0deg, rgba(255, 0, 0, 0.1) 60deg, rgba(255, 0, 0, 0.8) 90deg, transparent 91deg);
-             animation: radarSpin 0.5s linear infinite;
-        }
+        #radar-container::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: repeating-radial-gradient(transparent 0, transparent 18px, rgba(0, 255, 65, 0.3) 19px, rgba(0, 255, 65, 0.3) 20px); }
+        #radar-container::after { content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 1px; background: rgba(0,255,65,0.3); transform: translateY(-50%); }
+        #radar-scan { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: conic-gradient(from 0deg, transparent 0deg, rgba(0, 255, 65, 0.1) 60deg, rgba(0, 255, 65, 0.8) 90deg, transparent 91deg); border-radius: 50%; animation: radarSpin 2s linear infinite; }
+        #radar-scan.alert { background: conic-gradient(from 0deg, transparent 0deg, rgba(255, 0, 0, 0.1) 60deg, rgba(255, 0, 0, 0.8) 90deg, transparent 91deg); animation: radarSpin 0.5s linear infinite; }
         
         /* GRAPH ENERGY */
-        #energy-container { 
-            height: 100%; background: #050505; border: 1px solid #333; 
-            display: flex; flex-direction: column; justify-content: center; 
-        }
+        #energy-container { height: 100%; background: #050505; border: 1px solid #333; display: flex; flex-direction: column; justify-content: center; }
         #energy-canvas { width: 100%; height: 100%; }
 
         /* PANEL INFERIOR */
@@ -191,15 +152,6 @@
         .dial-container { width: 45px; height: 45px; border-radius: 50%; margin: 0 auto; background: #0b0c15; box-shadow: inset 0 0 5px #000; position: relative; border: 1px solid #222; }
         .dial-needle { position: absolute; width: 2px; height: 18px; background: #fff; bottom: 50%; left: 50%; transform-origin: bottom center; transform: translateX(-50%) rotate(-45deg); z-index: 2; transition: transform 0.3s ease; }
         .knob-label { font-size: 0.5rem; color: var(--hud-cyan); margin-top: 2px; font-weight: bold; text-align: center; }
-
-        /* STATS (Sin Recuadro Rojo, solo datos) */
-        #panel-sys-stats { 
-            display: flex; flex-direction: column; justify-content: center; 
-            height: 100%; padding-left: 8px; border-left: 1px dashed var(--hud-cyan); 
-            font-family: 'Orbitron'; font-size: 0.6rem; color: var(--hud-green); 
-            line-height: 1.6; 
-        }
-        .stat-label { color: #777; font-size: 0.5rem; }
 
         /* BOTONES */
         #filter-controls-container { position: fixed; top: 50%; right: 15px; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
@@ -211,6 +163,9 @@
         .loader-logo { width: 80px; margin-bottom: 15px; animation: pulseG 2s infinite; }
         #enter-btn { display: none; padding: 10px 30px; border: 2px solid var(--hud-green); color: var(--hud-green); background: transparent; font-family: 'Orbitron'; font-size: 1.1rem; cursor: pointer; margin-top: 20px; animation: pulseG 2s infinite; }
 
+        /* CONTROLES INTERNOS */
+        .btn-control { background: #111; border: 1px solid #444; color: #888; font-family: 'Orbitron'; font-size: 0.6rem; padding: 8px; cursor: pointer; text-align: center; }
+        .pwr-on { border-color: var(--hud-green); color: var(--hud-green); background: rgba(0,50,0,0.5); }
         input[type=range] { width: 100%; accent-color: var(--hud-green); }
         
         /* MARCO CÁMARA */
@@ -220,13 +175,16 @@
         #camera-frame::before { top: 0; left: 0; } #camera-frame::after { bottom: 0; right: 0; }
         body.panels-active #camera-frame::before { width: 30px; height: 30px; border-width: 2px 0 0 2px; box-shadow: -2px -2px 10px var(--hud-cyan); }
         body.panels-active #camera-frame::after { width: 30px; height: 30px; border-width: 0 2px 2px 0; box-shadow: 2px 2px 10px var(--hud-cyan); }
+        
+        #panel-sys-stats { display: flex; flex-direction: column; justify-content: center; height: 100%; padding-left: 8px; border-left: 1px dashed var(--hud-cyan); font-family: 'Orbitron'; font-size: 0.6rem; color: var(--hud-green); line-height: 1.6; }
+        .stat-label { color: #777; font-size: 0.5rem; }
 
         @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-5px);} }
         @keyframes pulseG { 0%{filter:drop-shadow(0 0 2px cyan);} 50%{filter:drop-shadow(0 0 10px cyan);} 100%{filter:drop-shadow(0 0 2px cyan);} }
         @keyframes radarSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes pulseGreen { 0%{opacity:0.5;} 50%{opacity:1;} 100%{opacity:0.5;} }
         
-        /* EFECTOS UI OCULTAR */
+        /* UI TOGGLE */
         .ui-hiding { opacity: 0 !important; transform: scale(1.1); filter: blur(5px); transition: all 0.4s; }
 
         /* RESPONSIVE */
@@ -259,6 +217,11 @@
         <canvas id="gl-bluewave"></canvas>
         <div id="camera-frame"></div>
         
+        <div id="rec-indicator">
+            <div class="rec-icon"></div>
+            <span id="rec-text">[ REC ]</span>
+        </div>
+
         <div id="follow-banner">
             <div class="social-icons">
                 <svg viewBox="0 0 448 512"><path d="M448 209.9a210.1 210.1 0 0 1 -122.8-39.3V349.4A162.6 162.6 0 1 1 185 188.3V277.2a74.6 74.6 0 1 0 52.2 71.2V0l88 0a121.2 121.2 0 0 0 122.8 122.1v87.8z"/></svg>
@@ -270,11 +233,6 @@
     </div>
 
     <div id="logo-container"><img id="logo-image" src="obr-logo.png"></div>
-
-    <div id="rec-indicator">
-        <div class="rec-icon"></div>
-        <span id="rec-text">[ REC ]</span>
-    </div>
 
     <div id="left-panel">
         <div class="panel">
@@ -355,7 +313,19 @@
     const canvasSLS = document.getElementById('main-filter-canvas'); const ctxSLS = canvasSLS.getContext('2d');
     const energyCanvas = document.getElementById('energy-canvas'); const ctxEnergy = energyCanvas.getContext('2d');
     const peakHolds = [];
+    
+    // BANNER LOOP
+    const followBanner = document.getElementById('follow-banner');
+    function initFollowLoop() {
+        setTimeout(() => followBanner.classList.add('show-banner'), 2000);
+        setTimeout(() => followBanner.classList.remove('show-banner'), 8000); 
+        setInterval(() => {
+            followBanner.classList.add('show-banner');
+            setTimeout(() => followBanner.classList.remove('show-banner'), 8000);
+        }, 30000);
+    }
 
+    // 1. CARGA
     window.onload = () => {
         let p=0;
         let t = setInterval(()=>{
@@ -378,10 +348,10 @@
         masterGain = audioCtx.createGain(); masterGain.connect(audioCtx.destination);
         bgBuffer = await loadAudio('FONDO_1.mp3');
         
-        initMic(); initFollowBanner();
+        initMic(); initFollowLoop();
         await startCam();
         
-        // SLS INIT SEGURO
+        // CÓDIGO SLS KINECT RESTAURADO
         await initMoveNet(); 
         
         initSensors(); initProximity();
@@ -434,18 +404,18 @@
         uiVisible=true;
         document.getElementById('filter-controls-container').style.opacity=1;
         document.getElementById('filter-controls-container').style.pointerEvents='auto';
-        document.getElementById('logo-container').style.opacity=0;
+        document.getElementById('logo-container').classList.add('ui-hiding');
+        followBanner.classList.add('ui-hiding');
         document.getElementById('rec-indicator').classList.add('ui-hiding');
-        document.getElementById('follow-banner').style.display='none';
         clearTimeout(hideTimeout); hideTimeout=setTimeout(hideUI, 5000);
     }
     function hideUI(){
         uiVisible=false;
         document.getElementById('filter-controls-container').style.opacity=0;
         document.getElementById('filter-controls-container').style.pointerEvents='none';
-        document.getElementById('logo-container').style.opacity=1;
+        document.getElementById('logo-container').classList.remove('ui-hiding');
+        followBanner.classList.remove('ui-hiding');
         document.getElementById('rec-indicator').classList.remove('ui-hiding');
-        document.getElementById('follow-banner').style.display='flex';
     }
 
     // --- SENSORES ---
@@ -488,7 +458,7 @@
         document.getElementById('led-'+id).className=`sensor-led led-${col}`;
     }
 
-    // --- SPIRIT BOX FIX ---
+    // --- SPIRIT BOX ---
     async function loadAudio(u){ try{const r=await fetch(u);const b=await r.arrayBuffer();return await audioCtx.decodeAudioData(b);}catch(e){return null;} }
     
     async function initMic(){
@@ -513,7 +483,8 @@
                 bgGain = audioCtx.createGain(); bgGain.gain.value=0.6; 
                 bgNode.connect(bgGain); bgGain.connect(masterGain); bgNode.start(0);
             }
-            loopSpirit();
+            loopSpirit(); // Iniciar Bucle Automático
+            initRec();    // Asegurar reconocimiento activo
         }else{
             btn.innerText="OFF"; btn.className="btn-control";
             if(bgNode) bgNode.stop();
@@ -577,12 +548,6 @@
         document.getElementById('vol-txt').innerText=e.target.value+"%";
     });
 
-    function initFollowBanner(){
-        const b = document.getElementById('follow-banner');
-        setInterval(()=>{ b.classList.add('show'); setTimeout(()=>b.classList.remove('show'), 6000); }, 30000);
-        setTimeout(()=>b.classList.add('show'), 2000); setTimeout(()=>b.classList.remove('show'), 8000);
-    }
-
     let lastFps=0, frames=0;
     function loop(){
         frames++;
@@ -629,7 +594,7 @@
         d.programado.forEach(i=>{if(i.PREGUNTA) progData.set(i.PREGUNTA.toLowerCase().trim(), i.RESPUESTA)});
     }
 
-    // --- SLS ---
+    // --- SLS (RESTORED FROM KINECKT.TXT) ---
     async function initMoveNet(){
         await tf.ready(); 
         const m = poseDetection.SupportedModels.MoveNet;
