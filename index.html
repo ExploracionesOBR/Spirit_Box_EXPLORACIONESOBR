@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v6.1 STABLE</title> 
+    <title>DETECTOR-OBR v6.2 ULTRA</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&family=Creepster&display=swap" rel="stylesheet">
@@ -55,14 +55,52 @@
         body.filter-sls #main-filter-canvas { display: block; z-index: 3; }
         body.filter-bluewave #gl-bluewave { display: block; z-index: 4; mix-blend-mode: screen; }
 
-        /* --- BANNER SÍGUENOS (TERROR STYLE) --- */
+        /* --- ELEMENTOS FLOTANTES --- */
+        
+        /* ANIMACIÓN "WATER POP" (Desaparecer) */
+        @keyframes waterPop {
+            0% { transform: scale(1); opacity: 1; filter: blur(0); }
+            40% { transform: scale(1.1); opacity: 0.8; filter: blur(2px); }
+            100% { transform: scale(2.5); opacity: 0; filter: blur(10px); }
+        }
+
+        /* ANIMACIÓN "SPECTRAL FLOAT" (Logo Vivo) */
+        @keyframes spectral-float {
+            0% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 5px var(--hud-cyan)); }
+            25% { transform: translateY(-5px) scale(1.02); filter: drop-shadow(0 0 15px var(--hud-cyan)) hue-rotate(20deg); }
+            50% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 5px var(--hud-cyan)); }
+            75% { transform: translateY(5px) scale(0.98); filter: drop-shadow(0 0 15px var(--hud-pink)) hue-rotate(-20deg); }
+            100% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 5px var(--hud-cyan)); }
+        }
+
+        /* CLASE PARA OCULTAR CON EFECTO */
+        .ui-hiding {
+            animation: waterPop 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important;
+            pointer-events: none;
+        }
+
+        /* LOGO CONTAINER */
+        #logo-container { 
+            position: fixed; top: 20px; right: 20px; z-index: 50; 
+            pointer-events: none; 
+            transition: opacity 0.3s ease; /* Fade in suave al volver */
+        }
+        #logo-image { 
+            width: 80px; height: 80px; 
+            animation: spectral-float 6s infinite ease-in-out; 
+        }
+
+        /* BANNER SÍGUENOS (TERROR STYLE) */
         #follow-banner {
             position: absolute; bottom: 30px; left: 50%; 
             transform: translateX(-50%); z-index: 20;
             display: flex; flex-direction: column; align-items: center;
-            opacity: 0; pointer-events: none; transition: opacity 1s ease-in-out;
+            opacity: 0; pointer-events: none; 
+            transition: opacity 1s ease-in-out; /* Transición suave para el ciclo de 30s */
             text-shadow: 2px 2px 0px #000;
         }
+        
+        /* Clase para mostrar el banner (ciclo de 30s) */
         #follow-banner.show-banner { opacity: 1; }
 
         .social-icons { display: flex; gap: 15px; margin-bottom: 5px; filter: drop-shadow(0 0 5px var(--hud-red)); }
@@ -83,11 +121,6 @@
             64% { transform: skew(0deg); filter: blur(0); }
             100% { transform: skew(0deg); }
         }
-
-        /* LOGO FLOTANTE */
-        #logo-container { position: fixed; top: 20px; right: 20px; z-index: 50; pointer-events: none; transition: opacity 0.3s ease; }
-        #logo-image { width: 80px; height: 80px; animation: logo-float 6s infinite ease-in-out; filter: drop-shadow(0 0 5px var(--hud-cyan)); }
-        #logo-container.hiding { opacity: 0; transform: scale(0.8); }
 
         /* RENDIMIENTO */
         #floating-cam-stats {
@@ -423,6 +456,8 @@
         
         // Ciclo 30s
         setInterval(() => {
+            // Si la UI esta abierta (hiding), no mostramos el banner (respetamos ui-hiding)
+            // La clase .ui-hiding (water pop) tiene prioridad en CSS
             followBanner.classList.add('show-banner');
             setTimeout(() => followBanner.classList.remove('show-banner'), 8000);
         }, 30000);
@@ -434,12 +469,17 @@
     }
     function showControls() {
         uiVisible = true; filterControls.style.opacity = '1'; filterControls.style.pointerEvents = 'auto';
-        logoContainer.classList.add('hiding');
+        // APLICAR EFECTO WATER POP
+        logoContainer.classList.add('ui-hiding');
+        followBanner.classList.add('ui-hiding');
+        
         clearTimeout(hideTimeout); hideTimeout = setTimeout(hideControls, 5000);
     }
     function hideControls() {
         uiVisible = false; filterControls.style.opacity = '0'; filterControls.style.pointerEvents = 'none';
-        logoContainer.classList.remove('hiding');
+        // QUITAR EFECTO WATER POP
+        logoContainer.classList.remove('ui-hiding');
+        followBanner.classList.remove('ui-hiding');
     }
 
     // --- 3. CÁMARA ---
