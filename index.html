@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v11.9 FINAL</title> 
+    <title>DETECTOR-OBR v11.11 FINAL-ZOOM</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&family=Creepster&family=VT323&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- TensorFlow Dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
@@ -36,12 +37,10 @@
             background-color: #000; color: var(--hud-cyan);
             overflow: hidden; width: 100vw; height: 100vh; margin: 0;
             touch-action: none; /* CRUCIAL PARA EVITAR GESTOS DEL NAVEGADOR */
-            -webkit-user-select: none; /* Safari */
-            user-select: none; /* Standard */
-            -webkit-touch-callout: none; /* iOS Safari callout */
+            -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
         }
 
-        /* --- LAYOUT PRINCIPAL (GRID EN FORMA DE L) --- */
+        /* --- LAYOUT PRINCIPAL --- */
         #app-ui { 
             width: 100%; height: 100%; 
             display: grid;
@@ -51,17 +50,11 @@
                 "left cam"
                 "left bottom";
             transition: all 0.5s ease;
-            opacity: 0; /* Oculto al inicio para la carga */
-            pointer-events: none;
+            opacity: 0; pointer-events: none;
         }
 
-        /* ESTADO SIN HUD (PANTALLA COMPLETA V1) - ESTADO INICIAL */
-        body.panels-hidden #app-ui {
-            grid-template-columns: 0px 1fr;
-            grid-template-rows: 1fr 0px;
-        }
+        body.panels-hidden #app-ui { grid-template-columns: 0px 1fr; grid-template-rows: 1fr 0px; }
 
-        /* ÁREAS DE LA REJILLA */
         #left-panel { 
             grid-area: left; border-right: 2px solid var(--hud-cyan); 
             overflow: hidden; transition: all 0.5s ease;
@@ -74,16 +67,10 @@
             grid-area: cam; 
             position: relative; overflow: hidden; background: #000;
             width: 100%; height: 100%; 
-            /* Asegurar que no se pueda seleccionar nada aqui */
-            -webkit-user-select: none;
-            user-select: none;
-            -webkit-touch-callout: none;
+            touch-action: none;
         }
 
-        /* Cuando se ocultan, usamos display:none para liberar recursos y asegurar reflujo */
-        body.panels-hidden #left-panel, body.panels-hidden #bottom-panel {
-            display: none; 
-        }
+        body.panels-hidden #left-panel, body.panels-hidden #bottom-panel { display: none; }
 
         /* ESTILOS COMUNES DE PANELES */
         .panel-container {
@@ -108,7 +95,7 @@
         #zoom-container {
             width: 100%; height: 100%;
             transform-origin: center center;
-            transition: transform 0.2s ease-out; /* Suavizado para los saltos */
+            transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Suave */
             will-change: transform;
         }
 
@@ -171,20 +158,15 @@
             animation: logoGlitch 5s infinite alternate;
         }
         @keyframes logoGlitch {
-            0% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 5px var(--hud-cyan)) hue-rotate(0deg); }
-            90% { transform: scale(1.02) rotate(2deg); filter: drop-shadow(0 0 8px var(--hud-cyan)) hue-rotate(0deg); }
-            92% { transform: scale(1.1) skew(10deg); filter: drop-shadow(0 0 10px var(--hud-pink)) hue-rotate(90deg); }
-            94% { transform: scale(0.9) skew(-10deg); filter: drop-shadow(0 0 10px var(--hud-red)) hue-rotate(180deg); }
-            96% { transform: scale(1.02) rotate(-2deg); }
-            100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 5px var(--hud-cyan)); }
+            0% { transform: scale(1); }
+            92% { transform: scale(1.1) skew(10deg); }
+            94% { transform: scale(0.9) skew(-10deg); }
         }
         
         @keyframes horrorGlitch {
             0% { clip-path: inset(20% 0 80% 0); transform: translate(-2px, 1px); filter: hue-rotate(0deg) contrast(1.2); }
             20% { clip-path: inset(60% 0 10% 0); transform: translate(2px, -1px); filter: hue-rotate(90deg) contrast(2); }
-            40% { clip-path: inset(40% 0 50% 0); transform: translate(-2px, 2px); filter: hue-rotate(180deg) invert(0.1); }
             60% { clip-path: inset(80% 0 5% 0); transform: translate(2px, -2px); filter: hue-rotate(270deg); }
-            80% { clip-path: inset(10% 0 60% 0); transform: translate(-1px, 1px); }
             100% { clip-path: inset(30% 0 30% 0); transform: translate(1px, -1px); filter: hue-rotate(360deg); }
         }
 
@@ -212,7 +194,7 @@
         .social-icon { font-size: 2rem; color: #fff; transition: transform 0.2s; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- CONTENIDO PANELES --- */
+        /* --- CONTROLES --- */
         .section-title { 
             font-family: 'Orbitron'; font-size: 0.65rem; font-weight: 800; 
             color: var(--hud-cyan); text-transform: uppercase; letter-spacing: 1px; 
@@ -227,7 +209,7 @@
         }
         /* ESTILOS DEL LED */
         .voice-led { width: 12px; height: 12px; border-radius: 50%; background: #222; border: 1px solid #555; transition: 0.3s; box-shadow: 0 0 2px #000; }
-        /* APAGADO POR DEFECTO */
+        .voice-led.active { background: var(--hud-blue); box-shadow: 0 0 10px var(--hud-blue); } /* Azul: Encendido */
         .voice-led.listening { background: var(--hud-green); box-shadow: 0 0 15px var(--hud-green); } /* Verde: Escuchando */
         
         .sb-display-area {
@@ -287,10 +269,8 @@
             clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%);
         }
         .filter-btn.active { background: var(--hud-cyan); color: #000; box-shadow: 0 0 10px var(--hud-cyan); }
-        
-        /* BOTÓN HUD: Sin 'active' por defecto */
-        #btn-hud { background: rgba(0, 10, 20, 0.9); color: var(--hud-cyan); }
         #btn-hud.active { background: var(--hud-cyan); color: #000; }
+        #btn-hud { background: rgba(0, 10, 20, 0.9); color: var(--hud-cyan); }
 
         .ui-hiding { animation: waterPop 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important; pointer-events: none; }
         @keyframes waterPop { 0% { transform: scale(1); opacity: 1; blur(0); } 100% { transform: scale(2.5); opacity: 0; blur(10px); } }
@@ -298,29 +278,22 @@
         /* LOADING OVERLAY */
         #loading-overlay { 
             position: fixed; inset: 0; 
-            z-index: 99999; /* MAXIMO Z-INDEX */
+            z-index: 99999; 
             display: flex; flex-direction: column; justify-content: center; align-items: center; 
-            background-color: #000; /* Fallback */
-            background-image: url('fondo_pantalla.jpg');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
+            background-color: #000; background-image: url('fondo_pantalla.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat;
         }
         .horror-logo { width: 100px; margin-bottom: 20px; animation: horrorGlitch 0.3s infinite; filter: contrast(1.5) brightness(1.2); }
-        
         #loading-text-main { color: var(--hud-cyan); font-family: 'Orbitron'; letter-spacing: 2px; font-size: 1.2rem; text-shadow: 0 0 5px var(--hud-cyan); margin-bottom: 5px; }
         #loading-text-sub { color: #ccc; font-family: 'Share Tech Mono'; font-size: 0.8rem; letter-spacing: 1px; margin-bottom: 15px; height: 1rem; text-shadow: 1px 1px 2px #000; }
-        
         .loading-bar-container { width: 280px; background: rgba(0,0,0,0.5); height: 4px; border: 1px solid #333; position: relative; }
         #loading-bar { width: 0%; height: 100%; background: var(--hud-cyan); box-shadow: 0 0 10px var(--hud-cyan); transition: width 0.1s linear; }
         #loading-percent { color: var(--hud-cyan); font-family: 'VT323'; font-size: 1.2rem; margin-top: 5px; text-align: right; width: 280px; text-shadow: 1px 1px 2px #000; }
-        
         #enter-btn { display: none; padding: 15px 40px; border: 2px solid var(--hud-green); color: var(--hud-green); background: rgba(0,0,0,0.7); font-family: 'Orbitron'; font-size: 1.2rem; cursor: pointer; margin-top: 30px; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 0 15px var(--hud-green); }
-        /* Boton Glitch Horror */
         .btn-glitch { animation: btnGlitch 0.2s infinite; }
-        @keyframes btnGlitch {
-            0% { transform: translate(0,0); } 20% { transform: translate(-2px, 1px); filter: hue-rotate(90deg); } 40% { transform: translate(2px, -1px); } 60% { transform: translate(-1px, -1px); filter: invert(1); } 80% { transform: translate(1px, 1px); } 100% { transform: translate(0,0); }
-        }
+        @keyframes btnGlitch { 0% { transform: translate(0,0); } 20% { transform: translate(-2px, 1px); filter: hue-rotate(90deg); } 100% { transform: translate(0,0); } }
+
+        /* ZOOM MSG */
+        #zoom-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 5px; color: #fff; font-family: 'Share Tech Mono'; font-size: 0.8rem; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 40; }
 
         @media (max-width: 768px) {
             :root { --left-panel-w: 140px; --bottom-panel-h: 110px; }
@@ -400,6 +373,8 @@
             <div><span class="stats-val" id="cam-res">--x--</span></div>
             <div><span class="stats-val" id="zoom-lvl">1.0x</span></div>
         </div>
+        
+        <div id="zoom-msg">ZOOM x3.0</div>
 
         <div id="logo-container"><img id="logo-image" src="obr-logo.png"></div>
 
@@ -466,11 +441,13 @@
     let isRecognizing = false; 
     let scanSpeed = 1.0;
     let interferenceInterval;
+    let micMaxVol = 0; 
     
-    // Variables ZOOM
+    // VARIABLES DE ZOOM NUEVAS (LONG PRESS)
     let zoomLevel = 1;
-    let zoomTapCount = 0;
-    let zoomTapTimer = null;
+    let longPressTimer;
+    let isLongPressing = false;
+    let initialPinchDist = 0;
     const zoomContainer = document.getElementById('zoom-container');
     const mainView = document.getElementById('main-view-area');
 
@@ -497,7 +474,6 @@
         
         setupZoomEvents();
         startLoadingSequence();
-        // Cargar datos en segundo plano
         loadData();
     };
 
@@ -507,13 +483,11 @@
         const bar = document.getElementById('loading-bar');
         const perc = document.getElementById('loading-percent');
         const btn = document.getElementById('enter-btn');
-        const logo = document.getElementById('load-logo');
 
         loadInterval = setInterval(() => {
             loadProgress += Math.random() * 2; 
             if(loadProgress > 100) loadProgress = 100;
 
-            // Fases de Texto
             if(loadProgress > 30 && loadProgress < 60) {
                 txtMain.innerText = "ACTIVANDO SENSORES...";
                 txtSub.innerText = "CALIBRANDO GIROSCOPIO...";
@@ -526,10 +500,7 @@
                     txtSub.innerText = "ESPERANDO RED...";
                 }
             } else if(loadProgress >= 99) {
-                // CORRECCIÓN: Si falla la carga, forzamos el 100% de todas formas
-                if(!dataLoaded) {
-                     dataLoaded = true; // Force continue
-                }
+                if(!dataLoaded) dataLoaded = true; 
                 
                 clearInterval(loadInterval);
                 loadProgress = 100;
@@ -583,40 +554,103 @@
         }
     }
 
+    // --- SISTEMA ZOOM RENOVADO (Long Press) ---
     function setupZoomEvents() {
-        mainView.addEventListener('touchend', handleTapZoom);
-        mainView.addEventListener('click', handleTapZoom); 
+        // Touch (Prioridad Móvil)
+        mainView.addEventListener('touchstart', handleTouchStart, {passive: false});
+        mainView.addEventListener('touchmove', handleTouchMove, {passive: false});
+        mainView.addEventListener('touchend', handleTouchEnd);
+        
+        // Mouse (Fallback PC)
+        mainView.addEventListener('mousedown', handleMouseDown);
+        mainView.addEventListener('mouseup', handleMouseUp);
     }
 
-    function handleTapZoom(e) {
-        const now = new Date().getTime();
-        const timeSince = now - (window.lastTapTime || 0);
+    // --- TOUCH HANDLERS ---
+    function handleTouchStart(e) {
+        if (e.touches.length === 1) {
+            // Iniciar Long Press Timer
+            isLongPressing = false;
+            const t = e.touches[0];
+            longPressTimer = setTimeout(() => {
+                triggerLongPressZoom(t.clientX, t.clientY);
+            }, 500); // 500ms para activar
+        } else if (e.touches.length === 2) {
+            // Pinch Zoom
+            clearTimeout(longPressTimer);
+            initialPinchDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+        }
+    }
+
+    function handleTouchMove(e) {
+        if (e.touches.length === 1) {
+            // Si se mueve, cancelamos long press (es un swipe)
+            clearTimeout(longPressTimer);
+        } else if (e.touches.length === 2) {
+            e.preventDefault(); 
+            clearTimeout(longPressTimer);
+            const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+            if (initialPinchDist > 0) {
+                const delta = dist - initialPinchDist;
+                zoomLevel += delta * 0.01; 
+                zoomLevel = Math.min(Math.max(1, zoomLevel), 5);
+                applyZoom();
+                initialPinchDist = dist;
+            }
+        }
+    }
+
+    function handleTouchEnd(e) {
+        clearTimeout(longPressTimer);
+        if (!isLongPressing) {
+            // Fue un toque corto (TAP) -> Resetear
+            zoomLevel = 1.0;
+            zoomContainer.style.transformOrigin = "center center";
+            applyZoom();
+        }
+        // Si fue long press, el zoom ya se aplicó en el timer y se queda ahí.
+        // Reseteamos bandera para el siguiente toque.
+        isLongPressing = false; 
+    }
+
+    // --- MOUSE HANDLERS (PC) ---
+    function handleMouseDown(e) {
+        isLongPressing = false;
+        longPressTimer = setTimeout(() => { triggerLongPressZoom(e.clientX, e.clientY); }, 500);
+    }
+    function handleMouseUp(e) {
+        clearTimeout(longPressTimer);
+        if (!isLongPressing) {
+            zoomLevel = 1.0; zoomContainer.style.transformOrigin = "center center"; applyZoom();
+        }
+        isLongPressing = false;
+    }
+
+    // --- LOGICA ZOOM ---
+    function triggerLongPressZoom(x, y) {
+        isLongPressing = true;
+        const rect = mainView.getBoundingClientRect();
+        const relX = x - rect.left;
+        const relY = y - rect.top;
+
+        // Lógica de Estado: 
+        // Si estamos en 1x -> Vamos a 3x
+        // Si ya estamos en >= 3x -> Vamos a Max (5x)
         
-        let clientX, clientY;
-        if (e.changedTouches && e.changedTouches.length > 0) {
-            clientX = e.changedTouches[0].clientX;
-            clientY = e.changedTouches[0].clientY;
+        if (zoomLevel < 2.5) {
+            zoomLevel = 3.0;
         } else {
-            clientX = e.clientX;
-            clientY = e.clientY;
+            zoomLevel = 5.0;
         }
 
-        if (timeSince < 300 && timeSince > 0) zoomTapCount++; else zoomTapCount = 1;
-        window.lastTapTime = now;
-
-        clearTimeout(zoomTapTimer);
-        zoomTapTimer = setTimeout(() => {
-            const rect = mainView.getBoundingClientRect();
-            const x = clientX - rect.left;
-            const y = clientY - rect.top;
-
-            if (zoomTapCount === 1) { zoomLevel = 1.0; zoomContainer.style.transformOrigin = "center center"; } 
-            else if (zoomTapCount === 2) { zoomLevel = 3.0; zoomContainer.style.transformOrigin = `${x}px ${y}px`; } 
-            else if (zoomTapCount >= 3) { zoomLevel = 5.0; zoomContainer.style.transformOrigin = `${x}px ${y}px`; }
-            
-            applyZoom();
-            zoomTapCount = 0; 
-        }, 300); 
+        zoomContainer.style.transformOrigin = `${relX}px ${relY}px`;
+        applyZoom();
+        
+        // Mensaje Visual
+        const msg = document.getElementById('zoom-msg');
+        msg.innerText = zoomLevel >= 5 ? "ZOOM MAX" : "ZOOM x3.0";
+        msg.style.opacity = 1;
+        setTimeout(() => msg.style.opacity = 0, 1000);
     }
 
     function applyZoom() {
@@ -626,8 +660,12 @@
 
     async function enterApp(){
         document.getElementById('loading-overlay').style.display='none';
+        
+        // MOSTRAR UI (Quitar opacidad)
         document.getElementById('app-ui').style.opacity = 1;
         document.getElementById('app-ui').style.pointerEvents = 'auto';
+        
+        // INICIAR CON HUD OCULTO (YA ESTÁ EN BODY, PERO ASEGURAMOS)
         document.body.classList.add('panels-hidden');
         
         audioCtx = new (window.AudioContext||window.webkitAudioContext)();
@@ -780,10 +818,11 @@
     function toggleSpirit(){
         isSpiritOn = !isSpiritOn;
         const btn = document.getElementById('btn-pwr');
-        const status = document.getElementById('sb-status');
+        const led = document.getElementById('voice-led');
         if(isSpiritOn){
             btn.innerText="APAGAR"; btn.classList.add('pwr-on');
-            status.innerText = "INICIANDO...";
+            document.getElementById('sb-status').innerText = "INICIANDO...";
+            led.classList.add('active'); 
             
             if(audioCtx.state==='suspended') audioCtx.resume();
             
@@ -796,14 +835,14 @@
             startListeningCycle();
         }else{
             btn.innerText="ENCENDER"; btn.classList.remove('pwr-on');
-            status.innerText = "APAGADO";
-            // Apagar LED al apagar Spirit Box
-            document.getElementById('voice-led').classList.remove('listening');
+            document.getElementById('sb-status').innerText = "APAGADO";
+            led.className = 'voice-led';
             
             if(bgNode) { bgNode.stop(); bgNode = null; }
             if(noiseNode) { noiseNode.stop(); noiseNode = null; }
             if(interferenceInterval) clearInterval(interferenceInterval);
             if(window.speechSynthesis) window.speechSynthesis.cancel();
+            document.getElementById('voice-led').classList.remove('listening');
             if(recognition) recognition.stop();
         }
     }
@@ -828,41 +867,43 @@
     function startListeningCycle(){
         if(!isSpiritOn) return;
         if(isRecognizing) return;
-        
-        // LED VERDE = ESCUCHANDO
-        document.getElementById('voice-led').classList.add('listening');
+        document.getElementById('sb-status').innerText = "SINTONIZANDO...";
         
         if(!recognition) {
             const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
             if(SR) {
                 recognition = new SR(); recognition.lang='es-MX'; recognition.continuous=false;
-                recognition.onstart = () => { isRecognizing = true; };
+                recognition.onstart = () => { 
+                    isRecognizing = true; 
+                    document.getElementById('voice-led').classList.add('listening');
+                };
                 recognition.onend = () => { 
                     isRecognizing = false; 
-                    // LED APAGADO = NO ESCUCHANDO (PROCESANDO)
                     document.getElementById('voice-led').classList.remove('listening');
-                    if(isSpiritOn && !window.speechSynthesis.speaking) setTimeout(startListeningCycle, 1500); // Pausa 1.5s antes de volver a escuchar
+                    
+                    if(isSpiritOn && micMaxVol > 30 && !window.speechSynthesis.speaking) {
+                         processVoiceCommand("NOISE_TRIGGER");
+                    } else if(isSpiritOn && !window.speechSynthesis.speaking) {
+                         setTimeout(startListeningCycle, 500); 
+                    }
                 };
                 recognition.onresult = (e) => { processVoiceCommand(e.results[0][0].transcript.toLowerCase().trim()); };
-                recognition.onerror = () => { 
-                    isRecognizing = false; 
-                    document.getElementById('voice-led').classList.remove('listening');
-                    if(isSpiritOn) setTimeout(startListeningCycle, 1000); 
-                };
+                recognition.onerror = () => { isRecognizing = false; if(isSpiritOn) setTimeout(startListeningCycle, 1000); };
             }
         }
         try{ recognition.start(); }catch(e){}
     }
     
     function processVoiceCommand(txt){
-        // LED ya apagado en onend, pero aseguramos
         document.getElementById('voice-led').classList.remove('listening');
         document.getElementById('sb-status').innerText = "PROCESANDO...";
         let response = null;
-        for (let [key, value] of progData) { if (txt.includes(key)) { response = value; break; } }
-        if (!response) response = autoData[Math.floor(Math.random()*autoData.length)];
         
-        // Respuesta en 1.5s (reducido de 4s)
+        if(txt !== "NOISE_TRIGGER") {
+            for (let [key, value] of progData) { if (txt.includes(key)) { response = value; break; } }
+        }
+        
+        if (!response) response = autoData[Math.floor(Math.random()*autoData.length)];
         setTimeout(() => speak(response), 1500); 
     }
     
@@ -885,6 +926,7 @@
         interferenceInterval = setInterval(() => {
             if(!bgGain) return;
             const randomSpike = 0.05 + (Math.random() * 0.1); 
+            
             bgGain.gain.cancelScheduledValues(audioCtx.currentTime);
             bgGain.gain.setValueAtTime(randomSpike, audioCtx.currentTime);
             bgGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 0.1);
@@ -922,9 +964,12 @@
             document.getElementById('temp-display').innerText = (18+Math.random()*3).toFixed(1);
         }
         
+        // FIXED SLS LOOP
         if(currentFilter==='sls'){
             ctxSLS.clearRect(0,0,canvasSLS.width,canvasSLS.height);
-            if (latestPoses.length > 0) drawSLS(latestPoses);
+            if (latestPoses && latestPoses.length > 0) {
+                drawSLS(latestPoses);
+            }
         }
         
         drawMatrix();
@@ -932,6 +977,13 @@
         if(analyser){
             const data = new Uint8Array(analyser.frequencyBinCount);
             analyser.getByteFrequencyData(data);
+            
+            if(isRecognizing) {
+                let sum = 0; for(let i=0; i<data.length; i++) sum+=data[i];
+                let avg = sum / data.length;
+                if(avg > micMaxVol) micMaxVol = avg;
+            }
+            
             for(let i=0; i<20; i++){
                 let val = (data[i] || 0);
                 let bar = energyBars[i];
@@ -966,11 +1018,22 @@
     async function initMoveNet() {
         await tf.ready();
         const detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING });
-        setInterval(async () => { 
-            if(currentFilter==='sls' && vid.readyState===4) {
-                try { latestPoses = await detector.estimatePoses(vid); } catch(e) { latestPoses = []; }
-            } else { latestPoses = []; }
-        }, 100);
+        
+        // Bucle de detección independiente
+        const detectLoop = async () => {
+             if(currentFilter==='sls' && vid.readyState===4) {
+                try { 
+                    latestPoses = await detector.estimatePoses(vid); 
+                } catch(e) { 
+                    latestPoses = []; 
+                }
+             } else {
+                 latestPoses = [];
+             }
+             // Siguiente frame
+             requestAnimationFrame(detectLoop);
+        };
+        detectLoop();
     }
     const conns = [['left_shoulder','right_shoulder'],['left_shoulder','left_hip'],['right_shoulder','right_hip'],['left_hip','right_hip'],['left_shoulder','left_elbow'],['left_elbow','left_wrist'],['right_shoulder','right_elbow'],['right_elbow','right_wrist'],['left_hip','left_knee'],['left_knee','left_ankle'],['right_hip','right_knee'],['right_knee','right_ankle']];
     function drawSLS(poses) {
