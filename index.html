@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v11.8 TAP-ZOOM</title> 
+    <title>DETECTOR-OBR v11.9 FINAL</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&family=Creepster&family=VT323&display=swap" rel="stylesheet">
@@ -227,7 +227,7 @@
         }
         /* ESTILOS DEL LED */
         .voice-led { width: 12px; height: 12px; border-radius: 50%; background: #222; border: 1px solid #555; transition: 0.3s; box-shadow: 0 0 2px #000; }
-        .voice-led.active { background: var(--hud-blue); box-shadow: 0 0 10px var(--hud-blue); } /* Azul: Encendido */
+        /* APAGADO POR DEFECTO */
         .voice-led.listening { background: var(--hud-green); box-shadow: 0 0 15px var(--hud-green); } /* Verde: Escuchando */
         
         .sb-display-area {
@@ -322,8 +322,6 @@
             0% { transform: translate(0,0); } 20% { transform: translate(-2px, 1px); filter: hue-rotate(90deg); } 40% { transform: translate(2px, -1px); } 60% { transform: translate(-1px, -1px); filter: invert(1); } 80% { transform: translate(1px, 1px); } 100% { transform: translate(0,0); }
         }
 
-        #zoom-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 5px; color: #fff; font-family: 'Share Tech Mono'; font-size: 0.8rem; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 40; }
-
         @media (max-width: 768px) {
             :root { --left-panel-w: 140px; --bottom-panel-h: 110px; }
             .digital-display { font-size: 1.5rem; }
@@ -336,7 +334,7 @@
         }
     </style>
 </head>
-<body class="panels-hidden"> <!-- INICIA OCULTO -->
+<body class="panels-hidden"> 
 
 <!-- LOADING SCREEN -->
 <div id="loading-overlay">
@@ -402,8 +400,6 @@
             <div><span class="stats-val" id="cam-res">--x--</span></div>
             <div><span class="stats-val" id="zoom-lvl">1.0x</span></div>
         </div>
-        
-        <div id="zoom-msg">ZOOM x3.0</div>
 
         <div id="logo-container"><img id="logo-image" src="obr-logo.png"></div>
 
@@ -514,7 +510,7 @@
         const logo = document.getElementById('load-logo');
 
         loadInterval = setInterval(() => {
-            loadProgress += Math.random() * 2; // Random speed
+            loadProgress += Math.random() * 2; 
             if(loadProgress > 100) loadProgress = 100;
 
             // Fases de Texto
@@ -530,14 +526,16 @@
                     txtSub.innerText = "ESPERANDO RED...";
                 }
             } else if(loadProgress >= 99) {
-                // Esperar a datos si no han llegado
-                if(!dataLoaded && loadProgress < 100) return; 
+                // CORRECCIÓN: Si falla la carga, forzamos el 100% de todas formas
+                if(!dataLoaded) {
+                     dataLoaded = true; // Force continue
+                }
                 
                 clearInterval(loadInterval);
                 loadProgress = 100;
                 txtMain.innerText = "LISTO...";
                 
-                if(dataLoaded) {
+                if(dataStats.prog > 0) {
                      txtSub.innerText = "SISTEMA ONLINE";
                 } else {
                      txtSub.innerText = "FALLO CRÍTICO EN SENSORES";
@@ -555,7 +553,6 @@
     }
 
     function initMatrix() {
-        // Ajustar al padre
         const pSection = matrixCanvas.parentElement;
         if(!pSection) return;
         matrixCanvas.width = pSection.clientWidth;
@@ -572,14 +569,12 @@
         
         for(let i = 0; i < matrixDrops.length; i++) {
             let text = String.fromCharCode(65 + Math.floor(Math.random() * 26)); 
-            
             if (Math.random() > 0.99 && autoData.length > 0) {
                 text = autoData[Math.floor(Math.random() * autoData.length)].toUpperCase(); 
                 mCtx.fillStyle = '#ff0055'; 
             } else {
                 mCtx.fillStyle = '#00f3ff';
             }
-            
             const x = i * 15;
             const y = matrixCanvas.height - (matrixDrops[i] * 15);
             mCtx.fillText(text, x, y);
@@ -589,20 +584,14 @@
     }
 
     function setupZoomEvents() {
-        // Eliminar eventos previos si los hubiera para evitar duplicados
-        // Usar una logica simplificada basada en "touchend"
         mainView.addEventListener('touchend', handleTapZoom);
-        mainView.addEventListener('click', handleTapZoom); // Para pruebas PC
+        mainView.addEventListener('click', handleTapZoom); 
     }
 
     function handleTapZoom(e) {
-        // Prevenir comportamiento default si es necesario
-        // e.preventDefault(); 
-        
         const now = new Date().getTime();
         const timeSince = now - (window.lastTapTime || 0);
         
-        // Detectar coordenadas del toque
         let clientX, clientY;
         if (e.changedTouches && e.changedTouches.length > 0) {
             clientX = e.changedTouches[0].clientX;
@@ -612,66 +601,33 @@
             clientY = e.clientY;
         }
 
-        if (timeSince < 300 && timeSince > 0) {
-            // Doble tap detectado (o triple en camino)
-            zoomTapCount++;
-        } else {
-            // Nuevo set de taps
-            zoomTapCount = 1;
-        }
-        
+        if (timeSince < 300 && timeSince > 0) zoomTapCount++; else zoomTapCount = 1;
         window.lastTapTime = now;
 
-        // Usar timer para esperar a ver si hay mas taps
         clearTimeout(zoomTapTimer);
-        
         zoomTapTimer = setTimeout(() => {
             const rect = mainView.getBoundingClientRect();
             const x = clientX - rect.left;
             const y = clientY - rect.top;
 
-            if (zoomTapCount === 1) {
-                // 1 Tap: Reset
-                zoomLevel = 1.0;
-                zoomContainer.style.transformOrigin = "center center";
-            } else if (zoomTapCount === 2) {
-                // 2 Taps: Zoom x3 en el punto
-                zoomLevel = 3.0;
-                zoomContainer.style.transformOrigin = `${x}px ${y}px`;
-            } else if (zoomTapCount >= 3) {
-                // 3 Taps: Zoom x5 en el punto
-                zoomLevel = 5.0;
-                zoomContainer.style.transformOrigin = `${x}px ${y}px`;
-            }
+            if (zoomTapCount === 1) { zoomLevel = 1.0; zoomContainer.style.transformOrigin = "center center"; } 
+            else if (zoomTapCount === 2) { zoomLevel = 3.0; zoomContainer.style.transformOrigin = `${x}px ${y}px`; } 
+            else if (zoomTapCount >= 3) { zoomLevel = 5.0; zoomContainer.style.transformOrigin = `${x}px ${y}px`; }
             
             applyZoom();
-            zoomTapCount = 0; // Reset contador
-        }, 300); // Esperar 300ms para confirmar intencion
+            zoomTapCount = 0; 
+        }, 300); 
     }
 
     function applyZoom() {
         zoomContainer.style.transform = `scale(${zoomLevel})`;
         document.getElementById('zoom-lvl').innerText = zoomLevel.toFixed(1) + "x";
-        
-        // Mensaje Visual
-        const msg = document.getElementById('zoom-msg');
-        if (zoomLevel > 1) {
-            msg.innerText = `ZOOM x${zoomLevel.toFixed(1)}`;
-            msg.style.opacity = 1;
-            setTimeout(() => msg.style.opacity = 0, 1000);
-        } else {
-            msg.style.opacity = 0;
-        }
     }
 
     async function enterApp(){
         document.getElementById('loading-overlay').style.display='none';
-        
-        // MOSTRAR UI (Quitar opacidad)
         document.getElementById('app-ui').style.opacity = 1;
         document.getElementById('app-ui').style.pointerEvents = 'auto';
-        
-        // INICIAR CON HUD OCULTO (YA ESTÁ EN BODY, PERO ASEGURAMOS)
         document.body.classList.add('panels-hidden');
         
         audioCtx = new (window.AudioContext||window.webkitAudioContext)();
@@ -824,11 +780,10 @@
     function toggleSpirit(){
         isSpiritOn = !isSpiritOn;
         const btn = document.getElementById('btn-pwr');
-        const led = document.getElementById('voice-led');
+        const status = document.getElementById('sb-status');
         if(isSpiritOn){
             btn.innerText="APAGAR"; btn.classList.add('pwr-on');
-            document.getElementById('sb-status').innerText = "INICIANDO...";
-            led.classList.add('active'); 
+            status.innerText = "INICIANDO...";
             
             if(audioCtx.state==='suspended') audioCtx.resume();
             
@@ -841,14 +796,14 @@
             startListeningCycle();
         }else{
             btn.innerText="ENCENDER"; btn.classList.remove('pwr-on');
-            document.getElementById('sb-status').innerText = "APAGADO";
-            led.className = 'voice-led';
+            status.innerText = "APAGADO";
+            // Apagar LED al apagar Spirit Box
+            document.getElementById('voice-led').classList.remove('listening');
             
             if(bgNode) { bgNode.stop(); bgNode = null; }
             if(noiseNode) { noiseNode.stop(); noiseNode = null; }
             if(interferenceInterval) clearInterval(interferenceInterval);
             if(window.speechSynthesis) window.speechSynthesis.cancel();
-            document.getElementById('voice-led').classList.remove('listening');
             if(recognition) recognition.stop();
         }
     }
@@ -873,35 +828,42 @@
     function startListeningCycle(){
         if(!isSpiritOn) return;
         if(isRecognizing) return;
-        document.getElementById('sb-status').innerText = "SINTONIZANDO...";
+        
+        // LED VERDE = ESCUCHANDO
+        document.getElementById('voice-led').classList.add('listening');
         
         if(!recognition) {
             const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
             if(SR) {
                 recognition = new SR(); recognition.lang='es-MX'; recognition.continuous=false;
-                recognition.onstart = () => { 
-                    isRecognizing = true; 
-                    document.getElementById('voice-led').classList.add('listening');
-                };
+                recognition.onstart = () => { isRecognizing = true; };
                 recognition.onend = () => { 
                     isRecognizing = false; 
+                    // LED APAGADO = NO ESCUCHANDO (PROCESANDO)
                     document.getElementById('voice-led').classList.remove('listening');
-                    if(isSpiritOn && !window.speechSynthesis.speaking) setTimeout(startListeningCycle, 500); 
+                    if(isSpiritOn && !window.speechSynthesis.speaking) setTimeout(startListeningCycle, 1500); // Pausa 1.5s antes de volver a escuchar
                 };
                 recognition.onresult = (e) => { processVoiceCommand(e.results[0][0].transcript.toLowerCase().trim()); };
-                recognition.onerror = () => { isRecognizing = false; if(isSpiritOn) setTimeout(startListeningCycle, 1000); };
+                recognition.onerror = () => { 
+                    isRecognizing = false; 
+                    document.getElementById('voice-led').classList.remove('listening');
+                    if(isSpiritOn) setTimeout(startListeningCycle, 1000); 
+                };
             }
         }
         try{ recognition.start(); }catch(e){}
     }
     
     function processVoiceCommand(txt){
+        // LED ya apagado en onend, pero aseguramos
         document.getElementById('voice-led').classList.remove('listening');
         document.getElementById('sb-status').innerText = "PROCESANDO...";
         let response = null;
         for (let [key, value] of progData) { if (txt.includes(key)) { response = value; break; } }
         if (!response) response = autoData[Math.floor(Math.random()*autoData.length)];
-        setTimeout(() => speak(response), 4000); 
+        
+        // Respuesta en 1.5s (reducido de 4s)
+        setTimeout(() => speak(response), 1500); 
     }
     
     function speak(txt){
@@ -923,7 +885,6 @@
         interferenceInterval = setInterval(() => {
             if(!bgGain) return;
             const randomSpike = 0.05 + (Math.random() * 0.1); 
-            
             bgGain.gain.cancelScheduledValues(audioCtx.currentTime);
             bgGain.gain.setValueAtTime(randomSpike, audioCtx.currentTime);
             bgGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 0.1);
