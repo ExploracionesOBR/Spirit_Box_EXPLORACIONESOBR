@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v7.5 FIXED</title> 
+    <title>DETECTOR-OBR v10.2 LUM-MODE</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&family=Creepster&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&family=Creepster&family=VT323&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
@@ -23,358 +24,363 @@
             --hud-orange: #ffae00;
             --hud-red: #ff3333;
             --hud-blue: #0088ff;
-            --glass-panel: rgba(6, 10, 20, 0.95);
-            --panel-w: 340px; 
-            --panel-h: 130px;
+            --glass-panel: rgba(5, 8, 15, 0.95);
+            
+            /* Dimensiones Base */
+            --left-panel-w: 280px;
+            --bottom-panel-h: 160px;
         }
 
         body {
             font-family: 'Share Tech Mono', monospace;
-            background-color: var(--hud-bg); color: var(--hud-cyan);
+            background-color: #000; color: var(--hud-cyan);
             overflow: hidden; width: 100vw; height: 100vh; margin: 0;
-            background-image: radial-gradient(circle at center, #0a0a15 0%, #000 100%);
         }
 
-        #app-ui { width: 100%; height: 100%; position: relative; touch-action: none; }
-
-        /* --- CÁMARA Y LAYOUT --- */
-        #main-view-area {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            overflow: hidden; z-index: 5; background: #000; 
-            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        /* --- LAYOUT PRINCIPAL (GRID EN FORMA DE L) --- */
+        #app-ui { 
+            width: 100%; height: 100%; 
+            display: grid;
+            grid-template-columns: var(--left-panel-w) 1fr; 
+            grid-template-rows: 1fr var(--bottom-panel-h);
+            grid-template-areas: 
+                "left cam"
+                "left bottom";
+            transition: all 0.5s ease;
         }
+
+        /* ESTADO SIN HUD (PANTALLA COMPLETA V1) */
+        body.panels-hidden #app-ui {
+            grid-template-columns: 0px 1fr;
+            grid-template-rows: 1fr 0px;
+        }
+
+        /* ÁREAS DE LA REJILLA */
+        #left-panel { 
+            grid-area: left; border-right: 2px solid var(--hud-cyan); 
+            overflow: hidden; transition: all 0.5s ease;
+        }
+        #bottom-panel { 
+            grid-area: bottom; border-top: 2px solid var(--hud-cyan); 
+            overflow: hidden; transition: all 0.5s ease;
+        }
+        #main-view-area { 
+            grid-area: cam; 
+            position: relative; overflow: hidden; background: #000;
+            width: 100%; height: 100%; 
+        }
+
+        /* Cuando se ocultan, usamos display:none para liberar recursos */
+        body.panels-hidden #left-panel, body.panels-hidden #bottom-panel {
+            display: none; 
+        }
+
+        /* ESTILOS COMUNES DE PANELES */
+        .panel-container {
+            background-color: var(--glass-panel);
+            box-shadow: inset 0 0 20px rgba(0, 243, 255, 0.1);
+            padding: 10px;
+            display: flex; flex-direction: column;
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+            z-index: 20;
+        }
+
+        /* --- CÁMARA --- */
         #bg-camera-feed {
-            position: absolute; top: 50%; left: 50%;
-            min-width: 100%; min-height: 100%; width: auto; height: auto;
-            object-fit: cover; transform: translate(-50%, -50%); z-index: 1; opacity: 0.9;
+            width: 100%; height: 100%; object-fit: cover;
+            transition: filter 0.3s ease;
         }
+        #main-filter-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 
-        /* --- INDICADOR REC (ANIDADO) --- */
-        #rec-indicator {
-            position: absolute; /* Anidado a la cámara */
-            top: 20px; left: 20px; z-index: 50;
-            display: flex; align-items: center; gap: 8px;
-            font-family: 'Orbitron'; font-weight: 700; letter-spacing: 2px;
-            color: var(--hud-red); text-shadow: 0 0 5px var(--hud-red);
-            pointer-events: none;
+        /* REC INDICATOR */
+        .rec-container {
+            position: absolute; top: 15px; left: 15px; 
+            color: var(--hud-red); font-family: 'Orbitron'; font-weight: bold; 
+            display: flex; align-items: center; gap: 8px; z-index: 10;
+            text-shadow: 0 0 5px var(--hud-red); font-size: 0.8rem;
         }
-        .rec-icon {
-            width: 12px; height: 12px; border-radius: 50%;
-            background: var(--hud-red); position: relative;
-            box-shadow: 0 0 5px var(--hud-red);
-        }
-        .rec-icon::after {
-            content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 100%; height: 100%; border-radius: 50%;
-            border: 1px solid var(--hud-red); animation: recWave 1.5s infinite;
-        }
-        @keyframes recWave { 0% { width: 100%; height: 100%; opacity: 1; } 100% { width: 250%; height: 250%; opacity: 0; } }
-        #rec-text { font-size: 0.8rem; animation: blinkText 2s infinite; }
-        @keyframes blinkText { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .rec-dot { width: 10px; height: 10px; background: var(--hud-red); border-radius: 50%; animation: blinkRed 1s infinite; }
+        @keyframes blinkRed { 50% { opacity: 0.3; } }
 
-        /* FILTROS */
-        body.filter-night-vision #bg-camera-feed { 
-            filter: grayscale(100%) sepia(100%) hue-rotate(90deg) brightness(0.8) contrast(1.4) saturate(200%); 
-        }
-        body.filter-night-vision #main-view-area::after {
-            content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
-            background: radial-gradient(circle, transparent 50%, #000 100%);
-        }
+        /* FILTROS CSS */
+        body.filter-night-vision #bg-camera-feed { filter: grayscale(100%) sepia(100%) hue-rotate(90deg) brightness(0.9) contrast(1.2) saturate(150%); }
         body.filter-negative #bg-camera-feed { filter: invert(1) hue-rotate(180deg); }
         
-        #main-filter-canvas, #gl-bluewave { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
-        body.filter-sls #main-filter-canvas { display: block; z-index: 3; }
-        body.filter-spectral #gl-bluewave { display: block; z-index: 4; mix-blend-mode: screen; }
+        /* NUEVO FILTRO LUM (Low Light) */
+        body.filter-lum #bg-camera-feed { 
+            filter: grayscale(100%) brightness(250%) contrast(140%); 
+        }
+        
+        body.filter-sls #main-filter-canvas { display: block; }
 
-        /* LOGO PEQUEÑO */
-        #logo-container { position: fixed; top: 15px; right: 15px; z-index: 50; pointer-events: none; transition: opacity 0.3s; }
-        #logo-image { width: 55px; height: 55px; filter: drop-shadow(0 0 5px var(--hud-cyan)); animation: float 4s infinite; }
+        /* LOGO CON EFECTOS */
+        #logo-container { position: absolute; top: 15px; right: 15px; z-index: 50; pointer-events: none; }
+        #logo-image { 
+            width: 60px; height: 60px; 
+            filter: drop-shadow(0 0 5px var(--hud-cyan));
+            animation: logoGlitch 5s infinite alternate;
+        }
+        @keyframes logoGlitch {
+            0% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 5px var(--hud-cyan)) hue-rotate(0deg); }
+            90% { transform: scale(1.02) rotate(2deg); filter: drop-shadow(0 0 8px var(--hud-cyan)) hue-rotate(0deg); }
+            92% { transform: scale(1.1) skew(10deg); filter: drop-shadow(0 0 10px var(--hud-pink)) hue-rotate(90deg); }
+            94% { transform: scale(0.9) skew(-10deg); filter: drop-shadow(0 0 10px var(--hud-red)) hue-rotate(180deg); }
+            96% { transform: scale(1.02) rotate(-2deg); }
+            100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 5px var(--hud-cyan)); }
+        }
 
-        /* BANNER SÍGUENOS (DISEÑO ANTERIOR RESTAURADO) */
+        /* BANNER SÍGUENOS (SIN FONDO) */
         #follow-banner {
-            position: absolute; bottom: 30px; left: 50%; 
-            transform: translateX(-50%); z-index: 20;
-            display: flex; flex-direction: column; align-items: center;
-            opacity: 0; pointer-events: none; transition: opacity 1s;
+            position: absolute; bottom: 20px; left: 0; right: 0;
+            display: flex; justify-content: center; pointer-events: none;
+            opacity: 0; transition: opacity 1s; z-index: 30;
         }
-        #follow-banner.show { opacity: 1; }
+        #follow-banner.active { opacity: 1; }
         
-        /* Iconos en Horizontal */
-        .social-icons { 
-            display: flex; flex-direction: row; gap: 20px; 
-            margin-bottom: 5px; filter: drop-shadow(0 0 5px var(--hud-red));
+        .banner-content {
+            background: transparent; padding: 0; border: none;
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+            text-shadow: 0 0 5px #000; 
         }
-        .social-icons svg { width: 20px; height: 20px; fill: #fff; }
         
-        .follow-text { 
-            font-family: 'Creepster'; font-size: 1.2rem; color: #ff0000; 
-            text-shadow: 2px 2px 0 #000; letter-spacing: 2px; 
-            animation: glitch 2s infinite; 
-        }
-        @keyframes glitch { 0%{transform:skew(0);} 20%{transform:skew(-5deg);} 22%{transform:skew(5deg);} 100%{transform:skew(0);} }
+        /* Animación de etapas */
+        .seq-step { display: none; animation: fadeIn 0.5s; text-align: center; }
+        .seq-step.active { display: block; }
+        
+        #step-1 { font-family: 'Orbitron'; color: #fff; letter-spacing: 2px; font-weight: bold; text-shadow: 0 0 10px var(--hud-cyan); }
+        #step-2 { gap: 20px; display: none; filter: drop-shadow(0 0 5px #000); } 
+        #step-3 { font-family: 'Creepster'; color: var(--hud-red); letter-spacing: 2px; font-size: 1.5rem; text-shadow: 2px 2px 0 #000; }
+        
+        .social-icon { font-size: 2rem; color: #fff; transition: transform 0.2s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-
-        /* --- PANELES --- */
-        #left-panel, #bottom-panel {
-            position: fixed; display: flex; flex-direction: column;
-            z-index: 20; pointer-events: none; 
-            transition: transform 0.4s ease;
-            background-color: var(--glass-panel); 
-            border: 1px solid rgba(0, 243, 255, 0.2);
-            box-shadow: 0 0 0 1px #000;
-        }
-        body.panels-active #left-panel, body.panels-active #bottom-panel { transform: translate(0, 0); pointer-events: auto; }
-
-        .panel { padding: 8px; display: flex; flex-direction: column; gap: 5px; height: 100%; box-sizing: border-box; }
-        .panel-section { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255,255,255,0.05); padding: 5px; margin-bottom: 2px; }
+        /* --- CONTENIDO PANELES --- */
         .section-title { 
-            font-family: 'Orbitron'; font-size: 0.6rem; font-weight: 800; 
+            font-family: 'Orbitron'; font-size: 0.65rem; font-weight: 800; 
             color: var(--hud-cyan); text-transform: uppercase; letter-spacing: 1px; 
-            margin-bottom: 4px; border-bottom: 1px solid rgba(0, 243, 255, 0.2); 
+            margin-bottom: 5px; border-bottom: 1px solid rgba(0, 243, 255, 0.3); 
+            display: flex; justify-content: space-between; align-items: center;
+            padding-bottom: 2px;
         }
-
-        /* SENSORES */
-        .sensor-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.6rem; padding: 2px; }
-        .sensor-led { width: 6px; height: 6px; border-radius: 50%; margin-right: 6px; background: #333; transition: 0.3s; }
-        .led-green { background: var(--hud-green); box-shadow: 0 0 6px var(--hud-green); }
-        .led-blue { background: var(--hud-blue); box-shadow: 0 0 6px var(--hud-blue); }
-        .led-orange { background: var(--hud-orange); box-shadow: 0 0 6px var(--hud-orange); }
-        .led-red { background: var(--hud-red); }
 
         /* SPIRIT BOX */
         #spirit-box-section {
-            border: 1px solid var(--hud-green);
-            background: rgba(0, 20, 0, 0.3); 
-            box-shadow: inset 0 0 20px rgba(0, 255, 65, 0.1);
-            padding: 8px;
+            border: 1px solid var(--hud-green); background: rgba(0, 15, 5, 0.5); padding: 8px; border-radius: 4px; margin-bottom: 10px; display: flex; flex-direction: column;
         }
-        .spirit-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .voice-led { width: 10px; height: 10px; border-radius: 50%; background: #222; border: 1px solid #555; }
+        .voice-led.listening { background: var(--hud-green); box-shadow: 0 0 8px var(--hud-green); }
         
-        .voice-led { width: 12px; height: 12px; border-radius: 50%; background: #111; border: 1px solid #444; transition: 0.1s; }
-        .voice-led.listening { background: var(--hud-green); box-shadow: 0 0 15px var(--hud-green), inset 0 0 5px #fff; animation: pulseGreen 0.5s infinite; }
-        
-        .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin: 5px 0; }
-        .btn-control { background: #111; border: 1px solid #444; color: #888; font-family: 'Orbitron'; font-size: 0.6rem; padding: 8px; cursor: pointer; text-align: center; }
-        .pwr-on { border-color: var(--hud-green); color: var(--hud-green); background: rgba(0,50,0,0.5); }
-        .spd-1 { border-color: var(--hud-blue); color: var(--hud-blue); }
-        .spd-2 { border-color: var(--hud-orange); color: var(--hud-orange); }
-        .spd-3 { border-color: var(--hud-red); color: var(--hud-red); }
+        .sb-display-area {
+            background: #000; border: 1px inset #333; padding: 10px; margin: 8px 0;
+            font-family: 'Share Tech Mono'; color: var(--hud-green); text-align: center;
+            font-size: 0.9rem; text-transform: uppercase; border-radius: 4px;
+        }
 
-        /* RADAR */
-        #radar-section { display: flex; flex-direction: column; align-items: center; margin-top: 5px; }
-        #radar-container {
-            width: 80px; height: 80px; border-radius: 50%;
-            background: radial-gradient(circle, #002 0%, #000 90%);
-            border: 2px solid #333; position: relative; overflow: hidden;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        .btn-control { 
+            background: #111; border: 1px solid #444; color: #aaa; 
+            font-family: 'Orbitron'; font-size: 0.8rem; padding: 10px; width: 100%;
+            cursor: pointer; font-weight: bold;
         }
-        #radar-container::before {
-            content: ''; position: absolute; inset: 0; border-radius: 50%;
-            background: repeating-radial-gradient(transparent 0, transparent 18px, rgba(0, 255, 65, 0.3) 19px, rgba(0, 255, 65, 0.3) 20px);
+        .btn-control.pwr-on { border-color: var(--hud-green); color: var(--hud-green); background: rgba(0,50,0,0.3); box-shadow: 0 0 10px var(--hud-green) inset; }
+
+        /* SENSORES LIST */
+        .sensor-grid { display: flex; flex-direction: column; gap: 4px; }
+        .sensor-item { 
+            display: flex; justify-content: space-between; align-items: center; 
+            font-size: 0.65rem; padding: 4px 6px; 
+            background: rgba(255,255,255,0.03); border-radius: 3px; border-left: 2px solid #333;
         }
-        #radar-container::after {
-            content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 1px; background: rgba(0,255,65,0.3);
-            transform: translateY(-50%);
-        }
-        #radar-scan {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: conic-gradient(from 0deg, transparent 0deg, rgba(0, 255, 65, 0.1) 60deg, rgba(0, 255, 65, 0.8) 90deg, transparent 91deg);
-            border-radius: 50%; animation: radarSpin 2s linear infinite;
-        }
-        #radar-scan.alert {
-             background: conic-gradient(from 0deg, transparent 0deg, rgba(255, 0, 0, 0.1) 60deg, rgba(255, 0, 0, 0.8) 90deg, transparent 91deg);
-             animation: radarSpin 0.5s linear infinite;
-        }
+        .sensor-icon { width: 15px; text-align: center; margin-right: 5px; display: inline-block; }
         
-        /* GRAPH ENERGY */
-        #energy-container { 
-            height: 100%; background: #050505; border: 1px solid #333; 
-            display: flex; flex-direction: column; justify-content: center; 
-        }
-        #energy-canvas { width: 100%; height: 100%; }
+        /* Colores de Estado */
+        .status-green { border-left-color: var(--hud-green); color: var(--hud-green); text-shadow: 0 0 5px rgba(0,255,65,0.3); }
+        .status-blue { border-left-color: var(--hud-blue); color: var(--hud-blue); text-shadow: 0 0 5px rgba(0,136,255,0.3); }
+        .status-orange { border-left-color: var(--hud-orange); color: var(--hud-orange); text-shadow: 0 0 5px rgba(255,174,0,0.3); }
+        .status-red { border-left-color: var(--hud-red); color: #777; }
 
         /* PANEL INFERIOR */
-        .dials-grid { display: grid; grid-template-columns: 55px 55px 55px 1fr 70px; gap: 6px; align-items: center; height: 100%; }
-        .dial-container { width: 45px; height: 45px; border-radius: 50%; margin: 0 auto; background: #0b0c15; box-shadow: inset 0 0 5px #000; position: relative; border: 1px solid #222; }
-        .dial-needle { position: absolute; width: 2px; height: 18px; background: #fff; bottom: 50%; left: 50%; transform-origin: bottom center; transform: translateX(-50%) rotate(-45deg); z-index: 2; transition: transform 0.3s ease; }
-        .knob-label { font-size: 0.5rem; color: var(--hud-cyan); margin-top: 2px; font-weight: bold; text-align: center; }
+        .dials-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; height: 100%; align-items: center; }
+        .instrument-wrapper { 
+            background: rgba(0,0,0,0.5); border: 1px solid #333; border-radius: 4px; height: 100%; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            position: relative;
+        }
+        .digital-display { font-family: 'VT323', monospace; font-size: 2.2rem; line-height: 1; text-shadow: 0 0 5px currentColor; }
+        .digi-cyan { color: var(--hud-cyan); } .digi-green { color: var(--hud-green); } .digi-orange { color: var(--hud-orange); } .digi-red { color: var(--hud-red); }
+        .knob-label { font-size: 0.6rem; color: #777; font-weight: bold; margin-top: 2px; }
 
-        /* BOTONES */
-        #filter-controls-container { position: fixed; top: 50%; right: 15px; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
-        .filter-btn { width: 45px; height: 40px; background: rgba(0, 10, 20, 0.9); color: var(--hud-cyan); font-family: 'Orbitron'; font-size: 0.6rem; border: 1px solid var(--hud-cyan); clip-path: polygon(15% 0, 100% 0, 100% 85%, 85% 100%, 0 100%, 0 15%); cursor: pointer; }
-        .filter-btn.active { background: var(--hud-cyan); color: #000; }
+        /* ENERGY */
+        #energy-container { height: 20px; display: flex; gap: 1px; align-items: flex-end; margin-top: 5px; background: #000; border: 1px solid #333; padding: 1px; }
+        .energy-bar-seg { flex: 1; background: #111; height: 100%; transition: height 0.05s; }
+        .energy-bar-seg.active { background: var(--hud-green); }
+        .energy-bar-seg.mid { background: var(--hud-orange); }
+        .energy-bar-seg.high { background: var(--hud-red); }
+
+        /* BOTONES FLOTANTES */
+        #filter-controls-container { 
+            position: absolute; top: 50%; right: 10px; transform: translateY(-50%); 
+            display: flex; flex-direction: column; gap: 8px; z-index: 100;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .filter-btn { 
+            width: 45px; height: 40px; background: rgba(0, 10, 20, 0.9); 
+            color: var(--hud-cyan); font-family: 'Orbitron'; font-size: 0.6rem; 
+            border: 1px solid var(--hud-cyan); cursor: pointer;
+            clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%);
+        }
+        .filter-btn.active { background: var(--hud-cyan); color: #000; box-shadow: 0 0 15px var(--hud-cyan); }
+
+        /* ANIMACIONES */
+        .ui-hiding { animation: waterPop 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important; pointer-events: none; }
+        @keyframes waterPop { 0% { transform: scale(1); opacity: 1; blur(0); } 100% { transform: scale(2.5); opacity: 0; blur(10px); } }
 
         /* LOADING */
         #loading-overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(#111, #000); }
-        .loader-logo { width: 80px; margin-bottom: 15px; animation: pulseG 2s infinite; }
-        #enter-btn { display: none; padding: 10px 30px; border: 2px solid var(--hud-green); color: var(--hud-green); background: transparent; font-family: 'Orbitron'; font-size: 1.1rem; cursor: pointer; margin-top: 20px; animation: pulseG 2s infinite; }
+        #enter-btn { display: none; padding: 15px 40px; border: 2px solid var(--hud-green); color: var(--hud-green); background: transparent; font-family: 'Orbitron'; font-size: 1.2rem; cursor: pointer; margin-top: 30px; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 0 15px var(--hud-green); }
 
-        input[type=range] { width: 100%; accent-color: var(--hud-green); }
-        #panel-sys-stats { display: flex; flex-direction: column; justify-content: center; height: 100%; padding-left: 8px; border-left: 1px dashed var(--hud-cyan); font-family: 'Orbitron'; font-size: 0.6rem; color: var(--hud-green); line-height: 1.6; }
-        .stat-label { color: #777; font-size: 0.5rem; }
-
-        @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-5px);} }
-        @keyframes pulseG { 0%{filter:drop-shadow(0 0 2px cyan);} 50%{filter:drop-shadow(0 0 10px cyan);} 100%{filter:drop-shadow(0 0 2px cyan);} }
-        @keyframes radarSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes pulseGreen { 0%{opacity:0.5;} 50%{opacity:1;} 100%{opacity:0.5;} }
-        
-        .ui-hiding { opacity: 0 !important; transform: scale(1.1); filter: blur(5px); transition: all 0.4s; }
-
-        /* RESPONSIVE */
-        @media (min-aspect-ratio: 1/1) {
-            #left-panel { top: 0; left: 0; width: var(--panel-w); height: 100vh; transform: translateX(-100%); border-right: 1px solid var(--hud-cyan); }
-            #bottom-panel { bottom: 0; left: var(--panel-w); width: calc(100% - var(--panel-w)); height: var(--panel-h); transform: translateY(100%); border-top: 1px solid var(--hud-cyan); }
-            body.panels-active #main-view-area { left: var(--panel-w); top: 0; width: calc(100% - var(--panel-w)); height: calc(100% - var(--panel-h)); }
-        }
-        @media (max-aspect-ratio: 1/1) {
-            #left-panel { top: 0; left: 0; width: 100vw; height: auto; transform: translateY(-100%); border-bottom: 1px solid var(--hud-cyan); }
-            #bottom-panel { bottom: 0; left: 0; width: 100vw; height: 110px; transform: translateY(100%); border-top: 1px solid var(--hud-pink); }
-            body.panels-active #main-view-area { opacity: 0.2; }
+        /* RESPONSIVE (Móvil) */
+        @media (max-width: 768px) {
+            :root { --left-panel-w: 140px; --bottom-panel-h: 110px; }
+            
+            .digital-display { font-size: 1.5rem; }
+            .btn-control { font-size: 0.6rem; padding: 5px; }
+            .sb-display-area { font-size: 0.7rem; padding: 5px; }
+            
+            #spirit-box-section { margin-bottom: 5px; padding: 4px; }
+            .dials-grid { gap: 4px; }
+            .sensor-item { font-size: 0.55rem; padding: 2px 4px; }
+            
+            #follow-banner { bottom: 10px; }
         }
     </style>
 </head>
 <body>
 
-<div id="loading-overlay">
-    <img src="obr-logo.png" class="loader-logo">
-    <div style="color: var(--hud-cyan); font-family: 'Orbitron'; letter-spacing: 2px;">CARGANDO <span id="load-percent">0%</span></div>
-    <div style="width: 200px; background: #222; height: 4px; margin-top: 10px;"><div id="loading-bar" style="width:0%; height:100%; background:var(--hud-cyan);"></div></div>
-    <button id="enter-btn" onclick="enterApp()">INGRESAR</button>
+<!-- LOADING -->
+<div id="loading-overlay" style="position:fixed; inset:0; background:#000; z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+    <img src="obr-logo.png" style="width:80px; animation:logoGlitch 2s infinite;">
+    <div style="color:var(--hud-cyan); font-family:'Orbitron'; margin-top:20px;">CARGANDO MÓDULOS...</div>
+    <button id="enter-btn" onclick="enterApp()" style="margin-top:20px; padding:10px 30px; background:transparent; border:1px solid var(--hud-green); color:var(--hud-green); font-family:'Orbitron'; cursor:pointer;">INICIAR SISTEMA</button>
 </div>
 
+<!-- LAYOUT GRID -->
 <div id="app-ui" onclick="handleUITap(event)">
+    
+    <!-- 1. PANEL IZQUIERDO -->
+    <div id="left-panel" class="panel-container">
+        <div id="spirit-box-section">
+            <div class="section-title">SPIRIT BOX <div id="voice-led" class="voice-led"></div></div>
+            <div class="sb-display-area"><span id="sb-status">OFFLINE</span></div>
+            <button id="btn-pwr" class="btn-control" onclick="toggleSpirit()">ENCENDER</button>
+            <div style="margin-top:10px; display:flex; justify-content:space-between; font-size:0.6rem; color:#888;">
+                <span>VOL</span>
+                <input type="range" id="vol-slider" min="0" max="100" value="100" style="width:60%; accent-color:var(--hud-green);">
+            </div>
+        </div>
+        
+        <div class="panel-section" style="flex-grow:1; overflow-y:auto;">
+            <div class="section-title">SENSORES</div>
+            <div class="sensor-grid">
+                <div class="sensor-item status-red" id="sens-mag"><span class="sensor-icon">🧭</span> MAG (Compás)</div>
+                <div class="sensor-item status-red" id="sens-acc"><span class="sensor-icon">📉</span> ACEL (G-Force)</div>
+                <div class="sensor-item status-red" id="sens-gyro"><span class="sensor-icon">💫</span> GIRO (Rotación)</div>
+                <div class="sensor-item status-red" id="sens-mic"><span class="sensor-icon">🎙️</span> MIC (Audio dB)</div>
+                <div class="sensor-item status-red" id="sens-prox"><span class="sensor-icon">📡</span> PROX (Cercanía)</div>
+                <div class="sensor-item status-red" id="sens-lidar"><span class="sensor-icon">📸</span> LIDAR (Depth)</div>
+            </div>
+        </div>
+    </div>
 
+    <!-- 2. CÁMARA -->
     <div id="main-view-area">
         <video id="bg-camera-feed" playsinline autoplay muted></video>
-        <canvas id="main-filter-canvas"></canvas>
-        <canvas id="gl-bluewave"></canvas>
-        <div id="camera-frame"></div>
+        <canvas id="main-filter-canvas" style="display:none;"></canvas>
         
-        <div id="rec-indicator">
-            <div class="rec-icon"></div>
-            <span id="rec-text">[ REC ]</span>
-        </div>
+        <div class="rec-container"><div class="rec-dot"></div>REC</div>
+        
+        <!-- LOGO -->
+        <div id="logo-container"><img id="logo-image" src="obr-logo.png"></div>
 
+        <!-- BANNER SÍGUENOS (SIN FONDO) -->
         <div id="follow-banner">
-            <div class="social-icons">
-                <svg viewBox="0 0 448 512"><path d="M448 209.9a210.1 210.1 0 0 1 -122.8-39.3V349.4A162.6 162.6 0 1 1 185 188.3V277.2a74.6 74.6 0 1 0 52.2 71.2V0l88 0a121.2 121.2 0 0 0 122.8 122.1v87.8z"/></svg>
-                <svg viewBox="0 0 576 512"><path d="M549.7 124.1c-6.3-23.7-24.8-42.3-48.3-48.6C458.8 64 288 64 288 64S117.2 64 74.6 75.5c-23.5 6.3-42 24.9-48.3 48.6-11.4 42.9-11.4 132.3-11.4 132.3s0 89.4 11.4 132.3c6.3 23.7 24.8 42.3 48.3 48.6C117.2 448 288 448 288 448s170.8 0 213.4-11.5c23.5-6.3 42-24.9 48.3-48.6 11.4-42.9 11.4-132.3 11.4-132.3s0-89.4-11.4-132.3zM232 341.5V170.5l145.2 85.5-145.2 85.5z"/></svg>
-                <svg viewBox="0 0 512 512"><path d="M504 256C504 119 393 8 256 8S8 119 8 256c0 123.8 90.7 226.4 209.3 245V327.7h-63V256h63v-54.6c0-62.2 37-96.5 93.7-96.5 27.1 0 55.5 4.8 55.5 4.8v61h-31.3c-30.8 0-40.4 19.1-40.4 38.7V256h68.8l-11 71.7h-57.8V501C413.3 482.4 504 379.8 504 256z"/></svg>
+            <div class="banner-content">
+                <div id="step-1" class="seq-step">SÍGUENOS EN</div>
+                <div id="step-2" class="seq-step" style="display:none; gap:15px; justify-content:center;">
+                    <i class="fab fa-tiktok social-icon" style="color:#ff0050;"></i>
+                    <i class="fab fa-facebook social-icon" style="color:#1877f2;"></i>
+                    <i class="fab fa-youtube social-icon" style="color:#f00;"></i>
+                </div>
+                <div id="step-3" class="seq-step">@EXPLORACIONES OBR</div>
             </div>
-            <div class="follow-text">@EXPLORACIONESOBR</div>
+        </div>
+
+        <!-- BOTONES -->
+        <div id="filter-controls-container">
+            <button class="filter-btn" onclick="toggleFilter('night-vision')">NVG</button>
+            <button class="filter-btn" onclick="toggleFilter('sls')">SLS</button>
+            <button class="filter-btn" onclick="toggleFilter('negative')">NEG</button>
+            <button class="filter-btn" onclick="toggleFilter('lum')">LUM</button>
+            <!-- Botón HUD inicia activo porque el HUD es visible -->
+            <button class="filter-btn active" id="btn-hud" onclick="toggleHUD()">HUD</button>
         </div>
     </div>
 
-    <div id="logo-container"><img id="logo-image" src="obr-logo.png"></div>
-
-    <div id="left-panel">
-        <div class="panel">
-            <div class="panel-section">
-                <div class="section-title">SENSORES</div>
-                <div class="sensor-row"><div style="display:flex;align-items:center"><div id="led-mag" class="sensor-led"></div><span>🧭 MAG/GIRO</span></div><span id="val-mag" style="color:#888">OFF</span></div>
-                <div class="sensor-row"><div style="display:flex;align-items:center"><div id="led-acc" class="sensor-led"></div><span>📡 ACELERÓMETRO</span></div><span id="val-acc" style="color:#888">OFF</span></div>
-                <div class="sensor-row"><div style="display:flex;align-items:center"><div id="led-mic" class="sensor-led"></div><span>🎙️ MICRÓFONO</span></div><span id="val-mic" style="color:#888">OFF</span></div>
+    <!-- 3. PANEL INFERIOR -->
+    <div id="bottom-panel" class="panel-container">
+        <div class="dials-grid">
+            <div class="instrument-wrapper">
+                <div class="digital-display digi-cyan" id="mag-val">000</div>
+                <div class="knob-label">MAG</div>
             </div>
-
-            <div class="panel-section" id="spirit-box-section">
-                <div class="spirit-header">
-                    <div class="section-title" style="margin:0; border:none; color:var(--hud-green); font-size:0.8rem;">SPIRIT BOX</div>
-                    <div id="voice-led" class="voice-led" title="Verde: Escuchando"></div>
-                </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; margin:5px 0;">
-                    <button id="btn-pwr" class="btn-control" onclick="toggleSpirit()">OFF</button>
-                    <button id="btn-spd" class="btn-control" onclick="cycleSpeed()">SPD 1</button>
-                </div>
-                <div style="margin-top:5px;">
-                    <div style="display:flex;justify-content:space-between;font-size:0.5rem;color:#aaa;"><span>VOL</span><span id="vol-txt">100%</span></div>
-                    <input type="range" id="vol-slider" min="0" max="100" value="100">
-                </div>
+            <div class="instrument-wrapper">
+                <div class="digital-display digi-green" id="emf-val">0.0</div>
+                <div class="knob-label">EMF</div>
             </div>
-
-            <div id="radar-section">
-                <div class="knob-label" style="color:var(--hud-orange);">PROXIMIDAD</div>
-                <div id="radar-container">
-                    <div id="radar-scan"></div>
-                    <div style="position:absolute; inset:0; border-radius:50%; border:1px solid rgba(255,255,255,0.1);"></div>
-                    <div style="position:absolute; top:50%; left:0; width:100%; height:1px; background:rgba(255,255,255,0.2);"></div>
-                    <div style="position:absolute; left:50%; top:0; height:100%; width:1px; background:rgba(255,255,255,0.2);"></div>
-                </div>
+            <div class="instrument-wrapper">
+                <div class="digital-display digi-orange" id="temp-display">--.-</div>
+                <div class="knob-label">TEMP</div>
             </div>
+            <div class="instrument-wrapper">
+                <div class="digital-display digi-red" id="prox-val">0</div>
+                <div class="knob-label">PROX</div>
+            </div>
+        </div>
+        <div style="margin-top:5px;">
+            <div id="energy-container"></div>
+            <div class="knob-label" style="text-align:left;">ENERGY LEVEL</div>
         </div>
     </div>
 
-    <div id="bottom-panel">
-        <div class="panel">
-            <div class="dials-grid">
-                <div class="dial-wrapper"><div class="dial-container"><div class="dial-needle" id="compass-needle"></div></div><div class="knob-label">MAG</div></div>
-                <div class="dial-wrapper"><div class="dial-container"><div class="dial-needle" id="emf-needle"></div></div><div class="knob-label">EMF</div></div>
-                <div class="dial-wrapper"><div class="dial-container"><div class="dial-needle" id="temp-needle"></div></div><div class="knob-label">TEMP</div></div>
-                
-                <div id="energy-container">
-                    <span class="knob-label" style="text-align:center; margin:0 0 2px 0;">ENERGY</span>
-                    <canvas id="energy-canvas"></canvas>
-                </div>
-
-                <div id="panel-sys-stats">
-                    <div><span class="stat-label">FPS:</span> <span id="p-fps">--</span></div>
-                    <div><span class="stat-label">RES:</span> <span id="p-res">--p</span></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="filter-controls-container">
-        <button class="filter-btn" onclick="toggleFilter('night-vision')">NVG</button>
-        <button class="filter-btn" onclick="toggleFilter('sls')">SLS</button>
-        <button class="filter-btn" onclick="toggleFilter('negative')">NEG</button>
-        <button class="filter-btn" onclick="toggleFilter('spectral')">SPEC</button>
-        <button class="filter-btn" id="btn-panel" onclick="togglePanels()">HUD</button>
-    </div>
 </div>
 
 <script>
+    // --- CONFIG ---
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzOf3crQxBdPylwMTAd34W-nBShN31MkIUtaMdKsZHMZVVniI2HjMesD6DpOlO363T1/exec";
+    const FALLBACK_AUTO = ["¿Hay alguien?", "Te escucho", "Acércate", "Detrás", "Frío", "Ayuda", "Vete", "Sótano", "Miedo", "Luz", "Oscuridad", "Aquí"];
     
+    // --- GLOBALS ---
     let audioCtx, masterGain, micSource, analyser;
     let bgBuffer, bgNode, bgGain;
-    let recognition, isSpiritOn = false, speed = 1;
-    let autoData = [], progData = new Map();
-    let videoTrack, currentFilter = 'none', uiVisible = false;
-    let hideTimeout, proxSensor;
+    let recognition, isSpiritOn = false;
+    let autoData = [...FALLBACK_AUTO], progData = new Map();
+    let videoTrack, currentFilter = 'none', uiVisible = false, hideTimeout;
+    let proxSensor, energyBars = [];
+    let isRecognizing = false; 
 
     const vid = document.getElementById('bg-camera-feed');
     const canvasSLS = document.getElementById('main-filter-canvas'); const ctxSLS = canvasSLS.getContext('2d');
-    const energyCanvas = document.getElementById('energy-canvas'); const ctxEnergy = energyCanvas.getContext('2d');
-    const peakHolds = [];
-    
-    // BANNER LOOP
-    const followBanner = document.getElementById('follow-banner');
-    function initFollowLoop() {
-        setTimeout(() => followBanner.classList.add('show'), 2000);
-        setTimeout(() => followBanner.classList.remove('show'), 8000); 
-        setInterval(() => {
-            if(!uiVisible) {
-                followBanner.classList.add('show');
-                setTimeout(() => followBanner.classList.remove('show'), 8000);
-            }
-        }, 30000);
-    }
 
-    // 1. CARGA
+    // --- INIT ---
     window.onload = () => {
-        let p=0;
-        let t = setInterval(()=>{
-            p+=5; if(p>100)p=100;
-            document.getElementById('loading-bar').style.width=p+'%';
-            document.getElementById('load-percent').innerText=p+'%';
-            if(p===100){
-                clearInterval(t);
-                setTimeout(async ()=>{
-                    try{ await loadData(); }catch(e){}
-                    document.getElementById('enter-btn').style.display='block';
-                },300);
-            }
-        }, 50);
+        const eContainer = document.getElementById('energy-container');
+        for(let i=0; i<20; i++){
+            let d = document.createElement('div'); d.className = 'energy-bar-seg';
+            eContainer.appendChild(d); energyBars.push(d);
+        }
+        document.getElementById('loading-overlay').querySelector('button').style.display = 'block';
     };
 
     async function enterApp(){
@@ -383,312 +389,289 @@
         masterGain = audioCtx.createGain(); masterGain.connect(audioCtx.destination);
         bgBuffer = await loadAudio('FONDO_1.mp3');
         
-        initMic(); initFollowLoop();
-        await startCam();
-        await initMoveNet(); 
-        
-        initSensors(); initProximity();
+        initMic(); await startCam(); await initMoveNet(); initSensors();
+        startBannerLoop();
         loop();
     }
 
+    // --- BANNER LOOP ---
+    function startBannerLoop() {
+        const banner = document.getElementById('follow-banner');
+        const step1 = document.getElementById('step-1'); const step2 = document.getElementById('step-2'); const step3 = document.getElementById('step-3');
+        const runSequence = () => {
+            banner.classList.add('active');
+            step1.classList.add('active');
+            setTimeout(() => { step1.classList.remove('active'); step2.style.display='flex'; step2.classList.add('active'); }, 2000);
+            setTimeout(() => { step2.classList.remove('active'); step2.style.display='none'; step3.classList.add('active'); }, 5000);
+            setTimeout(() => { step3.classList.remove('active'); banner.classList.remove('active'); setTimeout(runSequence, 15000); }, 8000);
+        };
+        runSequence();
+    }
+
+    // --- CAM & UI ---
     async function startCam(){
         try{
             const s = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment", width:{ideal:1920}, height:{ideal:1080}}, audio:false});
             vid.srcObject = s; videoTrack = s.getVideoTracks()[0];
-            vid.onloadedmetadata = ()=> {
-                document.getElementById('p-res').innerText = `${vid.videoWidth}x${vid.videoHeight}`;
-                resize();
-            };
-            window.onresize = resize;
+            vid.onloadedmetadata = ()=> { resize(); }; window.onresize = resize;
         }catch(e){}
     }
     function resize(){
-        canvasSLS.width = window.innerWidth; canvasSLS.height = window.innerHeight;
-        const ec = document.getElementById('energy-container');
-        energyCanvas.width = ec.clientWidth; energyCanvas.height = ec.clientHeight - 15; 
-        if(window.BlueWave) window.BlueWave.resize();
+        const area = document.getElementById('main-view-area');
+        canvasSLS.width = area.clientWidth; canvasSLS.height = area.clientHeight;
     }
 
-    // --- FILTROS & UI ---
     async function toggleFilter(f){
         if(currentFilter===f) f='none';
+        document.body.classList.remove('filter-night-vision', 'filter-negative', 'filter-sls', 'filter-lum');
         document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-        document.body.className = f!=='none' ? 'filter-'+f : '';
-        if(f!=='none') document.querySelector(`button[onclick="toggleFilter('${f}')"]`).classList.add('active');
         
-        canvasSLS.style.display = f==='sls'?'block':'none';
-        if(f==='spectral' && window.BlueWave) window.BlueWave.start(); else if(window.BlueWave) window.BlueWave.stop();
+        // El botón HUD es especial, no lo tocamos aquí a menos que sea él mismo
+        const btnHud = document.getElementById('btn-hud');
+        if (!btnHud.classList.contains('active') && !document.body.classList.contains('panels-hidden')) {
+            btnHud.classList.add('active');
+        }
+
+        if(f!=='none') {
+            document.body.classList.add('filter-'+f);
+            document.querySelector(`button[onclick="toggleFilter('${f}')"]`).classList.add('active');
+        }
+        document.getElementById('main-filter-canvas').style.display = f==='sls'?'block':'none';
         
         if(videoTrack) try{ await videoTrack.applyConstraints({advanced:[{torch: f==='night-vision'}]}); }catch(e){}
         currentFilter = f;
     }
 
-    function togglePanels(){
-        document.body.classList.toggle('panels-active');
-        document.getElementById('btn-panel').classList.toggle('active');
-        setTimeout(resize, 450);
+    function toggleHUD(){
+        document.body.classList.toggle('panels-hidden');
+        document.getElementById('btn-hud').classList.toggle('active');
+        setTimeout(resize, 550); 
     }
 
     function handleUITap(e){
-        if(e.target.closest('.panel') || e.target.closest('button') || e.target.closest('input')) return;
-        if(uiVisible) hideUI(); else showUI();
+        if(e.target.closest('.panel-container') || e.target.closest('button') || e.target.closest('input')) return;
+        if(uiVisible) hideControls(); else showControls();
     }
-    function showUI(){
-        uiVisible=true;
-        document.getElementById('filter-controls-container').style.opacity=1;
-        document.getElementById('filter-controls-container').style.pointerEvents='auto';
+    function showControls() {
+        uiVisible = true;
+        document.getElementById('filter-controls-container').style.opacity = '1';
+        document.getElementById('filter-controls-container').style.pointerEvents = 'auto';
         document.getElementById('logo-container').classList.add('ui-hiding');
-        followBanner.classList.add('ui-hiding');
-        document.getElementById('rec-indicator').classList.add('ui-hiding');
-        clearTimeout(hideTimeout); hideTimeout=setTimeout(hideUI, 5000);
+        clearTimeout(hideTimeout); hideTimeout = setTimeout(hideControls, 5000);
     }
-    function hideUI(){
-        uiVisible=false;
-        document.getElementById('filter-controls-container').style.opacity=0;
-        document.getElementById('filter-controls-container').style.pointerEvents='none';
+    function hideControls() {
+        uiVisible = false;
+        document.getElementById('filter-controls-container').style.opacity = '0';
+        document.getElementById('filter-controls-container').style.pointerEvents = 'none';
         document.getElementById('logo-container').classList.remove('ui-hiding');
-        followBanner.classList.remove('ui-hiding');
-        document.getElementById('rec-indicator').classList.remove('ui-hiding');
     }
 
-    // --- SENSORES ---
-    function initSensors(){
-        let active=false;
-        if(window.DeviceOrientationEvent) window.addEventListener('deviceorientation', e=>{
-            if(e.alpha){
-                document.getElementById('compass-needle').style.transform = `translateX(-50%) rotate(${-e.alpha}deg)`;
-                updSens('mag', Math.round(e.alpha)+"°", 'green'); active=true;
-            }
-        });
-        if(window.DeviceMotionEvent) window.addEventListener('devicemotion', e=>{
-            let a = e.accelerationIncludingGravity;
-            if(a){
-                let t = Math.abs(a.x)+Math.abs(a.y)+Math.abs(a.z);
-                updSens('acc', t.toFixed(1), 'blue');
-                let rot = ((t*10)%180)-90;
-                document.getElementById('emf-needle').style.transform = `translateX(-50%) rotate(${rot}deg)`;
-                active=true;
-            }
-        });
-        if(!active) setInterval(()=>{ /* Fallback */ }, 1000);
+    // --- SENSORES & ESTADOS ---
+    function setSensorStatus(id, status) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.className = 'sensor-item'; // Reset
+        if(status === 'main') el.classList.add('status-green');
+        else if(status === 'backup') el.classList.add('status-blue');
+        else if(status === 'sim') el.classList.add('status-orange');
+        else el.classList.add('status-red');
     }
-    
+
+    function initSensors(){
+        let magActive = false;
+        let motionActive = false;
+
+        if(window.DeviceOrientationEvent) {
+            window.addEventListener('deviceorientation', e=>{
+                if(e.alpha !== null) {
+                    document.getElementById('mag-val').innerText = Math.round(e.alpha).toString().padStart(3,'0');
+                    setSensorStatus('sens-mag', 'main'); 
+                    magActive = true;
+                }
+            });
+        }
+        
+        if(window.DeviceMotionEvent) {
+            window.addEventListener('devicemotion', e=>{
+                const a = e.accelerationIncludingGravity;
+                const r = e.rotationRate;
+                if(a){
+                    let t = Math.abs(a.x)+Math.abs(a.y)+Math.abs(a.z);
+                    let emf = (t * 2.5).toFixed(1);
+                    document.getElementById('emf-val').innerText = emf;
+                    
+                    setSensorStatus('sens-acc', 'main'); 
+                    setSensorStatus('sens-lidar', 'sim'); 
+                    motionActive = true;
+                }
+                if(r && (r.alpha || r.beta || r.gamma)) {
+                    setSensorStatus('sens-gyro', 'main');
+                }
+            });
+        }
+        
+        initProximity();
+
+        setInterval(() => {
+            if(!magActive) {
+                setSensorStatus('sens-mag', 'sim'); 
+                document.getElementById('mag-val').innerText = Math.floor(Math.random()*360).toString().padStart(3,'0');
+            }
+            if(!motionActive) {
+                setSensorStatus('sens-acc', 'sim');
+                setSensorStatus('sens-gyro', 'sim');
+                setSensorStatus('sens-lidar', 'status-red');
+            }
+        }, 2000);
+    }
+
     function initProximity(){
         if('ProximitySensor' in window){
             try {
-                proxSensor = new ProximitySensor();
-                proxSensor.onreading = () => {
-                    const r = document.getElementById('radar-scan');
-                    if(proxSensor.value < 5) r.classList.add('alert'); else r.classList.remove('alert');
-                };
+                proxSensor = new ProximitySensor({frequency: 10});
+                proxSensor.addEventListener('reading', () => {
+                    document.getElementById('prox-val').innerText = proxSensor.value ? proxSensor.value.toFixed(0) : "0";
+                    setSensorStatus('sens-prox', 'main'); 
+                });
                 proxSensor.start();
-            } catch(e){}
+            } catch(e){ 
+                document.getElementById('prox-val').innerText = "ERR"; 
+                setSensorStatus('sens-prox', 'status-red');
+            }
+        } else { 
+            document.getElementById('prox-val').innerText = "N/A"; 
+            setSensorStatus('sens-prox', 'sim'); 
         }
-    }
-
-    function updSens(id, txt, col){
-        document.getElementById('val-'+id).innerText=txt;
-        document.getElementById('led-'+id).className=`sensor-led led-${col}`;
     }
 
     // --- SPIRIT BOX ---
     async function loadAudio(u){ try{const r=await fetch(u);const b=await r.arrayBuffer();return await audioCtx.decodeAudioData(b);}catch(e){return null;} }
-    
     async function initMic(){
         try{
             const s = await navigator.mediaDevices.getUserMedia({audio:true});
             micSource = audioCtx.createMediaStreamSource(s);
-            analyser = audioCtx.createAnalyser(); analyser.fftSize=256; 
+            analyser = audioCtx.createAnalyser(); analyser.fftSize=64; 
             micSource.connect(analyser);
-            updSens('mic', 'ON', 'green');
-            initRec();
-        }catch(e){ updSens('mic', 'ERR', 'red'); }
+            setSensorStatus('sens-mic', 'main');
+        }catch(e){ 
+            setSensorStatus('sens-mic', 'status-red');
+        }
     }
-
     function toggleSpirit(){
         isSpiritOn = !isSpiritOn;
         const btn = document.getElementById('btn-pwr');
+        const status = document.getElementById('sb-status');
         if(isSpiritOn){
-            btn.innerText="ON"; btn.className="btn-control pwr-on";
+            btn.innerText="APAGAR"; btn.classList.add('pwr-on');
+            status.innerText = "INICIANDO...";
             if(audioCtx.state==='suspended') audioCtx.resume();
+            
             if(bgBuffer){
                 bgNode = audioCtx.createBufferSource(); bgNode.buffer=bgBuffer; bgNode.loop=true;
                 bgGain = audioCtx.createGain(); bgGain.gain.value=0.6; 
                 bgNode.connect(bgGain); bgGain.connect(masterGain); bgNode.start(0);
+            } else {
+                const bSize = audioCtx.sampleRate * 2; const b = audioCtx.createBuffer(1, bSize, audioCtx.sampleRate);
+                const d = b.getChannelData(0); for (let i = 0; i < bSize; i++) d[i] = Math.random() * 2 - 1;
+                bgNode = audioCtx.createBufferSource(); bgNode.buffer = b; bgNode.loop = true;
+                bgGain = audioCtx.createGain(); bgGain.gain.value = 0.1;
+                bgNode.connect(bgGain); bgGain.connect(masterGain); bgNode.start(0);
             }
-            loopSpirit(); // Start Loop
-            initRec();    // Start Listening
+            startListeningCycle();
         }else{
-            btn.innerText="OFF"; btn.className="btn-control";
+            btn.innerText="ENCENDER"; btn.classList.remove('pwr-on');
+            status.innerText = "APAGADO";
             if(bgNode) bgNode.stop();
             if(window.speechSynthesis) window.speechSynthesis.cancel();
             document.getElementById('voice-led').classList.remove('listening');
             if(recognition) recognition.stop();
         }
     }
-
-    function cycleSpeed(){
-        speed++; if(speed>3) speed=1;
-        const btn = document.getElementById('btn-spd');
-        btn.innerText = "SPD "+speed;
-        btn.className = "btn-control";
-        if(speed===1) btn.style.borderColor='var(--hud-blue)';
-        if(speed===2) btn.style.borderColor='var(--hud-orange)';
-        if(speed===3) btn.style.borderColor='var(--hud-red)';
-    }
-
-    function loopSpirit(){
+    function startListeningCycle(){
         if(!isSpiritOn) return;
-        let delay = 4000 + Math.random()*5000;
-        if(speed===2) delay = 2500; if(speed===3) delay = 1000;
-        setTimeout(()=>{
-            if(isSpiritOn && autoData.length>0 && !window.speechSynthesis.speaking){
-                speak(autoData[Math.floor(Math.random()*autoData.length)]);
-            }
-            loopSpirit();
-        }, delay);
-    }
-
-    function initRec(){
-        const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if(!SR) return;
-        recognition = new SR(); recognition.lang='es-MX'; recognition.continuous=false;
+        if(isRecognizing) return;
+        document.getElementById('sb-status').innerText = "SINTONIZANDO...";
+        document.getElementById('voice-led').classList.add('listening');
         
-        recognition.onstart = () => { if(isSpiritOn) document.getElementById('voice-led').classList.add('listening'); };
-        recognition.onend = () => { 
-            document.getElementById('voice-led').classList.remove('listening');
-            // Reanudar si está encendido y no habla
-            if(isSpiritOn && !window.speechSynthesis.speaking) setTimeout(()=>recognition.start(), 500);
-        };
-        recognition.onresult = e => {
-            const t = e.results[0][0].transcript.toLowerCase().trim();
-            if(progData.has(t)) speak(progData.get(t));
-            else if(automaticoData.length>0) speak(automaticoData[Math.floor(Math.random()*automaticoData.length)]);
-        };
-        recognition.start();
+        if(!recognition) {
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if(SR) {
+                recognition = new SR(); recognition.lang='es-MX'; recognition.continuous=false;
+                recognition.onstart = () => { isRecognizing = true; };
+                recognition.onend = () => { isRecognizing = false; if(isSpiritOn && !window.speechSynthesis.speaking) setTimeout(startListeningCycle, 500); };
+                recognition.onresult = (e) => { processVoiceCommand(e.results[0][0].transcript.toLowerCase().trim()); };
+            }
+        }
+        try{ recognition.start(); }catch(e){}
     }
-
+    function processVoiceCommand(txt){
+        document.getElementById('voice-led').classList.remove('listening');
+        document.getElementById('sb-status').innerText = "PROCESANDO...";
+        let response = progData.has(txt) ? progData.get(txt) : autoData[Math.floor(Math.random()*autoData.length)];
+        setTimeout(() => speak(response), 2000); 
+    }
     function speak(txt){
         if(!window.speechSynthesis) return;
+        document.getElementById('sb-status').innerText = "DESCODIFICANDO...";
         if(bgGain) bgGain.gain.setTargetAtTime(0.2, audioCtx.currentTime, 0.1);
-        document.getElementById('voice-led').classList.remove('listening');
-        
-        const u = new SpeechSynthesisUtterance(txt); u.lang='es-MX'; 
-        u.rate = 0.8 + (speed*0.1); 
-        u.onend = () => {
-            if(bgGain) bgGain.gain.setTargetAtTime(0.6, audioCtx.currentTime, 0.5);
-            if(isSpiritOn) recognition.start(); 
-        };
+        const u = new SpeechSynthesisUtterance(txt); u.lang='es-MX'; u.rate = 0.9; u.pitch = 0.8;
+        u.onend = () => { if(bgGain) bgGain.gain.setTargetAtTime(0.6, audioCtx.currentTime, 0.5); if(isSpiritOn) startListeningCycle(); };
         window.speechSynthesis.speak(u);
     }
 
-    document.getElementById('vol-slider').addEventListener('input', e=>{
-        if(masterGain) masterGain.gain.value = e.target.value/100;
-        document.getElementById('vol-txt').innerText=e.target.value+"%";
-    });
-
+    // --- LOOPS ---
     let lastFps=0, frames=0;
     function loop(){
         frames++;
         if(performance.now()-lastFps>=1000){
-            document.getElementById('p-fps').innerText = frames;
             frames=0; lastFps=performance.now();
-            let t = 18 + Math.random();
-            document.getElementById('temp-needle').style.transform = `translateX(-50%) rotate(${((t-10)*6)-45}deg)`;
+            document.getElementById('temp-display').innerText = (18+Math.random()*3).toFixed(1);
         }
+        
         if(currentFilter==='sls' && latestPoses.length>0){
             ctxSLS.clearRect(0,0,canvasSLS.width,canvasSLS.height);
             drawSLS(latestPoses);
         }
-        if(analyser) drawEnergyCanvas();
+        
+        if(analyser){
+            const data = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(data);
+            for(let i=0; i<20; i++){
+                let val = (data[i] || 0);
+                let bar = energyBars[i];
+                bar.className = 'energy-bar-seg';
+                if(val>50) bar.classList.add('active'); if(val>150) bar.classList.add('mid'); if(val>220) bar.classList.add('high');
+                bar.style.height = Math.max(5, (val/255)*100) + "%";
+            }
+        }
         requestAnimationFrame(loop);
     }
 
-    function drawEnergyCanvas(){
-        const W = energyCanvas.width; const H = energyCanvas.height;
-        const len = 64; 
-        const data = new Uint8Array(analyser.frequencyBinCount);
-        analyser.getByteFrequencyData(data);
-        
-        ctxEnergy.clearRect(0,0,W,H);
-        const barW = (W/len) - 1;
-        
-        for(let i=0; i<len; i++){
-            const val = data[i];
-            const h = (val/255) * H;
-            if(!peakHolds[i]) peakHolds[i]=0;
-            if(h > peakHolds[i]) peakHolds[i] = h; else peakHolds[i] *= 0.95; 
-            
-            ctxEnergy.fillStyle = `hsl(${120 + (val/255)*60}, 100%, 50%)`; 
-            ctxEnergy.fillRect(i*(barW+1), H-h, barW, h);
-            
-            ctxEnergy.fillStyle = '#ff0055';
-            ctxEnergy.fillRect(i*(barW+1), H-peakHolds[i]-1, barW, 2);
-        }
-    }
-
+    // --- DATA ---
     async function loadData(){
-        const r=await fetch(GOOGLE_SCRIPT_URL); const d=await r.json();
-        autoData=d.automatico.map(x=>x.TEXTO);
-        d.programado.forEach(i=>{if(i.PREGUNTA) progData.set(i.PREGUNTA.toLowerCase().trim(), i.RESPUESTA)});
+        const r=await fetch(SCRIPT_URL); const d=await r.json();
+        if(d.automatico) autoData=d.automatico.map(x=>x.TEXTO);
+        if(d.programado) d.programado.forEach(i=>{if(i.PREGUNTA) progData.set(i.PREGUNTA.toLowerCase().trim(), i.RESPUESTA)});
     }
 
-    // --- SLS (RESTORED FROM KINECKT.TXT) ---
-    async function initMoveNet(){
-        await tf.ready(); 
-        const m = poseDetection.SupportedModels.MoveNet;
-        const detector = await poseDetection.createDetector(m, {modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING});
-        setInterval(async()=>{
-            if(currentFilter==='sls' && vid.readyState===4) latestPoses=await detector.estimatePoses(vid);
-        },100);
+    // --- SLS ---
+    let latestPoses = [];
+    async function initMoveNet() {
+        await tf.ready();
+        const detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING });
+        setInterval(async () => { if(currentFilter==='sls' && vid.readyState===4) latestPoses = await detector.estimatePoses(vid); }, 100);
     }
     const conns = [['left_shoulder','right_shoulder'],['left_shoulder','left_hip'],['right_shoulder','right_hip'],['left_hip','right_hip'],['left_shoulder','left_elbow'],['left_elbow','left_wrist'],['right_shoulder','right_elbow'],['right_elbow','right_wrist'],['left_hip','left_knee'],['left_knee','left_ankle'],['right_hip','right_knee'],['right_knee','right_ankle']];
-    function drawSLS(ps){
-        const s = Math.max(canvasSLS.width/vid.videoWidth, canvasSLS.height/vid.videoHeight);
-        const xo=(canvasSLS.width-vid.videoWidth*s)/2, yo=(canvasSLS.height-vid.videoHeight*s)/2;
-        ctxSLS.lineWidth=3; ctxSLS.lineCap='round'; ctxSLS.strokeStyle='#00ff41'; ctxSLS.shadowBlur=10; ctxSLS.shadowColor='#00ff41';
-        ps.forEach(p=>{
-            if(p.score<0.25)return; const m={}; p.keypoints.forEach(k=>m[k.name]=k);
-            ctxSLS.beginPath(); conns.forEach(([a,b])=>{const p1=m[a],p2=m[b]; if(p1&&p2&&p1.score>0.3&&p2.score>0.3){ctxSLS.moveTo(p1.x*s+xo,p1.y*s+yo);ctxSLS.lineTo(p2.x*s+xo,p2.y*s+yo)}}); ctxSLS.stroke();
-            ctxSLS.fillStyle='#ff0055'; p.keypoints.forEach(k=>{if(k.score>0.3){ctxSLS.beginPath();ctxSLS.arc(k.x*s+xo,k.y*s+yo,4,0,2*Math.PI);ctxSLS.fill();}});
+    function drawSLS(poses) {
+        const vidW = vid.videoWidth, vidH = vid.videoHeight; const canW = canvasSLS.width, canH = canvasSLS.height;
+        const scale = Math.max(canW/vidW, canH/vidH); const xo = (canW - vidW*scale)/2, yo = (canH - vidH*scale)/2;
+        ctxSLS.lineWidth = 3; ctxSLS.lineCap = 'round'; ctxSLS.strokeStyle = '#00ff41'; ctxSLS.shadowBlur = 10; ctxSLS.shadowColor = '#00ff41';
+        poses.forEach(p => {
+            if(p.score<0.25)return; const kp=p.keypoints; const m={}; kp.forEach(k=>m[k.name]=k);
+            ctxSLS.beginPath(); conns.forEach(([a,b])=>{ const p1=m[a],p2=m[b]; if(p1&&p2&&p1.score>0.3&&p2.score>0.3){ctxSLS.moveTo(p1.x*scale+xo,p1.y*scale+yo);ctxSLS.lineTo(p2.x*scale+xo,p2.y*scale+yo);} }); ctxSLS.stroke();
+            ctxSLS.fillStyle='#ff0055'; kp.forEach(k=>{if(k.score>0.3){ctxSLS.beginPath();ctxSLS.arc(k.x*scale+xo,k.y*scale+yo,4,0,2*Math.PI);ctxSLS.fill();}});
         });
     }
 </script>
-
-<script>
-/* FILTER SPEC */
-(function(){
-    let gl,p,pl,tl,t,active=false;const c=document.getElementById("gl-bluewave"),v=document.getElementById("bg-camera-feed");
-    function i(){
-        gl=c.getContext("webgl");if(!gl)return;
-        const vs=`attribute vec2 p;attribute vec2 t;varying vec2 vt;void main(){gl_Position=vec4(p,0,1);vt=t;}`;
-        const fs=`precision mediump float;uniform sampler2D u;uniform vec2 r;varying vec2 vt;
-        void main(){
-            vec2 o=1.5/r; 
-            vec4 n=texture2D(u,vt+vec2(0,-o.y)); vec4 s=texture2D(u,vt+vec2(0,o.y));
-            vec4 e=texture2D(u,vt+vec2(o.x,0)); vec4 w=texture2D(u,vt+vec2(-o.x,0));
-            float gx=length(e-w); float gy=length(n-s); 
-            float g=sqrt(gx*gx+gy*gy);
-            if(g>0.1) gl_FragColor=vec4(0.0, g*2.0, g*3.0, 1.0); else gl_FragColor=vec4(0.0,0.0,0.0,0.9);
-        }`;
-        p=cp(gl,vs,fs);pl=gl.getAttribLocation(p,"p");tl=gl.getAttribLocation(p,"t");
-        gl.bindBuffer(34962,gl.createBuffer());gl.bufferData(34962,new Float32Array([-1,-1,-1,1,1,-1,1,-1,-1,1,1,1]),35044);
-        gl.bindBuffer(34962,gl.createBuffer());gl.bufferData(34962,new Float32Array([0,1,0,0,1,1,1,1,0,0,1,0]),35044);
-        t=gl.createTexture();gl.bindTexture(3553,t);gl.texParameteri(3553,10242,33071);gl.texParameteri(3553,10243,33071);gl.texParameteri(3553,10241,9729);
-    }
-    function r(){
-        if(!active)return;if(!gl)i();
-        c.width=window.innerWidth;c.height=window.innerHeight;gl.viewport(0,0,c.width,c.height);
-        gl.useProgram(p);
-        gl.enableVertexAttribArray(pl);gl.bindBuffer(34962,gl.createBuffer());gl.bufferData(34962,new Float32Array([-1,-1,-1,1,1,-1,1,-1,-1,1,1,1]),35044);gl.vertexAttribPointer(pl,2,5126,false,0,0);
-        gl.enableVertexAttribArray(tl);gl.bindBuffer(34962,gl.createBuffer());gl.bufferData(34962,new Float32Array([0,1,0,0,1,1,1,1,0,0,1,0]),35044);gl.vertexAttribPointer(tl,2,5126,false,0,0);
-        gl.uniform2f(gl.getUniformLocation(p,"r"),c.width,c.height);
-        gl.bindTexture(3553,t);if(v.readyState>=2)gl.texImage2D(3553,0,6408,6408,5121,v);
-        gl.drawArrays(4,0,6);requestAnimationFrame(r);
-    }
-    function cp(g,v,f){const x=g.createProgram();let s=g.createShader(35633);g.shaderSource(s,v);g.compileShader(s);g.attachShader(x,s);s=g.createShader(35632);g.shaderSource(s,f);g.compileShader(s);g.attachShader(x,s);g.linkProgram(x);return x;}
-    window.BlueWave={start:()=>{active=true;r()},stop:()=>{active=false},resize:()=>{if(c){c.width=window.innerWidth;c.height=window.innerHeight}}};
-})();
-</script>
-
 </body>
 </html>
