@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v12.2 ICONS-FIX</title> 
+    <title>DETECTOR-OBR v12.3 TOUCH-SAFE</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&family=Creepster&family=VT323&display=swap" rel="stylesheet">
@@ -31,24 +31,30 @@
         }
         body.panels-hidden #app-ui { grid-template-columns: 0px 1fr; grid-template-rows: 1fr 0px; }
 
-        #left-panel { grid-area: left; border-right: 2px solid var(--hud-cyan); overflow: hidden; transition: all 0.5s ease; position: relative; }
-        #bottom-panel { grid-area: bottom; border-top: 2px solid var(--hud-cyan); overflow: hidden; transition: all 0.5s ease; }
+        #left-panel { grid-area: left; border-right: 2px solid var(--hud-cyan); overflow: hidden; transition: all 0.5s ease; position: relative; z-index: 50; }
+        #bottom-panel { grid-area: bottom; border-top: 2px solid var(--hud-cyan); overflow: hidden; transition: all 0.5s ease; z-index: 50; }
         
         #main-view-area { 
             grid-area: cam; position: relative; overflow: hidden; background: #000; width: 100%; height: 100%; 
-            touch-action: none; /* Importante para gestos */
+            /* Eliminamos listeners de aqui para evitar conflictos */
+        }
+
+        /* CAPA DE TOQUE (ZOOM LAYER) - Debajo de los botones, encima del video */
+        #touch-layer {
+            position: absolute; inset: 0; z-index: 10; /* Z-Index bajo */
+            touch-action: none;
         }
 
         body.panels-hidden #left-panel, body.panels-hidden #bottom-panel { display: none; }
 
-        .panel-container { background-color: var(--glass-panel); box-shadow: inset 0 0 20px rgba(0, 243, 255, 0.1); padding: 10px; display: flex; flex-direction: column; background-image: linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px); background-size: 20px 20px; z-index: 20; }
+        .panel-container { background-color: var(--glass-panel); box-shadow: inset 0 0 20px rgba(0, 243, 255, 0.1); padding: 10px; display: flex; flex-direction: column; background-image: linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px); background-size: 20px 20px; }
         #matrix-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.2; pointer-events: none; z-index: 0; }
         
-        #zoom-container { width: 100%; height: 100%; transform-origin: center center; transition: transform 0.3s ease-out; will-change: transform; }
+        #zoom-container { width: 100%; height: 100%; transform-origin: center center; transition: transform 0.3s ease-out; will-change: transform; z-index: 1; }
         #bg-camera-feed { width: 100%; height: 100%; object-fit: cover; transition: filter 0.3s ease; }
         #main-filter-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 
-        .camera-border { position: absolute; inset: 10px; pointer-events: none; z-index: 5; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1); }
+        .camera-border { position: absolute; inset: 10px; pointer-events: none; z-index: 20; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1); }
         .camera-border::before, .camera-border::after, .cb-inner::before, .cb-inner::after { content: ''; position: absolute; width: 20px; height: 20px; border-color: var(--hud-cyan); border-style: solid; transition: all 0.5s; }
         .camera-border::before { top: 0; left: 0; border-width: 2px 0 0 2px; }
         .camera-border::after { top: 0; right: 0; border-width: 2px 2px 0 0; }
@@ -56,14 +62,13 @@
         .cb-inner::before { bottom: 0; left: 0; border-width: 0 0 2px 2px; }
         .cb-inner::after { bottom: 0; right: 0; border-width: 0 2px 2px 0; }
 
-        .rec-container { position: absolute; top: 15px; left: 15px; color: var(--hud-red); font-family: 'Orbitron'; font-weight: bold; display: flex; align-items: center; gap: 8px; z-index: 10; text-shadow: 0 0 5px var(--hud-red); font-size: 0.8rem; pointer-events: none; }
+        .rec-container { position: absolute; top: 15px; left: 15px; color: var(--hud-red); font-family: 'Orbitron'; font-weight: bold; display: flex; align-items: center; gap: 8px; z-index: 30; text-shadow: 0 0 5px var(--hud-red); font-size: 0.8rem; pointer-events: none; }
         .rec-dot { width: 10px; height: 10px; background: var(--hud-red); border-radius: 50%; animation: blinkRed 1s infinite; }
         @keyframes blinkRed { 50% { opacity: 0.3; } }
 
-        .stats-container { position: absolute; bottom: 15px; right: 20px; font-family: 'Share Tech Mono'; font-size: 0.65rem; color: rgba(0, 243, 255, 0.7); text-shadow: 0 0 2px #000; z-index: 10; text-align: right; pointer-events: none; display: flex; gap: 10px; }
+        .stats-container { position: absolute; bottom: 15px; right: 20px; font-family: 'Share Tech Mono'; font-size: 0.65rem; color: rgba(0, 243, 255, 0.7); text-shadow: 0 0 2px #000; z-index: 30; text-align: right; pointer-events: none; display: flex; gap: 10px; }
         .stats-val { color: #fff; font-weight: bold; }
 
-        /* FILTROS */
         body.filter-night-vision #bg-camera-feed { filter: grayscale(100%) sepia(100%) hue-rotate(90deg) brightness(0.9) contrast(1.2) saturate(150%); }
         body.filter-night-vision #main-view-area::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4; background: radial-gradient(circle, transparent 60%, #000 95%); }
         body.filter-negative #bg-camera-feed { filter: invert(1) hue-rotate(180deg); }
@@ -113,16 +118,22 @@
         .energy-bar-seg.mid { background: var(--hud-orange); }
         .energy-bar-seg.high { background: var(--hud-red); }
         
-        /* BOTONES FLOTANTES (CON ICONOS) */
-        #filter-controls-container { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        /* BOTONES FLOTANTES COMPACTOS Y SEGUROS */
+        #filter-controls-container { 
+            position: absolute; top: 50%; right: 10px; transform: translateY(-50%); 
+            display: flex; flex-direction: column; gap: 8px; z-index: 100; /* Z-Index Alto */
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
         .filter-btn { 
-            width: 50px; height: 50px; background: rgba(0, 10, 20, 0.85); 
-            color: var(--hud-cyan); font-size: 1.2rem; /* Icono mas grande */
+            width: 38px; height: 38px; /* Más pequeño */
+            background: rgba(0, 10, 20, 0.9); 
+            color: var(--hud-cyan); font-size: 1rem; /* Icono ajustado */
             border: 1px solid var(--hud-cyan); cursor: pointer; 
             clip-path: polygon(15% 0, 100% 0, 100% 85%, 85% 100%, 0 100%, 0 15%);
             display: flex; align-items: center; justify-content: center;
+            pointer-events: auto; /* Asegura clic */
         }
-        .filter-btn.active { background: var(--hud-cyan); color: #000; box-shadow: 0 0 15px var(--hud-cyan); }
+        .filter-btn.active { background: var(--hud-cyan); color: #000; box-shadow: 0 0 10px var(--hud-cyan); }
         #btn-hud.active { background: var(--hud-cyan); color: #000; }
         #btn-hud { background: rgba(0, 10, 20, 0.9); color: var(--hud-cyan); }
 
@@ -138,6 +149,7 @@
         #enter-btn { display: none; padding: 15px 40px; border: 2px solid var(--hud-green); color: var(--hud-green); background: rgba(0,0,0,0.7); font-family: 'Orbitron'; font-size: 1.2rem; cursor: pointer; margin-top: 30px; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 0 15px var(--hud-green); }
         .btn-glitch { animation: btnGlitch 0.2s infinite; }
         @keyframes btnGlitch { 0% { transform: translate(0,0); } 20% { transform: translate(-2px, 1px); filter: hue-rotate(90deg); } 100% { transform: translate(0,0); } }
+        
         #zoom-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 5px; color: #fff; font-family: 'Share Tech Mono'; font-size: 0.8rem; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 40; }
 
         @media (max-width: 768px) { :root { --left-panel-w: 140px; --bottom-panel-h: 110px; } .digital-display { font-size: 1.5rem; } .btn-control { font-size: 0.6rem; padding: 5px; } .sb-display-area { font-size: 0.7rem; padding: 5px; } #spirit-box-section { margin-bottom: 5px; padding: 4px; } .dials-grid { gap: 4px; } .sensor-item { font-size: 0.55rem; padding: 2px 4px; } #follow-banner { bottom: 10px; } }
@@ -183,10 +195,16 @@
     </div>
 
     <div id="main-view-area">
+        <!-- ZOOM CONTAINER (VIDEO + CANVAS) -->
         <div id="zoom-container">
             <video id="bg-camera-feed" playsinline autoplay muted></video>
             <canvas id="main-filter-canvas" style="display:none;"></canvas>
         </div>
+        
+        <!-- CAPA DE TOQUE SEPARADA (ZOOM) -->
+        <div id="touch-layer"></div>
+
+        <!-- UI OVERLAYS (NO AFECTADOS POR ZOOM) -->
         <div class="camera-border"><div class="cb-inner"></div></div>
         <div class="rec-container"><div class="rec-dot"></div>REC</div>
         <div class="stats-container"><div><span class="stats-val" id="cam-fps">--</span> FPS</div><div><span class="stats-val" id="cam-res">--x--</span></div><div><span class="stats-val" id="zoom-lvl">1.0x</span></div></div>
@@ -202,17 +220,18 @@
                 <div id="step-3" class="seq-step">@EXPLORACIONES OBR</div>
             </div>
         </div>
+
+        <!-- BOTONES FLOTANTES (Z-INDEX ALTO) -->
         <div id="filter-controls-container">
             <button class="filter-btn" onclick="toggleFilter('night-vision')"><i class="fas fa-eye"></i></button>
             <button class="filter-btn" onclick="toggleFilter('sls')"><i class="fas fa-child"></i></button>
             <button class="filter-btn" onclick="toggleFilter('negative')"><i class="fas fa-adjust"></i></button>
             <button class="filter-btn" onclick="toggleFilter('focus')"><i class="fas fa-crosshairs"></i></button>
-            
-            <!-- BOTON RESET ZOOM -->
             <button class="filter-btn" onclick="resetZoomManual()" style="color:var(--hud-orange); border-color:var(--hud-orange);"><i class="fas fa-search-minus"></i></button>
-            
             <button class="filter-btn" id="btn-hud" onclick="toggleHUD()"><i class="fas fa-bars"></i></button>
         </div>
+        
+        <div id="zoom-msg">ZOOM x3.0</div>
     </div>
 
     <div id="bottom-panel" class="panel-container">
@@ -243,17 +262,19 @@
     let micMaxVol = 0;
     let restoreAudioTimer;
 
-    // ZOOM VARS
+    // ZOOM VARS (LONG PRESS)
     let zoomLevel = 1;
-    let initialPinchDist = 0;
     let longPressTimer;
     let isLongPressing = false;
+    let initialPinchDist = 0;
     const zoomContainer = document.getElementById('zoom-container');
-    const mainView = document.getElementById('main-view-area');
+    // USAR TOUCH LAYER PARA EVENTOS
+    const touchLayer = document.getElementById('touch-layer');
 
     const vid = document.getElementById('bg-camera-feed');
     const canvasSLS = document.getElementById('main-filter-canvas'); const ctxSLS = canvasSLS.getContext('2d');
     
+    // MATRIX
     const matrixCanvas = document.getElementById('matrix-canvas');
     const mCtx = matrixCanvas.getContext('2d');
     let matrixDrops = [];
@@ -264,161 +285,11 @@
     window.onload = () => {
         const eContainer = document.getElementById('energy-container');
         for(let i=0; i<20; i++){ let d = document.createElement('div'); d.className = 'energy-bar-seg'; eContainer.appendChild(d); energyBars.push(d); }
-        setupGestures();
+        setupZoomEvents();
         startLoadingSequence();
         loadData();
     };
 
-    // GESTOS Y UI
-    function setupGestures() {
-        const uiLayer = document.getElementById('app-ui');
-        
-        // Evento en el contenedor principal para mostrar/ocultar UI con un toque simple
-        // PERO ignorando si se toca un botón o panel
-        uiLayer.addEventListener('touchstart', (e) => {
-            if (e.target.closest('.filter-btn') || e.target.closest('.panel-container') || e.target.closest('button')) return;
-            
-            // Si no es UI, manejamos zoom o toggle UI
-            handleTouchStart(e);
-        }, {passive: false});
-        
-        uiLayer.addEventListener('touchmove', handleTouchMove, {passive: false});
-        uiLayer.addEventListener('touchend', handleTouchEnd);
-        
-        // Mouse support
-        uiLayer.addEventListener('mousedown', (e) => {
-            if (e.target.closest('.filter-btn') || e.target.closest('.panel-container')) return;
-            handleMouseDown(e);
-        });
-        uiLayer.addEventListener('mouseup', handleMouseUp);
-    }
-
-    // ZOOM LOGIC (LONG PRESS)
-    function handleTouchStart(e) {
-        // 1 Dedo: Posible Long Press o Tap para UI
-        if (e.touches.length === 1) {
-            isLongPressing = false;
-            const t = e.touches[0];
-            longPressTimer = setTimeout(() => {
-                triggerZoomLogic(t.clientX, t.clientY);
-            }, 600); // 600ms para long press
-        } 
-        // 2 Dedos: Pinch (Ajuste fino opcional)
-        else if (e.touches.length === 2) {
-            clearTimeout(longPressTimer);
-            initialPinchDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-        }
-    }
-
-    function handleTouchMove(e) {
-        // Si se mueve, cancelamos Long Press (es scroll o pan)
-        if (e.touches.length === 1) {
-            clearTimeout(longPressTimer);
-        } else if (e.touches.length === 2) {
-            e.preventDefault(); clearTimeout(longPressTimer);
-            // Pinch logic basica
-            const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-            if (initialPinchDist > 0) {
-                const delta = dist - initialPinchDist;
-                zoomLevel += delta * 0.005; 
-                zoomLevel = Math.min(Math.max(1, zoomLevel), 5);
-                applyZoom();
-                initialPinchDist = dist;
-            }
-        }
-    }
-
-    function handleTouchEnd(e) {
-        // Si soltamos antes de los 600ms, fue un TAP corto -> Toggle UI
-        if (longPressTimer) {
-            clearTimeout(longPressTimer);
-            if (!isLongPressing && e.touches.length === 0) {
-                // Fue tap corto
-                toggleUIOverlay();
-            }
-        }
-        isLongPressing = false;
-    }
-
-    // Mouse Handlers
-    function handleMouseDown(e) {
-        isLongPressing = false;
-        longPressTimer = setTimeout(() => { triggerZoomLogic(e.clientX, e.clientY); }, 600);
-    }
-    function handleMouseUp(e) {
-        clearTimeout(longPressTimer);
-        if (!isLongPressing) toggleUIOverlay();
-        isLongPressing = false;
-    }
-
-    function triggerZoomLogic(x, y) {
-        isLongPressing = true;
-        const rect = mainView.getBoundingClientRect();
-        const relX = x - rect.left;
-        const relY = y - rect.top;
-
-        // Logica de fases: 1x -> 3x -> 5x
-        if (zoomLevel < 2.0) {
-            zoomLevel = 3.0;
-            zoomContainer.style.transformOrigin = `${relX}px ${relY}px`;
-        } else if (zoomLevel < 4.0) {
-            zoomLevel = 5.0;
-            // Mantener origen o ajustar si se desea
-        } else {
-            // Si ya esta en 5x, no hace nada o mantiene
-        }
-        
-        applyZoom();
-        showZoomMsg();
-    }
-    
-    function resetZoomManual() {
-        zoomLevel = 1.0;
-        zoomContainer.style.transformOrigin = "center center";
-        applyZoom();
-        showZoomMsg();
-    }
-
-    function applyZoom() {
-        zoomContainer.style.transform = `scale(${zoomLevel})`;
-        document.getElementById('zoom-lvl').innerText = zoomLevel.toFixed(1) + "x";
-    }
-    
-    function showZoomMsg() {
-        const msg = document.getElementById('zoom-msg');
-        msg.innerText = `ZOOM x${zoomLevel.toFixed(1)}`;
-        msg.style.opacity = 1;
-        setTimeout(() => msg.style.opacity = 0, 1000);
-    }
-
-    // UI TOGGLE (Reemplaza la logica anterior de hideControls)
-    function toggleUIOverlay() {
-        if (uiVisible) hideControls(); else showControls();
-    }
-    
-    function showControls() {
-        uiVisible = true;
-        document.getElementById('filter-controls-container').style.opacity = '1'; 
-        document.getElementById('filter-controls-container').style.pointerEvents = 'auto';
-        
-        // Ocultar decoraciones centrales para limpiar vista
-        document.getElementById('logo-container').classList.add('ui-hiding'); 
-        document.getElementById('follow-banner').classList.add('ui-hiding');
-        
-        clearTimeout(hideTimeout); 
-        hideTimeout = setTimeout(hideControls, 5000);
-    }
-    
-    function hideControls() {
-        uiVisible = false;
-        document.getElementById('filter-controls-container').style.opacity = '0'; 
-        document.getElementById('filter-controls-container').style.pointerEvents = 'none';
-        
-        document.getElementById('logo-container').classList.remove('ui-hiding'); 
-        document.getElementById('follow-banner').classList.remove('ui-hiding');
-    }
-
-    // LOADING SEQUENCE
     function startLoadingSequence() {
         const txtMain = document.getElementById('loading-text-main');
         const txtSub = document.getElementById('loading-text-sub');
@@ -455,6 +326,103 @@
             if(matrixCanvas.height - (matrixDrops[i] * 15) < 0 && Math.random() > 0.975) matrixDrops[i] = 0;
             matrixDrops[i]++;
         }
+    }
+
+    // ZOOM EVENTS (ATTACHED TO TOUCH LAYER)
+    function setupZoomEvents() {
+        touchLayer.addEventListener('touchstart', handleTouchStart, {passive: false});
+        touchLayer.addEventListener('touchmove', handleTouchMove, {passive: false});
+        touchLayer.addEventListener('touchend', handleTouchEnd);
+        touchLayer.addEventListener('mousedown', handleMouseDown);
+        touchLayer.addEventListener('mouseup', handleMouseUp);
+    }
+
+    function handleTouchStart(e) {
+        if (e.touches.length === 1) {
+            isLongPressing = false;
+            const t = e.touches[0];
+            longPressTimer = setTimeout(() => { triggerLongPressZoom(t.clientX, t.clientY); }, 600);
+        } 
+        else if (e.touches.length === 2) {
+            clearTimeout(longPressTimer);
+            initialPinchDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+        }
+    }
+
+    function handleTouchMove(e) {
+        if (e.touches.length === 1) { clearTimeout(longPressTimer); } 
+        else if (e.touches.length === 2) {
+            e.preventDefault(); clearTimeout(longPressTimer);
+            const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+            if (initialPinchDist > 0) {
+                const delta = dist - initialPinchDist;
+                zoomLevel += delta * 0.005; zoomLevel = Math.min(Math.max(1, zoomLevel), 5);
+                applyZoom(); initialPinchDist = dist;
+            }
+        }
+    }
+
+    function handleTouchEnd(e) {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            if (!isLongPressing && e.touches.length === 0) {
+                toggleUIOverlay(); // TAP CORTO
+            }
+        }
+        isLongPressing = false;
+    }
+
+    // Mouse
+    function handleMouseDown(e) { isLongPressing = false; longPressTimer = setTimeout(() => { triggerLongPressZoom(e.clientX, e.clientY); }, 600); }
+    function handleMouseUp(e) { clearTimeout(longPressTimer); if (!isLongPressing) toggleUIOverlay(); isLongPressing = false; }
+
+    function triggerLongPressZoom(x, y) {
+        isLongPressing = true;
+        const rect = document.getElementById('main-view-area').getBoundingClientRect();
+        const relX = x - rect.left;
+        const relY = y - rect.top;
+
+        if (zoomLevel < 2.5) { zoomLevel = 3.0; } else { zoomLevel = 5.0; }
+        
+        zoomContainer.style.transformOrigin = `${relX}px ${relY}px`;
+        applyZoom();
+        showZoomMsg();
+    }
+    
+    function resetZoomManual() {
+        zoomLevel = 1.0;
+        zoomContainer.style.transformOrigin = "center center";
+        applyZoom();
+        showZoomMsg();
+    }
+
+    function applyZoom() {
+        zoomContainer.style.transform = `scale(${zoomLevel})`;
+        document.getElementById('zoom-lvl').innerText = zoomLevel.toFixed(1) + "x";
+    }
+    
+    function showZoomMsg() {
+        const msg = document.getElementById('zoom-msg');
+        msg.innerText = `ZOOM x${zoomLevel.toFixed(1)}`;
+        msg.style.opacity = 1; setTimeout(() => msg.style.opacity = 0, 1000);
+    }
+
+    // UI TOGGLE
+    function toggleUIOverlay() { if (uiVisible) hideControls(); else showControls(); }
+    function showControls() {
+        uiVisible = true;
+        document.getElementById('filter-controls-container').style.opacity = '1'; 
+        document.getElementById('filter-controls-container').style.pointerEvents = 'auto';
+        document.getElementById('logo-container').classList.add('ui-hiding'); 
+        document.getElementById('follow-banner').classList.add('ui-hiding');
+        clearTimeout(hideTimeout); hideTimeout = setTimeout(hideControls, 5000);
+    }
+    function hideControls() {
+        uiVisible = false;
+        document.getElementById('filter-controls-container').style.opacity = '0'; 
+        document.getElementById('filter-controls-container').style.pointerEvents = 'none';
+        document.getElementById('logo-container').classList.remove('ui-hiding'); 
+        document.getElementById('follow-banner').classList.remove('ui-hiding');
     }
 
     async function enterApp(){
@@ -595,6 +563,7 @@
         
         const now = audioCtx.currentTime;
         if(bgGain) { bgGain.gain.cancelScheduledValues(now); bgGain.gain.setValueAtTime(bgGain.gain.value, now); bgGain.gain.linearRampToValueAtTime(0.0, now + 0.1); setTimeout(() => { if(bgGain) bgGain.gain.value = 0.05; }, 100); }
+        if(noiseGain) { noiseGain.gain.cancelScheduledValues(now); noiseGain.gain.setValueAtTime(noiseGain.gain.value, now); noiseGain.gain.linearRampToValueAtTime(0.0, now + 0.1); }
         
         clearTimeout(restoreAudioTimer);
         restoreAudioTimer = setTimeout(restoreAudioLevels, (txt.length * 100) + 2000); 
@@ -628,6 +597,7 @@
         await tf.ready(); 
         const d = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING }); 
         setInterval(async () => { 
+            // HIPERSENSIBLE: 0.15 UMBRAL
             if(currentFilter==='sls' && vid.readyState===4) { try { latestPoses = await d.estimatePoses(vid, {maxPoses: 5, scoreThreshold: 0.15}); } catch(e) { latestPoses = []; } } else { latestPoses = []; } 
         }, 100); 
     }
@@ -636,12 +606,13 @@
         const s = Math.max(canvasSLS.width/vid.videoWidth, canvasSLS.height/vid.videoHeight); const xo=(canvasSLS.width-vid.videoWidth*s)/2, yo=(canvasSLS.height-vid.videoHeight*s)/2;
         ctxSLS.lineWidth=3; ctxSLS.lineCap='round'; ctxSLS.strokeStyle='#00ff41'; ctxSLS.shadowBlur=10; ctxSLS.shadowColor='#00ff41';
         poses.forEach(p => { 
+            // Dibujo forzado incluso con poca confianza
             if(p.score<0.15)return; const kp=p.keypoints; const m={}; kp.forEach(k=>m[k.name]=k); 
             ctxSLS.beginPath(); 
-            conns.forEach(([a,b])=>{ const p1=m[a],p2=m[b]; if(p1&&p2&&p1.score>0.2&&p2.score>0.2){ctxSLS.moveTo(p1.x*s+xo,p1.y*s+yo);ctxSLS.lineTo(p2.x*s+xo,p2.y*s+yo);} }); 
+            conns.forEach(([a,b])=>{ const p1=m[a],p2=m[b]; if(p1&&p2){ctxSLS.moveTo(p1.x*s+xo,p1.y*s+yo);ctxSLS.lineTo(p2.x*s+xo,p2.y*s+yo);} }); 
             ctxSLS.stroke(); 
             ctxSLS.fillStyle='#ff0055'; 
-            kp.forEach(k=>{if(k.score>0.2){ctxSLS.beginPath();ctxSLS.arc(k.x*s+xo,k.y*s+yo,4,0,2*Math.PI);ctxSLS.fill();}}); 
+            kp.forEach(k=>{if(k.score>0.15){ctxSLS.beginPath();ctxSLS.arc(k.x*s+xo,k.y*s+yo,4,0,2*Math.PI);ctxSLS.fill();}}); 
         });
     }
 </script>
