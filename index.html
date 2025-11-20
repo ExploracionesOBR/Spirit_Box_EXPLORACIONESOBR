@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v6.6 ULTIMATE</title> 
+    <title>DETECTOR-OBR v7.0 PRO</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&family=Creepster&display=swap" rel="stylesheet">
@@ -22,7 +22,8 @@
             --hud-green: #00ff41; 
             --hud-orange: #ffae00;
             --hud-red: #ff3333;
-            --glass-panel: rgba(5, 8, 15, 0.98);
+            --hud-blue: #0088ff;
+            --glass-panel: rgba(6, 10, 20, 0.95);
             --panel-w: 340px; 
             --panel-h: 130px;
         }
@@ -48,56 +49,35 @@
             object-fit: cover; transform: translate(-50%, -50%); z-index: 1; opacity: 0.9;
         }
 
-        /* --- FILTROS MEJORADOS --- */
-        /* NVG: Viñeta oscura real */
+        /* FILTROS */
         body.filter-night-vision #bg-camera-feed { 
-            filter: grayscale(100%) sepia(100%) hue-rotate(90deg) brightness(0.9) contrast(1.5) saturate(300%); 
+            filter: grayscale(100%) sepia(100%) hue-rotate(90deg) brightness(0.8) contrast(1.4) saturate(200%); 
         }
         body.filter-night-vision #main-view-area::after {
             content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
-            background: radial-gradient(circle, transparent 40%, #000 95%); /* Viñeta fuerte */
-            mix-blend-mode: multiply;
+            background: radial-gradient(circle, transparent 50%, #000 100%); /* Viñeta Oscura */
         }
-
         body.filter-negative #bg-camera-feed { filter: invert(1) hue-rotate(180deg); }
         
         #main-filter-canvas, #gl-bluewave { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
         body.filter-sls #main-filter-canvas { display: block; z-index: 3; }
         body.filter-spectral #gl-bluewave { display: block; z-index: 4; mix-blend-mode: screen; }
 
-        /* --- LOGO PEQUEÑO --- */
-        #logo-container { 
-            position: fixed; top: 20px; right: 20px; z-index: 50; 
-            pointer-events: none; transition: opacity 0.3s ease; 
-        }
-        #logo-image { 
-            width: 60px; /* Reducido */
-            height: 60px; 
-            animation: logo-float 6s infinite ease-in-out; 
-            filter: drop-shadow(0 0 5px var(--hud-cyan)); 
-        }
+        /* LOGO PEQUEÑO */
+        #logo-container { position: fixed; top: 15px; right: 15px; z-index: 50; pointer-events: none; transition: opacity 0.3s; }
+        #logo-image { width: 55px; height: 55px; filter: drop-shadow(0 0 5px var(--hud-cyan)); animation: float 4s infinite; }
 
-        /* --- BANNER SÍGUENOS (HORIZONTAL) --- */
+        /* BANNER SÍGUENOS (Horizontal) */
         #follow-banner {
-            position: absolute; bottom: 30px; left: 50%; 
-            transform: translateX(-50%); z-index: 20;
+            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 20;
             display: flex; flex-direction: column; align-items: center;
-            opacity: 0; pointer-events: none; transition: opacity 1s;
+            opacity: 0; pointer-events: none; transition: opacity 0.5s;
+            background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 20px; border: 1px solid var(--hud-cyan);
         }
-        #follow-banner.show { opacity: 1; animation: glitch-anim 0.5s infinite alternate-reverse; }
-        
-        .social-icons { 
-            display: flex; flex-direction: row; gap: 20px; /* Horizontal */
-            margin-bottom: 5px; 
-        }
-        .social-icons svg { 
-            width: 22px; height: 22px; fill: var(--hud-cyan); 
-            filter: drop-shadow(0 0 5px var(--hud-cyan)); 
-        }
-        .follow-text { 
-            font-family: 'Creepster'; font-size: 1.2rem; color: var(--hud-red); 
-            text-shadow: 2px 2px 0 #000; letter-spacing: 2px;
-        }
+        #follow-banner.show { opacity: 1; }
+        .social-icons { display: flex; gap: 15px; margin-bottom: 3px; }
+        .social-icons svg { width: 18px; height: 18px; fill: var(--hud-cyan); filter: drop-shadow(0 0 3px var(--hud-cyan)); }
+        .follow-text { font-family: 'Creepster'; font-size: 1rem; color: #fff; letter-spacing: 1px; text-shadow: 2px 0 0 var(--hud-red); }
 
         /* --- PANELES --- */
         #left-panel, #bottom-panel {
@@ -111,64 +91,69 @@
         body.panels-active #left-panel, body.panels-active #bottom-panel { transform: translate(0, 0); pointer-events: auto; }
 
         .panel { padding: 8px; display: flex; flex-direction: column; gap: 5px; height: 100%; box-sizing: border-box; }
-        .panel-section { background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255,255,255,0.08); padding: 5px; margin-bottom: 2px; }
+        .panel-section { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255,255,255,0.05); padding: 5px; margin-bottom: 2px; }
         .section-title { 
-            font-family: 'Orbitron'; font-size: 0.65rem; font-weight: 800; 
+            font-family: 'Orbitron'; font-size: 0.6rem; font-weight: 800; 
             color: var(--hud-cyan); text-transform: uppercase; letter-spacing: 1px; 
-            margin-bottom: 4px; border-bottom: 1px solid rgba(0, 243, 255, 0.3); 
+            margin-bottom: 4px; border-bottom: 1px solid rgba(0, 243, 255, 0.2); 
         }
 
         /* SENSORES */
-        .sensor-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.6rem; margin-bottom: 2px; padding: 2px; }
+        .sensor-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.6rem; padding: 2px; }
         .sensor-led { width: 6px; height: 6px; border-radius: 50%; margin-right: 6px; background: #333; transition: 0.3s; }
         .led-green { background: var(--hud-green); box-shadow: 0 0 6px var(--hud-green); }
         .led-blue { background: var(--hud-blue); box-shadow: 0 0 6px var(--hud-blue); }
         .led-orange { background: var(--hud-orange); box-shadow: 0 0 6px var(--hud-orange); }
         .led-red { background: var(--hud-red); }
 
-        /* RADAR (Debajo Volumen) */
+        /* SPIRIT BOX (PROTAGONISTA) */
+        #spirit-box-section {
+            border: 1px solid var(--hud-green);
+            background: rgba(0, 20, 0, 0.3); /* Tinte verde oscuro */
+            box-shadow: inset 0 0 20px rgba(0, 255, 65, 0.1);
+            padding: 8px;
+        }
+        .voice-led { width: 12px; height: 12px; border-radius: 50%; background: #111; border: 1px solid #444; transition: 0.1s; }
+        .voice-led.listening { background: var(--hud-green); box-shadow: 0 0 15px var(--hud-green), inset 0 0 5px #fff; }
+        
+        /* RADAR PROXIMIDAD (CIRCULAR PROFESIONAL) */
+        #radar-section { display: flex; flex-direction: column; align-items: center; margin-top: 5px; }
         #radar-container {
-            width: 100%; height: 50px; background: #000; border: 1px solid #333;
-            position: relative; overflow: hidden; margin-top: 5px;
-            background-image: radial-gradient(rgba(0, 243, 255, 0.15) 1px, transparent 1px);
-            background-size: 10px 10px; display: flex; justify-content: center; align-items: center;
+            width: 80px; height: 80px; border-radius: 50%;
+            background: radial-gradient(circle, #002 0%, #000 90%);
+            border: 2px solid #333; position: relative; overflow: hidden;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        /* Grid del radar */
+        #radar-container::before {
+            content: ''; position: absolute; inset: 0; border-radius: 50%;
+            background: repeating-radial-gradient(transparent 0, transparent 18px, rgba(0, 255, 65, 0.3) 19px, rgba(0, 255, 65, 0.3) 20px);
+        }
+        #radar-container::after {
+            content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 1px; background: rgba(0,255,65,0.3);
+            transform: translateY(-50%);
         }
         #radar-scan {
-            position: absolute; top: 50%; left: 50%; width: 140%; height: 140%;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: conic-gradient(from 0deg, transparent 0deg, rgba(0, 255, 65, 0.1) 60deg, rgba(0, 255, 65, 0.8) 90deg, transparent 91deg);
-            transform-origin: top left; margin-top: -70%; margin-left: -70%;
             border-radius: 50%; animation: radarSpin 2s linear infinite;
         }
         #radar-scan.alert {
-            background: conic-gradient(from 0deg, transparent 0deg, rgba(255, 0, 0, 0.1) 60deg, rgba(255, 0, 0, 0.8) 90deg, transparent 91deg);
-            animation: radarSpin 0.5s linear infinite;
+             background: conic-gradient(from 0deg, transparent 0deg, rgba(255, 0, 0, 0.1) 60deg, rgba(255, 0, 0, 0.8) 90deg, transparent 91deg);
+             animation: radarSpin 0.5s linear infinite;
         }
-        @keyframes radarSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-        /* SPIRIT BOX */
-        .spirit-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
-        .voice-led { width: 10px; height: 10px; border-radius: 50%; background: #111; border: 1px solid #444; transition: 0.1s; }
-        .voice-led.listening { background: var(--hud-green); box-shadow: 0 0 15px var(--hud-green), inset 0 0 5px #fff; animation: pulseGreen 0.5s infinite; }
-        @keyframes pulseGreen { 0%{opacity:0.5;} 50%{opacity:1;} 100%{opacity:0.5;} }
-        .btn-control { background: #111; border: 1px solid #444; color: #888; font-family: 'Orbitron'; font-size: 0.6rem; padding: 6px; cursor: pointer; text-align: center; }
-        .pwr-on { border-color: var(--hud-green); color: var(--hud-green); background: rgba(0,50,0,0.5); }
-
-        /* GRAPH ENERGY (Pequeño y Ancho) */
-        #energy-display { 
-            display: flex; align-items: flex-end; gap: 2px; 
-            height: 100%; background: rgba(0,0,0,0.5); 
-            border: 1px solid #333; padding: 2px; 
+        
+        /* GRAPH ENERGY (CANVAS DETALLADO) */
+        #energy-container { 
+            height: 100%; background: #050505; border: 1px solid #333; 
+            display: flex; flex-direction: column; justify-content: center; 
         }
-        .energy-bar { 
-            flex: 1; height: 0%; 
-            background: linear-gradient(to top, var(--hud-cyan), var(--hud-blue)); 
-            opacity: 0.9; transition: height 0.05s; 
-        }
+        #energy-canvas { width: 100%; height: 100%; }
 
         /* PANEL INFERIOR */
-        .dials-grid { display: grid; grid-template-columns: 60px 60px 60px 1fr 70px; gap: 8px; align-items: center; height: 100%; }
-        .dial-container { width: 50px; height: 50px; border-radius: 50%; margin: 0 auto; background: #0b0c15; box-shadow: inset 0 0 5px #000; position: relative; border: 1px solid #222; }
-        .dial-needle { position: absolute; width: 2px; height: 20px; background: #fff; bottom: 50%; left: 50%; transform-origin: bottom center; transform: translateX(-50%) rotate(-45deg); z-index: 2; transition: transform 0.3s ease; }
+        .dials-grid { display: grid; grid-template-columns: 55px 55px 55px 1fr 70px; gap: 6px; align-items: center; height: 100%; }
+        .dial-container { width: 45px; height: 45px; border-radius: 50%; margin: 0 auto; background: #0b0c15; box-shadow: inset 0 0 5px #000; position: relative; border: 1px solid #222; }
+        .dial-needle { position: absolute; width: 2px; height: 18px; background: #fff; bottom: 50%; left: 50%; transform-origin: bottom center; transform: translateX(-50%) rotate(-45deg); z-index: 2; transition: transform 0.3s ease; }
         .knob-label { font-size: 0.5rem; color: var(--hud-cyan); margin-top: 2px; font-weight: bold; text-align: center; }
 
         /* BOTONES */
@@ -178,10 +163,27 @@
 
         /* LOADING */
         #loading-overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(#111, #000); }
-        .loader-logo { width: 70px; margin-bottom: 15px; animation: pulseG 2s infinite; }
-        @keyframes pulseG { 0%{filter:drop-shadow(0 0 2px cyan);} 50%{filter:drop-shadow(0 0 10px cyan);} 100%{filter:drop-shadow(0 0 2px cyan);} }
-        #enter-btn { display: none; padding: 10px 30px; border: 2px solid var(--hud-green); color: var(--hud-green); background: transparent; font-family: 'Orbitron'; font-size: 1.1rem; cursor: pointer; margin-top: 20px; }
+        .loader-logo { width: 80px; margin-bottom: 15px; animation: pulseG 2s infinite; }
+        #enter-btn { display: none; padding: 10px 30px; border: 2px solid var(--hud-green); color: var(--hud-green); background: transparent; font-family: 'Orbitron'; font-size: 1.1rem; cursor: pointer; margin-top: 20px; animation: pulseG 2s infinite; }
 
+        /* CONTROLES INTERNOS */
+        .btn-control { background: #111; border: 1px solid #444; color: #888; font-family: 'Orbitron'; font-size: 0.6rem; padding: 8px; cursor: pointer; text-align: center; }
+        .pwr-on { border-color: var(--hud-green); color: var(--hud-green); background: rgba(0,50,0,0.5); }
+        input[type=range] { width: 100%; accent-color: var(--hud-green); }
+
+        /* MARCO CÁMARA */
+        #camera-frame { position: absolute; top: 10px; left: 10px; right: 10px; bottom: 10px; pointer-events: none; z-index: 10; border: 1px solid transparent; transition: all 0.5s; }
+        body.panels-active #camera-frame { border-color: rgba(0, 243, 255, 0.3); }
+        #camera-frame::before, #camera-frame::after { content: ''; position: absolute; width: 0; height: 0; border-color: var(--hud-cyan); border-style: solid; transition: all 0.5s; }
+        #camera-frame::before { top: 0; left: 0; } #camera-frame::after { bottom: 0; right: 0; }
+        body.panels-active #camera-frame::before { width: 30px; height: 30px; border-width: 2px 0 0 2px; box-shadow: -2px -2px 10px var(--hud-cyan); }
+        body.panels-active #camera-frame::after { width: 30px; height: 30px; border-width: 0 2px 2px 0; box-shadow: 2px 2px 10px var(--hud-cyan); }
+
+        @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-5px);} }
+        @keyframes pulseG { 0%{filter:drop-shadow(0 0 2px cyan);} 50%{filter:drop-shadow(0 0 10px cyan);} 100%{filter:drop-shadow(0 0 2px cyan);} }
+        @keyframes radarSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* RESPONSIVE */
         @media (min-aspect-ratio: 1/1) {
             #left-panel { top: 0; left: 0; width: var(--panel-w); height: 100vh; transform: translateX(-100%); border-right: 1px solid var(--hud-cyan); }
             #bottom-panel { bottom: 0; left: var(--panel-w); width: calc(100% - var(--panel-w)); height: var(--panel-h); transform: translateY(100%); border-top: 1px solid var(--hud-cyan); }
@@ -192,9 +194,6 @@
             #bottom-panel { bottom: 0; left: 0; width: 100vw; height: 110px; transform: translateY(100%); border-top: 1px solid var(--hud-pink); }
             body.panels-active #main-view-area { opacity: 0.2; }
         }
-        
-        @keyframes glitch-anim { 0% { opacity: 1; transform: translateX(-50%) skew(0deg); } 20% { opacity: 0.8; transform: translateX(-50%) skew(-5deg); } 100% { opacity: 1; transform: translateX(-50%) skew(0deg); } }
-        @keyframes logo-float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-5px);} }
     </style>
 </head>
 <body>
@@ -212,6 +211,7 @@
         <video id="bg-camera-feed" playsinline autoplay muted></video>
         <canvas id="main-filter-canvas"></canvas>
         <canvas id="gl-bluewave"></canvas>
+        <div id="camera-frame"></div>
         
         <div id="follow-banner">
             <div class="social-icons">
@@ -234,12 +234,12 @@
                 <div class="sensor-row"><div style="display:flex;align-items:center"><div id="led-mic" class="sensor-led"></div><span>🎙️ MICRÓFONO</span></div><span id="val-mic" style="color:#888">OFF</span></div>
             </div>
 
-            <div class="panel-section">
+            <div class="panel-section" id="spirit-box-section">
                 <div class="spirit-header">
-                    <div class="section-title" style="margin:0; border:none; color:var(--hud-green);">SPIRIT BOX</div>
+                    <div class="section-title" style="margin:0; border:none; color:var(--hud-green); font-size:0.8rem;">SPIRIT BOX</div>
                     <div id="voice-led" class="voice-led" title="Verde: Escuchando"></div>
                 </div>
-                <div class="control-grid">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; margin:5px 0;">
                     <button id="btn-pwr" class="btn-control" onclick="toggleSpirit()">OFF</button>
                     <button id="btn-spd" class="btn-control" onclick="cycleSpeed()">SPD 1</button>
                 </div>
@@ -249,11 +249,13 @@
                 </div>
             </div>
 
-            <div class="panel-section" style="flex-grow:1;">
-                <div class="section-title" style="color:var(--hud-orange);">PROXIMIDAD</div>
+            <div id="radar-section">
+                <div class="knob-label" style="color:var(--hud-orange);">PROXIMIDAD</div>
                 <div id="radar-container">
                     <div id="radar-scan"></div>
-                    <div style="position:absolute;bottom:2px;right:4px;font-size:0.5rem;color:#fff;">SCAN</div>
+                    <div style="position:absolute; inset:0; border-radius:50%; border:1px solid rgba(255,255,255,0.1);"></div>
+                    <div style="position:absolute; top:50%; left:0; width:100%; height:1px; background:rgba(255,255,255,0.2);"></div>
+                    <div style="position:absolute; left:50%; top:0; height:100%; width:1px; background:rgba(255,255,255,0.2);"></div>
                 </div>
             </div>
         </div>
@@ -264,10 +266,12 @@
             <div class="dials-grid">
                 <div class="dial-wrapper"><div class="dial-container"><div class="dial-needle" id="compass-needle"></div></div><div class="knob-label">MAG</div></div>
                 <div class="dial-wrapper"><div class="dial-container"><div class="dial-needle" id="emf-needle"></div></div><div class="knob-label">EMF</div></div>
-                <div class="dial-wrapper"><div class="dial-container"><div class="dial-needle" id="temp-needle"></div></div><div class="knob-label">TEMP <span id="temp-val">--</span></div></div>
+                <div class="dial-wrapper"><div class="dial-container"><div class="dial-needle" id="temp-needle"></div></div><div class="knob-label">TEMP</div></div>
                 
-                <div id="energy-display">
-                    </div>
+                <div id="energy-container">
+                    <span class="knob-label" style="text-align:center; margin:0 0 2px 0;">ENERGY</span>
+                    <canvas id="energy-canvas"></canvas>
+                </div>
 
                 <div id="panel-sys-stats">
                     <div>REC 🔴</div>
@@ -299,15 +303,8 @@
 
     const vid = document.getElementById('bg-camera-feed');
     const canvasSLS = document.getElementById('main-filter-canvas'); const ctxSLS = canvasSLS.getContext('2d');
-    const energyDiv = document.getElementById('energy-display');
-    const bars = [];
-    
-    for(let i=0; i<18; i++){
-        let b = document.createElement('div');
-        b.className = 'energy-bar';
-        energyDiv.appendChild(b);
-        bars.push(b);
-    }
+    const energyCanvas = document.getElementById('energy-canvas'); const ctxEnergy = energyCanvas.getContext('2d');
+    const energyBars = [], peakHolds = []; // Para el grafico canvas
 
     window.onload = () => {
         let p=0;
@@ -318,9 +315,8 @@
             if(p===100){
                 clearInterval(t);
                 setTimeout(async ()=>{
-                    try{ await loadData(); await initMoveNet(); }catch(e){}
+                    try{ await loadData(); }catch(e){}
                     document.getElementById('enter-btn').style.display='block';
-                    document.getElementById('load-text').innerText="LISTO";
                 },300);
             }
         }, 50);
@@ -334,6 +330,10 @@
         
         initMic(); initFollowBanner();
         await startCam();
+        
+        // SLS INIT SEGURO
+        await initMoveNet(); 
+        
         initSensors(); initProximity();
         loop();
     }
@@ -351,6 +351,9 @@
     }
     function resize(){
         canvasSLS.width = window.innerWidth; canvasSLS.height = window.innerHeight;
+        // Ajustar canvas energia al contenedor
+        const ec = document.getElementById('energy-container');
+        energyCanvas.width = ec.clientWidth; energyCanvas.height = ec.clientHeight - 15; // Restar header
         if(window.BlueWave) window.BlueWave.resize();
     }
 
@@ -413,7 +416,7 @@
                 active=true;
             }
         });
-        if(!active) setInterval(()=>{ /* Simulation fallback */ }, 1000);
+        if(!active) setInterval(()=>{ /* Simulación Fallback */ }, 1000);
     }
     
     function initProximity(){
@@ -441,7 +444,8 @@
         try{
             const s = await navigator.mediaDevices.getUserMedia({audio:true});
             micSource = audioCtx.createMediaStreamSource(s);
-            analyser = audioCtx.createAnalyser(); analyser.fftSize=64;
+            // FFT Size 256 = 128 bins
+            analyser = audioCtx.createAnalyser(); analyser.fftSize=256; 
             micSource.connect(analyser);
             updSens('mic', 'ON', 'green');
             initRec();
@@ -461,7 +465,7 @@
             }
             loopSpirit();
         }else{
-            btn.innerText="OFF"; btn.className="btn-control pwr-off";
+            btn.innerText="OFF"; btn.className="btn-control";
             if(bgNode) bgNode.stop();
             if(window.speechSynthesis) window.speechSynthesis.cancel();
             document.getElementById('voice-led').classList.remove('listening');
@@ -472,7 +476,10 @@
         speed++; if(speed>3) speed=1;
         const btn = document.getElementById('btn-spd');
         btn.innerText = "SPD "+speed;
-        btn.className = "btn-control spd-"+speed;
+        btn.className = "btn-control";
+        if(speed===1) btn.style.borderColor='var(--hud-blue)';
+        if(speed===2) btn.style.borderColor='var(--hud-orange)';
+        if(speed===3) btn.style.borderColor='var(--hud-red)';
     }
 
     function loopSpirit(){
@@ -533,19 +540,42 @@
             document.getElementById('p-fps').innerText = frames;
             frames=0; lastFps=performance.now();
             let t = 18 + Math.random();
-            document.getElementById('temp-val').innerText = t.toFixed(1)+"°";
             document.getElementById('temp-needle').style.transform = `translateX(-50%) rotate(${((t-10)*6)-45}deg)`;
         }
         if(currentFilter==='sls' && latestPoses.length>0){
             ctxSLS.clearRect(0,0,canvasSLS.width,canvasSLS.height);
             drawSLS(latestPoses);
         }
-        if(analyser){
-            const d = new Uint8Array(analyser.frequencyBinCount);
-            analyser.getByteFrequencyData(d);
-            for(let i=0;i<18;i++) bars[i].style.height = Math.max(5, (d[i]*100/255)) + '%';
-        }
+        if(analyser) drawEnergyCanvas();
         requestAnimationFrame(loop);
+    }
+
+    function drawEnergyCanvas(){
+        const W = energyCanvas.width; const H = energyCanvas.height;
+        const len = 64; // Numero de barras
+        const data = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(data);
+        
+        ctxEnergy.clearRect(0,0,W,H);
+        const barW = (W/len) - 1;
+        
+        for(let i=0; i<len; i++){
+            // Mapear frecuencias bajas/medias
+            const val = data[i];
+            const h = (val/255) * H;
+            
+            // Peak hold Logic
+            if(!peakHolds[i]) peakHolds[i]=0;
+            if(h > peakHolds[i]) peakHolds[i] = h; else peakHolds[i] *= 0.95; // Decay
+            
+            // Barras (Cian/Verde)
+            ctxEnergy.fillStyle = `hsl(${120 + (val/255)*60}, 100%, 50%)`; // Verde a Cyan
+            ctxEnergy.fillRect(i*(barW+1), H-h, barW, h);
+            
+            // Ghost Peak (Rojo)
+            ctxEnergy.fillStyle = '#ff0055';
+            ctxEnergy.fillRect(i*(barW+1), H-peakHolds[i]-1, barW, 2);
+        }
     }
 
     async function loadData(){
@@ -554,9 +584,11 @@
         d.programado.forEach(i=>{if(i.PREGUNTA) progData.set(i.PREGUNTA.toLowerCase().trim(), i.RESPUESTA)});
     }
     async function initMoveNet(){
+        // Esperar a TFJS
+        await tf.ready();
         const m = poseDetection.SupportedModels.MoveNet;
         poseDetector = await poseDetection.createDetector(m, {modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING});
-        setInterval(async()=>{if(currentFilter==='sls') latestPoses=await poseDetector.estimatePoses(vid)},100);
+        setInterval(async()=>{if(currentFilter==='sls' && vid.readyState===4) latestPoses=await poseDetector.estimatePoses(vid)},100);
     }
     const conns = [['left_shoulder','right_shoulder'],['left_shoulder','left_hip'],['right_shoulder','right_hip'],['left_hip','right_hip'],['left_shoulder','left_elbow'],['left_elbow','left_wrist'],['right_shoulder','right_elbow'],['right_elbow','right_wrist'],['left_hip','left_knee'],['left_knee','left_ankle'],['right_hip','right_knee'],['right_knee','right_ankle']];
     function drawSLS(ps){
@@ -572,21 +604,21 @@
 </script>
 
 <script>
-/* FILTER SPEC: EDGE DETECTION */
+/* FILTER SPEC: EDGE DETECTION (DARK BACKGROUND) */
 (function(){
     let gl,p,pl,tl,t,active=false;const c=document.getElementById("gl-bluewave"),v=document.getElementById("bg-camera-feed");
     function i(){
         gl=c.getContext("webgl");if(!gl)return;
         const vs=`attribute vec2 p;attribute vec2 t;varying vec2 vt;void main(){gl_Position=vec4(p,0,1);vt=t;}`;
-        // Sobel Edge Detection (Grueso)
         const fs=`precision mediump float;uniform sampler2D u;uniform vec2 r;varying vec2 vt;
         void main(){
-            vec2 o=2.0/r; // Offset mayor = lineas mas gruesas
+            vec2 o=1.5/r; // Grosor linea
             vec4 n=texture2D(u,vt+vec2(0,-o.y)); vec4 s=texture2D(u,vt+vec2(0,o.y));
             vec4 e=texture2D(u,vt+vec2(o.x,0)); vec4 w=texture2D(u,vt+vec2(-o.x,0));
             float gx=length(e-w); float gy=length(n-s); 
             float g=sqrt(gx*gx+gy*gy);
-            if(g>0.15) gl_FragColor=vec4(0.0, g*2.0, g*3.0, 1.0); else gl_FragColor=vec4(0,0,0,0.3);
+            // Si es borde (g > umbral), pintar Cian. Si no, negro casi opaco (0.9 alpha)
+            if(g>0.1) gl_FragColor=vec4(0.0, g*2.0, g*3.0, 1.0); else gl_FragColor=vec4(0.0,0.0,0.0,0.95);
         }`;
         p=cp(gl,vs,fs);pl=gl.getAttribLocation(p,"p");tl=gl.getAttribLocation(p,"t");
         gl.bindBuffer(34962,gl.createBuffer());gl.bufferData(34962,new Float32Array([-1,-1,-1,1,1,-1,1,-1,-1,1,1,1]),35044);
@@ -607,5 +639,6 @@
     window.BlueWave={start:()=>{active=true;r()},stop:()=>{active=false},resize:()=>{if(c){c.width=window.innerWidth;c.height=window.innerHeight}}};
 })();
 </script>
+
 </body>
 </html>
