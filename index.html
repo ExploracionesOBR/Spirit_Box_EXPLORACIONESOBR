@@ -645,29 +645,28 @@
     function toggleSpirit(){
         isSpiritOn = !isSpiritOn;
         const btn = document.getElementById('btn-pwr');
-        const led = document.getElementById('voice-led');
+        const status = document.getElementById('sb-status');
         if(isSpiritOn){
             btn.innerText="APAGAR"; btn.classList.add('pwr-on');
-            document.getElementById('sb-status').innerText = "INICIANDO...";
-            led.classList.add('active'); 
-            
+            status.innerText = "INICIANDO...";
             if(audioCtx.state==='suspended') audioCtx.resume();
             
             if(bgBuffer){
                 bgNode = audioCtx.createBufferSource(); bgNode.buffer=bgBuffer; bgNode.loop=true;
                 bgNode.playbackRate.value = scanSpeed; 
-                bgGain = audioCtx.createGain(); bgGain.gain.value=1.0;  
+                // VOLUMEN BASE AUMENTADO PARA MAYOR CONTRASTE
+                bgGain = audioCtx.createGain(); bgGain.gain.value=0.8;  
                 bgNode.connect(bgGain); bgGain.connect(masterGain); bgNode.start(0);
-            } else { startFallbackNoise(); }
+            } else {
+                // FALLBACK (Solo si no hay MP3)
+                startFallbackNoise();
+            }
             startListeningCycle();
         }else{
             btn.innerText="ENCENDER"; btn.classList.remove('pwr-on');
-            document.getElementById('sb-status').innerText = "APAGADO";
-            led.className = 'voice-led';
-            
+            status.innerText = "APAGADO";
             if(bgNode) { bgNode.stop(); bgNode = null; }
             if(noiseNode) { noiseNode.stop(); noiseNode = null; }
-            if(interferenceInterval) clearInterval(interferenceInterval);
             if(window.speechSynthesis) window.speechSynthesis.cancel();
             document.getElementById('voice-led').classList.remove('listening');
             if(recognition) recognition.stop();
@@ -729,23 +728,31 @@
         if(!window.speechSynthesis) return;
         document.getElementById('sb-status').innerText = "DESCODIFICANDO...";
         
-        // DUCKING A 40%
-        if(bgGain) bgGain.gain.setTargetAtTime(0.4, audioCtx.currentTime, 0.1);
+        // DUCKING EXTREMO AL 15% (La voz resaltará mucho más)
+        if(bgGain) bgGain.gain.setTargetAtTime(0.15, audioCtx.currentTime, 0.05);
+        if(noiseGain) noiseGain.gain.setTargetAtTime(0.1, audioCtx.currentTime, 0.05);
         
         if(interferenceInterval) clearInterval(interferenceInterval);
         interferenceInterval = setInterval(() => {
             if(!bgGain) return;
-            // INTERFERENCIA (+5% a +15%)
-            const randomSpike = 0.4 + (0.05 + Math.random() * 0.1); 
+            // PICOS CONTROLADOS (Max 30%) - Se siente la interferencia pero no tapa la voz
+            const randomSpike = 0.15 + (Math.random() * 0.15); 
             bgGain.gain.setValueAtTime(randomSpike, audioCtx.currentTime);
-            bgGain.gain.setTargetAtTime(0.4, audioCtx.currentTime + 0.1, 0.1);
-        }, 250); 
+            // Recuperación ultra rápida al nivel bajo
+            bgGain.gain.setTargetAtTime(0.15, audioCtx.currentTime + 0.1, 0.05);
+        }, 300); // Intervalo un poco más espaciado
 
-        const u = new SpeechSynthesisUtterance(txt); u.lang='es-MX'; u.rate = 0.9; u.pitch = 0.8; u.volume = 1.0; 
+        const u = new SpeechSynthesisUtterance(txt); 
+        u.lang='es-MX'; 
+        u.rate = 0.85; // Un poco más lento para mejor dicción
+        u.pitch = 0.9; 
+        u.volume = 1.0; // Voz al máximo
 
         u.onend = () => { 
             clearInterval(interferenceInterval);
-            if(bgGain) bgGain.gain.setTargetAtTime(1.0, audioCtx.currentTime, 0.5); 
+            // Volver Fondo al nivel de escaneo (80%)
+            if(bgGain) bgGain.gain.setTargetAtTime(0.8, audioCtx.currentTime, 0.5); 
+            if(noiseGain) noiseGain.gain.setTargetAtTime(0.15, audioCtx.currentTime, 0.5);
             if(isSpiritOn) setTimeout(startListeningCycle, 3000); 
         };
         window.speechSynthesis.speak(u);
