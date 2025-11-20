@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v6.0 PRO</title> 
+    <title>DETECTOR-OBR v6.1 STABLE</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&family=Creepster&display=swap" rel="stylesheet">
@@ -69,7 +69,7 @@
         .social-icons svg { width: 20px; height: 20px; fill: #fff; }
         
         .follow-text { 
-            font-family: 'Creepster', cursive; /* Fuente de terror */
+            font-family: 'Creepster', cursive;
             font-size: 1.2rem; color: #ff0000; letter-spacing: 2px; 
             text-shadow: 0 0 10px #ff0000, 2px 2px 0px #300000;
             animation: glitchText 3s infinite;
@@ -139,11 +139,8 @@
         }
         .btn-control:active { transform: translateY(4px); box-shadow: 0 0 0 #000; }
         
-        /* Estados Boton POWER */
         .btn-control.pwr-on { background: rgba(0, 50, 0, 0.5); border-color: var(--hud-green); color: var(--hud-green); text-shadow: 0 0 5px var(--hud-green); }
         .btn-control.pwr-off { background: rgba(50, 0, 0, 0.5); border-color: var(--hud-red); color: var(--hud-red); }
-
-        /* Estados Boton SPEED */
         .btn-control.spd-1 { border-color: var(--hud-blue); color: var(--hud-blue); box-shadow: 0 0 5px var(--hud-blue) inset; }
         .btn-control.spd-2 { border-color: var(--hud-orange); color: var(--hud-orange); box-shadow: 0 0 5px var(--hud-orange) inset; }
         .btn-control.spd-3 { border-color: var(--hud-red); color: var(--hud-red); box-shadow: 0 0 5px var(--hud-red) inset; }
@@ -174,6 +171,7 @@
         #loading-overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle at center, #111 0%, #000 100%); }
         .loader-logo { width: 100px; height: 100px; margin-bottom: 20px; filter: drop-shadow(0 0 10px var(--hud-cyan)); animation: pulseRed 2s infinite; }
         #enter-btn { display: none; padding: 12px 40px; background: transparent; color: var(--hud-green); border: 2px solid var(--hud-green); font-family: 'Orbitron'; font-size: 1rem; letter-spacing: 2px; cursor: pointer; transition: all 0.3s; box-shadow: 0 0 10px var(--hud-green); }
+        #enter-btn:hover { background: var(--hud-green); color: #000; }
 
         /* MARCO CÁMARA */
         #camera-frame { position: absolute; top: 10px; left: 10px; right: 10px; bottom: 10px; pointer-events: none; z-index: 10; border: 1px solid transparent; transition: all 0.5s; }
@@ -205,13 +203,13 @@
 
 <div id="loading-overlay">
     <img src="obr-logo.png" class="loader-logo" alt="Logo">
-    <div style="color: var(--hud-cyan); font-family: 'Orbitron'; letter-spacing: 2px;">
+    <div style="color: var(--hud-cyan); font-family: 'Orbitron'; letter-spacing: 2px;" id="load-text">
         CARGANDO <span id="load-percent">0%</span>
     </div>
     <div style="width: 200px; background: #111; height: 4px; margin-top: 10px;">
         <div id="loading-bar" style="width:0%; height:100%; background:var(--hud-cyan); box-shadow: 0 0 10px var(--hud-cyan);"></div>
     </div>
-    <button id="enter-btn" onclick="enterApp()">INICIAR SESIÓN</button>
+    <button id="enter-btn" onclick="enterApp()">INGRESAR AL SISTEMA</button>
 </div>
 
 <div id="app-ui" onclick="handleUITap(event)">
@@ -370,18 +368,30 @@
     // --- 1. CARGA ---
     window.onload = () => {
         let p = 0;
+        const bar = document.getElementById('loading-bar');
+        const txt = document.getElementById('load-percent');
+        const loadTextContainer = document.getElementById('load-text');
+        const btn = document.getElementById('enter-btn');
+
+        if(!bar || !txt || !loadTextContainer || !btn) return;
+
         let loadInt = setInterval(() => {
             p += 5;
-            if(p>100) p=100;
-            document.getElementById('loading-bar').style.width = p + '%';
-            document.getElementById('load-percent').innerText = p + '%';
-            if(p===100) {
+            if(p > 100) p = 100;
+            
+            bar.style.width = p + '%';
+            txt.innerText = p + '%';
+            
+            if(p === 100) {
                 clearInterval(loadInt);
                 setTimeout(async () => {
-                    await initMoveNet(); 
-                    await loadGoogleData(); 
-                    document.getElementById('load-text').innerText = "LISTO";
-                    document.getElementById('enter-btn').style.display = 'block';
+                    try {
+                        await initMoveNet(); 
+                        await loadGoogleData(); 
+                    } catch(e) {}
+                    
+                    loadTextContainer.innerText = "LISTO";
+                    btn.style.display = 'block';
                 }, 500);
             }
         }, 100);
@@ -409,7 +419,7 @@
     function initFollowLoop() {
         // Mostrar al inicio
         setTimeout(() => followBanner.classList.add('show-banner'), 2000);
-        setTimeout(() => followBanner.classList.remove('show-banner'), 8000); // Ocultar tras 6s
+        setTimeout(() => followBanner.classList.remove('show-banner'), 8000); 
         
         // Ciclo 30s
         setInterval(() => {
@@ -454,6 +464,8 @@
     function updateSensorUI(id, val, state) {
         const led = document.getElementById('led-'+id);
         const txt = document.getElementById('val-'+id);
+        if(!led || !txt) return;
+
         txt.innerText = val; led.className = 'sensor-led'; 
         if(state === 'main') { led.classList.add('led-green'); txt.style.color = 'var(--hud-green)'; }
         else if(state === 'backup') { led.classList.add('led-blue'); txt.style.color = 'var(--hud-blue)'; }
@@ -619,18 +631,20 @@
         if (f === 'bluewave' && window.BlueWave) window.BlueWave.start();
         if (f === 'night-vision' && videoTrack) { try { await videoTrack.applyConstraints({ advanced: [{ torch: true }] }); } catch(e){} }
     }
+
     async function deactivateAllFilters() {
         document.body.className = ''; document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
         canvasSLS.style.display = 'none'; if(window.BlueWave) window.BlueWave.stop();
         currentFilter = 'none';
         if (videoTrack) { try { await videoTrack.applyConstraints({ advanced: [{ torch: false }] }); } catch(e){} }
     }
+    
     function togglePanels() {
         document.body.classList.toggle('panels-active');
         document.getElementById('btn-panel').classList.toggle('active');
         setTimeout(resizeCanvas, 500);
     }
-    
+
     async function initMoveNet() {
         const model = poseDetection.SupportedModels.MoveNet;
         poseDetector = await poseDetection.createDetector(model, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING });
@@ -647,8 +661,10 @@
             ctxSLS.fillStyle='#ff0055'; kp.forEach(k=>{if(k.score>0.3){ctxSLS.beginPath();ctxSLS.arc(k.x*scale+xo,k.y*scale+yo,4,0,2*Math.PI);ctxSLS.fill();}});
         });
     }
+
     async function loadGoogleData() { try{ const r=await fetch(GOOGLE_SCRIPT_URL); const d=await r.json(); automaticoData=d.automatico.map(x=>x.TEXTO); d.programado.forEach(i=>{if(i.PREGUNTA)programadoData.set(i.PREGUNTA.toLowerCase().trim(), i.RESPUESTA);}); }catch(e){} }
 </script>
+
 <script>
 /* BLUE WAVE WEBGL */
 (function(){
