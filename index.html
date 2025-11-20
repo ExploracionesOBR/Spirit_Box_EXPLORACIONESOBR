@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v8.0 CONVERSATIONAL</title> 
+    <title>DETECTOR-OBR v7.5 FIXED</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&family=Creepster&display=swap" rel="stylesheet">
@@ -23,7 +23,7 @@
             --hud-orange: #ffae00;
             --hud-red: #ff3333;
             --hud-blue: #0088ff;
-            --glass-panel: rgba(6, 10, 20, 0.98);
+            --glass-panel: rgba(6, 10, 20, 0.95);
             --panel-w: 340px; 
             --panel-h: 130px;
         }
@@ -37,7 +37,7 @@
 
         #app-ui { width: 100%; height: 100%; position: relative; touch-action: none; }
 
-        /* --- CÁMARA --- */
+        /* --- CÁMARA Y LAYOUT --- */
         #main-view-area {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             overflow: hidden; z-index: 5; background: #000; 
@@ -49,9 +49,10 @@
             object-fit: cover; transform: translate(-50%, -50%); z-index: 1; opacity: 0.9;
         }
 
-        /* INDICADOR REC (ANIDADO) */
+        /* --- INDICADOR REC (ANIDADO) --- */
         #rec-indicator {
-            position: absolute; top: 20px; left: 20px; z-index: 50;
+            position: absolute; /* Anidado a la cámara */
+            top: 20px; left: 20px; z-index: 50;
             display: flex; align-items: center; gap: 8px;
             font-family: 'Orbitron'; font-weight: 700; letter-spacing: 2px;
             color: var(--hud-red); text-shadow: 0 0 5px var(--hud-red);
@@ -85,24 +86,33 @@
         body.filter-sls #main-filter-canvas { display: block; z-index: 3; }
         body.filter-spectral #gl-bluewave { display: block; z-index: 4; mix-blend-mode: screen; }
 
-        /* LOGO */
+        /* LOGO PEQUEÑO */
         #logo-container { position: fixed; top: 15px; right: 15px; z-index: 50; pointer-events: none; transition: opacity 0.3s; }
-        #logo-image { width: 60px; height: 60px; filter: drop-shadow(0 0 5px var(--hud-cyan)); animation: float 4s infinite; }
+        #logo-image { width: 55px; height: 55px; filter: drop-shadow(0 0 5px var(--hud-cyan)); animation: float 4s infinite; }
 
-        /* BANNER SÍGUENOS */
+        /* BANNER SÍGUENOS (DISEÑO ANTERIOR RESTAURADO) */
         #follow-banner {
-            position: absolute; bottom: 40px; left: 50%; 
+            position: absolute; bottom: 30px; left: 50%; 
             transform: translateX(-50%); z-index: 20;
             display: flex; flex-direction: column; align-items: center;
             opacity: 0; pointer-events: none; transition: opacity 1s;
-            background: rgba(0,0,0,0.6); padding: 5px 20px; border-radius: 30px; border: 1px solid var(--hud-cyan);
         }
-        #follow-banner.show { opacity: 1; animation: glitch-banner 0.5s infinite alternate-reverse; }
+        #follow-banner.show { opacity: 1; }
         
-        .social-icons { display: flex; gap: 20px; margin-bottom: 3px; }
-        .social-icons svg { width: 20px; height: 20px; fill: var(--hud-cyan); filter: drop-shadow(0 0 3px var(--hud-cyan)); }
-        .follow-text { font-family: 'Creepster'; font-size: 1.1rem; color: #fff; letter-spacing: 1px; text-shadow: 2px 2px 0 var(--hud-red); }
-        @keyframes glitch-banner { 0%{transform: translateX(-50%) skew(0deg);} 100%{transform: translateX(-50%) skew(1deg);} }
+        /* Iconos en Horizontal */
+        .social-icons { 
+            display: flex; flex-direction: row; gap: 20px; 
+            margin-bottom: 5px; filter: drop-shadow(0 0 5px var(--hud-red));
+        }
+        .social-icons svg { width: 20px; height: 20px; fill: #fff; }
+        
+        .follow-text { 
+            font-family: 'Creepster'; font-size: 1.2rem; color: #ff0000; 
+            text-shadow: 2px 2px 0 #000; letter-spacing: 2px; 
+            animation: glitch 2s infinite; 
+        }
+        @keyframes glitch { 0%{transform:skew(0);} 20%{transform:skew(-5deg);} 22%{transform:skew(5deg);} 100%{transform:skew(0);} }
+
 
         /* --- PANELES --- */
         #left-panel, #bottom-panel {
@@ -134,24 +144,23 @@
         /* SPIRIT BOX */
         #spirit-box-section {
             border: 1px solid var(--hud-green);
-            background: rgba(0, 20, 0, 0.4); 
-            box-shadow: inset 0 0 30px rgba(0, 255, 65, 0.05);
+            background: rgba(0, 20, 0, 0.3); 
+            box-shadow: inset 0 0 20px rgba(0, 255, 65, 0.1);
             padding: 8px;
         }
         .spirit-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
         
-        .voice-led { width: 12px; height: 12px; border-radius: 50%; background: #222; border: 1px solid #555; transition: 0.1s; }
-        /* LED VERDE SOLO CUANDO ESCUCHA */
+        .voice-led { width: 12px; height: 12px; border-radius: 50%; background: #111; border: 1px solid #444; transition: 0.1s; }
         .voice-led.listening { background: var(--hud-green); box-shadow: 0 0 15px var(--hud-green), inset 0 0 5px #fff; animation: pulseGreen 0.5s infinite; }
         
         .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin: 5px 0; }
-        .btn-control { background: #111; border: 1px solid #444; color: #888; font-family: 'Orbitron'; font-size: 0.6rem; padding: 8px; cursor: pointer; text-align: center; transition: 0.2s; }
-        .pwr-on { border-color: var(--hud-green); color: var(--hud-green); background: rgba(0,50,0,0.5); text-shadow: 0 0 5px var(--hud-green); }
+        .btn-control { background: #111; border: 1px solid #444; color: #888; font-family: 'Orbitron'; font-size: 0.6rem; padding: 8px; cursor: pointer; text-align: center; }
+        .pwr-on { border-color: var(--hud-green); color: var(--hud-green); background: rgba(0,50,0,0.5); }
         .spd-1 { border-color: var(--hud-blue); color: var(--hud-blue); }
         .spd-2 { border-color: var(--hud-orange); color: var(--hud-orange); }
         .spd-3 { border-color: var(--hud-red); color: var(--hud-red); }
 
-        /* RADAR PROXIMIDAD */
+        /* RADAR */
         #radar-section { display: flex; flex-direction: column; align-items: center; margin-top: 5px; }
         #radar-container {
             width: 80px; height: 80px; border-radius: 50%;
@@ -161,7 +170,11 @@
         }
         #radar-container::before {
             content: ''; position: absolute; inset: 0; border-radius: 50%;
-            background: repeating-radial-gradient(transparent 0, transparent 18px, rgba(0, 255, 65, 0.2) 19px, rgba(0, 255, 65, 0.2) 20px);
+            background: repeating-radial-gradient(transparent 0, transparent 18px, rgba(0, 255, 65, 0.3) 19px, rgba(0, 255, 65, 0.3) 20px);
+        }
+        #radar-container::after {
+            content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 1px; background: rgba(0,255,65,0.3);
+            transform: translateY(-50%);
         }
         #radar-scan {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -340,7 +353,6 @@
         setTimeout(() => followBanner.classList.add('show'), 2000);
         setTimeout(() => followBanner.classList.remove('show'), 8000); 
         setInterval(() => {
-            // Solo si el menu NO está visible
             if(!uiVisible) {
                 followBanner.classList.add('show');
                 setTimeout(() => followBanner.classList.remove('show'), 8000);
@@ -348,6 +360,7 @@
         }, 30000);
     }
 
+    // 1. CARGA
     window.onload = () => {
         let p=0;
         let t = setInterval(()=>{
@@ -396,7 +409,7 @@
         if(window.BlueWave) window.BlueWave.resize();
     }
 
-    // --- UI ---
+    // --- FILTROS & UI ---
     async function toggleFilter(f){
         if(currentFilter===f) f='none';
         document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
@@ -425,7 +438,7 @@
         document.getElementById('filter-controls-container').style.opacity=1;
         document.getElementById('filter-controls-container').style.pointerEvents='auto';
         document.getElementById('logo-container').classList.add('ui-hiding');
-        followBanner.classList.remove('show'); // Forzar ocultar banner
+        followBanner.classList.add('ui-hiding');
         document.getElementById('rec-indicator').classList.add('ui-hiding');
         clearTimeout(hideTimeout); hideTimeout=setTimeout(hideUI, 5000);
     }
@@ -434,6 +447,7 @@
         document.getElementById('filter-controls-container').style.opacity=0;
         document.getElementById('filter-controls-container').style.pointerEvents='none';
         document.getElementById('logo-container').classList.remove('ui-hiding');
+        followBanner.classList.remove('ui-hiding');
         document.getElementById('rec-indicator').classList.remove('ui-hiding');
     }
 
@@ -477,7 +491,7 @@
         document.getElementById('led-'+id).className=`sensor-led led-${col}`;
     }
 
-    // --- SPIRIT BOX LOGIC ---
+    // --- SPIRIT BOX ---
     async function loadAudio(u){ try{const r=await fetch(u);const b=await r.arrayBuffer();return await audioCtx.decodeAudioData(b);}catch(e){return null;} }
     
     async function initMic(){
@@ -487,6 +501,7 @@
             analyser = audioCtx.createAnalyser(); analyser.fftSize=256; 
             micSource.connect(analyser);
             updSens('mic', 'ON', 'green');
+            initRec();
         }catch(e){ updSens('mic', 'ERR', 'red'); }
     }
 
@@ -522,33 +537,27 @@
         if(speed===3) btn.style.borderColor='var(--hud-red)';
     }
 
-    // BUCLE CONVERSACIÓN: HABLA -> ESCUCHA
     function loopSpirit(){
         if(!isSpiritOn) return;
-        // Solo habla si NO está escuchando activamente (para evitar solaparse)
-        if(automaticoData.length > 0 && !window.speechSynthesis.speaking) {
-             // Logica de "silencio" antes de hablar aleatoriamente si nadie pregunta
-             // Se maneja con el delay
-        }
-        // El bucle principal lo maneja initRec() y speak()
+        let delay = 4000 + Math.random()*5000;
+        if(speed===2) delay = 2500; if(speed===3) delay = 1000;
+        setTimeout(()=>{
+            if(isSpiritOn && autoData.length>0 && !window.speechSynthesis.speaking){
+                speak(autoData[Math.floor(Math.random()*autoData.length)]);
+            }
+            loopSpirit();
+        }, delay);
     }
 
     function initRec(){
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if(!SR) return;
-        recognition = new SR(); recognition.lang='es-MX'; recognition.continuous=false; // False para reiniciar ciclo
+        recognition = new SR(); recognition.lang='es-MX'; recognition.continuous=false;
         
         recognition.onstart = () => { if(isSpiritOn) document.getElementById('voice-led').classList.add('listening'); };
         recognition.onend = () => { 
             document.getElementById('voice-led').classList.remove('listening');
-            // Si está encendido y NO está hablando la maquina, volver a escuchar o decir frase random
-            if(isSpiritOn && !window.speechSynthesis.speaking) {
-                // 30% de probabilidad de decir frase random si hay silencio
-                if(Math.random() > 0.7 && automaticoData.length > 0) {
-                    speak(automaticoData[Math.floor(Math.random() * automaticoData.length)]);
-                } else {
-                    setTimeout(()=>recognition.start(), 500);
-                }
-            }
+            // Reanudar si está encendido y no habla
+            if(isSpiritOn && !window.speechSynthesis.speaking) setTimeout(()=>recognition.start(), 500);
         };
         recognition.onresult = e => {
             const t = e.results[0][0].transcript.toLowerCase().trim();
@@ -567,7 +576,7 @@
         u.rate = 0.8 + (speed*0.1); 
         u.onend = () => {
             if(bgGain) bgGain.gain.setTargetAtTime(0.6, audioCtx.currentTime, 0.5);
-            if(isSpiritOn) recognition.start(); // Volver a escuchar
+            if(isSpiritOn) recognition.start(); 
         };
         window.speechSynthesis.speak(u);
     }
@@ -600,17 +609,11 @@
         const data = new Uint8Array(analyser.frequencyBinCount);
         analyser.getByteFrequencyData(data);
         
-        // Detección de audio nulo (conflicto Mic)
-        let sum=0; for(let k=0; k<len; k++) sum+=data[k];
-        let isSimulating = (sum===0 && micSource); // Si hay fuente pero da 0
-        
         ctxEnergy.clearRect(0,0,W,H);
         const barW = (W/len) - 1;
         
         for(let i=0; i<len; i++){
-            let val = data[i];
-            if(isSimulating) val = Math.random() * 100; // Fake visualizer si mic muere
-
+            const val = data[i];
             const h = (val/255) * H;
             if(!peakHolds[i]) peakHolds[i]=0;
             if(h > peakHolds[i]) peakHolds[i] = h; else peakHolds[i] *= 0.95; 
@@ -629,7 +632,7 @@
         d.programado.forEach(i=>{if(i.PREGUNTA) progData.set(i.PREGUNTA.toLowerCase().trim(), i.RESPUESTA)});
     }
 
-    // --- SLS ---
+    // --- SLS (RESTORED FROM KINECKT.TXT) ---
     async function initMoveNet(){
         await tf.ready(); 
         const m = poseDetection.SupportedModels.MoveNet;
@@ -642,11 +645,11 @@
     function drawSLS(ps){
         const s = Math.max(canvasSLS.width/vid.videoWidth, canvasSLS.height/vid.videoHeight);
         const xo=(canvasSLS.width-vid.videoWidth*s)/2, yo=(canvasSLS.height-vid.videoHeight*s)/2;
-        ctxSLS.lineWidth=4; ctxSLS.strokeStyle='#0f0'; ctxSLS.fillStyle='#f00';
+        ctxSLS.lineWidth=3; ctxSLS.lineCap='round'; ctxSLS.strokeStyle='#00ff41'; ctxSLS.shadowBlur=10; ctxSLS.shadowColor='#00ff41';
         ps.forEach(p=>{
             if(p.score<0.25)return; const m={}; p.keypoints.forEach(k=>m[k.name]=k);
             ctxSLS.beginPath(); conns.forEach(([a,b])=>{const p1=m[a],p2=m[b]; if(p1&&p2&&p1.score>0.3&&p2.score>0.3){ctxSLS.moveTo(p1.x*s+xo,p1.y*s+yo);ctxSLS.lineTo(p2.x*s+xo,p2.y*s+yo)}}); ctxSLS.stroke();
-            p.keypoints.forEach(k=>{if(k.score>0.3){ctxSLS.beginPath();ctxSLS.arc(k.x*s+xo,k.y*s+yo,4,0,7);ctxSLS.fill()}});
+            ctxSLS.fillStyle='#ff0055'; p.keypoints.forEach(k=>{if(k.score>0.3){ctxSLS.beginPath();ctxSLS.arc(k.x*s+xo,k.y*s+yo,4,0,2*Math.PI);ctxSLS.fill();}});
         });
     }
 </script>
