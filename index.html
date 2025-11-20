@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v11.5 HORROR-BOOT</title> 
+    <title>DETECTOR-OBR v11.8 TAP-ZOOM</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&family=Creepster&family=VT323&display=swap" rel="stylesheet">
@@ -25,6 +25,8 @@
             --hud-red: #ff3333;
             --hud-blue: #0088ff;
             --glass-panel: rgba(5, 8, 15, 0.95);
+            
+            /* Dimensiones Base */
             --left-panel-w: 280px;
             --bottom-panel-h: 160px;
         }
@@ -33,70 +35,149 @@
             font-family: 'Share Tech Mono', monospace;
             background-color: #000; color: var(--hud-cyan);
             overflow: hidden; width: 100vw; height: 100vh; margin: 0;
-            touch-action: none;
+            touch-action: none; /* CRUCIAL PARA EVITAR GESTOS DEL NAVEGADOR */
+            -webkit-user-select: none; /* Safari */
+            user-select: none; /* Standard */
+            -webkit-touch-callout: none; /* iOS Safari callout */
         }
 
+        /* --- LAYOUT PRINCIPAL (GRID EN FORMA DE L) --- */
         #app-ui { 
             width: 100%; height: 100%; 
             display: grid;
             grid-template-columns: var(--left-panel-w) 1fr; 
             grid-template-rows: 1fr var(--bottom-panel-h);
-            grid-template-areas: "left cam" "left bottom";
+            grid-template-areas: 
+                "left cam"
+                "left bottom";
             transition: all 0.5s ease;
+            opacity: 0; /* Oculto al inicio para la carga */
+            pointer-events: none;
         }
 
-        body.panels-hidden #app-ui { grid-template-columns: 0px 1fr; grid-template-rows: 1fr 0px; }
+        /* ESTADO SIN HUD (PANTALLA COMPLETA V1) - ESTADO INICIAL */
+        body.panels-hidden #app-ui {
+            grid-template-columns: 0px 1fr;
+            grid-template-rows: 1fr 0px;
+        }
 
-        #left-panel { grid-area: left; border-right: 2px solid var(--hud-cyan); overflow: hidden; transition: all 0.5s ease; position: relative; }
-        #bottom-panel { grid-area: bottom; border-top: 2px solid var(--hud-cyan); overflow: hidden; transition: all 0.5s ease; }
-        #main-view-area { grid-area: cam; position: relative; overflow: hidden; background: #000; width: 100%; height: 100%; touch-action: none; }
-        
-        body.panels-hidden #left-panel, body.panels-hidden #bottom-panel { display: none; }
+        /* ÁREAS DE LA REJILLA */
+        #left-panel { 
+            grid-area: left; border-right: 2px solid var(--hud-cyan); 
+            overflow: hidden; transition: all 0.5s ease;
+        }
+        #bottom-panel { 
+            grid-area: bottom; border-top: 2px solid var(--hud-cyan); 
+            overflow: hidden; transition: all 0.5s ease;
+        }
+        #main-view-area { 
+            grid-area: cam; 
+            position: relative; overflow: hidden; background: #000;
+            width: 100%; height: 100%; 
+            /* Asegurar que no se pueda seleccionar nada aqui */
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
 
-        /* PANELS */
+        /* Cuando se ocultan, usamos display:none para liberar recursos y asegurar reflujo */
+        body.panels-hidden #left-panel, body.panels-hidden #bottom-panel {
+            display: none; 
+        }
+
+        /* ESTILOS COMUNES DE PANELES */
         .panel-container {
             background-color: var(--glass-panel);
             box-shadow: inset 0 0 20px rgba(0, 243, 255, 0.1);
-            padding: 10px; display: flex; flex-direction: column;
-            background-image: linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
-            background-size: 20px 20px; z-index: 20;
+            padding: 10px;
+            display: flex; flex-direction: column;
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+            z-index: 20;
         }
 
-        #matrix-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.2; pointer-events: none; z-index: 0; }
+        /* CANVAS MATRIX EN PANEL */
+        #matrix-canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0.2; pointer-events: none; z-index: 0;
+        }
 
-        /* CÁMARA */
-        #bg-camera-feed { width: 100%; height: 100%; object-fit: cover; transition: filter 0.3s ease; }
+        /* ZOOM CONTAINER */
+        #zoom-container {
+            width: 100%; height: 100%;
+            transform-origin: center center;
+            transition: transform 0.2s ease-out; /* Suavizado para los saltos */
+            will-change: transform;
+        }
+
+        /* --- CÁMARA --- */
+        #bg-camera-feed {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: filter 0.3s ease;
+        }
         #main-filter-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-        #zoom-container { width: 100%; height: 100%; transform-origin: center center; transition: transform 0.1s linear; }
 
-        /* DECORACIONES */
-        .camera-border { position: absolute; inset: 10px; pointer-events: none; z-index: 5; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1); }
-        .camera-border::before, .camera-border::after, .cb-inner::before, .cb-inner::after { content: ''; position: absolute; width: 20px; height: 20px; border-color: var(--hud-cyan); border-style: solid; transition: all 0.5s; }
+        /* MARCO DE CÁMARA */
+        .camera-border {
+            position: absolute; inset: 10px; pointer-events: none; z-index: 5;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1);
+        }
+        .camera-border::before, .camera-border::after, .cb-inner::before, .cb-inner::after {
+            content: ''; position: absolute; width: 20px; height: 20px; border-color: var(--hud-cyan); border-style: solid; transition: all 0.5s;
+        }
         .camera-border::before { top: 0; left: 0; border-width: 2px 0 0 2px; }
         .camera-border::after { top: 0; right: 0; border-width: 2px 2px 0 0; }
         .cb-inner { position: absolute; inset: 0; }
         .cb-inner::before { bottom: 0; left: 0; border-width: 0 0 2px 2px; }
         .cb-inner::after { bottom: 0; right: 0; border-width: 0 2px 2px 0; }
 
-        .rec-container { position: absolute; top: 15px; left: 15px; color: var(--hud-red); font-family: 'Orbitron'; font-weight: bold; display: flex; align-items: center; gap: 8px; z-index: 10; text-shadow: 0 0 5px var(--hud-red); font-size: 0.8rem; pointer-events: none; }
+        /* REC INDICATOR */
+        .rec-container {
+            position: absolute; top: 15px; left: 15px; 
+            color: var(--hud-red); font-family: 'Orbitron'; font-weight: bold; 
+            display: flex; align-items: center; gap: 8px; z-index: 10;
+            text-shadow: 0 0 5px var(--hud-red); font-size: 0.8rem; pointer-events: none;
+        }
         .rec-dot { width: 10px; height: 10px; background: var(--hud-red); border-radius: 50%; animation: blinkRed 1s infinite; }
         @keyframes blinkRed { 50% { opacity: 0.3; } }
 
-        .stats-container { position: absolute; bottom: 15px; right: 20px; font-family: 'Share Tech Mono'; font-size: 0.65rem; color: rgba(0, 243, 255, 0.7); text-shadow: 0 0 2px #000; z-index: 10; text-align: right; pointer-events: none; display: flex; gap: 10px; }
+        /* STATS INDICATOR */
+        .stats-container {
+            position: absolute; bottom: 15px; right: 20px;
+            font-family: 'Share Tech Mono'; font-size: 0.65rem; 
+            color: rgba(0, 243, 255, 0.7);
+            text-shadow: 0 0 2px #000; z-index: 10;
+            text-align: right; pointer-events: none;
+            display: flex; gap: 10px;
+        }
         .stats-val { color: #fff; font-weight: bold; }
 
-        /* FILTROS */
+        /* FILTROS CSS */
         body.filter-night-vision #bg-camera-feed { filter: grayscale(100%) sepia(100%) hue-rotate(90deg) brightness(0.9) contrast(1.2) saturate(150%); }
-        body.filter-night-vision #main-view-area::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4; background: radial-gradient(circle, transparent 60%, #000 95%); }
+        body.filter-night-vision #main-view-area::after {
+            content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4;
+            background: radial-gradient(circle, transparent 60%, #000 95%);
+        }
         body.filter-negative #bg-camera-feed { filter: invert(1) hue-rotate(180deg); }
         body.filter-sls #main-filter-canvas { display: block; }
 
-        /* LOGO */
+        /* LOGO CON EFECTOS */
         #logo-container { position: absolute; top: 15px; right: 15px; z-index: 50; pointer-events: none; }
-        #logo-image { width: 60px; height: 60px; filter: drop-shadow(0 0 5px var(--hud-cyan)); animation: logoGlitch 5s infinite alternate; }
-        
-        /* LOGO GLITCH HORROR (USADO EN LOADING) */
-        @keyframes logoGlitch { 0% { transform: scale(1); } 92% { transform: scale(1.1) skew(10deg); } 94% { transform: scale(0.9) skew(-10deg); } }
+        #logo-image { 
+            width: 60px; height: 60px; 
+            filter: drop-shadow(0 0 5px var(--hud-cyan));
+            animation: logoGlitch 5s infinite alternate;
+        }
+        @keyframes logoGlitch {
+            0% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 5px var(--hud-cyan)) hue-rotate(0deg); }
+            90% { transform: scale(1.02) rotate(2deg); filter: drop-shadow(0 0 8px var(--hud-cyan)) hue-rotate(0deg); }
+            92% { transform: scale(1.1) skew(10deg); filter: drop-shadow(0 0 10px var(--hud-pink)) hue-rotate(90deg); }
+            94% { transform: scale(0.9) skew(-10deg); filter: drop-shadow(0 0 10px var(--hud-red)) hue-rotate(180deg); }
+            96% { transform: scale(1.02) rotate(-2deg); }
+            100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 5px var(--hud-cyan)); }
+        }
         
         @keyframes horrorGlitch {
             0% { clip-path: inset(20% 0 80% 0); transform: translate(-2px, 1px); filter: hue-rotate(0deg) contrast(1.2); }
@@ -107,38 +188,83 @@
             100% { clip-path: inset(30% 0 30% 0); transform: translate(1px, -1px); filter: hue-rotate(360deg); }
         }
 
-        /* BANNER */
-        #follow-banner { position: absolute; bottom: 20px; left: 0; right: 0; display: flex; justify-content: center; pointer-events: none; opacity: 0; transition: opacity 1s; z-index: 30; }
+        /* BANNER SÍGUENOS */
+        #follow-banner {
+            position: absolute; bottom: 20px; left: 0; right: 0;
+            display: flex; justify-content: center; pointer-events: none;
+            opacity: 0; transition: opacity 1s; z-index: 30;
+        }
         #follow-banner.active { opacity: 1; }
-        .banner-content { background: transparent; padding: 0; border: none; display: flex; flex-direction: column; align-items: center; gap: 5px; text-shadow: 0 0 5px #000; }
+        
+        .banner-content {
+            background: transparent; padding: 0; border: none;
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+            text-shadow: 0 0 5px #000; 
+        }
+        
         .seq-step { display: none; animation: fadeIn 0.5s; text-align: center; }
         .seq-step.active { display: block; }
+        
         #step-1 { font-family: 'Orbitron'; color: #fff; letter-spacing: 2px; font-weight: bold; text-shadow: 0 0 10px var(--hud-cyan); }
         #step-2 { gap: 20px; display: none; filter: drop-shadow(0 0 5px #000); } 
         #step-3 { font-family: 'Creepster'; color: var(--hud-red); letter-spacing: 2px; font-size: 1.5rem; text-shadow: 2px 2px 0 #000; }
+        
         .social-icon { font-size: 2rem; color: #fff; transition: transform 0.2s; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* CONTROLES */
-        .section-title { font-family: 'Orbitron'; font-size: 0.65rem; font-weight: 800; color: var(--hud-cyan); margin-bottom: 5px; border-bottom: 1px solid rgba(0, 243, 255, 0.3); display: flex; justify-content: space-between; align-items: center; padding-bottom: 2px; z-index: 2; position: relative; }
-        #spirit-box-section { border: 1px solid var(--hud-green); background: rgba(0, 15, 5, 0.5); padding: 8px; border-radius: 4px; margin-bottom: 10px; display: flex; flex-direction: column; z-index: 2; position: relative; }
+        /* --- CONTENIDO PANELES --- */
+        .section-title { 
+            font-family: 'Orbitron'; font-size: 0.65rem; font-weight: 800; 
+            color: var(--hud-cyan); text-transform: uppercase; letter-spacing: 1px; 
+            margin-bottom: 5px; border-bottom: 1px solid rgba(0, 243, 255, 0.3); 
+            display: flex; justify-content: space-between; align-items: center;
+            padding-bottom: 2px; z-index: 2; position: relative;
+        }
+
+        /* SPIRIT BOX */
+        #spirit-box-section {
+            border: 1px solid var(--hud-green); background: rgba(0, 15, 5, 0.5); padding: 8px; border-radius: 4px; margin-bottom: 10px; display: flex; flex-direction: column; z-index: 2; position: relative;
+        }
+        /* ESTILOS DEL LED */
         .voice-led { width: 12px; height: 12px; border-radius: 50%; background: #222; border: 1px solid #555; transition: 0.3s; box-shadow: 0 0 2px #000; }
-        .voice-led.active { background: var(--hud-blue); box-shadow: 0 0 10px var(--hud-blue); }
-        .voice-led.listening { background: var(--hud-green); box-shadow: 0 0 15px var(--hud-green); }
-        .sb-display-area { background: #000; border: 1px inset #333; padding: 10px; margin: 8px 0; font-family: 'Share Tech Mono'; color: var(--hud-green); text-align: center; font-size: 0.9rem; text-transform: uppercase; border-radius: 4px; }
-        .btn-control { background: #111; border: 1px solid #444; color: #aaa; font-family: 'Orbitron'; font-size: 0.8rem; padding: 10px; width: 100%; cursor: pointer; font-weight: bold; }
+        .voice-led.active { background: var(--hud-blue); box-shadow: 0 0 10px var(--hud-blue); } /* Azul: Encendido */
+        .voice-led.listening { background: var(--hud-green); box-shadow: 0 0 15px var(--hud-green); } /* Verde: Escuchando */
+        
+        .sb-display-area {
+            background: #000; border: 1px inset #333; padding: 10px; margin: 8px 0;
+            font-family: 'Share Tech Mono'; color: var(--hud-green); text-align: center;
+            font-size: 0.9rem; text-transform: uppercase; border-radius: 4px;
+        }
+
+        .btn-control { 
+            background: #111; border: 1px solid #444; color: #aaa; 
+            font-family: 'Orbitron'; font-size: 0.8rem; padding: 10px; width: 100%;
+            cursor: pointer; font-weight: bold;
+        }
         .btn-control.pwr-on { border-color: var(--hud-green); color: var(--hud-green); background: rgba(0,50,0,0.3); box-shadow: 0 0 10px var(--hud-green) inset; }
 
+        /* SENSORES LIST */
         .panel-section { flex-grow: 1; overflow: hidden; position: relative; padding: 8px; background: rgba(0,0,0,0.4); border-radius: 4px; } 
         .sensor-grid { display: flex; flex-direction: column; gap: 4px; position: relative; z-index: 2; }
-        .sensor-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.65rem; padding: 4px 6px; background: rgba(20,20,30,0.6); border-radius: 3px; border-left: 2px solid #333; backdrop-filter: blur(2px); }
+        .sensor-item { 
+            display: flex; justify-content: space-between; align-items: center; 
+            font-size: 0.65rem; padding: 4px 6px; 
+            background: rgba(20,20,30,0.6); border-radius: 3px; border-left: 2px solid #333; backdrop-filter: blur(2px);
+        }
+        .sensor-icon { width: 15px; text-align: center; margin-right: 5px; display: inline-block; }
+        
         .status-green { border-left-color: var(--hud-green); color: var(--hud-green); text-shadow: 0 0 5px rgba(0,255,65,0.3); }
         .status-blue { border-left-color: var(--hud-blue); color: var(--hud-blue); text-shadow: 0 0 5px rgba(0,136,255,0.3); }
         .status-orange { border-left-color: var(--hud-orange); color: var(--hud-orange); text-shadow: 0 0 5px rgba(255,174,0,0.3); }
         .status-red { border-left-color: var(--hud-red); color: #777; }
 
+        /* PANEL INFERIOR */
         .dials-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; height: 100%; align-items: center; }
-        .instrument-wrapper { background: rgba(0,0,0,0.5); border: 1px solid #333; border-radius: 4px; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; }
+        .instrument-wrapper { 
+            background: rgba(0,0,0,0.5); border: 1px solid #333; border-radius: 4px; height: 100%; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            position: relative;
+        }
         .digital-display { font-family: 'VT323', monospace; font-size: 2.2rem; line-height: 1; text-shadow: 0 0 5px currentColor; }
         .digi-cyan { color: var(--hud-cyan); } .digi-green { color: var(--hud-green); } .digi-orange { color: var(--hud-orange); } .digi-red { color: var(--hud-red); }
         .knob-label { font-size: 0.6rem; color: #777; font-weight: bold; margin-top: 2px; }
@@ -148,27 +274,48 @@
         .energy-bar-seg.mid { background: var(--hud-orange); }
         .energy-bar-seg.high { background: var(--hud-red); }
 
-        #filter-controls-container { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
-        .filter-btn { width: 45px; height: 40px; background: rgba(0, 10, 20, 0.9); color: var(--hud-cyan); font-family: 'Orbitron'; font-size: 0.6rem; border: 1px solid var(--hud-cyan); cursor: pointer; clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%); }
+        /* BOTONES FLOTANTES */
+        #filter-controls-container { 
+            position: absolute; top: 50%; right: 10px; transform: translateY(-50%); 
+            display: flex; flex-direction: column; gap: 8px; z-index: 100;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .filter-btn { 
+            width: 45px; height: 40px; background: rgba(0, 10, 20, 0.9); 
+            color: var(--hud-cyan); font-family: 'Orbitron'; font-size: 0.6rem; 
+            border: 1px solid var(--hud-cyan); cursor: pointer;
+            clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%);
+        }
         .filter-btn.active { background: var(--hud-cyan); color: #000; box-shadow: 0 0 10px var(--hud-cyan); }
-        #btn-hud.active { background: var(--hud-cyan); color: #000; }
+        
+        /* BOTÓN HUD: Sin 'active' por defecto */
         #btn-hud { background: rgba(0, 10, 20, 0.9); color: var(--hud-cyan); }
+        #btn-hud.active { background: var(--hud-cyan); color: #000; }
 
         .ui-hiding { animation: waterPop 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important; pointer-events: none; }
         @keyframes waterPop { 0% { transform: scale(1); opacity: 1; blur(0); } 100% { transform: scale(2.5); opacity: 0; blur(10px); } }
 
         /* LOADING OVERLAY */
-        #loading-overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(#111, #000); }
+        #loading-overlay { 
+            position: fixed; inset: 0; 
+            z-index: 99999; /* MAXIMO Z-INDEX */
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            background-color: #000; /* Fallback */
+            background-image: url('fondo_pantalla.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
         .horror-logo { width: 100px; margin-bottom: 20px; animation: horrorGlitch 0.3s infinite; filter: contrast(1.5) brightness(1.2); }
         
         #loading-text-main { color: var(--hud-cyan); font-family: 'Orbitron'; letter-spacing: 2px; font-size: 1.2rem; text-shadow: 0 0 5px var(--hud-cyan); margin-bottom: 5px; }
-        #loading-text-sub { color: #555; font-family: 'Share Tech Mono'; font-size: 0.8rem; letter-spacing: 1px; margin-bottom: 15px; height: 1rem; }
+        #loading-text-sub { color: #ccc; font-family: 'Share Tech Mono'; font-size: 0.8rem; letter-spacing: 1px; margin-bottom: 15px; height: 1rem; text-shadow: 1px 1px 2px #000; }
         
-        .loading-bar-container { width: 280px; background: #111; height: 4px; border: 1px solid #333; position: relative; }
+        .loading-bar-container { width: 280px; background: rgba(0,0,0,0.5); height: 4px; border: 1px solid #333; position: relative; }
         #loading-bar { width: 0%; height: 100%; background: var(--hud-cyan); box-shadow: 0 0 10px var(--hud-cyan); transition: width 0.1s linear; }
-        #loading-percent { color: var(--hud-cyan); font-family: 'VT323'; font-size: 1.2rem; margin-top: 5px; text-align: right; width: 280px; }
+        #loading-percent { color: var(--hud-cyan); font-family: 'VT323'; font-size: 1.2rem; margin-top: 5px; text-align: right; width: 280px; text-shadow: 1px 1px 2px #000; }
         
-        #enter-btn { display: none; padding: 15px 40px; border: 2px solid var(--hud-green); color: var(--hud-green); background: transparent; font-family: 'Orbitron'; font-size: 1.2rem; cursor: pointer; margin-top: 30px; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 0 15px var(--hud-green); }
+        #enter-btn { display: none; padding: 15px 40px; border: 2px solid var(--hud-green); color: var(--hud-green); background: rgba(0,0,0,0.7); font-family: 'Orbitron'; font-size: 1.2rem; cursor: pointer; margin-top: 30px; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 0 15px var(--hud-green); }
         /* Boton Glitch Horror */
         .btn-glitch { animation: btnGlitch 0.2s infinite; }
         @keyframes btnGlitch {
@@ -189,7 +336,7 @@
         }
     </style>
 </head>
-<body>
+<body class="panels-hidden"> <!-- INICIA OCULTO -->
 
 <!-- LOADING SCREEN -->
 <div id="loading-overlay">
@@ -276,7 +423,9 @@
             <button class="filter-btn" onclick="toggleFilter('night-vision')">NVG</button>
             <button class="filter-btn" onclick="toggleFilter('sls')">SLS</button>
             <button class="filter-btn" onclick="toggleFilter('negative')">NEG</button>
-            <button class="filter-btn active" id="btn-hud" onclick="toggleHUD()">HUD</button>
+            <button class="filter-btn" onclick="toggleFilter('lum')">LUM</button>
+            <!-- BOTÓN HUD SIN 'active' -->
+            <button class="filter-btn" id="btn-hud" onclick="toggleHUD()">HUD</button>
         </div>
     </div>
 
@@ -324,8 +473,8 @@
     
     // Variables ZOOM
     let zoomLevel = 1;
-    let initialPinchDist = 0;
-    let longPressTimer;
+    let zoomTapCount = 0;
+    let zoomTapTimer = null;
     const zoomContainer = document.getElementById('zoom-container');
     const mainView = document.getElementById('main-view-area');
 
@@ -406,7 +555,9 @@
     }
 
     function initMatrix() {
-        const pSection = document.querySelector('.panel-section');
+        // Ajustar al padre
+        const pSection = matrixCanvas.parentElement;
+        if(!pSection) return;
         matrixCanvas.width = pSection.clientWidth;
         matrixCanvas.height = pSection.clientHeight;
         const columns = Math.floor(matrixCanvas.width / 15);
@@ -438,63 +589,91 @@
     }
 
     function setupZoomEvents() {
-        mainView.addEventListener('touchstart', handleTouchStart, {passive: false});
-        mainView.addEventListener('touchmove', handleTouchMove, {passive: false});
-        mainView.addEventListener('touchend', handleTouchEnd);
-        mainView.addEventListener('mousedown', handleTouchStart);
-        mainView.addEventListener('mouseup', handleTouchEnd);
+        // Eliminar eventos previos si los hubiera para evitar duplicados
+        // Usar una logica simplificada basada en "touchend"
+        mainView.addEventListener('touchend', handleTapZoom);
+        mainView.addEventListener('click', handleTapZoom); // Para pruebas PC
     }
 
-    function handleTouchStart(e) {
-        if (e.touches && e.touches.length === 1) {
-            const t = e.touches[0];
-            longPressTimer = setTimeout(() => { activateSpotZoom(t.clientX, t.clientY); }, 500);
+    function handleTapZoom(e) {
+        // Prevenir comportamiento default si es necesario
+        // e.preventDefault(); 
+        
+        const now = new Date().getTime();
+        const timeSince = now - (window.lastTapTime || 0);
+        
+        // Detectar coordenadas del toque
+        let clientX, clientY;
+        if (e.changedTouches && e.changedTouches.length > 0) {
+            clientX = e.changedTouches[0].clientX;
+            clientY = e.changedTouches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
         }
-        if (e.touches && e.touches.length === 2) {
-            clearTimeout(longPressTimer);
-            initialPinchDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-        }
-    }
 
-    function handleTouchMove(e) {
-        if (e.touches && e.touches.length === 2) {
-            e.preventDefault(); clearTimeout(longPressTimer);
-            const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-            if (initialPinchDist > 0) {
-                const delta = dist - initialPinchDist;
-                zoomLevel += delta * 0.01; zoomLevel = Math.min(Math.max(1, zoomLevel), 5);
-                applyZoom(); initialPinchDist = dist;
+        if (timeSince < 300 && timeSince > 0) {
+            // Doble tap detectado (o triple en camino)
+            zoomTapCount++;
+        } else {
+            // Nuevo set de taps
+            zoomTapCount = 1;
+        }
+        
+        window.lastTapTime = now;
+
+        // Usar timer para esperar a ver si hay mas taps
+        clearTimeout(zoomTapTimer);
+        
+        zoomTapTimer = setTimeout(() => {
+            const rect = mainView.getBoundingClientRect();
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+
+            if (zoomTapCount === 1) {
+                // 1 Tap: Reset
+                zoomLevel = 1.0;
+                zoomContainer.style.transformOrigin = "center center";
+            } else if (zoomTapCount === 2) {
+                // 2 Taps: Zoom x3 en el punto
+                zoomLevel = 3.0;
+                zoomContainer.style.transformOrigin = `${x}px ${y}px`;
+            } else if (zoomTapCount >= 3) {
+                // 3 Taps: Zoom x5 en el punto
+                zoomLevel = 5.0;
+                zoomContainer.style.transformOrigin = `${x}px ${y}px`;
             }
-        } else { clearTimeout(longPressTimer); }
-    }
-
-    function handleTouchEnd(e) {
-        clearTimeout(longPressTimer);
-        if (zoomContainer.style.transformOrigin !== "center center") resetSpotZoom();
-    }
-
-    function activateSpotZoom(x, y) {
-        const rect = mainView.getBoundingClientRect();
-        zoomContainer.style.transition = "transform 0.2s ease-out";
-        zoomContainer.style.transformOrigin = `${x - rect.left}px ${y - rect.top}px`;
-        zoomContainer.style.transform = `scale(3)`;
-        const msg = document.getElementById('zoom-msg'); msg.innerText = "ZOOM x3.0"; msg.style.opacity = 1;
-    }
-
-    function resetSpotZoom() {
-        zoomContainer.style.transition = "transform 0.3s ease-in";
-        zoomContainer.style.transformOrigin = "center center";
-        applyZoom();
-        document.getElementById('zoom-msg').style.opacity = 0;
+            
+            applyZoom();
+            zoomTapCount = 0; // Reset contador
+        }, 300); // Esperar 300ms para confirmar intencion
     }
 
     function applyZoom() {
         zoomContainer.style.transform = `scale(${zoomLevel})`;
         document.getElementById('zoom-lvl').innerText = zoomLevel.toFixed(1) + "x";
+        
+        // Mensaje Visual
+        const msg = document.getElementById('zoom-msg');
+        if (zoomLevel > 1) {
+            msg.innerText = `ZOOM x${zoomLevel.toFixed(1)}`;
+            msg.style.opacity = 1;
+            setTimeout(() => msg.style.opacity = 0, 1000);
+        } else {
+            msg.style.opacity = 0;
+        }
     }
 
     async function enterApp(){
         document.getElementById('loading-overlay').style.display='none';
+        
+        // MOSTRAR UI (Quitar opacidad)
+        document.getElementById('app-ui').style.opacity = 1;
+        document.getElementById('app-ui').style.pointerEvents = 'auto';
+        
+        // INICIAR CON HUD OCULTO (YA ESTÁ EN BODY, PERO ASEGURAMOS)
+        document.body.classList.add('panels-hidden');
+        
         audioCtx = new (window.AudioContext||window.webkitAudioContext)();
         masterGain = audioCtx.createGain(); masterGain.connect(audioCtx.destination);
         bgBuffer = await loadAudio('FONDO_1.mp3');
@@ -544,7 +723,7 @@
 
     async function toggleFilter(f){
         if(currentFilter===f) f='none';
-        document.body.classList.remove('filter-night-vision', 'filter-negative', 'filter-sls');
+        document.body.classList.remove('filter-night-vision', 'filter-negative', 'filter-sls', 'filter-lum');
         document.querySelectorAll('.filter-btn').forEach(b=> { if(b.id !== 'btn-hud') b.classList.remove('active'); });
         if(f!=='none') {
             document.body.classList.add('filter-'+f);
@@ -645,28 +824,29 @@
     function toggleSpirit(){
         isSpiritOn = !isSpiritOn;
         const btn = document.getElementById('btn-pwr');
-        const status = document.getElementById('sb-status');
+        const led = document.getElementById('voice-led');
         if(isSpiritOn){
             btn.innerText="APAGAR"; btn.classList.add('pwr-on');
-            status.innerText = "INICIANDO...";
+            document.getElementById('sb-status').innerText = "INICIANDO...";
+            led.classList.add('active'); 
+            
             if(audioCtx.state==='suspended') audioCtx.resume();
             
             if(bgBuffer){
                 bgNode = audioCtx.createBufferSource(); bgNode.buffer=bgBuffer; bgNode.loop=true;
                 bgNode.playbackRate.value = scanSpeed; 
-                // VOLUMEN BASE AUMENTADO PARA MAYOR CONTRASTE
                 bgGain = audioCtx.createGain(); bgGain.gain.value=0.8;  
                 bgNode.connect(bgGain); bgGain.connect(masterGain); bgNode.start(0);
-            } else {
-                // FALLBACK (Solo si no hay MP3)
-                startFallbackNoise();
-            }
+            } else { startFallbackNoise(); }
             startListeningCycle();
         }else{
             btn.innerText="ENCENDER"; btn.classList.remove('pwr-on');
-            status.innerText = "APAGADO";
+            document.getElementById('sb-status').innerText = "APAGADO";
+            led.className = 'voice-led';
+            
             if(bgNode) { bgNode.stop(); bgNode = null; }
             if(noiseNode) { noiseNode.stop(); noiseNode = null; }
+            if(interferenceInterval) clearInterval(interferenceInterval);
             if(window.speechSynthesis) window.speechSynthesis.cancel();
             document.getElementById('voice-led').classList.remove('listening');
             if(recognition) recognition.stop();
@@ -728,31 +908,40 @@
         if(!window.speechSynthesis) return;
         document.getElementById('sb-status').innerText = "DESCODIFICANDO...";
         
-        // DUCKING EXTREMO AL 15% (La voz resaltará mucho más)
-        if(bgGain) bgGain.gain.setTargetAtTime(0.15, audioCtx.currentTime, 0.05);
-        if(noiseGain) noiseGain.gain.setTargetAtTime(0.1, audioCtx.currentTime, 0.05);
+        if(bgGain) {
+            bgGain.gain.cancelScheduledValues(audioCtx.currentTime);
+            bgGain.gain.setValueAtTime(bgGain.gain.value, audioCtx.currentTime);
+            bgGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 0.1);
+        }
+        if(noiseGain) {
+            noiseGain.gain.cancelScheduledValues(audioCtx.currentTime);
+            noiseGain.gain.setValueAtTime(noiseGain.gain.value, audioCtx.currentTime);
+            noiseGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime + 0.1);
+        }
         
         if(interferenceInterval) clearInterval(interferenceInterval);
         interferenceInterval = setInterval(() => {
             if(!bgGain) return;
-            // PICOS CONTROLADOS (Max 30%) - Se siente la interferencia pero no tapa la voz
-            const randomSpike = 0.15 + (Math.random() * 0.15); 
+            const randomSpike = 0.05 + (Math.random() * 0.1); 
+            
+            bgGain.gain.cancelScheduledValues(audioCtx.currentTime);
             bgGain.gain.setValueAtTime(randomSpike, audioCtx.currentTime);
-            // Recuperación ultra rápida al nivel bajo
-            bgGain.gain.setTargetAtTime(0.15, audioCtx.currentTime + 0.1, 0.05);
-        }, 300); // Intervalo un poco más espaciado
+            bgGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 0.1);
+        }, 250); 
 
-        const u = new SpeechSynthesisUtterance(txt); 
-        u.lang='es-MX'; 
-        u.rate = 0.85; // Un poco más lento para mejor dicción
-        u.pitch = 0.9; 
-        u.volume = 1.0; // Voz al máximo
+        const u = new SpeechSynthesisUtterance(txt); u.lang='es-MX'; u.rate = 0.85; u.pitch = 0.9; u.volume = 1.0; 
 
         u.onend = () => { 
             clearInterval(interferenceInterval);
-            // Volver Fondo al nivel de escaneo (80%)
-            if(bgGain) bgGain.gain.setTargetAtTime(0.8, audioCtx.currentTime, 0.5); 
-            if(noiseGain) noiseGain.gain.setTargetAtTime(0.15, audioCtx.currentTime, 0.5);
+            if(bgGain) {
+                bgGain.gain.cancelScheduledValues(audioCtx.currentTime);
+                bgGain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                bgGain.gain.linearRampToValueAtTime(0.8, audioCtx.currentTime + 0.5);
+            }
+            if(noiseGain) {
+                noiseGain.gain.cancelScheduledValues(audioCtx.currentTime);
+                noiseGain.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + 0.5);
+            }
             if(isSpiritOn) setTimeout(startListeningCycle, 3000); 
         };
         window.speechSynthesis.speak(u);
