@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v10.5 STATS-ADDED</title> 
+    <title>DETECTOR-OBR v11.0 ZOOM-4K</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&family=Creepster&family=VT323&display=swap" rel="stylesheet">
@@ -33,9 +33,9 @@
             font-family: 'Share Tech Mono', monospace;
             background-color: #000; color: var(--hud-cyan);
             overflow: hidden; width: 100vw; height: 100vh; margin: 0;
+            touch-action: none; /* Evita gestos del navegador */
         }
 
-        /* --- LAYOUT --- */
         #app-ui { 
             width: 100%; height: 100%; 
             display: grid;
@@ -49,10 +49,29 @@
 
         #left-panel { grid-area: left; border-right: 2px solid var(--hud-cyan); overflow: hidden; transition: all 0.5s ease; }
         #bottom-panel { grid-area: bottom; border-top: 2px solid var(--hud-cyan); overflow: hidden; transition: all 0.5s ease; }
-        #main-view-area { grid-area: cam; position: relative; overflow: hidden; background: #000; width: 100%; height: 100%; }
+        
+        /* CÁMARA Y ZOOM */
+        #main-view-area { 
+            grid-area: cam; position: relative; overflow: hidden; background: #000; width: 100%; height: 100%; 
+            /* Crucial para el zoom: */
+            touch-action: none;
+        }
+        
+        /* Contenedor interno para aplicar transformaciones de zoom */
+        #zoom-container {
+            width: 100%; height: 100%;
+            transform-origin: center center;
+            transition: transform 0.1s linear; /* Suave para pinch, rápido para tap */
+        }
 
-        body.panels-hidden #left-panel, body.panels-hidden #bottom-panel { display: none; }
+        #bg-camera-feed { 
+            width: 100%; height: 100%; object-fit: cover; 
+            transition: filter 0.3s ease; 
+        }
+        
+        #main-filter-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 
+        /* --- UI ELEMENTS --- */
         .panel-container {
             background-color: var(--glass-panel);
             box-shadow: inset 0 0 20px rgba(0, 243, 255, 0.1);
@@ -60,10 +79,6 @@
             background-image: linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
             background-size: 20px 20px; z-index: 20;
         }
-
-        /* --- CÁMARA Y MARCO --- */
-        #bg-camera-feed { width: 100%; height: 100%; object-fit: cover; transition: filter 0.3s ease; }
-        #main-filter-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 
         .camera-border {
             position: absolute; inset: 10px; pointer-events: none; z-index: 5;
@@ -78,17 +93,16 @@
         .cb-inner::before { bottom: 0; left: 0; border-width: 0 0 2px 2px; }
         .cb-inner::after { bottom: 0; right: 0; border-width: 0 2px 2px 0; }
 
-        /* REC INDICATOR */
+        /* REC & STATS */
         .rec-container {
             position: absolute; top: 20px; left: 25px; 
             color: var(--hud-red); font-family: 'Orbitron'; font-weight: bold; 
             display: flex; align-items: center; gap: 8px; z-index: 10;
-            text-shadow: 0 0 5px var(--hud-red); font-size: 0.8rem;
+            text-shadow: 0 0 5px var(--hud-red); font-size: 0.8rem; pointer-events: none;
         }
         .rec-dot { width: 10px; height: 10px; background: var(--hud-red); border-radius: 50%; animation: blinkRed 1s infinite; }
         @keyframes blinkRed { 50% { opacity: 0.3; } }
 
-        /* STATS INDICATOR (NUEVO) */
         .stats-container {
             position: absolute; bottom: 15px; right: 20px;
             font-family: 'Share Tech Mono'; font-size: 0.65rem; 
@@ -171,8 +185,17 @@
 
         .ui-hiding { animation: waterPop 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important; pointer-events: none; }
         @keyframes waterPop { 0% { transform: scale(1); opacity: 1; blur(0); } 100% { transform: scale(2.5); opacity: 0; blur(10px); } }
+        
         #loading-overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(#111, #000); }
         #enter-btn { display: none; padding: 15px 40px; border: 2px solid var(--hud-green); color: var(--hud-green); background: transparent; font-family: 'Orbitron'; font-size: 1.2rem; cursor: pointer; margin-top: 30px; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 0 15px var(--hud-green); }
+
+        /* ZOOM OVERLAY MESSAGE */
+        #zoom-msg {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 5px;
+            color: #fff; font-family: 'Share Tech Mono'; font-size: 0.8rem;
+            opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 40;
+        }
 
         @media (max-width: 768px) {
             :root { --left-panel-w: 140px; --bottom-panel-h: 110px; }
@@ -188,12 +211,14 @@
 </head>
 <body>
 
+<!-- LOADING -->
 <div id="loading-overlay">
     <img src="obr-logo.png" style="width:80px; animation:logoGlitch 2s infinite;">
     <div style="color:var(--hud-cyan); font-family:'Orbitron'; margin-top:20px;">CARGANDO MÓDULOS...</div>
     <button id="enter-btn" onclick="enterApp()">INICIAR SISTEMA</button>
 </div>
 
+<!-- LAYOUT GRID -->
 <div id="app-ui" onclick="handleUITap(event)">
     
     <div id="left-panel" class="panel-container">
@@ -229,17 +254,22 @@
     </div>
 
     <div id="main-view-area">
-        <video id="bg-camera-feed" playsinline autoplay muted></video>
-        <canvas id="main-filter-canvas" style="display:none;"></canvas>
+        <!-- ZOOM CONTAINER -->
+        <div id="zoom-container">
+            <video id="bg-camera-feed" playsinline autoplay muted></video>
+            <canvas id="main-filter-canvas" style="display:none;"></canvas>
+        </div>
         
         <div class="camera-border"><div class="cb-inner"></div></div>
         <div class="rec-container"><div class="rec-dot"></div>REC</div>
         
-        <!-- INDICADOR DE ESTADISTICAS DISCRETO -->
         <div class="stats-container">
             <div><span class="stats-val" id="cam-fps">--</span> FPS</div>
             <div><span class="stats-val" id="cam-res">--x--</span></div>
+            <div><span class="stats-val" id="zoom-lvl">1.0x</span></div>
         </div>
+        
+        <div id="zoom-msg">ZOOM x3.0</div>
 
         <div id="logo-container"><img id="logo-image" src="obr-logo.png"></div>
 
@@ -303,6 +333,13 @@
     let proxSensor, energyBars = [];
     let isRecognizing = false; 
     let scanSpeed = 1.0;
+    
+    // Variables ZOOM
+    let zoomLevel = 1;
+    let initialPinchDist = 0;
+    let longPressTimer;
+    const zoomContainer = document.getElementById('zoom-container');
+    const mainView = document.getElementById('main-view-area');
 
     const vid = document.getElementById('bg-camera-feed');
     const canvasSLS = document.getElementById('main-filter-canvas'); const ctxSLS = canvasSLS.getContext('2d');
@@ -314,7 +351,100 @@
             eContainer.appendChild(d); energyBars.push(d);
         }
         document.getElementById('loading-overlay').querySelector('button').style.display = 'block';
+        setupZoomEvents();
     };
+
+    function setupZoomEvents() {
+        // Touch para moviles
+        mainView.addEventListener('touchstart', handleTouchStart, {passive: false});
+        mainView.addEventListener('touchmove', handleTouchMove, {passive: false});
+        mainView.addEventListener('touchend', handleTouchEnd);
+        // Mouse para testing en PC (opcional)
+        mainView.addEventListener('mousedown', handleTouchStart);
+        mainView.addEventListener('mouseup', handleTouchEnd);
+    }
+
+    function handleTouchStart(e) {
+        // Long Press Logic (1 dedo)
+        if (e.touches && e.touches.length === 1) {
+            const t = e.touches[0];
+            longPressTimer = setTimeout(() => {
+                activateSpotZoom(t.clientX, t.clientY);
+            }, 500); // 500ms para activar zoom
+        }
+        
+        // Pinch Logic (2 dedos)
+        if (e.touches && e.touches.length === 2) {
+            clearTimeout(longPressTimer); // Cancelar long press
+            initialPinchDist = Math.hypot(
+                e.touches[0].pageX - e.touches[1].pageX,
+                e.touches[0].pageY - e.touches[1].pageY
+            );
+        }
+    }
+
+    function handleTouchMove(e) {
+        // Pinch Zoom
+        if (e.touches && e.touches.length === 2) {
+            e.preventDefault(); // Evitar scroll nativo
+            clearTimeout(longPressTimer);
+            
+            const dist = Math.hypot(
+                e.touches[0].pageX - e.touches[1].pageX,
+                e.touches[0].pageY - e.touches[1].pageY
+            );
+            
+            if (initialPinchDist > 0) {
+                const delta = dist - initialPinchDist;
+                // Sensibilidad del zoom
+                zoomLevel += delta * 0.01; 
+                zoomLevel = Math.min(Math.max(1, zoomLevel), 5); // Clamp 1x - 5x
+                
+                applyZoom();
+                initialPinchDist = dist; // Reset para movimiento continuo
+            }
+        } else {
+            // Si se mueve un solo dedo, cancelar long press (es un swipe)
+            clearTimeout(longPressTimer);
+        }
+    }
+
+    function handleTouchEnd(e) {
+        clearTimeout(longPressTimer);
+        // Si soltamos el long press, volver a zoom normal (o mantener el pinch actual)
+        if (zoomContainer.style.transformOrigin !== "center center") {
+             resetSpotZoom();
+        }
+    }
+
+    function activateSpotZoom(x, y) {
+        // Calcular posición relativa dentro del contenedor
+        const rect = mainView.getBoundingClientRect();
+        const relX = x - rect.left;
+        const relY = y - rect.top;
+        
+        zoomContainer.style.transition = "transform 0.2s ease-out";
+        zoomContainer.style.transformOrigin = `${relX}px ${relY}px`;
+        zoomContainer.style.transform = `scale(3)`; // Zoom fijo de 3x para inspección
+        
+        // Mostrar indicador
+        const msg = document.getElementById('zoom-msg');
+        msg.innerText = "ZOOM x3.0";
+        msg.style.opacity = 1;
+    }
+
+    function resetSpotZoom() {
+        zoomContainer.style.transition = "transform 0.3s ease-in";
+        zoomContainer.style.transformOrigin = "center center";
+        // Volver al nivel de zoom que teníamos con el pinch
+        applyZoom();
+        document.getElementById('zoom-msg').style.opacity = 0;
+    }
+
+    function applyZoom() {
+        zoomContainer.style.transform = `scale(${zoomLevel})`;
+        document.getElementById('zoom-lvl').innerText = zoomLevel.toFixed(1) + "x";
+    }
 
     async function enterApp(){
         document.getElementById('loading-overlay').style.display='none';
@@ -342,15 +472,41 @@
 
     async function startCam(){
         try{
-            const s = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment", width:{ideal:1920}, height:{ideal:1080}}, audio:false});
-            vid.srcObject = s; videoTrack = s.getVideoTracks()[0];
-            vid.onloadedmetadata = ()=> { 
-                resize();
-                document.getElementById('cam-res').innerText = `${vid.videoWidth}x${vid.videoHeight}`;
-            }; 
-            window.onresize = resize;
-        }catch(e){}
+            // INTENTO 4K FORZADO
+            const constraints = {
+                audio: false,
+                video: {
+                    facingMode: { exact: "environment" }, // Forzar trasera
+                    width: { ideal: 3840 },
+                    height: { ideal: 2160 }
+                }
+            };
+            
+            // Fallback si no soporta exact environment
+            try {
+                 const s = await navigator.mediaDevices.getUserMedia(constraints);
+                 handleStream(s);
+            } catch (e) {
+                 const fallbackConstraints = {
+                     audio: false,
+                     video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } }
+                 };
+                 const s = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+                 handleStream(s);
+            }
+        }catch(e){ console.log("Cam error", e); }
     }
+    
+    function handleStream(stream) {
+        vid.srcObject = stream; 
+        videoTrack = stream.getVideoTracks()[0];
+        vid.onloadedmetadata = ()=> { 
+            resize();
+            document.getElementById('cam-res').innerText = `${vid.videoWidth}x${vid.videoHeight}`;
+        }; 
+        window.onresize = resize;
+    }
+
     function resize(){
         const area = document.getElementById('main-view-area');
         canvasSLS.width = area.clientWidth; canvasSLS.height = area.clientHeight;
@@ -453,6 +609,8 @@
             if(r && (r.alpha || r.beta || r.gamma)) setSensorStatus('sens-gyro', 'main');
         };
 
+        // VINCULADO AL CLIC DE INICIO (Requisito iOS)
+        // Se llama desde initSensors que se llama desde enterApp
         requestAccess();
         initProximity();
 
@@ -579,7 +737,8 @@
     function speak(txt){
         if(!window.speechSynthesis) return;
         document.getElementById('sb-status').innerText = "DESCODIFICANDO...";
-        if(bgGain) bgGain.gain.setTargetAtTime(0.2, audioCtx.currentTime, 0.1);
+        // DUCKING EXTREMO PARA QUE SE ESCUCHE LA VOZ
+        if(bgGain) bgGain.gain.setTargetAtTime(0.05, audioCtx.currentTime, 0.1);
         if(noiseGain) noiseGain.gain.setTargetAtTime(0.05, audioCtx.currentTime, 0.1);
 
         const u = new SpeechSynthesisUtterance(txt); u.lang='es-MX'; u.rate = 0.9; u.pitch = 0.8;
@@ -604,10 +763,13 @@
             frames=0; lastFps=performance.now();
             document.getElementById('temp-display').innerText = (18+Math.random()*3).toFixed(1);
         }
-        if(currentFilter==='sls' && latestPoses.length>0){
+        
+        // CORRECCION SLS: Limpiar siempre
+        if(currentFilter==='sls'){
             ctxSLS.clearRect(0,0,canvasSLS.width,canvasSLS.height);
-            drawSLS(latestPoses);
+            if (latestPoses.length > 0) drawSLS(latestPoses);
         }
+        
         if(analyser){
             const data = new Uint8Array(analyser.frequencyBinCount);
             analyser.getByteFrequencyData(data);
@@ -632,7 +794,16 @@
     async function initMoveNet() {
         await tf.ready();
         const detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING });
-        setInterval(async () => { if(currentFilter==='sls' && vid.readyState===4) latestPoses = await detector.estimatePoses(vid); }, 100);
+        setInterval(async () => { 
+            if(currentFilter==='sls' && vid.readyState===4) {
+                // Actualizar constantemente, si no detecta devuelve vacio y se limpia
+                try {
+                   latestPoses = await detector.estimatePoses(vid); 
+                } catch(e) { latestPoses = []; }
+            } else {
+                latestPoses = [];
+            }
+        }, 100);
     }
     const conns = [['left_shoulder','right_shoulder'],['left_shoulder','left_hip'],['right_shoulder','right_hip'],['left_hip','right_hip'],['left_shoulder','left_elbow'],['left_elbow','left_wrist'],['right_shoulder','right_elbow'],['right_elbow','right_wrist'],['left_hip','left_knee'],['left_knee','left_ankle'],['right_hip','right_knee'],['right_knee','right_ankle']];
     function drawSLS(poses) {
