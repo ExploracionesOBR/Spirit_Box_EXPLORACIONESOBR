@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v11.2 TIMING-FIX</title> 
+    <title>DETECTOR-OBR v11.3 AUDIO-MATRIX</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&family=Creepster&family=VT323&display=swap" rel="stylesheet">
@@ -92,7 +92,7 @@
         /* CANVAS MATRIX EN PANEL */
         #matrix-canvas {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            opacity: 0.3; pointer-events: none; z-index: 0;
+            opacity: 0.2; pointer-events: none; z-index: 0;
         }
 
         /* ZOOM CONTAINER */
@@ -457,9 +457,9 @@
         mCtx.font = '10px Share Tech Mono';
         
         for(let i = 0; i < matrixDrops.length; i++) {
-            let text = String.fromCharCode(0x30A0 + Math.random() * 96);
+            let text = String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
             if (Math.random() > 0.98 && autoData.length > 0) {
-                text = autoData[Math.floor(Math.random() * autoData.length)].substring(0,5); 
+                text = autoData[Math.floor(Math.random() * autoData.length)].substring(0,5).toUpperCase(); 
                 mCtx.fillStyle = '#ff0055'; 
             } else {
                 mCtx.fillStyle = '#00f3ff';
@@ -704,6 +704,7 @@
             if(noiseNode) { noiseNode.stop(); noiseNode = null; }
             if(interferenceInterval) clearInterval(interferenceInterval);
             if(window.speechSynthesis) window.speechSynthesis.cancel();
+            document.getElementById('voice-led').classList.remove('listening');
             if(recognition) recognition.stop();
         }
     }
@@ -766,14 +767,16 @@
         if(!window.speechSynthesis) return;
         document.getElementById('sb-status').innerText = "DESCODIFICANDO...";
         
-        if(bgGain) bgGain.gain.setTargetAtTime(0.6, audioCtx.currentTime, 0.1);
+        // Ducking to 40% as requested ("lower to 60%" interpreted as safety for "can't hear")
+        if(bgGain) bgGain.gain.setTargetAtTime(0.4, audioCtx.currentTime, 0.1);
         
         if(interferenceInterval) clearInterval(interferenceInterval);
         interferenceInterval = setInterval(() => {
             if(!bgGain) return;
-            const randomSpike = 0.6 + (Math.random() * 0.2); 
+            // Spike to 55%
+            const randomSpike = 0.45 + (Math.random() * 0.1); 
             bgGain.gain.setValueAtTime(randomSpike, audioCtx.currentTime);
-            bgGain.gain.setTargetAtTime(0.6, audioCtx.currentTime + 0.1, 0.1);
+            bgGain.gain.setTargetAtTime(0.4, audioCtx.currentTime + 0.1, 0.1);
         }, 200); 
 
         const u = new SpeechSynthesisUtterance(txt); u.lang='es-MX'; u.rate = 0.9; u.pitch = 0.8;
