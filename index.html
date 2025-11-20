@@ -6,7 +6,7 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>DETECTOR-OBR v5.1 FINAL</title> 
+    <title>DETECTOR-OBR v5.2 FIXED</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
@@ -79,14 +79,15 @@
             bottom: 15px; right: 15px;
             font-family: 'Orbitron', sans-serif; font-size: 0.65rem;
             color: var(--hud-green); text-align: right;
-            text-shadow: 0 0 5px rgba(0,255,65,0.5); /* Sombra más suave */
-            padding: 2px 5px; /* Más compacto */
+            text-shadow: 0 0 5px rgba(0,255,65,0.5);
+            padding: 2px 5px;
             line-height: 1.2;
         }
         .rec-dot {
             display: inline-block; width: 8px; height: 8px; border-radius: 50%;
             background: var(--hud-red); margin-right: 5px;
             animation: pulseRed 1.5s infinite;
+            box-shadow: 0 0 5px var(--hud-red);
         }
         @keyframes pulseRed { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
@@ -100,7 +101,6 @@
             border: 1px solid rgba(0, 243, 255, 0.3);
             box-shadow: 0 0 25px rgba(0, 243, 255, 0.1);
         }
-        /* Decoración Esquinas */
         .panel::before { content: ''; position: absolute; top: -1px; left: -1px; width: 15px; height: 15px; border-top: 2px solid var(--hud-cyan); border-left: 2px solid var(--hud-cyan); }
         .panel::after { content: ''; position: absolute; bottom: -1px; right: -1px; width: 15px; height: 15px; border-bottom: 2px solid var(--hud-pink); border-right: 2px solid var(--hud-pink); }
 
@@ -132,7 +132,6 @@
             transition: all 0.3s;
         }
         
-        /* Colores de Estado LED */
         .led-green { background: var(--hud-green); box-shadow: 0 0 8px var(--hud-green); }
         .led-blue { background: var(--hud-blue); box-shadow: 0 0 8px var(--hud-blue); }
         .led-orange { background: var(--hud-orange); box-shadow: 0 0 8px var(--hud-orange); }
@@ -141,7 +140,6 @@
         /* --- SPIRIT BOX --- */
         .spirit-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
         
-        /* LED INDICADOR VOZ */
         .voice-led { 
             width: 12px; height: 12px; border-radius: 50%; background: #222; 
             border: 1px solid #444; transition: all 0.2s; 
@@ -167,15 +165,15 @@
         /* --- DIALES Y GRÁFICO DE ENERGÍA --- */
         .dials-grid { 
             display: grid; 
-            grid-template-columns: repeat(3, 1fr) 1.5fr; /* 3 diales + 1 columna ancha para energy */
+            grid-template-columns: repeat(3, 1fr) 1.8fr; /* 3 diales + 1 columna ancha para energy */
             gap: 8px; align-items: center; padding: 5px; 
             height: 100%;
         }
         .dial-wrapper { text-align: center; position: relative; }
-        .dial-container { width: 65px; height: 65px; border-radius: 50%; position: relative; margin: 0 auto; background: #0b0c15; box-shadow: 0 0 10px rgba(0, 243, 255, 0.1); display: flex; justify-content: center; align-items: center; }
+        .dial-container { width: 60px; height: 60px; border-radius: 50%; position: relative; margin: 0 auto; background: #0b0c15; box-shadow: 0 0 10px rgba(0, 243, 255, 0.1); display: flex; justify-content: center; align-items: center; }
         .dial-ring { position: absolute; inset: 0; border-radius: 50%; -webkit-mask: radial-gradient(transparent 62%, black 63%); mask: radial-gradient(transparent 62%, black 63%); }
         .dial-ticks { position: absolute; inset: 8px; border-radius: 50%; border: 1px dashed rgba(255,255,255,0.2); }
-        .dial-needle { position: absolute; width: 2px; height: 26px; background: #fff; bottom: 50%; left: 50%; transform-origin: bottom center; transform: translateX(-50%) rotate(-45deg); z-index: 2; box-shadow: 0 0 5px #fff; transition: transform 0.3s cubic-bezier(0.4, 2, 0.5, 1); }
+        .dial-needle { position: absolute; width: 2px; height: 24px; background: #fff; bottom: 50%; left: 50%; transform-origin: bottom center; transform: translateX(-50%) rotate(-45deg); z-index: 2; box-shadow: 0 0 5px #fff; transition: transform 0.3s cubic-bezier(0.4, 2, 0.5, 1); }
         .dial-center { position: absolute; width: 6px; height: 6px; background: #000; border: 1px solid var(--hud-cyan); border-radius: 50%; z-index: 3; }
         .knob-label { font-size: 0.6rem; color: var(--hud-cyan); margin-top: 5px; font-weight: bold; letter-spacing: 1px; }
 
@@ -184,41 +182,25 @@
             display: flex; flex-direction: column; justify-content: space-between;
             align-items: center; height: 100%; background: rgba(0,0,0,0.4); 
             border: 1px solid rgba(255,255,255,0.1); padding: 5px;
-            font-size: 0.6rem;
             color: var(--hud-cyan);
         }
         #energy-bars-container {
-            width: 100%; height: 80%; display: flex; gap: 2px;
+            width: 100%; height: 40px; display: flex; gap: 2px;
             justify-content: center; align-items: flex-end;
             position: relative;
         }
         .energy-bar {
-            width: 8px; /* Ancho de cada barra */
-            height: 0%; /* Altura inicial */
+            flex: 1;
+            height: 5%; /* Altura inicial mínima */
             background: linear-gradient(to top, var(--hud-green), var(--hud-orange), var(--hud-red));
-            transition: height 0.1s ease-out; /* Animación suave */
+            transition: height 0.05s ease-out;
             border-radius: 1px;
-            box-shadow: 0 0 2px rgba(0,243,255,0.3);
-            border: 1px solid transparent;
-            position: relative;
-            overflow: hidden;
-        }
-        .energy-bar::before {
-            content: '';
-            position: absolute;
-            bottom: 0; left: 0; right: 0;
-            background: rgba(255,255,255,0.2);
-            height: 100%;
-            pointer-events: none;
-            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+            opacity: 0.8;
         }
         
-        #energy-value {
-            font-family: 'Orbitron';
-            font-size: 0.8rem;
-            color: var(--hud-pink);
-            text-shadow: 0 0 8px var(--hud-pink);
-            margin-top: 5px;
+        #energy-value-text {
+            font-family: 'Orbitron'; font-size: 0.7rem; margin-top: 2px;
+            color: var(--hud-pink); text-shadow: 0 0 5px var(--hud-pink);
         }
 
         /* BOTONES FLOTANTES */
@@ -339,7 +321,7 @@
                     <div id="voice-led" class="voice-led" title="Verde: Escuchando"></div>
                 </div>
                 
-                <div style="display: grid; grid-template-columns: 45px 1fr; gap: 10px; align-items: center; margin-top: 8px;">
+                <div style="display: grid; grid-template-columns: 50px 1fr; gap: 10px; align-items: center; margin-top: 15px;">
                     <div class="switch-container">
                         <label class="switch">
                             <input type="checkbox" id="knob-power">
@@ -348,8 +330,7 @@
                         <div class="knob-label">PWR</div>
                     </div>
                     <div>
-                        <span style="font-size:0.6rem; color:#aaa; display:block; text-align:right;">STATUS: <span id="spirit-status" style="color:var(--hud-cyan);">IDLE</span></span>
-                        <div style="height:20px; border:1px solid #333; background:rgba(0,0,0,0.5); margin-top:5px;"></div>
+                         <span style="font-size:0.6rem; color:#aaa; display:block;">ESTADO: <span id="spirit-status" style="color:var(--hud-cyan);">INACTIVO</span></span>
                     </div>
                 </div>
             </div>
@@ -388,14 +369,13 @@
                     <span class="knob-label" style="margin:0; text-align:center;">ENERGY</span>
                     <div id="energy-bars-container">
                         </div>
-                    <span id="energy-value">0</span>
+                    <span id="energy-value-text">00</span>
                 </div>
-
             </div>
             
-            <div style="margin-top: 10px; padding: 0 5px;">
+            <div style="margin-top: 5px; padding: 0 5px;">
                 <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:#aaa; margin-bottom:2px;">
-                    <span>VOLUME</span> <span id="vol-percent">100%</span>
+                    <span>VOLUME</span> <span id="vol-text">100%</span>
                 </div>
                 <input type="range" id="vol-slider" min="0" max="100" value="100">
             </div>
@@ -413,5 +393,313 @@
 </div>
 
 <script>
-    // --- CONFIGURACIÓN ---
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzOf3crQxBdPylwMTAd34W-nBShN31MkIUtaMdKsZHMZVVniI2HjMes
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzOf3crQxBdPylwMTAd34W-nBShN31MkIUtaMdKsZHMZVVniI2HjMesD6DpOlO363T1/exec";
+    let currentFilter = 'none';
+    let isRunning = false;
+    let uiVisible = false;
+    let automaticoData = [], programadoData = new Map();
+    
+    const videoBg = document.getElementById('bg-camera-feed');
+    const canvasSLS = document.getElementById('main-filter-canvas'); const ctxSLS = canvasSLS.getContext('2d');
+    const voiceLed = document.getElementById('voice-led');
+    const logoContainer = document.getElementById('logo-container');
+    const filterControls = document.getElementById('filter-controls-container');
+    const energyContainer = document.getElementById('energy-bars-container');
+    const energyValueText = document.getElementById('energy-value-text');
+    
+    let audioCtx, masterGain, micSource, analyserEnergy;
+    let gainFondo1, bufferFondo1;
+    let recognition; 
+    
+    let lastFpsTime = 0, frameCount = 0, videoTrack;
+    let poseDetector, latestPoses = [];
+    let hideTimeout;
+    
+    // Inicializar barras
+    const NUM_BARS = 12;
+    for(let i=0; i<NUM_BARS; i++){
+        let b = document.createElement('div');
+        b.className = 'energy-bar';
+        energyContainer.appendChild(b);
+    }
+    const energyBars = document.getElementsByClassName('energy-bar');
+
+    // 1. CARGA
+    window.onload = () => {
+        updateLoad(10);
+        setTimeout(async () => {
+            updateLoad(40); await initMoveNet(); 
+            updateLoad(70); await loadGoogleData(); 
+            updateLoad(100);
+            document.getElementById('load-text').innerText = "SISTEMAS ONLINE";
+            document.getElementById('loading-bar').style.display = 'none';
+            document.getElementById('enter-btn').style.display = 'block';
+        }, 1500);
+    };
+    function updateLoad(p) { document.getElementById('loading-bar').style.width = p + '%'; }
+
+    async function enterApp() {
+        const overlay = document.getElementById('loading-overlay');
+        overlay.style.transition = 'opacity 0.5s'; overlay.style.opacity = '0';
+        setTimeout(() => overlay.style.display = 'none', 500);
+
+        audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+        masterGain = audioCtx.createGain(); masterGain.connect(audioCtx.destination);
+        bufferFondo1 = await loadAudio('FONDO_1.mp3');
+
+        await startCamera();
+        initSensorListeners(); 
+        loop();
+    }
+
+    // 2. UI
+    function handleUITap(e) {
+        if(e.target.closest('.panel') || e.target.closest('.filter-btn') || e.target.closest('input') || e.target.closest('button')) return;
+        if(uiVisible) hideControls(); else showControls();
+    }
+    function showControls() {
+        uiVisible = true; filterControls.style.opacity = '1'; filterControls.style.pointerEvents = 'auto';
+        logoContainer.classList.add('hiding');
+        clearTimeout(hideTimeout); hideTimeout = setTimeout(hideControls, 5000);
+    }
+    function hideControls() {
+        uiVisible = false; filterControls.style.opacity = '0'; filterControls.style.pointerEvents = 'none';
+        logoContainer.classList.remove('hiding');
+    }
+
+    // 3. CÁMARA
+    async function startCamera() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+            videoBg.srcObject = stream; videoTrack = stream.getVideoTracks()[0];
+            videoBg.onloadedmetadata = () => { document.getElementById('f-res').innerText = `${videoBg.videoWidth}x${videoBg.videoHeight}`; resizeCanvas(); };
+            window.addEventListener('resize', resizeCanvas);
+        } catch (e) { console.error(e); }
+    }
+    function resizeCanvas() {
+        canvasSLS.width = window.innerWidth; canvasSLS.height = window.innerHeight;
+        if(window.BlueWave) window.BlueWave.resize();
+    }
+
+    // 4. SENSORES
+    function updateSensorUI(id, valId, val, state) {
+        const led = document.getElementById('led-'+id);
+        const txt = document.getElementById('val-'+id);
+        txt.innerText = val;
+        led.className = 'sensor-led'; 
+        if(state === 'main') { led.classList.add('led-green'); txt.style.color = 'var(--hud-green)'; }
+        else if(state === 'backup') { led.classList.add('led-blue'); txt.style.color = 'var(--hud-blue)'; }
+        else if(state === 'sim') { led.classList.add('led-orange'); txt.style.color = 'var(--hud-orange)'; }
+        else { led.classList.add('led-red'); txt.style.color = '#888'; }
+    }
+
+    function initSensorListeners() {
+        let sensorsActive = false;
+        if (window.DeviceOrientationEvent) {
+            window.addEventListener("deviceorientation", (e) => {
+                if(e.alpha !== null) {
+                    document.getElementById('compass-needle').style.transform = `translateX(-50%) rotate(${-e.alpha}deg)`;
+                    updateSensorUI('mag', 'mag', Math.round(e.alpha)+"°", 'main');
+                    sensorsActive = true;
+                }
+            }, true);
+        }
+        if (window.DeviceMotionEvent) {
+            window.addEventListener("devicemotion", (e) => {
+                const acc = e.accelerationIncludingGravity;
+                if(acc) {
+                    let t = Math.abs(acc.x||0) + Math.abs(acc.y||0) + Math.abs(acc.z||0);
+                    updateSensorUI('acc', 'acc', t.toFixed(1), 'backup');
+                    let rot = ((t * 8) % 240) - 120; 
+                    document.getElementById('emf-needle').style.transform = `translateX(-50%) rotate(${rot}deg)`;
+                    sensorsActive = true;
+                }
+            }, true);
+        }
+        if(!sensorsActive) {
+            setInterval(()=>{
+                let r = Math.random()*360; document.getElementById('compass-needle').style.transform = `translateX(-50%) rotate(${r}deg)`;
+                let em = (Math.random()*100) - 50; document.getElementById('emf-needle').style.transform = `translateX(-50%) rotate(${em}deg)`;
+                updateSensorUI('mag', 'mag', 'SIM', 'sim'); updateSensorUI('acc', 'acc', 'SIM', 'sim');
+            }, 800);
+        }
+    }
+
+    // 5. AUDIO & SPIRIT BOX
+    async function loadAudio(url) { try { const r = await fetch(url); const b = await r.arrayBuffer(); return await audioCtx.decodeAudioData(b); } catch(e){return null;} }
+
+    document.getElementById('knob-power').addEventListener('change', async (e) => {
+        isRunning = e.target.checked;
+        if (isRunning) {
+            if(audioCtx.state==='suspended') await audioCtx.resume();
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                micSource = audioCtx.createMediaStreamSource(stream);
+                analyserEnergy = audioCtx.createAnalyser(); analyserEnergy.fftSize = 64; micSource.connect(analyserEnergy);
+                initRecognition();
+                updateSensorUI('mic', 'mic', 'ON', 'main');
+                if(bufferFondo1) {
+                    const src = audioCtx.createBufferSource(); src.buffer = bufferFondo1; src.loop=true;
+                    gainFondo1 = audioCtx.createGain(); gainFondo1.gain.value = 0.6; 
+                    src.connect(gainFondo1); gainFondo1.connect(masterGain); src.start(0);
+                }
+                startAutoLoop();
+                document.getElementById('spirit-status').innerText = "ESCUCHANDO";
+            } catch(err) { console.error(err); updateSensorUI('mic', 'mic', 'ERR', 'off'); }
+        } else {
+            if(audioCtx) audioCtx.suspend(); if(recognition) recognition.stop();
+            updateSensorUI('mic', 'mic', 'OFF', 'off');
+            voiceLed.classList.remove('active');
+            document.getElementById('spirit-status').innerText = "INACTIVO";
+        }
+    });
+    
+    document.getElementById('vol-slider').addEventListener('input', (e) => { 
+        if(masterGain) masterGain.gain.value = e.target.value/100;
+        document.getElementById('vol-text').innerText = e.target.value + "%";
+    });
+
+    function initRecognition() {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if(!SR) return;
+        recognition = new SR(); recognition.lang = 'es-MX'; recognition.continuous = true;
+        recognition.onstart = () => { voiceLed.classList.add('active'); document.getElementById('spirit-status').innerText = "REC VOZ"; };
+        recognition.onend = () => { voiceLed.classList.remove('active'); if(isRunning) recognition.start(); };
+        recognition.onresult = (e) => {
+            const txt = e.results[e.results.length-1][0].transcript.toLowerCase().trim();
+            if(programadoData.has(txt)) speak(programadoData.get(txt));
+        };
+        recognition.start();
+    }
+
+    function speak(txt) {
+        if(!window.speechSynthesis) return;
+        if(gainFondo1) gainFondo1.gain.setTargetAtTime(0.4, audioCtx.currentTime, 0.1);
+        if(recognition) recognition.stop();
+        document.getElementById('spirit-status').innerText = "RESPONDIENDO";
+        voiceLed.classList.remove('active');
+
+        const u = new SpeechSynthesisUtterance(txt); u.lang='es-MX'; u.rate=0.9; u.pitch=0.6; u.volume=1.0;
+        u.onend = () => { 
+            if(gainFondo1) gainFondo1.gain.setTargetAtTime(0.6, audioCtx.currentTime, 0.5);
+            if(isRunning && recognition) recognition.start();
+        };
+        window.speechSynthesis.speak(u);
+    }
+
+    function startAutoLoop() {
+        if(!isRunning) return;
+        const delay = 12000 + Math.random() * 15000;
+        setTimeout(() => {
+            if (isRunning && automaticoData.length > 0 && !window.speechSynthesis.speaking) {
+                speak(automaticoData[Math.floor(Math.random() * automaticoData.length)]);
+            }
+            startAutoLoop();
+        }, delay);
+    }
+
+    // 6. BUCLE
+    function loop() {
+        const now = performance.now(); frameCount++;
+        if (now - lastFpsTime >= 1000) {
+            document.getElementById('f-fps').innerText = frameCount;
+            let t = 18 + Math.random()*2; 
+            let rot = ((t - 10) * 6) - 45;
+            document.getElementById('temp-needle').style.transform = `translateX(-50%) rotate(${rot}deg)`;
+            document.getElementById('temp-text-val').innerText = t.toFixed(1)+"°";
+            frameCount = 0; lastFpsTime = now;
+        }
+        if (currentFilter === 'sls') { ctxSLS.clearRect(0, 0, canvasSLS.width, canvasSLS.height); if (latestPoses.length > 0) drawSLS(latestPoses); }
+        if (isRunning && analyserEnergy) updateEnergyBars();
+        requestAnimationFrame(loop);
+    }
+
+    function updateEnergyBars() {
+        const data = new Uint8Array(analyserEnergy.frequencyBinCount);
+        analyserEnergy.getByteFrequencyData(data);
+        let sum = 0;
+        for(let i=0; i<NUM_BARS; i++) {
+            let val = data[i*2] || 0; 
+            sum += val;
+            energyBars[i].style.height = Math.max(5, (val/255)*100) + "%";
+        }
+        let avg = Math.round(sum / NUM_BARS);
+        energyValueText.innerText = avg.toString().padStart(2, '0');
+    }
+
+    // 7. FILTROS & EXTRAS
+    async function toggleFilter(f) {
+        if (currentFilter === f) { deactivateAllFilters(); return; }
+        deactivateAllFilters(); currentFilter = f;
+        const btn = document.querySelector(`button[onclick="toggleFilter('${f}')"]`);
+        if(btn) btn.classList.add('active');
+        if (f !== 'none') document.body.classList.add('filter-' + f);
+        if (f === 'sls') canvasSLS.style.display = 'block';
+        if (f === 'bluewave' && window.BlueWave) window.BlueWave.start();
+        if (f === 'night-vision' && videoTrack) { try { await videoTrack.applyConstraints({ advanced: [{ torch: true }] }); } catch(e){} }
+    }
+
+    async function deactivateAllFilters() {
+        document.body.className = ''; document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        canvasSLS.style.display = 'none'; if(window.BlueWave) window.BlueWave.stop();
+        currentFilter = 'none';
+        if (videoTrack) { try { await videoTrack.applyConstraints({ advanced: [{ torch: false }] }); } catch(e){} }
+    }
+    
+    function togglePanels() {
+        document.body.classList.toggle('panels-active');
+        document.getElementById('btn-panel').classList.toggle('active');
+        setTimeout(resizeCanvas, 500);
+    }
+
+    async function initMoveNet() {
+        const model = poseDetection.SupportedModels.MoveNet;
+        poseDetector = await poseDetection.createDetector(model, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING });
+        setInterval(async () => { if (currentFilter === 'sls' && videoBg.readyState === 4) latestPoses = await poseDetector.estimatePoses(videoBg); }, 100);
+    }
+    const conns = [['left_shoulder','right_shoulder'],['left_shoulder','left_hip'],['right_shoulder','right_hip'],['left_hip','right_hip'],['left_shoulder','left_elbow'],['left_elbow','left_wrist'],['right_shoulder','right_elbow'],['right_elbow','right_wrist'],['left_hip','left_knee'],['left_knee','left_ankle'],['right_hip','right_knee'],['right_knee','right_ankle']];
+    function drawSLS(poses) {
+        const vidW = videoBg.videoWidth, vidH = videoBg.videoHeight; const canW = canvasSLS.width, canH = canvasSLS.height;
+        const scale = Math.max(canW/vidW, canH/vidH); const xo = (canW - vidW*scale)/2, yo = (canH - vidH*scale)/2;
+        ctxSLS.lineWidth = 3; ctxSLS.lineCap = 'round'; ctxSLS.strokeStyle = '#00ff41'; ctxSLS.shadowBlur = 10; ctxSLS.shadowColor = '#00ff41';
+        poses.forEach(p => {
+            if(p.score<0.25)return; const kp=p.keypoints; const m={}; kp.forEach(k=>m[k.name]=k);
+            ctxSLS.beginPath(); conns.forEach(([a,b])=>{ const p1=m[a],p2=m[b]; if(p1&&p2&&p1.score>0.3&&p2.score>0.3){ctxSLS.moveTo(p1.x*scale+xo,p1.y*scale+yo);ctxSLS.lineTo(p2.x*scale+xo,p2.y*scale+yo);} }); ctxSLS.stroke();
+            ctxSLS.fillStyle='#ff0055'; kp.forEach(k=>{if(k.score>0.3){ctxSLS.beginPath();ctxSLS.arc(k.x*scale+xo,k.y*scale+yo,4,0,2*Math.PI);ctxSLS.fill();}});
+        });
+    }
+
+    async function loadGoogleData() { try{ const r=await fetch(GOOGLE_SCRIPT_URL); const d=await r.json(); automaticoData=d.automatico.map(x=>x.TEXTO); d.programado.forEach(i=>{if(i.PREGUNTA)programadoData.set(i.PREGUNTA.toLowerCase().trim(), i.RESPUESTA);}); }catch(e){} }
+</script>
+
+<script>
+/* BLUE WAVE WEBGL */
+(function(){
+    let gl,p,pl,tl,t,active=false; const c=document.getElementById("gl-bluewave"),v=document.getElementById("bg-camera-feed");
+    function i(){
+        gl=c.getContext("webgl");if(!gl)return;
+        // Vertex Shader
+        const vs=cs(gl,35633,`attribute vec2 p;attribute vec2 t;varying vec2 vt;void main(){gl_Position=vec4(p,0,1);vt=t;}`);
+        // Fragment Shader (Corrección de color)
+        const fs=cs(gl,35632,`precision mediump float;uniform sampler2D u;uniform float m;varying vec2 vt;void main(){vec2 uv=vt;uv.x+=sin(uv.y*10.0+m)*0.01;vec4 c=texture2D(u,uv);float g=c.g*0.5+c.b*0.5;gl_FragColor=vec4(0.0, g*0.8, g*1.5, 1.0);}`);
+        p=cp(gl,vs,fs);pl=gl.getAttribLocation(p,"p");tl=gl.getAttribLocation(p,"t");
+        const b=gl.createBuffer();gl.bindBuffer(34962,b);gl.bufferData(34962,new Float32Array([-1,-1,-1,1,1,-1,1,-1,-1,1,1,1]),35044);
+        const tb=gl.createBuffer();gl.bindBuffer(34962,tb);gl.bufferData(34962,new Float32Array([0,1,0,0,1,1,1,1,0,0,1,0]),35044);
+        t=gl.createTexture();gl.bindTexture(3553,t);gl.texParameteri(3553,10242,33071);gl.texParameteri(3553,10243,33071);gl.texParameteri(3553,10241,9729);
+    }
+    function r(tm){
+        if(!active)return;if(!gl)i();
+        c.width=window.innerWidth;c.height=window.innerHeight;gl.viewport(0,0,gl.drawingBufferWidth,gl.drawingBufferHeight);
+        gl.useProgram(p);
+        gl.enableVertexAttribArray(pl);gl.bindBuffer(34962,gl.createBuffer());gl.bufferData(34962,new Float32Array([-1,-1,-1,1,1,-1,1,-1,-1,1,1,1]),35044);gl.vertexAttribPointer(pl,2,5126,false,0,0);
+        gl.enableVertexAttribArray(tl);gl.bindBuffer(34962,gl.createBuffer());gl.bufferData(34962,new Float32Array([0,1,0,0,1,1,1,1,0,0,1,0]),35044);gl.vertexAttribPointer(tl,2,5126,false,0,0);
+        gl.bindTexture(3553,t);if(v.readyState>=2)gl.texImage2D(3553,0,6408,6408,5121,v);
+        gl.uniform1f(gl.getUniformLocation(p,"m"),tm*0.002);
+        gl.drawArrays(4,0,6);requestAnimationFrame(r);
+    }
+    function cs(g,y,s){const x=g.createShader(y);g.shaderSource(x,s);g.compileShader(x);return x;}
+    function cp(g,v,f){const x=g.createProgram();g.attachShader(x,v);g.attachShader(x,f);g.linkProgram(x);return x;}
+    window.BlueWave={start:()=>{active=true;r(0);},stop:()=>{active=false;},resize:()=>{if(c){c.width=window.innerWidth;c.height=window.innerHeight;}}};
+})();
+</script>
+</body>
+</html>
