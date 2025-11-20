@@ -329,15 +329,10 @@
     let videoTrack, currentFilter = 'none', uiVisible = false;
     let hideTimeout, proxSensor;
 
-    const videoBg = document.getElementById('bg-camera-feed');
+    const vid = document.getElementById('bg-camera-feed');
     const canvasSLS = document.getElementById('main-filter-canvas'); const ctxSLS = canvasSLS.getContext('2d');
-    const secretLed = document.getElementById('secret-led');
-    const logoContainer = document.getElementById('logo-container');
-    const followBanner = document.getElementById('follow-banner');
-    const filterControls = document.getElementById('filter-controls-container');
-    const energyContainer = document.getElementById('energy-bars-container');
-    const btnPwr = document.getElementById('btn-spirit-pwr');
-    const btnSpd = document.getElementById('btn-spirit-speed');
+    const energyCanvas = document.getElementById('energy-canvas'); const ctxEnergy = energyCanvas.getContext('2d');
+    const peakHolds = [];
     
     // BANNER LOOP
     const followBanner = document.getElementById('follow-banner');
