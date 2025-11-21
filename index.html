@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v14.7 VIDEO-LOADER</title> 
+    <title>DETECTOR-OBR v14.8 CINEMATIC-FADE</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -119,8 +119,20 @@
         body.filter-night-vision #bg-camera-feed { filter: grayscale(100%) sepia(100%) hue-rotate(90deg) brightness(0.9) contrast(1.2) saturate(150%); }
         body.filter-night-vision #main-view-area::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4; background: radial-gradient(circle, transparent 60%, #000 95%); }
         body.filter-negative #bg-camera-feed { filter: invert(1) hue-rotate(180deg); }
-        body.filter-focus #main-view-area::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); mask-image: radial-gradient(circle, transparent 35%, black 85%); -webkit-mask-image: radial-gradient(circle, transparent 35%, black 85%); background: transparent; }
-        body.filter-focus #bg-camera-feed { filter: contrast(1.1) saturate(0.8); }
+        
+        /* EFECTO BOKEH (Retrato Cinematico) */
+        body.filter-focus #main-view-area::after { 
+            content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4; 
+            /* Desenfoque Fuerte */
+            backdrop-filter: blur(10px); 
+            -webkit-backdrop-filter: blur(10px);
+            /* Mascara Radial Suave */
+            mask-image: radial-gradient(circle, transparent 30%, black 90%);
+            -webkit-mask-image: radial-gradient(circle, transparent 30%, black 90%);
+            background: transparent;
+        }
+        /* Aumento de contraste para destacar sujeto */
+        body.filter-focus #bg-camera-feed { filter: contrast(1.2) saturate(0.9) brightness(1.1); }
 
         body.filter-sls #main-filter-canvas { display: block; }
 
@@ -205,8 +217,12 @@
         .btn-glitch { animation: btnGlitch 0.2s infinite; }
         @keyframes btnGlitch { 0% { transform: translate(0,0); } 20% { transform: translate(-2px, 1px); filter: hue-rotate(90deg); } 100% { transform: translate(0,0); } }
         
-        /* VIDEO OVERLAY */
-        #video-overlay { position: fixed; inset: 0; background: #000; z-index: 999999; display: none; justify-content: center; align-items: center; }
+        /* VIDEO OVERLAY - CORREGIDO */
+        #video-overlay { 
+            position: fixed; inset: 0; background: #000; z-index: 999999; 
+            display: none; justify-content: center; align-items: center; 
+            opacity: 0; transition: opacity 1.5s ease; /* FADE CINEMÁTICO */
+        }
         #intro-video { width: 100%; height: 100%; object-fit: contain; }
         
         /* BOTON INTRO */
@@ -289,7 +305,7 @@
 
         <div class="camera-border"><div class="cb-inner"></div></div>
         <div class="rec-container" id="rec-indicator"><div class="rec-dot"></div>REC</div>
-        <div class="stats-container"><div><span class="stats-val" id="cam-fps">--</span> FPS</div><div><span class="stats-val" id="cam-res">--x--</span></div><div><span class="stats-val" id="zoom-lvl">1.0x</span></div></div>
+        <div class="stats-container"><div><span class="stats-val" id="cam-fps">--</span> FPS</div><div><span class="stats-val" id="cam-res">--x--</span></div></div>
         <div id="logo-container"><img id="logo-image" src="obr-logo.png"></div>
         <div id="follow-banner">
             <div class="banner-content">
@@ -311,6 +327,7 @@
             <!-- BOTÓN HUD: INICIA APAGADO -->
             <button class="filter-btn" id="btn-hud" onclick="toggleHUD()"><i class="fas fa-bars"></i></button>
         </div>
+        
     </div>
 
     <div id="bottom-panel" class="panel-container">
@@ -359,6 +376,7 @@
     const zoomContainer = document.getElementById('zoom-container');
     const touchLayer = document.getElementById('touch-layer');
     const mainView = document.getElementById('main-view-area');
+
     const vid = document.getElementById('bg-camera-feed');
     const canvasSLS = document.getElementById('main-filter-canvas'); const ctxSLS = canvasSLS.getContext('2d');
     const matrixCanvas = document.getElementById('matrix-canvas');
@@ -375,7 +393,7 @@
         loadData();
     };
 
-    // INTRO VIDEO
+    // INTRO VIDEO (TRANSICION SUAVE)
     function playIntro() {
         isIntroPlaying = true;
         const overlay = document.getElementById('video-overlay');
@@ -388,16 +406,18 @@
         if(recognition) try { recognition.stop(); } catch(e){}
         
         overlay.style.display = 'flex'; // FLEX CENTRADO
+        // Hack para fade in
+        setTimeout(() => overlay.style.opacity = 1, 10);
         
-        // FORZAR CARGA
-        video.src = './INTRO_1.mp4'; 
+        // FORZAR CARGA EXPLICITA
+        video.src = 'INTRO_1.mp4'; 
         video.load();
         
         const playPromise = video.play();
         if(playPromise !== undefined) {
             playPromise.catch(e => {
                 console.log("Error video", e);
-                alert("Error al reproducir INTRO_1.mp4: " + e.message);
+                alert("Error: INTRO_1.mp4 no pudo reproducirse. " + e.name);
                 stopIntro();
             });
         }
@@ -409,13 +429,19 @@
         isIntroPlaying = false;
         const overlay = document.getElementById('video-overlay');
         const video = document.getElementById('intro-video');
-        video.pause(); video.currentTime = 0;
-        overlay.style.display = 'none';
         
-        // Restaurar
-        if(isRxOn && incomingAudioEl) incomingAudioEl.muted = false;
-        if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-        if(isSpiritOn) startListeningCycle();
+        // Fade Out
+        overlay.style.opacity = 0;
+        
+        setTimeout(() => {
+            video.pause(); video.currentTime = 0;
+            overlay.style.display = 'none';
+            
+            // Restaurar
+            if(isRxOn && incomingAudioEl) incomingAudioEl.muted = false;
+            if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            if(isSpiritOn) startListeningCycle();
+        }, 1500); // 1.5s de fade out cinematográfico
     }
 
     // AUDIO ROUTING
