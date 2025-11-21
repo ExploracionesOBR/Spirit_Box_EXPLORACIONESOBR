@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v14.6 VIDEO-FIX</title> 
+    <title>DETECTOR-OBR v14.7 VIDEO-LOADER</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -53,6 +53,7 @@
             opacity: 0; pointer-events: none;
         }
 
+        /* ESTADO SIN HUD (POR DEFECTO AL INICIO) */
         body.panels-hidden #app-ui {
             grid-template-columns: 0px 1fr;
             grid-template-rows: 1fr 0px;
@@ -102,7 +103,14 @@
 
         .rec-container { position: absolute; top: 15px; left: 15px; color: var(--hud-red); font-family: 'Orbitron'; font-weight: bold; display: flex; align-items: center; gap: 8px; z-index: 30; text-shadow: 0 0 5px var(--hud-red); font-size: 0.8rem; pointer-events: none; }
         .rec-dot { width: 10px; height: 10px; background: var(--hud-red); border-radius: 50%; animation: blinkRed 1s infinite; }
+        
         @keyframes blinkRed { 50% { opacity: 0.3; } }
+        @keyframes pulseGreen { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0.8); } 100% { box-shadow: 0 0 0 15px rgba(0, 255, 65, 0); } }
+        @keyframes pulseOrange { 0% { box-shadow: 0 0 0 0 rgba(255, 174, 0, 0.8); } 100% { box-shadow: 0 0 0 15px rgba(255, 174, 0, 0); } }
+
+        /* Clases de estado REC */
+        .rec-connected .rec-dot { background: var(--hud-green); animation: pulseGreen 1.5s infinite; }
+        .rec-error .rec-dot { background: var(--hud-orange); animation: pulseOrange 1s infinite; }
 
         .stats-container { position: absolute; bottom: 15px; right: 20px; font-family: 'Share Tech Mono'; font-size: 0.65rem; color: rgba(0, 243, 255, 0.7); text-shadow: 0 0 2px #000; z-index: 30; text-align: right; pointer-events: none; display: flex; gap: 10px; }
         .stats-val { color: #fff; font-weight: bold; }
@@ -162,7 +170,10 @@
         .rx-off { background: #330000; border: 2px solid #ff0000; color: #ff0000; box-shadow: inset 0 0 10px #550000; }
         .rx-on { background: #004400; border: 2px solid #00ff41; color: #00ff41; box-shadow: 0 0 15px #00ff41; animation: none; }
         @keyframes rxRipple { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0.8); } 100% { box-shadow: 0 0 0 20px rgba(0, 255, 65, 0); } }
-        .rx-pulse { animation: rxRipple 1s infinite; border-color: #fff !important; color: #fff !important; text-shadow: 0 0 10px #00ff41; background: #006600; }
+        .rx-pulse-green { animation: rxRipple 1s infinite; border-color: #fff !important; color: #fff !important; text-shadow: 0 0 10px #00ff41; background: #006600; }
+        
+        @keyframes rxWarn { 0% { box-shadow: 0 0 0 0 rgba(255, 174, 0, 0.8); } 100% { box-shadow: 0 0 0 20px rgba(255, 174, 0, 0); } }
+        .rx-pulse-orange { animation: rxWarn 1s infinite; border-color: var(--hud-orange) !important; color: var(--hud-orange) !important; background: #442200; }
 
         .dials-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; height: 60px; align-items: center; flex-shrink: 0; }
         .instrument-wrapper { background: rgba(0,0,0,0.5); border: 1px solid #333; border-radius: 4px; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; }
@@ -195,7 +206,7 @@
         @keyframes btnGlitch { 0% { transform: translate(0,0); } 20% { transform: translate(-2px, 1px); filter: hue-rotate(90deg); } 100% { transform: translate(0,0); } }
         
         /* VIDEO OVERLAY */
-        #video-overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: none; justify-content: center; align-items: center; }
+        #video-overlay { position: fixed; inset: 0; background: #000; z-index: 999999; display: none; justify-content: center; align-items: center; }
         #intro-video { width: 100%; height: 100%; object-fit: contain; }
         
         /* BOTON INTRO */
@@ -278,7 +289,7 @@
 
         <div class="camera-border"><div class="cb-inner"></div></div>
         <div class="rec-container" id="rec-indicator"><div class="rec-dot"></div>REC</div>
-        <div class="stats-container"><div><span class="stats-val" id="cam-fps">--</span> FPS</div><div><span class="stats-val" id="cam-res">--x--</span></div></div>
+        <div class="stats-container"><div><span class="stats-val" id="cam-fps">--</span> FPS</div><div><span class="stats-val" id="cam-res">--x--</span></div><div><span class="stats-val" id="zoom-lvl">1.0x</span></div></div>
         <div id="logo-container"><img id="logo-image" src="obr-logo.png"></div>
         <div id="follow-banner">
             <div class="banner-content">
@@ -348,13 +359,11 @@
     const zoomContainer = document.getElementById('zoom-container');
     const touchLayer = document.getElementById('touch-layer');
     const mainView = document.getElementById('main-view-area');
-
     const vid = document.getElementById('bg-camera-feed');
     const canvasSLS = document.getElementById('main-filter-canvas'); const ctxSLS = canvasSLS.getContext('2d');
     const matrixCanvas = document.getElementById('matrix-canvas');
     const mCtx = matrixCanvas.getContext('2d');
     let matrixDrops = [];
-
     let loadProgress = 0; let loadInterval; let dataLoaded = false; let dataStats = { prog: 0, auto: 0 };
     const NUM_BARS = 10; 
 
@@ -371,31 +380,45 @@
         isIntroPlaying = true;
         const overlay = document.getElementById('video-overlay');
         const video = document.getElementById('intro-video');
+        
+        // 1. SILENCIAR TODO
         if(incomingAudioEl) incomingAudioEl.muted = true;
         if(audioCtx && audioCtx.state === 'running') audioCtx.suspend();
         if(window.speechSynthesis) window.speechSynthesis.cancel();
         if(recognition) try { recognition.stop(); } catch(e){}
-        overlay.style.display = 'flex'; // FLEX para centrar
-        video.src = 'INTRO_1.mp4';
-        video.play().catch(e => {
-            console.log("Error video", e);
-            // Fallback si no existe el video
-            alert("Video INTRO_1.mp4 no encontrado");
-            stopIntro();
-        });
+        
+        overlay.style.display = 'flex'; // FLEX CENTRADO
+        
+        // FORZAR CARGA
+        video.src = './INTRO_1.mp4'; 
+        video.load();
+        
+        const playPromise = video.play();
+        if(playPromise !== undefined) {
+            playPromise.catch(e => {
+                console.log("Error video", e);
+                alert("Error al reproducir INTRO_1.mp4: " + e.message);
+                stopIntro();
+            });
+        }
+        
         video.onended = stopIntro;
     }
+
     function stopIntro() {
         isIntroPlaying = false;
         const overlay = document.getElementById('video-overlay');
         const video = document.getElementById('intro-video');
         video.pause(); video.currentTime = 0;
         overlay.style.display = 'none';
+        
+        // Restaurar
         if(isRxOn && incomingAudioEl) incomingAudioEl.muted = false;
         if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
         if(isSpiritOn) startListeningCycle();
     }
 
+    // AUDIO ROUTING
     function updateAudioRouting() {
         if (!audioCtx || !analyser) return;
         try { if(micStreamSource) micStreamSource.disconnect(analyser); if(rxStreamSource) rxStreamSource.disconnect(analyser); } catch(e){}
@@ -409,6 +432,7 @@
         }
     }
 
+    // PEERJS
     function initPeer() {
         peer = new Peer(); 
         peer.on('open', id => { connectData(); });
