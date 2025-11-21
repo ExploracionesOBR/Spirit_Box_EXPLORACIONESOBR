@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v12.5 MASTER-LINK</title> 
+    <title>DETECTOR-OBR v13.7 FINAL-POLISH</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
-
+    
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&family=Creepster&family=VT323&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -18,198 +18,709 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
 
     <style>
-        /* --- ESTILOS BASE --- */
-        :root { --hud-cyan: #00f3ff; --hud-green: #00ff41; --hud-red: #ff3333; --glass: rgba(5, 8, 15, 0.95); }
-        body { font-family: 'Share Tech Mono', monospace; background: #000; color: var(--hud-cyan); overflow: hidden; width: 100vw; height: 100vh; margin: 0; user-select: none; }
-        
-        #app-ui { display: grid; width: 100%; height: 100%; grid-template-columns: 280px 1fr; grid-template-rows: 1fr 160px; grid-template-areas: "left cam" "left bottom"; transition: 0.5s; opacity: 0; pointer-events: none; }
-        body.panels-hidden #app-ui { grid-template-columns: 0px 1fr; grid-template-rows: 1fr 0px; }
+        :root {
+            --hud-bg: #050510; 
+            --hud-cyan: #00f3ff; 
+            --hud-pink: #ff0055; 
+            --hud-green: #00ff41; 
+            --hud-orange: #ffae00;
+            --hud-red: #ff3333;
+            --hud-blue: #0088ff;
+            --glass-panel: rgba(5, 8, 15, 0.95);
+            
+            --left-panel-w: 280px;
+            --bottom-panel-h: 160px;
+        }
 
-        #left-panel { grid-area: left; border-right: 2px solid var(--hud-cyan); overflow: hidden; z-index: 50; background: var(--glass); padding: 10px; }
-        #bottom-panel { grid-area: bottom; border-top: 2px solid var(--hud-cyan); overflow: hidden; z-index: 50; background: var(--glass); padding: 10px; display: flex; flex-direction: column; }
-        #main-view-area { grid-area: cam; position: relative; overflow: hidden; background: #000; }
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background-color: #000; color: var(--hud-cyan);
+            overflow: hidden; width: 100vw; height: 100vh; margin: 0;
+            touch-action: none; 
+            -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+        }
+
+        /* --- LAYOUT PRINCIPAL --- */
+        #app-ui { 
+            width: 100%; height: 100%; 
+            display: grid;
+            grid-template-columns: var(--left-panel-w) 1fr; 
+            grid-template-rows: 1fr var(--bottom-panel-h);
+            grid-template-areas: 
+                "left cam"
+                "left bottom";
+            transition: all 0.5s ease;
+            opacity: 0; pointer-events: none;
+        }
+
+        /* ESTADO SIN HUD (POR DEFECTO AL INICIO) */
+        body.panels-hidden #app-ui {
+            grid-template-columns: 0px 1fr;
+            grid-template-rows: 1fr 0px;
+        }
+
+        #left-panel { 
+            grid-area: left; border-right: 2px solid var(--hud-cyan); 
+            overflow: hidden; transition: all 0.5s ease; position: relative;
+            display: flex; flex-direction: column; justify-content: flex-start;
+            z-index: 50; background: var(--glass-panel);
+        }
+        #bottom-panel { 
+            grid-area: bottom; border-top: 2px solid var(--hud-cyan); 
+            overflow: hidden; transition: all 0.5s ease; 
+            z-index: 50; background: var(--glass-panel);
+        }
+        
+        #main-view-area { 
+            grid-area: cam; position: relative; overflow: hidden; background: #000; width: 100%; height: 100%; 
+            touch-action: none;
+        }
+
+        #touch-layer { position: absolute; inset: 0; z-index: 10; touch-action: none; }
+
         body.panels-hidden #left-panel, body.panels-hidden #bottom-panel { display: none; }
 
-        /* --- BOTON RX PERSONALIZADO (COLORES EXACTOS) --- */
-        .btn-rx { 
-            margin-top: 10px; padding: 10px; border-radius: 4px; font-weight: bold; 
-            text-align: center; cursor: pointer; font-family: 'Orbitron'; letter-spacing: 1px;
-            font-size: 0.8rem; transition: all 0.2s; text-shadow: 0 0 5px rgba(0,0,0,0.5);
+        /* PANELES ESTILO */
+        .panel-container {
+            box-shadow: inset 0 0 20px rgba(0, 243, 255, 0.1);
+            padding: 10px;
+            background-image: linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        #matrix-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.2; pointer-events: none; z-index: 0; }
+        #zoom-container { width: 100%; height: 100%; transform-origin: center center; transition: transform 0.3s ease-out; will-change: transform; z-index: 1; }
+        #bg-camera-feed { width: 100%; height: 100%; object-fit: cover; transition: filter 0.3s ease; }
+        #main-filter-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+        .camera-border { position: absolute; inset: 10px; pointer-events: none; z-index: 20; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1); }
+        .camera-border::before, .camera-border::after, .cb-inner::before, .cb-inner::after { content: ''; position: absolute; width: 20px; height: 20px; border-color: var(--hud-cyan); border-style: solid; transition: all 0.5s; }
+        .camera-border::before { top: 0; left: 0; border-width: 2px 0 0 2px; }
+        .camera-border::after { top: 0; right: 0; border-width: 2px 2px 0 0; }
+        .cb-inner { position: absolute; inset: 0; }
+        .cb-inner::before { bottom: 0; left: 0; border-width: 0 0 2px 2px; }
+        .cb-inner::after { bottom: 0; right: 0; border-width: 0 2px 2px 0; }
+
+        .rec-container { position: absolute; top: 15px; left: 15px; color: var(--hud-red); font-family: 'Orbitron'; font-weight: bold; display: flex; align-items: center; gap: 8px; z-index: 30; text-shadow: 0 0 5px var(--hud-red); font-size: 0.8rem; pointer-events: none; }
+        .rec-dot { width: 10px; height: 10px; background: var(--hud-red); border-radius: 50%; animation: blinkRed 1s infinite; }
+        @keyframes blinkRed { 50% { opacity: 0.3; } }
+
+        .stats-container { position: absolute; bottom: 15px; right: 20px; font-family: 'Share Tech Mono'; font-size: 0.65rem; color: rgba(0, 243, 255, 0.7); text-shadow: 0 0 2px #000; z-index: 30; text-align: right; pointer-events: none; display: flex; gap: 10px; }
+        .stats-val { color: #fff; font-weight: bold; }
+
+        /* FILTROS */
+        body.filter-night-vision #bg-camera-feed { filter: grayscale(100%) sepia(100%) hue-rotate(90deg) brightness(0.9) contrast(1.2) saturate(150%); }
+        body.filter-night-vision #main-view-area::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4; background: radial-gradient(circle, transparent 60%, #000 95%); }
+        body.filter-negative #bg-camera-feed { filter: invert(1) hue-rotate(180deg); }
+        body.filter-focus #main-view-area::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); mask-image: radial-gradient(circle, transparent 35%, black 85%); -webkit-mask-image: radial-gradient(circle, transparent 35%, black 85%); background: transparent; }
+        body.filter-focus #bg-camera-feed { filter: contrast(1.1) saturate(0.8); }
+
+        body.filter-sls #main-filter-canvas { display: block; }
+
+        /* --- LOGO TERROR (GLITCH REAL) --- */
+        #logo-container { position: absolute; top: 15px; right: 15px; z-index: 50; pointer-events: none; }
+        
+        #logo-image { 
+            width: 60px; height: 60px; 
+            filter: drop-shadow(0 0 5px var(--hud-cyan)) contrast(1.5) brightness(1.2); 
+            /* EFECTO DE TERROR SOLICITADO */
+            animation: horrorGlitch 0.3s infinite alternate-reverse; 
+        }
+
+        @keyframes horrorGlitch { 
+            0% { clip-path: inset(20% 0 80% 0); transform: translate(-2px, 1px); filter: hue-rotate(0deg); } 
+            20% { clip-path: inset(60% 0 10% 0); transform: translate(2px, -1px); filter: hue-rotate(90deg) contrast(2); } 
+            40% { clip-path: inset(40% 0 50% 0); transform: translate(-2px, 2px); filter: hue-rotate(180deg) invert(0.1); } 
+            60% { clip-path: inset(80% 0 5% 0); transform: translate(2px, -2px); filter: hue-rotate(270deg); } 
+            80% { clip-path: inset(10% 0 60% 0); transform: translate(-1px, 1px); } 
+            100% { clip-path: inset(30% 0 30% 0); transform: translate(1px, -1px); filter: hue-rotate(360deg); } 
         }
         
-        /* ROJO (OFF) */
-        .rx-off {
-            background: #330000; 
-            border: 2px solid #ff0000; 
-            color: #ff0000;
-            box-shadow: inset 0 0 10px #550000;
-        }
+        #follow-banner { position: absolute; bottom: 20px; left: 0; right: 0; display: flex; justify-content: center; pointer-events: none; opacity: 0; transition: opacity 1s; z-index: 30; }
+        #follow-banner.active { opacity: 1; }
+        .banner-content { background: transparent; padding: 0; border: none; display: flex; flex-direction: column; align-items: center; gap: 5px; text-shadow: 0 0 5px #000; }
+        .seq-step { display: none; animation: fadeIn 0.5s; text-align: center; }
+        .seq-step.active { display: block; }
+        #step-1 { font-family: 'Orbitron'; color: #fff; letter-spacing: 2px; font-weight: bold; text-shadow: 0 0 10px var(--hud-cyan); }
+        #step-2 { gap: 20px; display: none; filter: drop-shadow(0 0 5px #000); } 
+        #step-3 { font-family: 'Creepster'; color: var(--hud-red); letter-spacing: 2px; font-size: 1.5rem; text-shadow: 2px 2px 0 #000; }
+        .social-icon { font-size: 2rem; color: #fff; transition: transform 0.2s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* VERDE (ON) */
-        .rx-on {
-            background: #004400; 
-            border: 2px solid #00ff41; 
-            color: #00ff41;
-            box-shadow: 0 0 15px #00ff41;
-            animation: none;
-        }
+        .section-title { font-family: 'Orbitron'; font-size: 0.65rem; font-weight: 800; color: var(--hud-cyan); margin-bottom: 5px; border-bottom: 1px solid rgba(0, 243, 255, 0.3); display: flex; justify-content: space-between; align-items: center; padding-bottom: 2px; z-index: 2; position: relative; }
+        #spirit-box-section { border: 1px solid var(--hud-green); background: rgba(0, 15, 5, 0.5); padding: 8px; border-radius: 4px; margin-bottom: 10px; display: flex; flex-direction: column; z-index: 2; position: relative; }
+        .voice-led { width: 12px; height: 12px; border-radius: 50%; background: #222; border: 1px solid #555; transition: 0.2s; box-shadow: 0 0 2px #000; }
+        .voice-led.active { background: var(--hud-blue); box-shadow: 0 0 10px var(--hud-blue); }
+        .voice-led.listening { background: var(--hud-green); box-shadow: 0 0 15px var(--hud-green); animation: pulseLed 1s infinite; }
+        @keyframes pulseLed { 50% { opacity: 0.5; } }
+        .sb-display-area { background: #000; border: 1px inset #333; padding: 10px; margin: 8px 0; font-family: 'Share Tech Mono'; color: var(--hud-green); text-align: center; font-size: 0.9rem; text-transform: uppercase; border-radius: 4px; }
+        .btn-control { background: #111; border: 1px solid #444; color: #aaa; font-family: 'Orbitron'; font-size: 0.8rem; padding: 10px; width: 100%; cursor: pointer; font-weight: bold; }
+        .btn-control.pwr-on { border-color: var(--hud-green); color: var(--hud-green); background: rgba(0,50,0,0.3); box-shadow: 0 0 10px var(--hud-green) inset; }
 
-        /* Resto de UI (Sensores, Spirit Box, etc) */
-        .section-title { font-family: 'Orbitron'; font-size: 0.65rem; font-weight: 800; color: var(--hud-cyan); margin-bottom: 5px; border-bottom: 1px solid rgba(0, 243, 255, 0.3); }
-        .sensor-grid { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
-        .sensor-item { display: flex; justify-content: space-between; font-size: 0.65rem; padding: 4px; background: rgba(20,20,30,0.6); border-left: 2px solid #333; }
-        .status-green { border-left-color: var(--hud-green); color: var(--hud-green); }
+        .panel-section { flex-grow: 0; overflow: hidden; position: relative; padding: 8px; background: rgba(0,0,0,0.4); border-radius: 4px; margin-bottom: 5px; } 
+        .sensor-grid { display: flex; flex-direction: column; gap: 4px; position: relative; z-index: 2; }
+        .sensor-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.65rem; padding: 4px 6px; background: rgba(20,20,30,0.6); border-radius: 3px; border-left: 2px solid #333; backdrop-filter: blur(2px); }
+        .status-green { border-left-color: var(--hud-green); color: var(--hud-green); text-shadow: 0 0 5px rgba(0,255,65,0.3); }
+        .status-blue { border-left-color: var(--hud-blue); color: var(--hud-blue); text-shadow: 0 0 5px rgba(0,136,255,0.3); }
+        .status-orange { border-left-color: var(--hud-orange); color: var(--hud-orange); text-shadow: 0 0 5px rgba(255,174,0,0.3); }
         .status-red { border-left-color: var(--hud-red); color: #777; }
+
+        .btn-rx { margin-top: 5px; padding: 10px; border-radius: 4px; font-weight: bold; text-align: center; cursor: pointer; font-family: 'Orbitron'; letter-spacing: 1px; font-size: 0.8rem; transition: all 0.2s; text-shadow: 0 0 5px rgba(0,0,0,0.5); position: relative; z-index: 2; }
+        .rx-off { background: #330000; border: 2px solid #ff0000; color: #ff0000; box-shadow: inset 0 0 10px #550000; }
+        .rx-on { background: #004400; border: 2px solid #00ff41; color: #00ff41; box-shadow: 0 0 15px #00ff41; animation: none; }
+        @keyframes rxRipple { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0.8); } 100% { box-shadow: 0 0 0 20px rgba(0, 255, 65, 0); } }
+        .rx-pulse { animation: rxRipple 1s infinite; border-color: #fff !important; color: #fff !important; text-shadow: 0 0 10px #00ff41; background: #006600; }
+
+        .dials-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; height: 60px; align-items: center; flex-shrink: 0; }
+        .instrument-wrapper { background: rgba(0,0,0,0.5); border: 1px solid #333; border-radius: 4px; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; }
+        .digital-display { font-family: 'VT323', monospace; font-size: 1.8rem; line-height: 1; text-shadow: 0 0 5px currentColor; }
+        .digi-cyan { color: var(--hud-cyan); } .digi-green { color: var(--hud-green); } .digi-orange { color: var(--hud-orange); } .digi-red { color: var(--hud-red); }
+        .knob-label { font-size: 0.6rem; color: #777; font-weight: bold; margin-top: 2px; }
+        #energy-container { flex-grow: 1; display: flex; gap: 3px; align-items: flex-end; margin-top: 5px; background: rgba(0,0,0,0.8); border: 1px solid #333; padding: 2px; min-height: 60px; }
+        .energy-bar-seg { flex: 1; background: #151515; height: 100%; transition: height 0.05s; border-top: 2px solid #000; }
+        .energy-bar-seg.active { background: var(--hud-green); box-shadow: 0 0 8px var(--hud-green); }
+        .energy-bar-seg.mid { background: var(--hud-orange); box-shadow: 0 0 8px var(--hud-orange); }
+        .energy-bar-seg.high { background: var(--hud-red); box-shadow: 0 0 10px var(--hud-red); }
         
-        /* Elementos Esenciales */
-        #bg-camera-feed { width: 100%; height: 100%; object-fit: cover; }
-        #main-filter-canvas, #matrix-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-        #zoom-container { width: 100%; height: 100%; transform-origin: center center; transition: transform 0.3s; }
+        #filter-controls-container { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        .filter-btn { width: 38px; height: 38px; background: rgba(0, 10, 20, 0.9); color: var(--hud-cyan); font-size: 1rem; border: 1px solid var(--hud-cyan); cursor: pointer; clip-path: polygon(15% 0, 100% 0, 100% 85%, 85% 100%, 0 100%, 0 15%); display: flex; align-items: center; justify-content: center; pointer-events: auto; }
+        .filter-btn.active { background: var(--hud-cyan); color: #000; box-shadow: 0 0 10px var(--hud-cyan); }
+        #btn-hud.active { background: var(--hud-cyan); color: #000; }
+        #btn-hud { background: rgba(0, 10, 20, 0.9); color: var(--hud-cyan); }
+
+        .ui-hiding { animation: waterPop 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important; pointer-events: none; }
+        @keyframes waterPop { 0% { transform: scale(1); opacity: 1; blur(0); } 100% { transform: scale(2.5); opacity: 0; blur(10px); } }
         
-        /* Loading */
-        #loading-overlay { position: fixed; inset: 0; z-index: 999; background: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        #enter-btn { display: none; padding: 15px 40px; border: 2px solid #0f0; color: #0f0; background: transparent; font-family: 'Orbitron'; font-size: 1.2rem; margin-top: 20px; }
+        /* LOADING OVERLAY */
+        #loading-overlay { position: fixed; inset: 0; z-index: 99999; display: flex; flex-direction: column; justify-content: center; align-items: center; background-color: #000; background-image: url('fondo_pantalla.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat; }
+        /* LOGO CARGA */
+        .horror-logo { width: 100px; margin-bottom: 20px; animation: horrorGlitch 0.3s infinite; filter: contrast(1.5) brightness(1.2); }
+        
+        #loading-text-main { color: var(--hud-cyan); font-family: 'Orbitron'; letter-spacing: 2px; font-size: 1.2rem; text-shadow: 0 0 5px var(--hud-cyan); margin-bottom: 5px; }
+        #loading-text-sub { color: #ccc; font-family: 'Share Tech Mono'; font-size: 0.8rem; letter-spacing: 1px; margin-bottom: 15px; height: 1rem; text-shadow: 1px 1px 2px #000; }
+        .loading-bar-container { width: 280px; background: rgba(0,0,0,0.5); height: 4px; border: 1px solid #333; position: relative; }
+        #loading-bar { width: 0%; height: 100%; background: var(--hud-cyan); box-shadow: 0 0 10px var(--hud-cyan); transition: width 0.1s linear; }
+        #loading-percent { color: var(--hud-cyan); font-family: 'VT323'; font-size: 1.2rem; margin-top: 5px; text-align: right; width: 280px; text-shadow: 1px 1px 2px #000; }
+        #enter-btn { display: none; padding: 15px 40px; border: 2px solid var(--hud-green); color: var(--hud-green); background: rgba(0,0,0,0.7); font-family: 'Orbitron'; font-size: 1.2rem; cursor: pointer; margin-top: 30px; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 0 15px var(--hud-green); }
+        .btn-glitch { animation: btnGlitch 0.2s infinite; }
+        @keyframes btnGlitch { 0% { transform: translate(0,0); } 20% { transform: translate(-2px, 1px); filter: hue-rotate(90deg); } 100% { transform: translate(0,0); } }
+        #zoom-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 5px; color: #fff; font-family: 'Share Tech Mono'; font-size: 0.8rem; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 40; }
+        
+        /* INTRO VIDEO OVERLAY */
+        #video-overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: none; }
+        #intro-video { width: 100%; height: 100%; object-fit: contain; }
+        /* BOTON INTRO: Solo visible si panels-hidden */
+        #btn-intro { 
+            position: absolute; bottom: 20px; left: 20px; z-index: 60; 
+            background: rgba(0,0,0,0.5); border: 1px solid #555; color: #888; 
+            padding: 8px; border-radius: 4px; cursor: pointer; font-size: 1.2rem;
+            display: none; transition: opacity 0.3s;
+        }
+        /* MOSTRAR SOLO SI ESTA OCULTO EL PANEL */
+        body.panels-hidden #btn-intro { display: block; }
+
+        @media (max-width: 768px) { :root { --left-panel-w: 140px; --bottom-panel-h: 110px; } .digital-display { font-size: 1.5rem; } .btn-control { font-size: 0.6rem; padding: 5px; } .sb-display-area { font-size: 0.7rem; padding: 5px; } #spirit-box-section { margin-bottom: 5px; padding: 4px; } .dials-grid { gap: 4px; } .sensor-item { font-size: 0.55rem; padding: 2px 4px; } #follow-banner { bottom: 10px; } }
     </style>
 </head>
 <body class="panels-hidden"> 
 
+<!-- VIDEO INTRO PLAYER -->
+<div id="video-overlay" onclick="stopIntro()">
+    <video id="intro-video" playsinline></video>
+</div>
+
+<!-- LOADING SCREEN -->
 <div id="loading-overlay">
-    <h1 style="font-family: 'Creepster'; font-size: 3rem; color: #00f3ff;">SISTEMA OBR</h1>
-    <div style="color:#888; font-family: monospace; margin-top:10px;">CARGANDO MÓDULOS...</div>
-    <button id="enter-btn" onclick="enterApp()">INICIAR</button>
+    <img src="obr-logo.png" class="horror-logo" id="load-logo">
+    <div id="loading-text-main">CARGANDO MÓDULOS...</div>
+    <div id="loading-text-sub">INICIALIZANDO KERNEL...</div>
+    <div class="loading-bar-container"><div id="loading-bar"></div></div>
+    <div id="loading-percent">0%</div>
+    <button id="enter-btn" onclick="enterApp()">INICIAR SISTEMA</button>
 </div>
 
 <div id="app-ui">
     
-    <div id="left-panel">
-        <div class="section-title">SPIRIT BOX</div>
-        <div style="border: 1px solid #333; padding: 5px; margin-bottom: 10px;">
-            <div style="text-align: center; color: #0f0; font-family: monospace;">OFFLINE</div>
+    <div id="left-panel" class="panel-container">
+        <div id="spirit-box-section">
+            <div class="section-title">SPIRIT BOX <div id="voice-led" class="voice-led"></div></div>
+            <div class="sb-display-area"><span id="sb-status">OFFLINE</span></div>
+            <button id="btn-pwr" class="btn-control" onclick="toggleSpirit()">ENCENDER</button>
+            <div style="margin-top:8px; display:flex; flex-direction:column; gap:5px;">
+                <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:#888;"><span>VOLUMEN</span><span id="vol-txt">100%</span></div>
+                <input type="range" id="vol-slider" min="0" max="100" value="100" style="width:100%; accent-color:var(--hud-green);">
+                <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:#888; margin-top:5px;"><span>SCAN SPEED</span><span id="spd-txt">1</span></div>
+                <input type="range" id="speed-slider" min="1" max="3" step="1" value="1" style="width:100%; accent-color:var(--hud-orange);">
+            </div>
+        </div>
+        
+        <div class="panel-section">
+            <canvas id="matrix-canvas"></canvas> 
+            <div class="section-title">SENSORES</div>
+            <div class="sensor-grid">
+                <div class="sensor-item status-red" id="sens-mag"><span class="sensor-icon">🧭</span> MAG</div>
+                <div class="sensor-item status-red" id="sens-acc"><span class="sensor-icon">📉</span> ACEL</div>
+                <div class="sensor-item status-red" id="sens-gyro"><span class="sensor-icon">💫</span> GIRO</div>
+                <div class="sensor-item status-red" id="sens-mic"><span class="sensor-icon">🎙️</span> MIC</div>
+                <div class="sensor-item status-red" id="sens-prox"><span class="sensor-icon">📡</span> PROX</div>
+                <div class="sensor-item status-red" id="sens-lidar"><span class="sensor-icon">📸</span> LIDAR</div>
+            </div>
         </div>
 
-        <div class="section-title">AUDIO RX (ENLACE)</div>
-        <div id="btn-rx" class="btn-rx rx-off" onclick="toggleRX()">
-            🔴 RX OFF<br><span style="font-size:0.6rem; font-weight:normal;">(AUDIO EN MEZCLADOR)</span>
-        </div>
-
-        <div class="section-title" style="margin-top: 15px;">SENSORES</div>
-        <div class="sensor-grid">
-            <div class="sensor-item status-green"><span>🧭 MAG</span><span>ACTIVO</span></div>
-            <div class="sensor-item status-green"><span>📉 ACEL</span><span>ACTIVO</span></div>
-            <div class="sensor-item status-green"><span>🎙️ MIC</span><span>ACTIVO</span></div>
+        <div class="panel-section" style="margin-top:2px; flex-grow:0;">
+             <div class="section-title">AUDIO RX (ENLACE)</div>
+             <div id="btn-rx" class="btn-rx rx-off" onclick="toggleRX()">
+                 🔴 RX OFF<br><span style="font-size:0.6rem; font-weight:normal;">(AUDIO EN MEZCLADOR)</span>
+             </div>
         </div>
     </div>
 
     <div id="main-view-area">
         <div id="zoom-container">
             <video id="bg-camera-feed" playsinline autoplay muted></video>
-            <canvas id="main-filter-canvas"></canvas>
+            <canvas id="main-filter-canvas" style="display:none;"></canvas>
         </div>
-        <div style="position:absolute; top:10px; left:10px; color:red; font-weight:bold;">REC ●</div>
+        
+        <div id="touch-layer"></div>
+
+        <!-- BOTON INTRO SECRETO -->
+        <button id="btn-intro" onclick="playIntro()">🎞️</button>
+
+        <div class="camera-border"><div class="cb-inner"></div></div>
+        <div class="rec-container"><div class="rec-dot"></div>REC</div>
+        <div class="stats-container"><div><span class="stats-val" id="cam-fps">--</span> FPS</div><div><span class="stats-val" id="cam-res">--x--</span></div><div><span class="stats-val" id="zoom-lvl">1.0x</span></div></div>
+        <div id="logo-container"><img id="logo-image" src="obr-logo.png"></div>
+        <div id="follow-banner">
+            <div class="banner-content">
+                <div id="step-1" class="seq-step">SÍGUENOS EN</div>
+                <div id="step-2" class="seq-step" style="display:none; gap:15px; justify-content:center;">
+                    <i class="fab fa-tiktok social-icon" style="color:#ff0050;"></i>
+                    <i class="fab fa-facebook social-icon" style="color:#1877f2;"></i>
+                    <i class="fab fa-youtube social-icon" style="color:#f00;"></i>
+                </div>
+                <div id="step-3" class="seq-step">@EXPLORACIONES OBR</div>
+            </div>
+        </div>
+        <div id="filter-controls-container">
+            <button class="filter-btn" onclick="toggleFilter('night-vision')"><i class="fas fa-eye"></i></button>
+            <button class="filter-btn" onclick="toggleFilter('sls')"><i class="fas fa-child"></i></button>
+            <button class="filter-btn" onclick="toggleFilter('negative')"><i class="fas fa-adjust"></i></button>
+            <button class="filter-btn" onclick="toggleFilter('focus')"><i class="fas fa-crosshairs"></i></button>
+            <button class="filter-btn" onclick="resetZoomManual()" style="color:var(--hud-orange); border-color:var(--hud-orange);"><i class="fas fa-search-minus"></i></button>
+            <!-- BOTÓN HUD: INICIA APAGADO (SIN CLASE ACTIVE) -->
+            <button class="filter-btn" id="btn-hud" onclick="toggleHUD()"><i class="fas fa-bars"></i></button>
+        </div>
+        <div id="zoom-msg">ZOOM x3.0</div>
     </div>
 
-    <div id="bottom-panel">
-        <div style="display: flex; justify-content: space-around; align-items: center; height: 100%;">
-            <div style="text-align:center;"><div style="font-size:2rem; color:#00f3ff; font-family:'VT323';">000</div><div style="font-size:0.6rem; color:#666;">MAG</div></div>
-            <div style="text-align:center;"><div style="font-size:2rem; color:#00ff41; font-family:'VT323';">0.0</div><div style="font-size:0.6rem; color:#666;">EMF</div></div>
-            <div style="text-align:center;"><div style="font-size:2rem; color:#ffae00; font-family:'VT323';">22.5</div><div style="font-size:0.6rem; color:#666;">TEMP</div></div>
+    <div id="bottom-panel" class="panel-container">
+        <div class="dials-grid">
+            <div class="instrument-wrapper"><div class="digital-display digi-cyan" id="mag-val">000</div><div class="knob-label">MAG</div></div>
+            <div class="instrument-wrapper"><div class="digital-display digi-green" id="emf-val">0.0</div><div class="knob-label">EMF</div></div>
+            <div class="instrument-wrapper"><div class="digital-display digi-orange" id="temp-display">--.-</div><div class="knob-label">TEMP</div></div>
+            <div class="instrument-wrapper"><div class="digital-display digi-red" id="prox-val">0</div><div class="knob-label">PROX</div></div>
         </div>
+        <div style="margin-top:5px;"><div id="energy-container"></div><div class="knob-label" style="text-align:left;">ENERGY LEVEL</div></div>
     </div>
 
-    <audio id="incoming-feed" autoplay></audio>
+    <audio id="incoming-feed" autoplay></audio> 
 </div>
 
 <script>
-    const MIXER_ID = "obr-mezclador-central";
-    let peer, dataConn;
-    let incomingAudioEl = document.getElementById('incoming-feed');
-    let isRxOn = false;
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzOf3crQxBdPylwMTAd34W-nBShN31MkIUtaMdKsZHMZVVniI2HjMesD6DpOlO363T1/exec";
+    const FALLBACK_AUTO = ["¿Hay alguien?", "Te escucho", "Acércate", "Detrás", "Frío", "Ayuda", "Vete", "Sótano", "Miedo", "Luz", "Oscuridad", "Aquí"];
+    const MIXER_ID = "obr-mezclador-central"; 
+    
+    let audioCtx, masterGain, micSource, analyser;
+    let bgBuffer, bgNode, bgGain;
+    let noiseNode, noiseGain;
+    let recognition, isSpiritOn = false;
+    let autoData = [...FALLBACK_AUTO], progData = new Map();
+    let videoTrack, currentFilter = 'none', uiVisible = false, hideTimeout;
+    let proxSensor, energyBars = [];
+    let isRecognizing = false; 
+    let scanSpeed = 1.0;
+    let interferenceInterval;
+    let micMaxVol = 0;
+    let restoreAudioTimer;
 
-    function enterApp(){
-        document.getElementById('loading-overlay').style.display='none';
-        document.getElementById('app-ui').style.opacity = 1;
-        document.getElementById('app-ui').style.pointerEvents = 'auto';
-        document.body.classList.remove('panels-hidden');
+    // PEERJS VARS
+    let peer, dataConn;
+    let isRxOn = false;
+    let incomingAudioEl = document.getElementById('incoming-feed');
+    let rxStreamSource = null;
+    let micStreamSource = null;
+
+    // ZOOM VARS
+    let zoomLevel = 1;
+    let longPressTimer;
+    let isLongPressing = false;
+    let initialPinchDist = 0;
+    const zoomContainer = document.getElementById('zoom-container');
+    const touchLayer = document.getElementById('touch-layer');
+    const mainView = document.getElementById('main-view-area');
+
+    const vid = document.getElementById('bg-camera-feed');
+    const canvasSLS = document.getElementById('main-filter-canvas'); const ctxSLS = canvasSLS.getContext('2d');
+    
+    const matrixCanvas = document.getElementById('matrix-canvas');
+    const mCtx = matrixCanvas.getContext('2d');
+    let matrixDrops = [];
+
+    let loadProgress = 0; let loadInterval; let dataLoaded = false; let dataStats = { prog: 0, auto: 0 };
+    
+    const NUM_BARS = 10; 
+
+    window.onload = () => {
+        const eContainer = document.getElementById('energy-container');
+        for(let i=0; i<NUM_BARS; i++){
+            let d = document.createElement('div'); 
+            d.className = 'energy-bar-seg';
+            eContainer.appendChild(d); 
+            energyBars.push(d);
+        }
         
-        startCam();
-        initPeer();
+        setupZoomEvents();
+        startLoadingSequence();
+        loadData();
+    };
+
+    // --- INTRO VIDEO ---
+    function playIntro() {
+        const overlay = document.getElementById('video-overlay');
+        const video = document.getElementById('intro-video');
+        overlay.style.display = 'block';
+        video.src = 'INTRO_1.mp4';
+        video.play().catch(e => console.log("Error video", e));
+        
+        video.onended = stopIntro;
     }
 
-    // --- LOGICA PEERJS (EL CEREBRO) ---
-    function initPeer() {
-        peer = new Peer(); // ID aleatorio
-        
-        peer.on('open', id => {
-            console.log("Detector ID:", id);
-            connectData(); // 1. Conectar canal de datos
-        });
+    function stopIntro() {
+        const overlay = document.getElementById('video-overlay');
+        const video = document.getElementById('intro-video');
+        video.pause();
+        video.currentTime = 0;
+        overlay.style.display = 'none';
+    }
 
-        // 2. Recibir Audio (Llamada)
+    // --- AUDIO ROUTING MANAGER ---
+    function updateAudioRouting() {
+        if (!audioCtx || !analyser) return;
+        try { 
+            if(micStreamSource) micStreamSource.disconnect(analyser);
+            if(rxStreamSource) rxStreamSource.disconnect(analyser);
+        } catch(e){}
+
+        if (isRxOn) {
+            if (incomingAudioEl.srcObject) {
+                if (!rxStreamSource) {
+                    rxStreamSource = audioCtx.createMediaStreamSource(incomingAudioEl.srcObject);
+                }
+                rxStreamSource.connect(analyser);
+            }
+        } else {
+            if (micStreamSource) {
+                micStreamSource.connect(analyser);
+            }
+        }
+    }
+
+    // --- PEERJS ---
+    function initPeer() {
+        peer = new Peer(); 
+        peer.on('open', id => { connectData(); });
         peer.on('call', call => {
             call.answer();
             call.on('stream', remoteStream => {
                 incomingAudioEl.srcObject = remoteStream;
-                incomingAudioEl.muted = true; // Empieza muteado (RX OFF)
+                incomingAudioEl.muted = true; 
+                if(isRxOn) updateAudioRouting();
             });
         });
     }
-
+    
     function connectData() {
-        // Conectar canal de mensajes al mezclador
         dataConn = peer.connect(MIXER_ID);
-        dataConn.on('open', () => {
-            console.log("Canal de Comandos Abierto");
-            // Forzar estado inicial OFF
-            sendCmd('RX_OFF'); 
-        });
+        dataConn.on('open', () => { sendCmd('RX_OFF'); });
+        dataConn.on('close', () => { setTimeout(connectData, 3000); });
     }
-
-    function sendCmd(cmd) {
-        if(dataConn && dataConn.open) {
-            dataConn.send({ cmd: cmd });
-        }
-    }
-
-    // --- BOTON RX (INTERACCION) ---
+    
+    function sendCmd(cmd) { if(dataConn && dataConn.open) dataConn.send({ cmd: cmd }); }
+    
     function toggleRX() {
         isRxOn = !isRxOn;
         const btn = document.getElementById('btn-rx');
-
-        if (isRxOn) {
-            // ESTADO: ON (VERDE)
+        if(isRxOn) {
             btn.className = "btn-rx rx-on";
             btn.innerHTML = "🟢 RX ON<br><span style='font-size:0.6rem; font-weight:normal;'>(AUDIO AQUÍ)</span>";
-            
-            // Audio Local: Se escucha
             incomingAudioEl.muted = false;
-            incomingAudioEl.play().catch(e=>console.log("Click needed"));
-
-            // Orden Remota: Calla al mezclador
-            sendCmd('RX_ON');
-
+            incomingAudioEl.play().catch(e=>{});
+            sendCmd('RX_ON'); 
         } else {
-            // ESTADO: OFF (ROJO)
             btn.className = "btn-rx rx-off";
+            btn.classList.remove('rx-pulse'); 
             btn.innerHTML = "🔴 RX OFF<br><span style='font-size:0.6rem; font-weight:normal;'>(AUDIO EN MEZCLADOR)</span>";
-            
-            // Audio Local: Mute
             incomingAudioEl.muted = true;
+            sendCmd('RX_OFF'); 
+        }
+        updateAudioRouting();
+    }
 
-            // Orden Remota: Activa al mezclador
-            sendCmd('RX_OFF');
+    function startLoadingSequence() {
+        const txtMain = document.getElementById('loading-text-main');
+        const txtSub = document.getElementById('loading-text-sub');
+        const bar = document.getElementById('loading-bar');
+        const perc = document.getElementById('loading-percent');
+        const btn = document.getElementById('enter-btn');
+
+        loadInterval = setInterval(() => {
+            loadProgress += Math.random() * 2; if(loadProgress > 100) loadProgress = 100;
+            if(loadProgress > 30 && loadProgress < 60) { txtMain.innerText = "ACTIVANDO SENSORES..."; txtSub.innerText = "CALIBRANDO GIROSCOPIO..."; }
+            else if(loadProgress > 60 && loadProgress < 90) { txtMain.innerText = "SINTONIZANDO..."; txtSub.innerText = dataLoaded ? `SINCRONIZADO PROG:${dataStats.prog} | AUTO:${dataStats.auto}` : "ESPERANDO RED..."; }
+            else if(loadProgress >= 99) {
+                if(!dataLoaded) dataLoaded = true;
+                clearInterval(loadInterval); loadProgress = 100;
+                txtMain.innerText = "LISTO..."; txtSub.innerText = "SISTEMA ONLINE";
+                btn.style.display = "block"; btn.classList.add('btn-glitch');
+            }
+            bar.style.width = loadProgress + "%"; perc.innerText = Math.floor(loadProgress) + "%";
+        }, 5);
+    }
+
+    function initMatrix() {
+        const pSection = matrixCanvas.parentElement; if(!pSection) return;
+        matrixCanvas.width = pSection.clientWidth; matrixCanvas.height = pSection.clientHeight;
+        const columns = Math.floor(matrixCanvas.width / 15); matrixDrops = Array(columns).fill(1);
+    }
+    function drawMatrix() {
+        mCtx.fillStyle = 'rgba(0, 0, 0, 0.1)'; mCtx.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height);
+        mCtx.fillStyle = '#00f3ff'; mCtx.font = '10px Share Tech Mono';
+        for(let i = 0; i < matrixDrops.length; i++) {
+            let text = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+            if (Math.random() > 0.99 && autoData.length > 0) { text = autoData[Math.floor(Math.random() * autoData.length)].toUpperCase(); mCtx.fillStyle = '#ff0055'; } else { mCtx.fillStyle = '#00f3ff'; }
+            mCtx.fillText(text, i * 15, matrixCanvas.height - (matrixDrops[i] * 15));
+            if(matrixCanvas.height - (matrixDrops[i] * 15) < 0 && Math.random() > 0.975) matrixDrops[i] = 0;
+            matrixDrops[i]++;
         }
     }
 
-    // --- UTILIDADES BASICAS (CAMARA) ---
-    async function startCam(){
-        try { 
-            const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
-            document.getElementById('bg-camera-feed').srcObject = s;
-        } catch(e) { console.log("Error cam"); }
+    function setupZoomEvents() {
+        touchLayer.addEventListener('touchstart', handleTouchStart, {passive: false});
+        touchLayer.addEventListener('touchmove', handleTouchMove, {passive: false});
+        touchLayer.addEventListener('touchend', handleTouchEnd);
+        touchLayer.addEventListener('mousedown', handleMouseDown);
+        touchLayer.addEventListener('mouseup', handleMouseUp);
+    }
+    function handleTouchStart(e) { if (e.touches.length === 1) { isLongPressing = false; const t = e.touches[0]; longPressTimer = setTimeout(() => { triggerLongPressZoom(t.clientX, t.clientY); }, 600); } else if (e.touches.length === 2) { clearTimeout(longPressTimer); initialPinchDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); } }
+    function handleTouchMove(e) { if (e.touches.length === 1) { clearTimeout(longPressTimer); } else if (e.touches.length === 2) { e.preventDefault(); clearTimeout(longPressTimer); const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); if (initialPinchDist > 0) { const delta = dist - initialPinchDist; zoomLevel += delta * 0.005; zoomLevel = Math.min(Math.max(1, zoomLevel), 5); applyZoom(); initialPinchDist = dist; } } }
+    function handleTouchEnd(e) { if (longPressTimer) { clearTimeout(longPressTimer); if (!isLongPressing && e.touches.length === 0) { toggleUIOverlay(); } } isLongPressing = false; }
+    function handleMouseDown(e) { isLongPressing = false; longPressTimer = setTimeout(() => { triggerLongPressZoom(e.clientX, e.clientY); }, 600); }
+    function handleMouseUp(e) { clearTimeout(longPressTimer); if (!isLongPressing) toggleUIOverlay(); isLongPressing = false; }
+    function triggerLongPressZoom(x, y) { isLongPressing = true; const rect = mainView.getBoundingClientRect(); const relX = x - rect.left; const relY = y - rect.top; if (zoomLevel < 2.5) { zoomLevel = 3.0; } else { zoomLevel = 5.0; } zoomContainer.style.transformOrigin = `${relX}px ${relY}px`; applyZoom(); showZoomMsg(); }
+    function resetZoomManual() { zoomLevel = 1.0; zoomContainer.style.transformOrigin = "center center"; applyZoom(); showZoomMsg(); }
+    function applyZoom() { zoomContainer.style.transform = `scale(${zoomLevel})`; document.getElementById('zoom-lvl').innerText = zoomLevel.toFixed(1) + "x"; }
+    function showZoomMsg() { const msg = document.getElementById('zoom-msg'); msg.innerText = `ZOOM x${zoomLevel.toFixed(1)}`; msg.style.opacity = 1; setTimeout(() => msg.style.opacity = 0, 1000); }
+    function toggleUIOverlay() { if (uiVisible) hideControls(); else showControls(); }
+    function showControls() { uiVisible = true; document.getElementById('filter-controls-container').style.opacity = '1'; document.getElementById('filter-controls-container').style.pointerEvents = 'auto'; document.getElementById('logo-container').classList.add('ui-hiding'); document.getElementById('follow-banner').classList.add('ui-hiding'); clearTimeout(hideTimeout); hideTimeout = setTimeout(hideControls, 5000); }
+    function hideControls() { uiVisible = false; document.getElementById('filter-controls-container').style.opacity = '0'; document.getElementById('filter-controls-container').style.pointerEvents = 'none'; document.getElementById('logo-container').classList.remove('ui-hiding'); document.getElementById('follow-banner').classList.remove('ui-hiding'); }
+
+    async function enterApp(){
+        document.getElementById('loading-overlay').style.display='none';
+        document.getElementById('app-ui').style.opacity = 1;
+        document.getElementById('app-ui').style.pointerEvents = 'auto';
+        // INICIAR CON HUD OCULTO (PANELS HIDDEN)
+        document.body.classList.add('panels-hidden');
+        
+        audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+        masterGain = audioCtx.createGain(); masterGain.connect(audioCtx.destination);
+        bgBuffer = await loadAudio('FONDO_1.mp3');
+        
+        initMic(); await startCam(); await initMoveNet(); initSensors();
+        initMatrix(); startBannerLoop();
+        initPeer();
+        loop();
     }
 
-    // Simulación de carga
-    setTimeout(() => { document.getElementById('enter-btn').style.display = 'block'; }, 1500);
+    function startBannerLoop() {
+        const banner = document.getElementById('follow-banner');
+        const s1=document.getElementById('step-1'), s2=document.getElementById('step-2'), s3=document.getElementById('step-3');
+        const run = () => {
+            banner.classList.add('active'); s1.classList.add('active');
+            setTimeout(() => { s1.classList.remove('active'); s2.style.display='flex'; s2.classList.add('active'); }, 2000);
+            setTimeout(() => { s2.classList.remove('active'); s2.style.display='none'; s3.classList.add('active'); }, 5000);
+            setTimeout(() => { s3.classList.remove('active'); banner.classList.remove('active'); setTimeout(run, 15000); }, 8000);
+        }; run();
+    }
+
+    async function startCam(){
+        try{
+            try { const s = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { exact: "environment" }, width: { ideal: 3840 }, height: { ideal: 2160 } } }); handleStream(s); } 
+            catch (e) { const s = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } } }); handleStream(s); }
+        }catch(e){}
+    }
+    function handleStream(stream) { vid.srcObject = stream; videoTrack = stream.getVideoTracks()[0]; vid.onloadedmetadata = ()=> { resize(); document.getElementById('cam-res').innerText = `${vid.videoWidth}x${vid.videoHeight}`; }; window.onresize = resize; }
+    function resize(){ const area = document.getElementById('main-view-area'); canvasSLS.width = area.clientWidth; canvasSLS.height = area.clientHeight; const ps=document.querySelector('.panel-section'); if(ps){matrixCanvas.width=ps.clientWidth; matrixCanvas.height=ps.clientHeight;} }
+
+    async function toggleFilter(f){
+        if(currentFilter===f) f='none';
+        document.body.classList.remove('filter-night-vision', 'filter-negative', 'filter-sls', 'filter-focus');
+        document.querySelectorAll('.filter-btn').forEach(b=> { if(b.id !== 'btn-hud') b.classList.remove('active'); });
+        if(f!=='none') { document.body.classList.add('filter-'+f); document.querySelector(`button[onclick="toggleFilter('${f}')"]`).classList.add('active'); }
+        document.getElementById('main-filter-canvas').style.display = f==='sls'?'block':'none';
+        if(videoTrack) try{ await videoTrack.applyConstraints({advanced:[{torch: f==='night-vision'}]}); }catch(e){}
+        currentFilter = f;
+    }
+
+    function toggleHUD(){
+        const body = document.body; const btn = document.getElementById('btn-hud');
+        body.classList.toggle('panels-hidden');
+        if(body.classList.contains('panels-hidden')) btn.classList.remove('active'); else btn.classList.add('active');
+        setTimeout(resize, 550);
+    }
+
+    function setSensorStatus(id, s) { const el=document.getElementById(id); if(!el)return; el.className='sensor-item'; if(s==='main')el.classList.add('status-green'); else if(s==='backup')el.classList.add('status-blue'); else if(s==='sim')el.classList.add('status-orange'); else el.classList.add('status-red'); }
+
+    function initSensors(){
+        let magActive=false, motionActive=false;
+        const req = async () => {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') { try { const p=await DeviceOrientationEvent.requestPermission(); if(p==='granted') window.addEventListener('deviceorientation', hOr); } catch(e){} } else window.addEventListener('deviceorientation', hOr);
+            if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') { try { const p=await DeviceMotionEvent.requestPermission(); if(p==='granted') window.addEventListener('devicemotion', hMot); } catch(e){} } else window.addEventListener('devicemotion', hMot);
+        };
+        const hOr = (e) => { if(e.alpha!==null){ document.getElementById('mag-val').innerText=Math.round(e.alpha).toString().padStart(3,'0'); setSensorStatus('sens-mag','main'); magActive=true; } };
+        const hMot = (e) => { const a=e.accelerationIncludingGravity, r=e.rotationRate; if(a){ let t=Math.abs(a.x)+Math.abs(a.y)+Math.abs(a.z); document.getElementById('emf-val').innerText=(t*2.5).toFixed(1); setSensorStatus('sens-acc','main'); setSensorStatus('sens-lidar','sim'); motionActive=true; } if(r&&(r.alpha||r.beta||r.gamma)) setSensorStatus('sens-gyro','main'); };
+        req(); initProximity();
+        setInterval(()=>{ 
+            if(!magActive) { setSensorStatus('sens-mag','sim'); document.getElementById('mag-val').innerText=Math.floor(Math.random()*360).toString().padStart(3,'0'); }
+            if(!motionActive) { setSensorStatus('sens-acc','sim'); setSensorStatus('sens-gyro','sim'); setSensorStatus('sens-lidar','status-red'); document.getElementById('emf-val').innerText=(0.3+Math.random()*0.9).toFixed(1); }
+        }, 500);
+    }
+
+    function initProximity(){
+        if('ProximitySensor' in window){ try { proxSensor=new ProximitySensor({frequency:10}); proxSensor.addEventListener('reading', ()=>{ document.getElementById('prox-val').innerText=proxSensor.value?proxSensor.value.toFixed(0):"0"; setSensorStatus('sens-prox','main'); }); proxSensor.start(); } catch(e){ setSensorStatus('sens-prox','status-red'); } }
+        else { setSensorStatus('sens-prox','sim'); setInterval(()=>{ if(Math.random()>0.95){ document.getElementById('prox-val').innerText=Math.floor(Math.random()*5); setTimeout(()=>document.getElementById('prox-val').innerText="0",800); } },1000); }
+    }
+
+    async function loadAudio(u){ try{const r=await fetch(u);const b=await r.arrayBuffer();return await audioCtx.decodeAudioData(b);}catch(e){return null;} }
+    async function initMic(){ try{ const s=await navigator.mediaDevices.getUserMedia({audio:true}); micSource=audioCtx.createMediaStreamSource(s); analyser=audioCtx.createAnalyser(); analyser.fftSize=64; micSource.connect(analyser); setSensorStatus('sens-mic','main'); }catch(e){ setSensorStatus('sens-mic','status-red'); } }
+    
+    function toggleSpirit(){
+        isSpiritOn = !isSpiritOn;
+        const btn = document.getElementById('btn-pwr');
+        const led = document.getElementById('voice-led');
+        if(isSpiritOn){
+            btn.innerText="APAGAR"; btn.classList.add('pwr-on'); document.getElementById('sb-status').innerText="INICIANDO..."; led.classList.add('active'); 
+            if(audioCtx.state==='suspended') audioCtx.resume();
+            if(bgBuffer){ bgNode=audioCtx.createBufferSource(); bgNode.buffer=bgBuffer; bgNode.loop=true; bgNode.playbackRate.value=scanSpeed; bgGain=audioCtx.createGain(); bgGain.gain.value=0.8; bgNode.connect(bgGain); bgGain.connect(masterGain); bgNode.start(0); }
+            else startFallbackNoise();
+            startListeningCycle();
+        }else{
+            btn.innerText="ENCENDER"; btn.classList.remove('pwr-on'); document.getElementById('sb-status').innerText="APAGADO"; led.className = 'voice-led';
+            if(bgNode){bgNode.stop(); bgNode=null;} if(noiseNode){noiseNode.stop(); noiseNode=null;}
+            if(interferenceInterval) clearInterval(interferenceInterval);
+            if(window.speechSynthesis) window.speechSynthesis.cancel();
+            document.getElementById('voice-led').classList.remove('listening'); if(recognition) recognition.stop();
+        }
+    }
+
+    function startFallbackNoise(){ if(noiseNode)return; const bSize=audioCtx.sampleRate*2, b=audioCtx.createBuffer(1,bSize,audioCtx.sampleRate), d=b.getChannelData(0); for(let i=0;i<bSize;i++)d[i]=Math.random()*2-1; noiseNode=audioCtx.createBufferSource(); noiseNode.buffer=b; noiseNode.loop=true; const f=audioCtx.createBiquadFilter(); f.type="bandpass"; f.frequency.value=1000; noiseGain=audioCtx.createGain(); noiseGain.gain.value=0.15; noiseNode.connect(f); f.connect(noiseGain); noiseGain.connect(masterGain); noiseNode.start(0); }
+    document.getElementById('speed-slider').addEventListener('input', e=>{ scanSpeed=parseFloat(e.target.value); document.getElementById('spd-txt').innerText=scanSpeed; if(bgNode)bgNode.playbackRate.value=scanSpeed===1?0.8:scanSpeed===2?1.0:1.5; });
+
+    function startListeningCycle(){
+        if(!isSpiritOn) return;
+        if(isRecognizing) return;
+        document.getElementById('sb-status').innerText = "SINTONIZANDO...";
+        if(isRxOn) { document.getElementById('sb-status').innerText = "SINTONIZANDO (RX)..."; document.getElementById('voice-led').classList.add('listening'); isRecognizing = true; return; }
+        
+        if(!recognition) {
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if(SR) {
+                recognition = new SR(); recognition.lang='es-MX'; recognition.continuous=false;
+                recognition.onstart = () => { isRecognizing=true; document.getElementById('voice-led').classList.add('listening'); };
+                recognition.onend = () => { isRecognizing=false; document.getElementById('voice-led').classList.remove('listening'); 
+                    if(isSpiritOn && micMaxVol > 15 && !window.speechSynthesis.speaking) processVoiceCommand("NOISE_TRIGGER");
+                    else if(isSpiritOn && !window.speechSynthesis.speaking) setTimeout(startListeningCycle, 500); 
+                };
+                recognition.onresult = (e) => { processVoiceCommand(e.results[0][0].transcript.toLowerCase().trim()); };
+                recognition.onerror = () => { isRecognizing=false; if(isSpiritOn) setTimeout(startListeningCycle, 1000); };
+            }
+        }
+        try{ recognition.start(); }catch(e){}
+    }
+    
+    function processVoiceCommand(txt){
+        document.getElementById('voice-led').classList.remove('listening');
+        document.getElementById('sb-status').innerText = "PROCESANDO...";
+        let response = null;
+        if(txt!=="NOISE_TRIGGER"){ for(let [k,v] of progData){ if(txt.includes(k)){ response=v; break; } } }
+        if(!response) response = autoData[Math.floor(Math.random()*autoData.length)];
+        setTimeout(() => speak(response), 1500); 
+    }
+    
+    function restoreAudioLevels() {
+        const now = audioCtx.currentTime;
+        if(bgGain) { bgGain.gain.cancelScheduledValues(now); bgGain.gain.setValueAtTime(bgGain.gain.value, now); bgGain.gain.linearRampToValueAtTime(0.8, now + 0.5); }
+        if(noiseGain) { noiseGain.gain.cancelScheduledValues(now); noiseGain.gain.linearRampToValueAtTime(0.15, now + 0.5); }
+    }
+
+    function speak(txt){
+        if(!window.speechSynthesis) return;
+        document.getElementById('sb-status').innerText = "DESCODIFICANDO...";
+        
+        const now = audioCtx.currentTime;
+        if(bgGain) { bgGain.gain.cancelScheduledValues(now); bgGain.gain.setValueAtTime(bgGain.gain.value, now); bgGain.gain.linearRampToValueAtTime(0.01, now + 0.1); }
+        
+        clearTimeout(restoreAudioTimer);
+        restoreAudioTimer = setTimeout(restoreAudioLevels, (txt.length * 100) + 2000); 
+
+        const u = new SpeechSynthesisUtterance(txt); u.lang='es-MX'; u.rate = 0.9; u.pitch = 0.8; u.volume = 1.0; 
+
+        u.onend = () => { clearTimeout(restoreAudioTimer); restoreAudioLevels(); if(isSpiritOn) setTimeout(startListeningCycle, 2000); };
+        window.speechSynthesis.speak(u);
+    }
+
+    document.getElementById('vol-slider').addEventListener('input', e=>{ if(masterGain) masterGain.gain.value = e.target.value/100; document.getElementById('vol-txt').innerText=e.target.value+"%"; });
+
+    let lastFps=0, frames=0;
+    function loop(){
+        frames++;
+        if(performance.now()-lastFps>=1000){ document.getElementById('cam-fps').innerText = frames; frames=0; lastFps=performance.now(); }
+        if(currentFilter==='sls'){ ctxSLS.clearRect(0,0,canvasSLS.width,canvasSLS.height); if (latestPoses.length > 0) drawSLS(latestPoses); }
+        drawMatrix();
+        
+        if(analyser){
+            const data = new Uint8Array(analyser.frequencyBinCount); analyser.getByteFrequencyData(data);
+            let sum=0; for(let i=0; i<data.length; i++) sum+=data[i]; let avg=sum/data.length; 
+            if(isRxOn && avg > 10) document.getElementById('btn-rx').classList.add('rx-pulse'); else document.getElementById('btn-rx').classList.remove('rx-pulse');
+            if(isRecognizing && (isRxOn || true)) { if(avg > 15 && isSpiritOn && !window.speechSynthesis.speaking && isRxOn) { isRecognizing=false; processVoiceCommand("NOISE_TRIGGER"); } if(avg > micMaxVol) micMaxVol=avg; }
+            for(let i=0; i<NUM_BARS; i++){ let val=(data[i*2] + (data[i*2+1]||0))/2; let bar=energyBars[i]; bar.className='energy-bar-seg'; if(val>50)bar.classList.add('active'); if(val>150)bar.classList.add('mid'); if(val>220)bar.classList.add('high'); bar.style.height=Math.max(5,(val/255)*100)+"%"; }
+        }
+        requestAnimationFrame(loop);
+    }
+
+    async function loadData(){ try { const r=await fetch(SCRIPT_URL); if(!r.ok)throw new Error("Red"); const d=await r.json(); if(d.automatico)autoData=d.automatico.map(x=>x.TEXTO); if(d.programado)d.programado.forEach(i=>{if(i.PREGUNTA)progData.set(i.PREGUNTA.toLowerCase().trim(), i.RESPUESTA)}); dataLoaded=true; dataStats.prog=d.programado?d.programado.length:0; dataStats.auto=d.automatico?d.automatico.length:0; } catch(e){ dataLoaded=false; } }
+
+    let latestPoses = [];
+    async function initMoveNet() { 
+        await tf.ready(); 
+        const d = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING }); 
+        setInterval(async () => { 
+            if(currentFilter==='sls' && vid.readyState===4) { try { latestPoses = await d.estimatePoses(vid, {maxPoses: 5, scoreThreshold: 0.15}); } catch(e) { latestPoses = []; } } else { latestPoses = []; } 
+        }, 100); 
+    }
+    const conns = [['left_shoulder','right_shoulder'],['left_shoulder','left_hip'],['right_shoulder','right_hip'],['left_hip','right_hip'],['left_shoulder','left_elbow'],['left_elbow','left_wrist'],['right_shoulder','right_elbow'],['right_elbow','right_wrist'],['left_hip','left_knee'],['left_knee','left_ankle'],['right_hip','right_knee'],['right_knee','right_ankle']];
+    function drawSLS(poses) {
+        const s = Math.max(canvasSLS.width/vid.videoWidth, canvasSLS.height/vid.videoHeight); const xo=(canvasSLS.width-vid.videoWidth*s)/2, yo=(canvasSLS.height-vid.videoHeight*s)/2;
+        ctxSLS.lineWidth=3; ctxSLS.lineCap='round'; ctxSLS.strokeStyle='#00ff41'; ctxSLS.shadowBlur=10; ctxSLS.shadowColor='#00ff41';
+        poses.forEach(p => { 
+            if(p.score<0.20)return; const kp=p.keypoints; const m={}; kp.forEach(k=>m[k.name]=k); 
+            ctxSLS.beginPath(); 
+            conns.forEach(([a,b])=>{ const p1=m[a],p2=m[b]; if(p1 && p2 && p1.score > 0.25 && p2.score > 0.25){ctxSLS.moveTo(p1.x*s+xo,p1.y*s+yo);ctxSLS.lineTo(p2.x*s+xo,p2.y*s+yo);} }); 
+            ctxSLS.stroke(); 
+            ctxSLS.fillStyle='#ff0055'; 
+            kp.forEach(k=>{if(k.score>0.25){ctxSLS.beginPath();ctxSLS.arc(k.x*s+xo,k.y*s+yo,4,0,2*Math.PI);ctxSLS.fill();}}); 
+        });
+    }
 </script>
 </body>
 </html>
