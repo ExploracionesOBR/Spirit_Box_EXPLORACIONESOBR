@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v15.0 CLIENTE-ACTIVO</title> 
+    <title>DETECTOR-OBR v15.3 FINAL-RECOVERY</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -18,7 +18,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
 
     <style>
-        /* --- ESTILOS DE UI (V14.8) --- */
         :root {
             --hud-bg: #050510; 
             --hud-cyan: #00f3ff; 
@@ -41,6 +40,7 @@
             -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
         }
 
+        /* --- LAYOUT PRINCIPAL --- */
         #app-ui { 
             width: 100%; height: 100%; 
             display: grid;
@@ -101,7 +101,6 @@
 
         .rec-container { position: absolute; top: 15px; left: 15px; color: var(--hud-red); font-family: 'Orbitron'; font-weight: bold; display: flex; align-items: center; gap: 8px; z-index: 30; text-shadow: 0 0 5px var(--hud-red); font-size: 0.8rem; pointer-events: none; }
         .rec-dot { width: 10px; height: 10px; background: var(--hud-red); border-radius: 50%; animation: blinkRed 1s infinite; }
-        
         @keyframes blinkRed { 50% { opacity: 0.3; } }
         @keyframes pulseGreen { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0.8); } 100% { box-shadow: 0 0 0 15px rgba(0, 255, 65, 0); } }
         @keyframes pulseOrange { 0% { box-shadow: 0 0 0 0 rgba(255, 174, 0, 0.8); } 100% { box-shadow: 0 0 0 15px rgba(255, 174, 0, 0); } }
@@ -112,13 +111,15 @@
         .stats-container { position: absolute; bottom: 15px; right: 20px; font-family: 'Share Tech Mono'; font-size: 0.65rem; color: rgba(0, 243, 255, 0.7); text-shadow: 0 0 2px #000; z-index: 30; text-align: right; pointer-events: none; display: flex; gap: 10px; }
         .stats-val { color: #fff; font-weight: bold; }
 
+        /* FILTROS */
         body.filter-night-vision #bg-camera-feed { filter: grayscale(100%) sepia(100%) hue-rotate(90deg) brightness(0.9) contrast(1.2) saturate(150%); }
         body.filter-night-vision #main-view-area::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4; background: radial-gradient(circle, transparent 60%, #000 95%); }
         body.filter-negative #bg-camera-feed { filter: invert(1) hue-rotate(180deg); }
-        body.filter-focus #main-view-area::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); mask-image: radial-gradient(circle, transparent 35%, black 85%); -webkit-mask-image: radial-gradient(circle, transparent 35%, black 85%); background: transparent; }
-        body.filter-focus #bg-camera-feed { filter: contrast(1.1) saturate(0.8); }
+        body.filter-focus #main-view-area::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); mask-image: radial-gradient(circle, transparent 30%, black 90%); -webkit-mask-image: radial-gradient(circle, transparent 30%, black 90%); background: transparent; }
+        body.filter-focus #bg-camera-feed { filter: contrast(1.2) saturate(0.9) brightness(1.1); }
         body.filter-sls #main-filter-canvas { display: block; }
 
+        /* LOGO */
         #logo-container { position: absolute; top: 15px; right: 15px; z-index: 50; pointer-events: none; }
         #logo-image { width: 60px; height: 60px; filter: drop-shadow(0 0 5px var(--hud-cyan)); animation: horrorPulse 4s infinite; }
         @keyframes horrorPulse { 
@@ -152,9 +153,10 @@
         .btn-control { background: #111; border: 1px solid #444; color: #aaa; font-family: 'Orbitron'; font-size: 0.8rem; padding: 10px; width: 100%; cursor: pointer; font-weight: bold; }
         .btn-control.pwr-on { border-color: var(--hud-green); color: var(--hud-green); background: rgba(0,50,0,0.3); box-shadow: 0 0 10px var(--hud-green) inset; }
 
+        /* SENSORES COMPACTOS */
         .panel-section { flex-grow: 0; overflow: hidden; position: relative; padding: 8px; background: rgba(0,0,0,0.4); border-radius: 4px; margin-bottom: 5px; } 
-        .sensor-grid { display: flex; flex-direction: column; gap: 4px; position: relative; z-index: 2; }
-        .sensor-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.65rem; padding: 4px 6px; background: rgba(20,20,30,0.6); border-radius: 3px; border-left: 2px solid #333; backdrop-filter: blur(2px); }
+        .sensor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; position: relative; z-index: 2; }
+        .sensor-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.6rem; padding: 3px 5px; background: rgba(20,20,30,0.6); border-radius: 3px; border-left: 2px solid #333; backdrop-filter: blur(2px); }
         .status-green { border-left-color: var(--hud-green); color: var(--hud-green); text-shadow: 0 0 5px rgba(0,255,65,0.3); }
         .status-blue { border-left-color: var(--hud-blue); color: var(--hud-blue); text-shadow: 0 0 5px rgba(0,136,255,0.3); }
         .status-orange { border-left-color: var(--hud-orange); color: var(--hud-orange); text-shadow: 0 0 5px rgba(255,174,0,0.3); }
@@ -171,7 +173,9 @@
         .digital-display { font-family: 'VT323', monospace; font-size: 1.8rem; line-height: 1; text-shadow: 0 0 5px currentColor; }
         .digi-cyan { color: var(--hud-cyan); } .digi-green { color: var(--hud-green); } .digi-orange { color: var(--hud-orange); } .digi-red { color: var(--hud-red); }
         .knob-label { font-size: 0.6rem; color: #777; font-weight: bold; margin-top: 2px; }
-        #energy-container { flex-grow: 1; display: flex; gap: 3px; align-items: flex-end; margin-top: 5px; background: rgba(0,0,0,0.8); border: 1px solid #333; padding: 2px; min-height: 60px; }
+        
+        /* ENERGY BAR GRUESA */
+        #energy-container { flex-grow: 1; display: flex; gap: 3px; align-items: flex-end; margin-top: 5px; background: rgba(0,0,0,0.8); border: 1px solid #333; padding: 2px; min-height: 50px; }
         .energy-bar-seg { flex: 1; background: #151515; height: 100%; transition: height 0.05s; border-top: 2px solid #000; }
         .energy-bar-seg.active { background: var(--hud-green); box-shadow: 0 0 8px var(--hud-green); }
         .energy-bar-seg.mid { background: var(--hud-orange); box-shadow: 0 0 8px var(--hud-orange); }
@@ -197,10 +201,15 @@
         @keyframes btnGlitch { 0% { transform: translate(0,0); } 20% { transform: translate(-2px, 1px); filter: hue-rotate(90deg); } 100% { transform: translate(0,0); } }
         #zoom-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 5px; color: #fff; font-family: 'Share Tech Mono'; font-size: 0.8rem; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 40; }
         
-        /* INTRO VIDEO OVERLAY */
+        /* VIDEO OVERLAY */
         #video-overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: none; }
         #intro-video { width: 100%; height: 100%; object-fit: contain; }
-        #btn-intro { position: absolute; bottom: 20px; left: 20px; z-index: 60; background: rgba(0,0,0,0.5); border: 1px solid #555; color: #888; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 1.2rem; display: none; transition: opacity 0.3s; }
+        #btn-intro { 
+            position: absolute; bottom: 20px; left: 20px; z-index: 60; 
+            background: rgba(0,0,0,0.5); border: 1px solid #555; color: #888; 
+            padding: 8px; border-radius: 4px; cursor: pointer; font-size: 1.2rem;
+            display: none; transition: opacity 0.3s;
+        }
         body.panels-hidden #btn-intro { display: block; }
 
         @media (max-width: 768px) { :root { --left-panel-w: 140px; --bottom-panel-h: 110px; } .digital-display { font-size: 1.5rem; } .btn-control { font-size: 0.6rem; padding: 5px; } .sb-display-area { font-size: 0.7rem; padding: 5px; } #spirit-box-section { margin-bottom: 5px; padding: 4px; } .dials-grid { gap: 4px; } .sensor-item { font-size: 0.55rem; padding: 2px 4px; } #follow-banner { bottom: 10px; } }
@@ -220,7 +229,6 @@
 </div>
 
 <div id="app-ui">
-    
     <div id="left-panel" class="panel-container">
         <div id="spirit-box-section">
             <div class="section-title">SPIRIT BOX <div id="voice-led" class="voice-led"></div></div>
@@ -234,6 +242,7 @@
             </div>
         </div>
         
+        <!-- PANEL SENSORES (2 COLUMNAS) -->
         <div class="panel-section">
             <canvas id="matrix-canvas"></canvas> 
             <div class="section-title">SENSORES</div>
@@ -298,7 +307,8 @@
             <div class="instrument-wrapper"><div class="digital-display digi-orange" id="temp-display">--.-</div><div class="knob-label">TEMP</div></div>
             <div class="instrument-wrapper"><div class="digital-display digi-red" id="prox-val">0</div><div class="knob-label">PROX</div></div>
         </div>
-        <div style="margin-top:5px;"><div id="energy-container"></div><div class="knob-label" style="text-align:left;">ENERGY LEVEL</div></div>
+        <div id="energy-container"></div>
+        <div class="knob-label" style="text-align:left; margin-top:2px;">ENERGY LEVEL</div>
     </div>
 
     <audio id="incoming-feed" autoplay></audio> 
@@ -329,16 +339,15 @@
     let rxStreamSource = null;
     let micStreamSource = null;
     let isIntroPlaying = false;
-    let localStream = null; // STREAM GLOBAL
-
+    
     let zoomLevel = 1;
     let longPressTimer;
     let isLongPressing = false;
     let initialPinchDist = 0;
-    
     const zoomContainer = document.getElementById('zoom-container');
     const touchLayer = document.getElementById('touch-layer');
     const mainView = document.getElementById('main-view-area');
+
     const vid = document.getElementById('bg-camera-feed');
     const canvasSLS = document.getElementById('main-filter-canvas'); const ctxSLS = canvasSLS.getContext('2d');
     const matrixCanvas = document.getElementById('matrix-canvas');
@@ -355,7 +364,7 @@
         loadData();
     };
 
-    // INTRO VIDEO
+    // INTRO
     function playIntro() {
         isIntroPlaying = true;
         const overlay = document.getElementById('video-overlay');
@@ -384,6 +393,19 @@
         }, 1500);
     }
 
+    // BANNERS
+    function startBannerLoop() {
+        const banner = document.getElementById('follow-banner');
+        const s1=document.getElementById('step-1'), s2=document.getElementById('step-2'), s3=document.getElementById('step-3');
+        const run = () => {
+            banner.classList.add('active'); s1.classList.add('active');
+            setTimeout(() => { s1.classList.remove('active'); s2.style.display='flex'; s2.classList.add('active'); }, 2000);
+            setTimeout(() => { s2.classList.remove('active'); s2.style.display='none'; s3.classList.add('active'); }, 5000);
+            setTimeout(() => { s3.classList.remove('active'); banner.classList.remove('active'); setTimeout(run, 15000); }, 8000);
+        }; run();
+    }
+
+    // AUDIO ROUTING
     function updateAudioRouting() {
         if (!audioCtx || !analyser) return;
         try { if(micStreamSource) micStreamSource.disconnect(analyser); if(rxStreamSource) rxStreamSource.disconnect(analyser); } catch(e){}
@@ -399,7 +421,7 @@
 
     function initPeer() {
         peer = new Peer(); 
-        peer.on('open', id => { connectData(); connectAudioToMixer(); });
+        peer.on('open', id => { connectData(); });
         peer.on('call', call => {
             call.answer();
             call.on('stream', remoteStream => {
@@ -410,20 +432,6 @@
         });
         peer.on('disconnected', () => updateConnectionStatus(false));
     }
-
-    // NUEVA FUNCIÓN PARA LLAMAR AL MEZCLADOR
-    function connectAudioToMixer() {
-        if(localStream) {
-            const call = peer.call(MIXER_ID, localStream);
-            // Si el mezclador responde con audio (v2.3), lo recibimos aqui tambien
-            call.on('stream', remoteStream => {
-                incomingAudioEl.srcObject = remoteStream;
-                incomingAudioEl.muted = true; 
-                if(isRxOn) updateAudioRouting();
-            });
-        }
-    }
-
     function connectData() {
         dataConn = peer.connect(MIXER_ID);
         dataConn.on('open', () => { sendCmd('RX_OFF'); updateConnectionStatus(true); });
@@ -509,11 +517,7 @@
         
         initMic(); await startCam(); await initMoveNet(); initSensors();
         initMatrix(); startBannerLoop();
-        
-        // Iniciar PeerJS después de tener el microfono local
-        // (initPeer se llama al final de enterApp, pero depende de localStream que se obtiene en initMic)
-        // Se ajusta abajo
-        
+        initPeer();
         loop();
     }
 
@@ -552,22 +556,7 @@
     function initProximity(){ if('ProximitySensor' in window){ try { proxSensor=new ProximitySensor({frequency:10}); proxSensor.addEventListener('reading', ()=>{ document.getElementById('prox-val').innerText=proxSensor.value?proxSensor.value.toFixed(0):"0"; setSensorStatus('sens-prox','main'); }); proxSensor.start(); } catch(e){ setSensorStatus('sens-prox','status-red'); } } else { setSensorStatus('sens-prox','sim'); setInterval(()=>{ if(Math.random()>0.95){ document.getElementById('prox-val').innerText=Math.floor(Math.random()*5); setTimeout(()=>document.getElementById('prox-val').innerText="0",800); } },1000); } }
 
     async function loadAudio(u){ try{const r=await fetch(u);const b=await r.arrayBuffer();return await audioCtx.decodeAudioData(b);}catch(e){return null;} }
-    
-    async function initMic(){ 
-        try{ 
-            const s=await navigator.mediaDevices.getUserMedia({audio:true}); 
-            localStream = s; // GUARDAR STREAM GLOBAL PARA PEERJS
-            
-            micStreamSource=audioCtx.createMediaStreamSource(s); 
-            analyser=audioCtx.createAnalyser(); analyser.fftSize=64; 
-            micStreamSource.connect(analyser); 
-            setSensorStatus('sens-mic','main'); 
-            
-            // Una vez tenemos audio, iniciamos Peer
-            initPeer();
-            
-        }catch(e){ setSensorStatus('sens-mic','status-red'); initPeer(); } // Init peer anyway
-    }
+    async function initMic(){ try{ const s=await navigator.mediaDevices.getUserMedia({audio:true}); micStreamSource=audioCtx.createMediaStreamSource(s); analyser=audioCtx.createAnalyser(); analyser.fftSize=64; micStreamSource.connect(analyser); setSensorStatus('sens-mic','main'); }catch(e){ setSensorStatus('sens-mic','status-red'); } }
     
     function toggleSpirit(){
         isSpiritOn = !isSpiritOn;
@@ -665,6 +654,7 @@
         await tf.ready(); 
         const d = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING }); 
         setInterval(async () => { 
+            // RESTORED SLS LOGIC (Aggressive 0.15 threshold + 0.25 connection check)
             if(currentFilter==='sls' && vid.readyState===4) { try { latestPoses = await d.estimatePoses(vid, {maxPoses: 5, scoreThreshold: 0.15}); } catch(e) { latestPoses = []; } } else { latestPoses = []; } 
         }, 100); 
     }
@@ -673,7 +663,7 @@
         const s = Math.max(canvasSLS.width/vid.videoWidth, canvasSLS.height/vid.videoHeight); const xo=(canvasSLS.width-vid.videoWidth*s)/2, yo=(canvasSLS.height-vid.videoHeight*s)/2;
         ctxSLS.lineWidth=3; ctxSLS.lineCap='round'; ctxSLS.strokeStyle='#00ff41'; ctxSLS.shadowBlur=10; ctxSLS.shadowColor='#00ff41';
         poses.forEach(p => { 
-            if(p.score<0.20)return; const kp=p.keypoints; const m={}; kp.forEach(k=>m[k.name]=k); 
+            if(p.score<0.15)return; const kp=p.keypoints; const m={}; kp.forEach(k=>m[k.name]=k); 
             ctxSLS.beginPath(); 
             conns.forEach(([a,b])=>{ const p1=m[a],p2=m[b]; if(p1 && p2 && p1.score > 0.25 && p2.score > 0.25){ctxSLS.moveTo(p1.x*s+xo,p1.y*s+yo);ctxSLS.lineTo(p2.x*s+xo,p2.y*s+yo);} }); 
             ctxSLS.stroke(); 
