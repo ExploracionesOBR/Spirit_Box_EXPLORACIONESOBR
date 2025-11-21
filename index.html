@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v14.0 LINK-STATUS</title> 
+    <title>DETECTOR-OBR v13.9 PRIORITY-FIX</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -53,6 +53,7 @@
             opacity: 0; pointer-events: none;
         }
 
+        /* ESTADO SIN HUD (POR DEFECTO AL INICIO) */
         body.panels-hidden #app-ui {
             grid-template-columns: 0px 1fr;
             grid-template-rows: 1fr 0px;
@@ -102,13 +103,10 @@
 
         .rec-container { position: absolute; top: 15px; left: 15px; color: var(--hud-red); font-family: 'Orbitron'; font-weight: bold; display: flex; align-items: center; gap: 8px; z-index: 30; text-shadow: 0 0 5px var(--hud-red); font-size: 0.8rem; pointer-events: none; }
         .rec-dot { width: 10px; height: 10px; background: var(--hud-red); border-radius: 50%; animation: blinkRed 1s infinite; }
-        
-        /* ANIMACIONES DE ESTADO REC */
         @keyframes blinkRed { 50% { opacity: 0.3; } }
         @keyframes pulseGreen { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0.8); } 100% { box-shadow: 0 0 0 15px rgba(0, 255, 65, 0); } }
         @keyframes pulseOrange { 0% { box-shadow: 0 0 0 0 rgba(255, 174, 0, 0.8); } 100% { box-shadow: 0 0 0 15px rgba(255, 174, 0, 0); } }
 
-        /* Clases de estado REC */
         .rec-connected .rec-dot { background: var(--hud-green); animation: pulseGreen 1.5s infinite; }
         .rec-error .rec-dot { background: var(--hud-orange); animation: pulseOrange 1s infinite; }
 
@@ -121,7 +119,6 @@
         body.filter-negative #bg-camera-feed { filter: invert(1) hue-rotate(180deg); }
         body.filter-focus #main-view-area::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); mask-image: radial-gradient(circle, transparent 35%, black 85%); -webkit-mask-image: radial-gradient(circle, transparent 35%, black 85%); background: transparent; }
         body.filter-focus #bg-camera-feed { filter: contrast(1.1) saturate(0.8); }
-
         body.filter-sls #main-filter-canvas { display: block; }
 
         /* LOGO */
@@ -166,17 +163,9 @@
         .status-orange { border-left-color: var(--hud-orange); color: var(--hud-orange); text-shadow: 0 0 5px rgba(255,174,0,0.3); }
         .status-red { border-left-color: var(--hud-red); color: #777; }
 
-        /* ESTILOS BOTÓN RX */
-        .btn-rx { 
-            margin-top: 5px; padding: 10px; border-radius: 4px; font-weight: bold; 
-            text-align: center; cursor: pointer; font-family: 'Orbitron'; letter-spacing: 1px;
-            font-size: 0.8rem; transition: all 0.2s; text-shadow: 0 0 5px rgba(0,0,0,0.5);
-            position: relative; z-index: 2;
-        }
+        .btn-rx { margin-top: 5px; padding: 10px; border-radius: 4px; font-weight: bold; text-align: center; cursor: pointer; font-family: 'Orbitron'; letter-spacing: 1px; font-size: 0.8rem; transition: all 0.2s; text-shadow: 0 0 5px rgba(0,0,0,0.5); position: relative; z-index: 2; }
         .rx-off { background: #330000; border: 2px solid #ff0000; color: #ff0000; box-shadow: inset 0 0 10px #550000; }
         .rx-on { background: #004400; border: 2px solid #00ff41; color: #00ff41; box-shadow: 0 0 15px #00ff41; animation: none; }
-        
-        /* ANIMACIONES ESTADO RX */
         @keyframes rxRipple { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0.8); } 100% { box-shadow: 0 0 0 20px rgba(0, 255, 65, 0); } }
         .rx-pulse-green { animation: rxRipple 1s infinite; border-color: #fff !important; color: #fff !important; text-shadow: 0 0 10px #00ff41; background: #006600; }
         
@@ -214,9 +203,16 @@
         @keyframes btnGlitch { 0% { transform: translate(0,0); } 20% { transform: translate(-2px, 1px); filter: hue-rotate(90deg); } 100% { transform: translate(0,0); } }
         #zoom-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 5px; color: #fff; font-family: 'Share Tech Mono'; font-size: 0.8rem; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 40; }
         
+        /* INTRO VIDEO OVERLAY */
         #video-overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: none; }
         #intro-video { width: 100%; height: 100%; object-fit: contain; }
-        #btn-intro { position: absolute; bottom: 20px; left: 20px; z-index: 60; background: rgba(0,0,0,0.5); border: 1px solid #555; color: #888; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 1.2rem; display: none; transition: opacity 0.3s; }
+        /* BOTON INTRO: Visible solo cuando .panels-hidden está presente en body */
+        #btn-intro { 
+            position: absolute; bottom: 20px; left: 20px; z-index: 60; 
+            background: rgba(0,0,0,0.5); border: 1px solid #555; color: #888; 
+            padding: 8px; border-radius: 4px; cursor: pointer; font-size: 1.2rem;
+            display: none; transition: opacity 0.3s;
+        }
         body.panels-hidden #btn-intro { display: block; }
 
         @media (max-width: 768px) { :root { --left-panel-w: 140px; --bottom-panel-h: 110px; } .digital-display { font-size: 1.5rem; } .btn-control { font-size: 0.6rem; padding: 5px; } .sb-display-area { font-size: 0.7rem; padding: 5px; } #spirit-box-section { margin-bottom: 5px; padding: 4px; } .dials-grid { gap: 4px; } .sensor-item { font-size: 0.55rem; padding: 2px 4px; } #follow-banner { bottom: 10px; } }
@@ -224,8 +220,12 @@
 </head>
 <body class="panels-hidden"> 
 
-<div id="video-overlay" onclick="stopIntro()"><video id="intro-video" playsinline></video></div>
+<!-- VIDEO INTRO PLAYER -->
+<div id="video-overlay" onclick="stopIntro()">
+    <video id="intro-video" playsinline></video>
+</div>
 
+<!-- LOADING SCREEN -->
 <div id="loading-overlay">
     <img src="obr-logo.png" class="horror-logo" id="load-logo">
     <div id="loading-text-main">CARGANDO MÓDULOS...</div>
@@ -248,6 +248,8 @@
                 <input type="range" id="speed-slider" min="1" max="3" step="1" value="1" style="width:100%; accent-color:var(--hud-orange);">
             </div>
         </div>
+        
+        <!-- PANEL SENSORES -->
         <div class="panel-section">
             <canvas id="matrix-canvas"></canvas> 
             <div class="section-title">SENSORES</div>
@@ -260,6 +262,8 @@
                 <div class="sensor-item status-red" id="sens-lidar"><span class="sensor-icon">📸</span> LIDAR</div>
             </div>
         </div>
+
+        <!-- AUDIO RX -->
         <div class="panel-section" style="margin-top:2px; flex-grow:0;">
              <div class="section-title">AUDIO RX (ENLACE)</div>
              <div id="btn-rx" class="btn-rx rx-off" onclick="toggleRX()">
@@ -273,8 +277,12 @@
             <video id="bg-camera-feed" playsinline autoplay muted></video>
             <canvas id="main-filter-canvas" style="display:none;"></canvas>
         </div>
+        
         <div id="touch-layer"></div>
+
+        <!-- BOTON INTRO SECRETO -->
         <button id="btn-intro" onclick="playIntro()">🎞️</button>
+
         <div class="camera-border"><div class="cb-inner"></div></div>
         <div class="rec-container" id="rec-indicator"><div class="rec-dot"></div>REC</div>
         <div class="stats-container"><div><span class="stats-val" id="cam-fps">--</span> FPS</div><div><span class="stats-val" id="cam-res">--x--</span></div><div><span class="stats-val" id="zoom-lvl">1.0x</span></div></div>
@@ -296,6 +304,7 @@
             <button class="filter-btn" onclick="toggleFilter('negative')"><i class="fas fa-adjust"></i></button>
             <button class="filter-btn" onclick="toggleFilter('focus')"><i class="fas fa-crosshairs"></i></button>
             <button class="filter-btn" onclick="resetZoomManual()" style="color:var(--hud-orange); border-color:var(--hud-orange);"><i class="fas fa-search-minus"></i></button>
+            <!-- BOTÓN HUD: INICIA APAGADO -->
             <button class="filter-btn" id="btn-hud" onclick="toggleHUD()"><i class="fas fa-bars"></i></button>
         </div>
         <div id="zoom-msg">ZOOM x3.0</div>
@@ -310,6 +319,7 @@
         </div>
         <div style="margin-top:5px;"><div id="energy-container"></div><div class="knob-label" style="text-align:left;">ENERGY LEVEL</div></div>
     </div>
+
     <audio id="incoming-feed" autoplay></audio> 
 </div>
 
@@ -330,6 +340,8 @@
     let interferenceInterval;
     let micMaxVol = 0;
     let restoreAudioTimer;
+
+    // PEERJS VARS
     let peer, dataConn;
     let isRxOn = false;
     let incomingAudioEl = document.getElementById('incoming-feed');
@@ -340,6 +352,7 @@
     let longPressTimer;
     let isLongPressing = false;
     let initialPinchDist = 0;
+    let commandReceived = false; // PRIORIDAD
     
     const zoomContainer = document.getElementById('zoom-container');
     const touchLayer = document.getElementById('touch-layer');
@@ -385,7 +398,6 @@
         if(isSpiritOn) startListeningCycle();
     }
 
-    // AUDIO ROUTING
     function updateAudioRouting() {
         if (!audioCtx || !analyser) return;
         try { if(micStreamSource) micStreamSource.disconnect(analyser); if(rxStreamSource) rxStreamSource.disconnect(analyser); } catch(e){}
@@ -399,7 +411,6 @@
         }
     }
 
-    // PEERJS
     function initPeer() {
         peer = new Peer(); 
         peer.on('open', id => { connectData(); });
@@ -411,31 +422,19 @@
                 if(isRxOn) updateAudioRouting();
             });
         });
-        // Detectar error de conexion
         peer.on('disconnected', () => updateConnectionStatus(false));
     }
     function connectData() {
         dataConn = peer.connect(MIXER_ID);
-        dataConn.on('open', () => { 
-            sendCmd('RX_OFF'); 
-            updateConnectionStatus(true);
-        });
-        dataConn.on('close', () => { 
-            updateConnectionStatus(false);
-            setTimeout(connectData, 3000); 
-        });
+        dataConn.on('open', () => { sendCmd('RX_OFF'); updateConnectionStatus(true); });
+        dataConn.on('close', () => { updateConnectionStatus(false); setTimeout(connectData, 3000); });
     }
     function sendCmd(cmd) { if(dataConn && dataConn.open) dataConn.send({ cmd: cmd }); }
     
     function updateConnectionStatus(connected) {
         const rec = document.getElementById('rec-indicator');
-        if(connected) {
-            rec.classList.add('rec-connected');
-            rec.classList.remove('rec-error');
-        } else {
-            rec.classList.add('rec-error');
-            rec.classList.remove('rec-connected');
-        }
+        if(connected) { rec.classList.add('rec-connected'); rec.classList.remove('rec-error'); } 
+        else { rec.classList.add('rec-error'); rec.classList.remove('rec-connected'); }
     }
 
     function toggleRX() {
@@ -443,26 +442,16 @@
         const btn = document.getElementById('btn-rx');
         const rec = document.getElementById('rec-indicator');
         if(isRxOn) {
-            btn.className = "btn-rx rx-on"; // Verde
-            btn.innerHTML = "🟢 RX ON<br><span style='font-size:0.6rem; font-weight:normal;'>(AUDIO AQUÍ)</span>";
-            incomingAudioEl.muted = false;
-            incomingAudioEl.play().catch(e=>{});
-            sendCmd('RX_ON'); 
-            updateConnectionStatus(true); // Forzar verde
+            btn.className = "btn-rx rx-on"; btn.innerHTML = "🟢 RX ON<br><span style='font-size:0.6rem; font-weight:normal;'>(AUDIO AQUÍ)</span>";
+            incomingAudioEl.muted = false; incomingAudioEl.play().catch(e=>{}); sendCmd('RX_ON'); updateConnectionStatus(true); 
         } else {
-            btn.className = "btn-rx rx-off"; // Rojo
-            btn.classList.remove('rx-pulse'); 
+            btn.className = "btn-rx rx-off"; btn.classList.remove('rx-pulse'); 
             btn.innerHTML = "🔴 RX OFF<br><span style='font-size:0.6rem; font-weight:normal;'>(AUDIO EN MEZCLADOR)</span>";
-            incomingAudioEl.muted = true;
-            sendCmd('RX_OFF'); 
-            // Si RX off, REC vuelve a rojo normal (limpiar clases extra)
-            rec.classList.remove('rec-connected');
-            rec.classList.remove('rec-error');
+            incomingAudioEl.muted = true; sendCmd('RX_OFF'); rec.classList.remove('rec-connected'); rec.classList.remove('rec-error');
         }
         updateAudioRouting();
     }
 
-    // LOADING & MATRIX
     function startLoadingSequence() {
         const txtMain = document.getElementById('loading-text-main');
         const txtSub = document.getElementById('loading-text-sub');
@@ -495,7 +484,6 @@
         }
     }
 
-    // ZOOM (SAME LOGIC)
     function setupZoomEvents() { touchLayer.addEventListener('touchstart', handleTouchStart, {passive: false}); touchLayer.addEventListener('touchmove', handleTouchMove, {passive: false}); touchLayer.addEventListener('touchend', handleTouchEnd); touchLayer.addEventListener('mousedown', handleMouseDown); touchLayer.addEventListener('mouseup', handleMouseUp); }
     function handleTouchStart(e) { if (e.touches.length === 1) { isLongPressing = false; const t = e.touches[0]; longPressTimer = setTimeout(() => { triggerLongPressZoom(t.clientX, t.clientY); }, 600); } else if (e.touches.length === 2) { clearTimeout(longPressTimer); initialPinchDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); } }
     function handleTouchMove(e) { if (e.touches.length === 1) { clearTimeout(longPressTimer); } else if (e.touches.length === 2) { e.preventDefault(); clearTimeout(longPressTimer); const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); if (initialPinchDist > 0) { const delta = dist - initialPinchDist; zoomLevel += delta * 0.005; zoomLevel = Math.min(Math.max(1, zoomLevel), 5); applyZoom(); initialPinchDist = dist; } } }
@@ -521,11 +509,16 @@
         bgBuffer = await loadAudio('FONDO_1.mp3');
         
         initMic(); await startCam(); await initMoveNet(); initSensors();
-        initMatrix(); startBannerLoop(); initPeer(); loop();
+        initMatrix(); startBannerLoop();
+        initPeer();
+        loop();
     }
 
     async function startCam(){
-        try{ try { const s = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { exact: "environment" }, width: { ideal: 3840 }, height: { ideal: 2160 } } }); handleStream(s); } catch (e) { const s = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } } }); handleStream(s); } }catch(e){}
+        try{
+            try { const s = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { exact: "environment" }, width: { ideal: 3840 }, height: { ideal: 2160 } } }); handleStream(s); } 
+            catch (e) { const s = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } } }); handleStream(s); }
+        }catch(e){}
     }
     function handleStream(stream) { vid.srcObject = stream; videoTrack = stream.getVideoTracks()[0]; vid.onloadedmetadata = ()=> { resize(); document.getElementById('cam-res').innerText = `${vid.videoWidth}x${vid.videoHeight}`; }; window.onresize = resize; }
     function resize(){ const area = document.getElementById('main-view-area'); canvasSLS.width = area.clientWidth; canvasSLS.height = area.clientHeight; const ps=document.querySelector('.panel-section'); if(ps){matrixCanvas.width=ps.clientWidth; matrixCanvas.height=ps.clientHeight;} }
@@ -587,12 +580,27 @@
             const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
             if(SR) {
                 recognition = new SR(); recognition.lang='es-MX'; recognition.continuous=false;
-                recognition.onstart = () => { isRecognizing=true; document.getElementById('voice-led').classList.add('listening'); };
-                recognition.onend = () => { isRecognizing=false; document.getElementById('voice-led').classList.remove('listening'); 
-                    if(isSpiritOn && micMaxVol > 15 && !window.speechSynthesis.speaking) processVoiceCommand("NOISE_TRIGGER");
-                    else if(isSpiritOn && !window.speechSynthesis.speaking) setTimeout(startListeningCycle, 500); 
+                recognition.onstart = () => { 
+                    isRecognizing=true; 
+                    document.getElementById('voice-led').classList.add('listening'); 
+                    commandReceived = false; // RESET
                 };
-                recognition.onresult = (e) => { processVoiceCommand(e.results[0][0].transcript.toLowerCase().trim()); };
+                recognition.onend = () => { 
+                    isRecognizing=false; document.getElementById('voice-led').classList.remove('listening'); 
+                    // PRIORITY LOGIC
+                    if(isSpiritOn && !window.speechSynthesis.speaking) {
+                         if(!commandReceived && micMaxVol > 15) { // Only if no command received
+                             processVoiceCommand("NOISE_TRIGGER");
+                         } else {
+                             setTimeout(startListeningCycle, 500); 
+                         }
+                    }
+                };
+                recognition.onresult = (e) => { 
+                    const txt = e.results[0][0].transcript.toLowerCase().trim();
+                    if(txt.length > 0) commandReceived = true; // MARK RECEIVED
+                    processVoiceCommand(txt); 
+                };
                 recognition.onerror = () => { isRecognizing=false; if(isSpiritOn) setTimeout(startListeningCycle, 1000); };
             }
         }
