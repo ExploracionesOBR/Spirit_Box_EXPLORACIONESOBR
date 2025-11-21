@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v13.7 FINAL-POLISH</title> 
+    <title>DETECTOR-OBR v13.7 FINAL-LINKED</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -19,75 +19,21 @@
 
     <style>
         :root {
-            --hud-bg: #050510; 
-            --hud-cyan: #00f3ff; 
-            --hud-pink: #ff0055; 
-            --hud-green: #00ff41; 
-            --hud-orange: #ffae00;
-            --hud-red: #ff3333;
-            --hud-blue: #0088ff;
-            --glass-panel: rgba(5, 8, 15, 0.95);
-            
-            --left-panel-w: 280px;
-            --bottom-panel-h: 160px;
+            --hud-bg: #050510; --hud-cyan: #00f3ff; --hud-pink: #ff0055; --hud-green: #00ff41; --hud-orange: #ffae00; --hud-red: #ff3333; --hud-blue: #0088ff; --glass-panel: rgba(5, 8, 15, 0.95);
+            --left-panel-w: 280px; --bottom-panel-h: 160px;
         }
+        body { font-family: 'Share Tech Mono', monospace; background-color: #000; color: var(--hud-cyan); overflow: hidden; width: 100vw; height: 100vh; margin: 0; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 
-        body {
-            font-family: 'Share Tech Mono', monospace;
-            background-color: #000; color: var(--hud-cyan);
-            overflow: hidden; width: 100vw; height: 100vh; margin: 0;
-            touch-action: none; 
-            -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
-        }
+        #app-ui { width: 100%; height: 100%; display: grid; grid-template-columns: var(--left-panel-w) 1fr; grid-template-rows: 1fr var(--bottom-panel-h); grid-template-areas: "left cam" "left bottom"; transition: all 0.5s ease; opacity: 0; pointer-events: none; }
+        body.panels-hidden #app-ui { grid-template-columns: 0px 1fr; grid-template-rows: 1fr 0px; }
 
-        /* --- LAYOUT PRINCIPAL --- */
-        #app-ui { 
-            width: 100%; height: 100%; 
-            display: grid;
-            grid-template-columns: var(--left-panel-w) 1fr; 
-            grid-template-rows: 1fr var(--bottom-panel-h);
-            grid-template-areas: 
-                "left cam"
-                "left bottom";
-            transition: all 0.5s ease;
-            opacity: 0; pointer-events: none;
-        }
-
-        /* ESTADO SIN HUD (POR DEFECTO AL INICIO) */
-        body.panels-hidden #app-ui {
-            grid-template-columns: 0px 1fr;
-            grid-template-rows: 1fr 0px;
-        }
-
-        #left-panel { 
-            grid-area: left; border-right: 2px solid var(--hud-cyan); 
-            overflow: hidden; transition: all 0.5s ease; position: relative;
-            display: flex; flex-direction: column; justify-content: flex-start;
-            z-index: 50; background: var(--glass-panel);
-        }
-        #bottom-panel { 
-            grid-area: bottom; border-top: 2px solid var(--hud-cyan); 
-            overflow: hidden; transition: all 0.5s ease; 
-            z-index: 50; background: var(--glass-panel);
-        }
-        
-        #main-view-area { 
-            grid-area: cam; position: relative; overflow: hidden; background: #000; width: 100%; height: 100%; 
-            touch-action: none;
-        }
-
+        #left-panel { grid-area: left; border-right: 2px solid var(--hud-cyan); overflow: hidden; transition: all 0.5s ease; position: relative; display: flex; flex-direction: column; justify-content: flex-start; z-index: 50; background: var(--glass-panel); }
+        #bottom-panel { grid-area: bottom; border-top: 2px solid var(--hud-cyan); overflow: hidden; transition: all 0.5s ease; z-index: 50; background: var(--glass-panel); }
+        #main-view-area { grid-area: cam; position: relative; overflow: hidden; background: #000; width: 100%; height: 100%; touch-action: none; }
         #touch-layer { position: absolute; inset: 0; z-index: 10; touch-action: none; }
-
         body.panels-hidden #left-panel, body.panels-hidden #bottom-panel { display: none; }
 
-        /* PANELES ESTILO */
-        .panel-container {
-            box-shadow: inset 0 0 20px rgba(0, 243, 255, 0.1);
-            padding: 10px;
-            background-image: linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
-            background-size: 20px 20px;
-        }
-
+        .panel-container { box-shadow: inset 0 0 20px rgba(0, 243, 255, 0.1); padding: 10px; background-image: linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px); background-size: 20px 20px; }
         #matrix-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.2; pointer-events: none; z-index: 0; }
         #zoom-container { width: 100%; height: 100%; transform-origin: center center; transition: transform 0.3s ease-out; will-change: transform; z-index: 1; }
         #bg-camera-feed { width: 100%; height: 100%; object-fit: cover; transition: filter 0.3s ease; }
@@ -104,37 +50,19 @@
         .rec-container { position: absolute; top: 15px; left: 15px; color: var(--hud-red); font-family: 'Orbitron'; font-weight: bold; display: flex; align-items: center; gap: 8px; z-index: 30; text-shadow: 0 0 5px var(--hud-red); font-size: 0.8rem; pointer-events: none; }
         .rec-dot { width: 10px; height: 10px; background: var(--hud-red); border-radius: 50%; animation: blinkRed 1s infinite; }
         @keyframes blinkRed { 50% { opacity: 0.3; } }
-
         .stats-container { position: absolute; bottom: 15px; right: 20px; font-family: 'Share Tech Mono'; font-size: 0.65rem; color: rgba(0, 243, 255, 0.7); text-shadow: 0 0 2px #000; z-index: 30; text-align: right; pointer-events: none; display: flex; gap: 10px; }
         .stats-val { color: #fff; font-weight: bold; }
 
-        /* FILTROS */
         body.filter-night-vision #bg-camera-feed { filter: grayscale(100%) sepia(100%) hue-rotate(90deg) brightness(0.9) contrast(1.2) saturate(150%); }
         body.filter-night-vision #main-view-area::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4; background: radial-gradient(circle, transparent 60%, #000 95%); }
         body.filter-negative #bg-camera-feed { filter: invert(1) hue-rotate(180deg); }
         body.filter-focus #main-view-area::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); mask-image: radial-gradient(circle, transparent 35%, black 85%); -webkit-mask-image: radial-gradient(circle, transparent 35%, black 85%); background: transparent; }
         body.filter-focus #bg-camera-feed { filter: contrast(1.1) saturate(0.8); }
-
         body.filter-sls #main-filter-canvas { display: block; }
 
-        /* --- LOGO TERROR (GLITCH REAL) --- */
         #logo-container { position: absolute; top: 15px; right: 15px; z-index: 50; pointer-events: none; }
-        
-        #logo-image { 
-            width: 60px; height: 60px; 
-            filter: drop-shadow(0 0 5px var(--hud-cyan)) contrast(1.5) brightness(1.2); 
-            /* EFECTO DE TERROR SOLICITADO */
-            animation: horrorGlitch 0.3s infinite alternate-reverse; 
-        }
-
-        @keyframes horrorGlitch { 
-            0% { clip-path: inset(20% 0 80% 0); transform: translate(-2px, 1px); filter: hue-rotate(0deg); } 
-            20% { clip-path: inset(60% 0 10% 0); transform: translate(2px, -1px); filter: hue-rotate(90deg) contrast(2); } 
-            40% { clip-path: inset(40% 0 50% 0); transform: translate(-2px, 2px); filter: hue-rotate(180deg) invert(0.1); } 
-            60% { clip-path: inset(80% 0 5% 0); transform: translate(2px, -2px); filter: hue-rotate(270deg); } 
-            80% { clip-path: inset(10% 0 60% 0); transform: translate(-1px, 1px); } 
-            100% { clip-path: inset(30% 0 30% 0); transform: translate(1px, -1px); filter: hue-rotate(360deg); } 
-        }
+        #logo-image { width: 60px; height: 60px; filter: drop-shadow(0 0 5px var(--hud-cyan)) contrast(1.5) brightness(1.2); animation: horrorGlitch 0.3s infinite alternate-reverse; }
+        @keyframes horrorGlitch { 0% { clip-path: inset(20% 0 80% 0); transform: translate(-2px, 1px); filter: hue-rotate(0deg); } 20% { clip-path: inset(60% 0 10% 0); transform: translate(2px, -1px); filter: hue-rotate(90deg) contrast(2); } 40% { clip-path: inset(40% 0 50% 0); transform: translate(-2px, 2px); filter: hue-rotate(180deg) invert(0.1); } 60% { clip-path: inset(80% 0 5% 0); transform: translate(2px, -2px); filter: hue-rotate(270deg); } 80% { clip-path: inset(10% 0 60% 0); transform: translate(-1px, 1px); } 100% { clip-path: inset(30% 0 30% 0); transform: translate(1px, -1px); filter: hue-rotate(360deg); } }
         
         #follow-banner { position: absolute; bottom: 20px; left: 0; right: 0; display: flex; justify-content: center; pointer-events: none; opacity: 0; transition: opacity 1s; z-index: 30; }
         #follow-banner.active { opacity: 1; }
@@ -191,9 +119,7 @@
         .ui-hiding { animation: waterPop 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important; pointer-events: none; }
         @keyframes waterPop { 0% { transform: scale(1); opacity: 1; blur(0); } 100% { transform: scale(2.5); opacity: 0; blur(10px); } }
         
-        /* LOADING OVERLAY */
         #loading-overlay { position: fixed; inset: 0; z-index: 99999; display: flex; flex-direction: column; justify-content: center; align-items: center; background-color: #000; background-image: url('fondo_pantalla.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat; }
-        /* LOGO CARGA */
         .horror-logo { width: 100px; margin-bottom: 20px; animation: horrorGlitch 0.3s infinite; filter: contrast(1.5) brightness(1.2); }
         
         #loading-text-main { color: var(--hud-cyan); font-family: 'Orbitron'; letter-spacing: 2px; font-size: 1.2rem; text-shadow: 0 0 5px var(--hud-cyan); margin-bottom: 5px; }
@@ -206,17 +132,9 @@
         @keyframes btnGlitch { 0% { transform: translate(0,0); } 20% { transform: translate(-2px, 1px); filter: hue-rotate(90deg); } 100% { transform: translate(0,0); } }
         #zoom-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 5px; color: #fff; font-family: 'Share Tech Mono'; font-size: 0.8rem; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 40; }
         
-        /* INTRO VIDEO OVERLAY */
         #video-overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: none; }
         #intro-video { width: 100%; height: 100%; object-fit: contain; }
-        /* BOTON INTRO: Solo visible si panels-hidden */
-        #btn-intro { 
-            position: absolute; bottom: 20px; left: 20px; z-index: 60; 
-            background: rgba(0,0,0,0.5); border: 1px solid #555; color: #888; 
-            padding: 8px; border-radius: 4px; cursor: pointer; font-size: 1.2rem;
-            display: none; transition: opacity 0.3s;
-        }
-        /* MOSTRAR SOLO SI ESTA OCULTO EL PANEL */
+        #btn-intro { position: absolute; bottom: 20px; left: 20px; z-index: 60; background: rgba(0,0,0,0.5); border: 1px solid #555; color: #888; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 1.2rem; display: none; transition: opacity 0.3s; }
         body.panels-hidden #btn-intro { display: block; }
 
         @media (max-width: 768px) { :root { --left-panel-w: 140px; --bottom-panel-h: 110px; } .digital-display { font-size: 1.5rem; } .btn-control { font-size: 0.6rem; padding: 5px; } .sb-display-area { font-size: 0.7rem; padding: 5px; } #spirit-box-section { margin-bottom: 5px; padding: 4px; } .dials-grid { gap: 4px; } .sensor-item { font-size: 0.55rem; padding: 2px 4px; } #follow-banner { bottom: 10px; } }
@@ -224,12 +142,10 @@
 </head>
 <body class="panels-hidden"> 
 
-<!-- VIDEO INTRO PLAYER -->
 <div id="video-overlay" onclick="stopIntro()">
     <video id="intro-video" playsinline></video>
 </div>
 
-<!-- LOADING SCREEN -->
 <div id="loading-overlay">
     <img src="obr-logo.png" class="horror-logo" id="load-logo">
     <div id="loading-text-main">CARGANDO MÓDULOS...</div>
@@ -283,7 +199,6 @@
         
         <div id="touch-layer"></div>
 
-        <!-- BOTON INTRO SECRETO -->
         <button id="btn-intro" onclick="playIntro()">🎞️</button>
 
         <div class="camera-border"><div class="cb-inner"></div></div>
@@ -307,7 +222,6 @@
             <button class="filter-btn" onclick="toggleFilter('negative')"><i class="fas fa-adjust"></i></button>
             <button class="filter-btn" onclick="toggleFilter('focus')"><i class="fas fa-crosshairs"></i></button>
             <button class="filter-btn" onclick="resetZoomManual()" style="color:var(--hud-orange); border-color:var(--hud-orange);"><i class="fas fa-search-minus"></i></button>
-            <!-- BOTÓN HUD: INICIA APAGADO (SIN CLASE ACTIVE) -->
             <button class="filter-btn" id="btn-hud" onclick="toggleHUD()"><i class="fas fa-bars"></i></button>
         </div>
         <div id="zoom-msg">ZOOM x3.0</div>
@@ -438,12 +352,16 @@
                 if(isRxOn) updateAudioRouting();
             });
         });
+        // Asegurar reconexión si falla el servidor PeerJS
+        peer.on('error', () => setTimeout(initPeer, 5000));
     }
     
     function connectData() {
         dataConn = peer.connect(MIXER_ID);
         dataConn.on('open', () => { sendCmd('RX_OFF'); });
+        // Si se cierra la conexión de datos, reintentar
         dataConn.on('close', () => { setTimeout(connectData, 3000); });
+        dataConn.on('error', () => { setTimeout(connectData, 3000); });
     }
     
     function sendCmd(cmd) { if(dataConn && dataConn.open) dataConn.send({ cmd: cmd }); }
@@ -538,7 +456,7 @@
         
         initMic(); await startCam(); await initMoveNet(); initSensors();
         initMatrix(); startBannerLoop();
-        initPeer();
+        initPeer(); // INICIAR CONEXION AUTOMATICA
         loop();
     }
 
