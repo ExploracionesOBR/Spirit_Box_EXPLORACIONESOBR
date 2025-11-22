@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v18.2 ANTI-OVERLAP</title> 
+    <title>DETECTOR-OBR v18.6 STABLE-FIX</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -39,36 +39,22 @@
             -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
         }
 
-        /* --- LAYOUT PRINCIPAL --- */
         #app-ui { 
             width: 100%; height: 100%; 
             display: grid;
             grid-template-columns: var(--left-panel-w) 1fr; 
             grid-template-rows: 1fr var(--bottom-panel-h);
-            grid-template-areas: 
-                "left cam"
-                "left bottom";
+            grid-template-areas: "left cam" "left bottom";
             transition: all 0.5s ease;
             opacity: 0; pointer-events: none;
         }
 
-        body.panels-hidden #app-ui {
-            grid-template-columns: 0px 1fr;
-            grid-template-rows: 1fr 0px;
-        }
+        body.panels-hidden #app-ui { grid-template-columns: 0px 1fr; grid-template-rows: 1fr 0px; }
 
-        #left-panel { 
-            grid-area: left; border-right: 2px solid var(--hud-cyan); 
-            overflow: hidden; transition: all 0.5s ease; position: relative;
-            display: flex; flex-direction: column; justify-content: flex-start;
-            z-index: 50; background: var(--glass-panel);
-        }
-        #bottom-panel { 
-            grid-area: bottom; border-top: 2px solid var(--hud-cyan); 
-            overflow: hidden; transition: all 0.5s ease; 
-            z-index: 50; background: var(--glass-panel);
-        }
+        #left-panel { grid-area: left; border-right: 2px solid var(--hud-cyan); overflow: hidden; transition: all 0.5s ease; position: relative; display: flex; flex-direction: column; justify-content: flex-start; z-index: 50; background: var(--glass-panel); }
+        #bottom-panel { grid-area: bottom; border-top: 2px solid var(--hud-cyan); overflow: hidden; transition: all 0.5s ease; z-index: 50; background: var(--glass-panel); }
         
+        /* CAMARA (Contenedor principal) */
         #main-view-area { 
             grid-area: cam; position: relative; overflow: hidden; background: #000; width: 100%; height: 100%; 
             touch-action: none;
@@ -78,7 +64,6 @@
 
         body.panels-hidden #left-panel, body.panels-hidden #bottom-panel { display: none; }
 
-        /* PANELES ESTILO */
         .panel-container {
             box-shadow: inset 0 0 20px rgba(0, 243, 255, 0.1);
             padding: 10px;
@@ -104,14 +89,12 @@
         @keyframes blinkRed { 50% { opacity: 0.3; } }
         @keyframes pulseGreen { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0.8); } 100% { box-shadow: 0 0 0 15px rgba(0, 255, 65, 0); } }
         @keyframes pulseOrange { 0% { box-shadow: 0 0 0 0 rgba(255, 174, 0, 0.8); } 100% { box-shadow: 0 0 0 15px rgba(255, 174, 0, 0); } }
-
         .rec-connected .rec-dot { background: var(--hud-green); animation: pulseGreen 1.5s infinite; }
         .rec-error .rec-dot { background: var(--hud-orange); animation: pulseOrange 1s infinite; }
 
         .stats-container { position: absolute; bottom: 15px; right: 20px; font-family: 'Share Tech Mono'; font-size: 0.65rem; color: rgba(0, 243, 255, 0.7); text-shadow: 0 0 2px #000; z-index: 30; text-align: right; pointer-events: none; display: flex; gap: 10px; }
         .stats-val { color: #fff; font-weight: bold; }
 
-        /* FILTROS */
         body.filter-night-vision #bg-camera-feed { filter: grayscale(100%) sepia(100%) hue-rotate(90deg) brightness(0.9) contrast(1.2) saturate(150%); }
         body.filter-night-vision #main-view-area::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4; background: radial-gradient(circle, transparent 60%, #000 95%); }
         body.filter-negative #bg-camera-feed { filter: invert(1) hue-rotate(180deg); }
@@ -119,16 +102,12 @@
         body.filter-focus #bg-camera-feed { filter: contrast(1.2) saturate(0.9) brightness(1.1); }
         body.filter-sls #main-filter-canvas { display: block; }
 
-        /* LOGO */
         #logo-container { position: absolute; top: 15px; right: 15px; z-index: 50; pointer-events: none; }
         #logo-image { width: 60px; height: 60px; filter: drop-shadow(0 0 5px var(--hud-cyan)); animation: horrorPulse 4s infinite; }
         @keyframes horrorPulse { 
             0%, 85% { clip-path: inset(0 0 0 0); transform: translate(0, 0); opacity: 1; }
             86% { clip-path: inset(20% 0 50% 0); transform: translate(-2px, 1px); filter: hue-rotate(90deg) contrast(2); }
-            88% { clip-path: inset(60% 0 10% 0); transform: translate(2px, -1px); opacity: 0.8; }
             90% { clip-path: inset(0 0 0 0); transform: translate(0, 0); }
-            92% { clip-path: inset(10% 0 60% 0); transform: translate(1px, 2px); filter: sepia(1) hue-rotate(180deg); }
-            95% { clip-path: inset(80% 0 5% 0); transform: translate(-1px, -2px); }
             100% { clip-path: inset(0 0 0 0); transform: translate(0, 0); filter: drop-shadow(0 0 5px var(--hud-cyan)); } 
         }
         
@@ -157,42 +136,31 @@
         .panel-section { flex-grow: 0; overflow: hidden; position: relative; padding: 8px; background: rgba(0,0,0,0.4); border-radius: 4px; margin-bottom: 5px; } 
         .sensor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; position: relative; z-index: 2; }
         .sensor-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.6rem; padding: 3px 5px; background: rgba(20,20,30,0.6); border-radius: 3px; border-left: 2px solid #333; backdrop-filter: blur(2px); }
-        .status-green { border-left-color: var(--hud-green); color: var(--hud-green); text-shadow: 0 0 5px rgba(0,255,65,0.3); }
-        .status-blue { border-left-color: var(--hud-blue); color: var(--hud-blue); text-shadow: 0 0 5px rgba(0,136,255,0.3); }
-        .status-orange { border-left-color: var(--hud-orange); color: var(--hud-orange); text-shadow: 0 0 5px rgba(255,174,0,0.3); }
+        .status-green { border-left-color: var(--hud-green); color: var(--hud-green); }
         .status-red { border-left-color: var(--hud-red); color: #777; }
 
         .btn-rx { margin-top: 5px; padding: 10px; border-radius: 4px; font-weight: bold; text-align: center; cursor: pointer; font-family: 'Orbitron'; letter-spacing: 1px; font-size: 0.8rem; transition: all 0.2s; text-shadow: 0 0 5px rgba(0,0,0,0.5); position: relative; z-index: 2; }
         .rx-off { background: #330000; border: 2px solid #ff0000; color: #ff0000; box-shadow: inset 0 0 10px #550000; }
         .rx-on { background: #004400; border: 2px solid #00ff41; color: #00ff41; box-shadow: 0 0 15px #00ff41; animation: none; }
-        @keyframes rxRipple { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0.8); } 100% { box-shadow: 0 0 0 20px rgba(0, 255, 65, 0); } }
-        .rx-pulse-green { animation: rxRipple 1s infinite; border-color: #fff !important; color: #fff !important; text-shadow: 0 0 10px #00ff41; background: #006600; }
         
-        .dials-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; height: 60px; align-items: center; flex-shrink: 0; }
-        .instrument-wrapper { background: rgba(0,0,0,0.5); border: 1px solid #333; border-radius: 4px; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; }
-        .digital-display { font-family: 'VT323', monospace; font-size: 1.8rem; line-height: 1; text-shadow: 0 0 5px currentColor; }
-        .digi-cyan { color: var(--hud-cyan); } .digi-green { color: var(--hud-green); } .digi-orange { color: var(--hud-orange); } .digi-red { color: var(--hud-red); }
-        .knob-label { font-size: 0.6rem; color: #777; font-weight: bold; margin-top: 2px; }
-        #energy-container { flex-grow: 1; display: flex; gap: 3px; align-items: flex-end; margin-top: 5px; background: rgba(0,0,0,0.8); border: 1px solid #333; padding: 2px; min-height: 50px; }
-        .energy-bar-seg { flex: 1; background: #151515; height: 100%; transition: height 0.05s; border-top: 2px solid #000; }
-        .energy-bar-seg.active { background: var(--hud-green); box-shadow: 0 0 8px var(--hud-green); }
-        .energy-bar-seg.mid { background: var(--hud-orange); box-shadow: 0 0 8px var(--hud-orange); }
-        .energy-bar-seg.high { background: var(--hud-red); box-shadow: 0 0 10px var(--hud-red); }
-        
+        /* BOTON RESET UI (INTEGRADO Y IZQUIERDA) */
+        #btn-reset-ui {
+            position: absolute; bottom: 80px; left: 20px; z-index: 100; /* Z-INDEX AJUSTADO */
+            background: rgba(0,0,0,0.3); border: 1px solid #ff3333; color: #ff3333;
+            font-size: 1.2rem; width: 35px; height: 35px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; pointer-events: auto; transition: all 0.3s;
+        }
+        #btn-reset-ui.reset-success {
+            border-color: #00ff41; color: #00ff41; background: rgba(0,20,0,0.5);
+            box-shadow: 0 0 10px #00ff41;
+        }
+
         #filter-controls-container { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
         .filter-btn { width: 38px; height: 38px; background: rgba(0, 10, 20, 0.9); color: var(--hud-cyan); font-size: 1rem; border: 1px solid var(--hud-cyan); cursor: pointer; clip-path: polygon(15% 0, 100% 0, 100% 85%, 85% 100%, 0 100%, 0 15%); display: flex; align-items: center; justify-content: center; pointer-events: auto; }
         .filter-btn.active { background: var(--hud-cyan); color: #000; box-shadow: 0 0 10px var(--hud-cyan); }
         #btn-hud.active { background: var(--hud-cyan); color: #000; }
         #btn-hud { background: rgba(0, 10, 20, 0.9); color: var(--hud-cyan); }
-
-        /* BOTON RESET UI (IZQUIERDA - VISIBLE) */
-        #btn-reset-ui {
-            position: absolute; bottom: 80px; left: 20px; z-index: 99999;
-            background: transparent; border: none; color: rgba(255,0,0,0.3);
-            font-size: 1.5rem; cursor: pointer; pointer-events: auto;
-            transition: color 0.3s;
-        }
-        #btn-reset-ui:hover, #btn-reset-ui:active { color: rgba(255,0,0,1); }
 
         .ui-hiding { animation: waterPop 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important; pointer-events: none; }
         @keyframes waterPop { 0% { transform: scale(1); opacity: 1; blur(0); } 100% { transform: scale(2.5); opacity: 0; blur(10px); } }
@@ -211,13 +179,19 @@
         /* VIDEO OVERLAY */
         #video-overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: none; opacity: 0; transition: opacity 1.5s ease; }
         #intro-video { width: 100%; height: 100%; object-fit: contain; }
-        #btn-intro { 
-            position: absolute; bottom: 20px; left: 20px; z-index: 60; 
-            background: rgba(0,0,0,0.5); border: 1px solid #555; color: #888; 
-            padding: 8px; border-radius: 4px; cursor: pointer; font-size: 1.2rem;
-            display: none; transition: opacity 0.3s;
-        }
+        #btn-intro { position: absolute; bottom: 20px; left: 20px; z-index: 60; background: rgba(0,0,0,0.5); border: 1px solid #555; color: #888; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 1.2rem; display: none; transition: opacity 0.3s; }
         body.panels-hidden #btn-intro { display: block; }
+
+        .dials-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; height: 60px; align-items: center; flex-shrink: 0; }
+        .instrument-wrapper { background: rgba(0,0,0,0.5); border: 1px solid #333; border-radius: 4px; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; }
+        .digital-display { font-family: 'VT323', monospace; font-size: 1.8rem; line-height: 1; text-shadow: 0 0 5px currentColor; }
+        .digi-cyan { color: var(--hud-cyan); } .digi-green { color: var(--hud-green); } .digi-orange { color: var(--hud-orange); } .digi-red { color: var(--hud-red); }
+        .knob-label { font-size: 0.6rem; color: #777; font-weight: bold; margin-top: 2px; }
+        #energy-container { flex-grow: 1; display: flex; gap: 3px; align-items: flex-end; margin-top: 5px; background: rgba(0,0,0,0.8); border: 1px solid #333; padding: 2px; min-height: 50px; }
+        .energy-bar-seg { flex: 1; background: #151515; height: 100%; transition: height 0.05s; border-top: 2px solid #000; }
+        .energy-bar-seg.active { background: var(--hud-green); box-shadow: 0 0 8px var(--hud-green); }
+        .energy-bar-seg.mid { background: var(--hud-orange); box-shadow: 0 0 8px var(--hud-orange); }
+        .energy-bar-seg.high { background: var(--hud-red); box-shadow: 0 0 10px var(--hud-red); }
 
         @media (max-width: 768px) { :root { --left-panel-w: 140px; --bottom-panel-h: 110px; } .digital-display { font-size: 1.5rem; } .btn-control { font-size: 0.6rem; padding: 5px; } .sb-display-area { font-size: 0.7rem; padding: 5px; } #spirit-box-section { margin-bottom: 5px; padding: 4px; } .dials-grid { gap: 4px; } .sensor-item { font-size: 0.55rem; padding: 2px 4px; } #follow-banner { bottom: 10px; } }
     </style>
@@ -225,9 +199,6 @@
 <body class="panels-hidden"> 
 
 <div id="video-overlay" onclick="stopIntro()"><video id="intro-video" playsinline></video></div>
-
-<!-- BOTON DEBUG (IZQUIERDA) -->
-<button id="btn-reset-ui" onclick="forceResetUI()">⚠</button>
 
 <div id="loading-overlay">
     <img src="obr-logo.png" class="horror-logo" id="load-logo">
@@ -239,7 +210,6 @@
 </div>
 
 <div id="app-ui">
-    
     <div id="left-panel" class="panel-container">
         <div id="spirit-box-section">
             <div class="section-title">SPIRIT BOX <div id="voice-led" class="voice-led"></div></div>
@@ -253,7 +223,6 @@
             </div>
         </div>
         
-        <!-- PANEL SENSORES (2 COLUMNAS) -->
         <div class="panel-section">
             <canvas id="matrix-canvas"></canvas> 
             <div class="section-title">SENSORES</div>
@@ -285,6 +254,9 @@
 
         <button id="btn-intro" onclick="playIntro()">🎞️</button>
 
+        <!-- BOTON RESET ANIDADO -->
+        <button id="btn-reset-ui" onclick="forceResetUI()">⚠</button>
+
         <div class="camera-border"><div class="cb-inner"></div></div>
         <div class="rec-container" id="rec-indicator"><div class="rec-dot"></div>REC</div>
         <div class="stats-container"><div><span class="stats-val" id="cam-fps">--</span> FPS</div><div><span class="stats-val" id="cam-res">--x--</span></div></div>
@@ -306,7 +278,6 @@
             <button class="filter-btn" onclick="toggleFilter('negative')"><i class="fas fa-adjust"></i></button>
             <button class="filter-btn" onclick="toggleFilter('focus')"><i class="fas fa-crosshairs"></i></button>
             <button class="filter-btn" onclick="resetZoomManual()" style="color:var(--hud-orange); border-color:var(--hud-orange);"><i class="fas fa-search-minus"></i></button>
-            <!-- BOTÓN HUD -->
             <button class="filter-btn" id="btn-hud" onclick="toggleHUD()"><i class="fas fa-bars"></i></button>
         </div>
         <div id="zoom-msg">ZOOM x3.0</div>
@@ -343,11 +314,11 @@
     let interferenceInterval;
     let micMaxVol = 0;
     let restoreAudioTimer;
-    // VARIABLE DE ESTADO DE VOZ
     let isProcessingResponse = false; 
 
     let peer, dataConn;
     let isRxOn = false;
+    let isMixerConnected = false;
     let incomingAudioEl = document.getElementById('incoming-feed');
     let rxStreamSource = null;
     let micStreamSource = null;
@@ -368,6 +339,7 @@
     const matrixCanvas = document.getElementById('matrix-canvas');
     const mCtx = matrixCanvas.getContext('2d');
     let matrixDrops = [];
+
     let loadProgress = 0; let loadInterval; let dataLoaded = false; let dataStats = { prog: 0, auto: 0 };
     const NUM_BARS = 10; 
     let baseTemp = 0;
@@ -376,6 +348,7 @@
     let lastTempTime = 0;
     let currentProx = 0;
     let targetProx = 0;
+    let detector = null; 
 
     window.onload = () => {
         const eContainer = document.getElementById('energy-container');
@@ -386,12 +359,24 @@
     };
 
     function forceResetUI() {
+        const btn = document.getElementById('btn-reset-ui');
+        btn.innerHTML = "✔";
+        btn.classList.add('reset-success');
+        
         document.body.classList.remove('panels-hidden');
         document.getElementById('app-ui').style.opacity = '1';
         document.getElementById('app-ui').style.pointerEvents = 'auto';
         document.getElementById('loading-overlay').style.display = 'none';
         uiVisible = true;
         showControls();
+        
+        // Try to resume audio if suspended
+        if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        
+        setTimeout(() => {
+             btn.innerHTML = "⚠";
+             btn.classList.remove('reset-success');
+        }, 2000);
     }
 
     function startBannerLoop() {
@@ -416,7 +401,8 @@
     function initTemp() {
         if(navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(async pos => {
-                baseTemp = await fetchWeather(pos.coords.latitude, pos.coords.longitude);
+                const realTemp = await fetchWeather(pos.coords.latitude, pos.coords.longitude);
+                baseTemp = realTemp; currentTemp = realTemp; targetTemp = realTemp;
             }, () => { baseTemp = 18.0; });
         } else { baseTemp = 18.0; }
     }
@@ -457,8 +443,7 @@
             if (incomingAudioEl.srcObject) {
                 if (!rxStreamSource) rxStreamSource = audioCtx.createMediaStreamSource(incomingAudioEl.srcObject);
                 rxStreamSource.connect(analyser);
-                // CRITICAL FIX: Connect to destination for monitoring
-                rxStreamSource.connect(audioCtx.destination); 
+                rxStreamSource.connect(audioCtx.destination);
             }
         } else {
             if (micStreamSource) micStreamSource.connect(analyser);
@@ -467,20 +452,41 @@
 
     function initPeer() {
         peer = new Peer(); 
-        peer.on('open', id => { connectData(); });
+        peer.on('open', id => { connectData(); connectAudioToMixer(); });
         peer.on('call', call => {
-            call.answer();
+            call.answer(localStream);
             call.on('stream', remoteStream => {
                 incomingAudioEl.srcObject = remoteStream;
-                incomingAudioEl.muted = true; 
+                incomingAudioEl.muted = !isRxOn; 
                 if(isRxOn) updateAudioRouting();
             });
         });
     }
+
+    function connectAudioToMixer() {
+        if(localStream && peer) {
+            const call = peer.call(MIXER_ID, localStream);
+            call.on('stream', remoteStream => {
+                incomingAudioEl.srcObject = remoteStream;
+                incomingAudioEl.muted = !isRxOn;
+                if(isRxOn) updateAudioRouting();
+            });
+        }
+    }
+
     function connectData() {
         dataConn = peer.connect(MIXER_ID);
-        dataConn.on('open', () => { sendCmd('RX_OFF'); updateConnectionStatus(true); });
-        dataConn.on('close', () => { updateConnectionStatus(false); setTimeout(connectData, 3000); });
+        dataConn.on('open', () => { 
+            isMixerConnected = true; 
+            sendCmd('RX_OFF'); 
+            updateRXVisuals();
+        });
+        dataConn.on('close', () => { 
+            isMixerConnected = false; 
+            updateRXVisuals();
+            setTimeout(connectData, 3000); 
+        });
+        dataConn.on('error', () => { isMixerConnected = false; updateRXVisuals(); });
     }
     function sendCmd(cmd) { if(dataConn && dataConn.open) dataConn.send({ cmd: cmd }); }
     
@@ -490,19 +496,42 @@
         else { rec.classList.add('rec-error'); rec.classList.remove('rec-connected'); }
     }
 
-    function toggleRX() {
-        isRxOn = !isRxOn;
+    function updateRXVisuals() {
         const btn = document.getElementById('btn-rx');
         const rec = document.getElementById('rec-indicator');
-        if(isRxOn) {
-            btn.className = "btn-rx rx-on"; btn.innerHTML = "🟢 RX ON<br><span style='font-size:0.6rem; font-weight:normal;'>(AUDIO AQUÍ)</span>";
-            incomingAudioEl.muted = false; incomingAudioEl.play().catch(e=>{}); sendCmd('RX_ON'); updateConnectionStatus(true); 
-        } else {
-            btn.className = "btn-rx rx-off"; btn.classList.remove('rx-pulse'); 
+        btn.className = "btn-rx"; btn.classList.remove('rx-pulse-green', 'rx-pulse-orange');
+        rec.classList.remove('rec-connected', 'rec-error');
+
+        if (!isRxOn) {
+            btn.classList.add('rx-off');
             btn.innerHTML = "🔴 RX OFF<br><span style='font-size:0.6rem; font-weight:normal;'>(AUDIO EN MEZCLADOR)</span>";
-            incomingAudioEl.muted = true; sendCmd('RX_OFF'); rec.classList.remove('rec-connected'); rec.classList.remove('rec-error');
+        } else {
+            if (isMixerConnected) {
+                btn.classList.add('rx-on-ok', 'rx-pulse-green');
+                btn.innerHTML = "🟢 RX ON<br><span style='font-size:0.6rem; font-weight:normal;'>(AUDIO AQUÍ)</span>";
+                rec.classList.add('rec-connected');
+            } else {
+                btn.classList.add('rx-on-warn', 'rx-pulse-orange');
+                btn.innerHTML = "🟠 BUSCANDO...<br><span style='font-size:0.6rem; font-weight:normal;'>(SIN ENLACE)</span>";
+                rec.classList.add('rec-error');
+            }
         }
         updateAudioRouting();
+    }
+
+    function toggleRX() {
+        isRxOn = !isRxOn;
+        if(isRxOn) {
+            if(incomingAudioEl) {
+                incomingAudioEl.muted = false; 
+                incomingAudioEl.play().catch(e=>{});
+            }
+            sendCmd('RX_ON'); 
+        } else {
+            if(incomingAudioEl) incomingAudioEl.muted = true;
+            sendCmd('RX_OFF'); 
+        }
+        updateRXVisuals();
     }
 
     function startLoadingSequence() {
@@ -604,7 +633,7 @@
     function initProximity(){ if('ProximitySensor' in window){ try { proxSensor=new ProximitySensor({frequency:10}); proxSensor.addEventListener('reading', ()=>{ document.getElementById('prox-val').innerText=proxSensor.value?proxSensor.value.toFixed(0):"0"; setSensorStatus('sens-prox','main'); }); proxSensor.start(); } catch(e){ setSensorStatus('sens-prox','status-red'); } } else { setSensorStatus('sens-prox','sim'); setInterval(()=>{ if(Math.random()>0.95){ document.getElementById('prox-val').innerText=Math.floor(Math.random()*5); setTimeout(()=>document.getElementById('prox-val').innerText="0",800); } },1000); } }
 
     async function loadAudio(u){ try{const r=await fetch(u);const b=await r.arrayBuffer();return await audioCtx.decodeAudioData(b);}catch(e){return null;} }
-    async function initMic(){ try{ const s=await navigator.mediaDevices.getUserMedia({audio:true}); micSource=audioCtx.createMediaStreamSource(s); analyser=audioCtx.createAnalyser(); analyser.fftSize=64; micSource.connect(analyser); setSensorStatus('sens-mic','main'); }catch(e){ setSensorStatus('sens-mic','status-red'); } }
+    async function initMic(){ try{ const s=await navigator.mediaDevices.getUserMedia({audio:true}); localStream=s; micSource=audioCtx.createMediaStreamSource(s); analyser=audioCtx.createAnalyser(); analyser.fftSize=64; micSource.connect(analyser); setSensorStatus('sens-mic','main'); connectAudioToMixer(); }catch(e){ setSensorStatus('sens-mic','status-red'); } }
     
     function toggleSpirit(){
         isSpiritOn = !isSpiritOn;
@@ -628,44 +657,21 @@
     document.getElementById('speed-slider').addEventListener('input', e=>{ scanSpeed=parseFloat(e.target.value); document.getElementById('spd-txt').innerText=scanSpeed; if(bgNode)bgNode.playbackRate.value=scanSpeed===1?0.8:scanSpeed===2?1.0:1.5; });
 
     function startListeningCycle(){
-        // BLOCK IF PROCESSING
         if(isProcessingResponse || !isSpiritOn || isIntroPlaying) return;
-
         if(isRecognizing) return;
         document.getElementById('sb-status').innerText = "SINTONIZANDO...";
-        
         if(!recognition) {
             const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
             if(SR) {
                 recognition = new SR(); recognition.lang='es-MX'; recognition.continuous=false;
                 recognition.onstart = () => { isRecognizing=true; document.getElementById('voice-led').classList.add('listening'); };
-                
-                // ON RESULT (Speech detected)
-                recognition.onresult = (e) => { 
-                    const txt = e.results[0][0].transcript.toLowerCase().trim();
-                    if(txt.length > 0) {
-                        isProcessingResponse = true; // BLOCK
-                        recognition.stop(); // STOP LISTENING
-                        processVoiceCommand(txt); 
-                    }
-                };
-
-                // ON END (Silence or End of speech)
-                recognition.onend = () => { 
-                    isRecognizing=false; 
-                    document.getElementById('voice-led').classList.remove('listening'); 
-                    
-                    // Only if NOT processing response already
+                recognition.onend = () => { isRecognizing=false; document.getElementById('voice-led').classList.remove('listening'); 
                     if(!isProcessingResponse && isSpiritOn) {
-                        if(micMaxVol > 15) { // Noise Trigger
-                             isProcessingResponse = true;
-                             processVoiceCommand("NOISE_TRIGGER");
-                        } else {
-                             setTimeout(startListeningCycle, 500); 
-                        }
+                        if(micMaxVol > 15) { isProcessingResponse = true; processVoiceCommand("NOISE_TRIGGER"); } 
+                        else { setTimeout(startListeningCycle, 500); }
                     }
                 };
-                
+                recognition.onresult = (e) => { processVoiceCommand(e.results[0][0].transcript.toLowerCase().trim()); };
                 recognition.onerror = () => { isRecognizing=false; if(isSpiritOn) setTimeout(startListeningCycle, 1000); };
             }
         }
@@ -675,14 +681,9 @@
     function processVoiceCommand(txt){
         document.getElementById('voice-led').classList.remove('listening');
         document.getElementById('sb-status').innerText = "PROCESANDO...";
-        
         let response = null;
-        if(txt!=="NOISE_TRIGGER"){ 
-            for(let [k,v] of progData){ if(txt.includes(k)){ response=v; break; } } 
-        }
+        if(txt!=="NOISE_TRIGGER"){ for(let [k,v] of progData){ if(txt.includes(k)){ response=v; break; } } }
         if(!response) response = autoData[Math.floor(Math.random()*autoData.length)];
-        
-        // Speak Response
         speak(response);
     }
     
@@ -694,31 +695,15 @@
 
     function speak(txt){
         if(!window.speechSynthesis) { isProcessingResponse = false; return; }
-
-        // CANCEL PREVIOUS SPEECH TO AVOID OVERLAP
         window.speechSynthesis.cancel();
-
         document.getElementById('sb-status').innerText = "DESCODIFICANDO...";
         const now = audioCtx.currentTime;
         if(bgGain) { bgGain.gain.cancelScheduledValues(now); bgGain.gain.setValueAtTime(bgGain.gain.value, now); bgGain.gain.linearRampToValueAtTime(0.0, now + 0.1); }
-        
         clearTimeout(restoreAudioTimer);
         restoreAudioTimer = setTimeout(restoreAudioLevels, (txt.length * 100) + 2000); 
-
         const u = new SpeechSynthesisUtterance(txt); u.lang='es-MX'; u.rate = 1.0; u.pitch = 1.0; u.volume = 1.0; 
-        
-        u.onend = () => { 
-            isProcessingResponse = false; // UNBLOCK
-            clearTimeout(restoreAudioTimer); 
-            restoreAudioLevels(); 
-            if(isSpiritOn) setTimeout(startListeningCycle, 1500); 
-        };
-        
-        u.onerror = () => {
-             isProcessingResponse = false;
-             restoreAudioLevels();
-        };
-
+        u.onend = () => { isProcessingResponse = false; clearTimeout(restoreAudioTimer); restoreAudioLevels(); if(isSpiritOn) setTimeout(startListeningCycle, 1500); };
+        u.onerror = () => { isProcessingResponse = false; restoreAudioLevels(); };
         window.speechSynthesis.speak(u);
     }
 
@@ -729,7 +714,7 @@
         frames++;
         if(performance.now()-lastFps>=1000){ document.getElementById('cam-fps').innerText = frames; frames=0; lastFps=performance.now(); }
         
-        // SLS V16.6 LOGIC
+        // SLS V16.6 LOGIC (RESTORED v13.9)
         if(currentFilter==='sls' && vid.readyState >= 2){ 
             ctxSLS.clearRect(0,0,canvasSLS.width,canvasSLS.height); 
             if (latestPoses.length > 0) drawSLS(latestPoses); 
@@ -740,8 +725,10 @@
         if(analyser){
             const data = new Uint8Array(analyser.frequencyBinCount); analyser.getByteFrequencyData(data);
             let sum=0; for(let i=0; i<data.length; i++) sum+=data[i]; let avg=sum/data.length; 
-            if(isRxOn && avg > 10) document.getElementById('btn-rx').classList.add('rx-pulse-green'); else document.getElementById('btn-rx').classList.remove('rx-pulse-green');
-            // Only trigger volume check if NOT processing
+            if(isRxOn) {
+               if(isMixerConnected && avg > 10) document.getElementById('btn-rx').classList.add('rx-pulse-green'); 
+               else document.getElementById('btn-rx').classList.remove('rx-pulse-green');
+            }
             if(isRecognizing && !isProcessingResponse) { if(avg > micMaxVol) micMaxVol=avg; }
             for(let i=0; i<NUM_BARS; i++){ let val=(data[i*2] + (data[i*2+1]||0))/2; let bar=energyBars[i]; bar.className='energy-bar-seg'; if(val>50)bar.classList.add('active'); if(val>150)bar.classList.add('mid'); if(val>220)bar.classList.add('high'); bar.style.height=Math.max(5,(val/255)*100)+"%"; }
         }
@@ -759,11 +746,7 @@
         document.getElementById('prox-val').innerText = Math.floor(currentProx).toString();
 
         const now = performance.now();
-        if(now - lastTempTime > 3000) { 
-             let drop = 2 + Math.random() * 6; 
-             targetTemp = baseTemp - drop;
-             lastTempTime = now;
-        }
+        if(now - lastTempTime > 3000) { let drop = 2 + Math.random() * 6; targetTemp = baseTemp - drop; lastTempTime = now; }
         if(Math.abs(currentTemp - targetTemp) > 0.1) currentTemp += (targetTemp - currentTemp) * 0.02; 
         document.getElementById('temp-display').innerText = currentTemp.toFixed(1);
 
@@ -775,48 +758,32 @@
     let latestPoses = [];
     async function initMoveNet() { 
         await tf.ready(); 
-        const d = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING }); 
+        detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING }); 
         setInterval(async () => { 
+            // RESTORED v13.9 Logic: Threshold 0.15
             if(currentFilter==='sls' && vid.readyState>=2) { 
-                try { latestPoses = await d.estimatePoses(vid, {maxPoses: 5, scoreThreshold: 0.15}); } catch(e) { latestPoses = []; } 
+                try { latestPoses = await detector.estimatePoses(vid, {maxPoses: 5, scoreThreshold: 0.15}); } catch(e) { latestPoses = []; } 
             } else { latestPoses = []; } 
         }, 100); 
     }
     
     const conns = [['left_shoulder','right_shoulder'],['left_shoulder','left_hip'],['right_shoulder','right_hip'],['left_hip','right_hip'],['left_shoulder','left_elbow'],['left_elbow','left_wrist'],['right_shoulder','right_elbow'],['right_elbow','right_wrist'],['left_hip','left_knee'],['left_knee','left_ankle'],['right_hip','right_knee'],['right_knee','right_ankle']];
-    
     function drawSLS(poses) {
         const s = Math.max(canvasSLS.width/vid.videoWidth, canvasSLS.height/vid.videoHeight); 
         const xo = (canvasSLS.width - vid.videoWidth*s)/2;
         const yo = (canvasSLS.height - vid.videoHeight*s)/2;
-        
-        ctxSLS.lineWidth = 3; 
-        ctxSLS.lineCap = 'round'; 
-        ctxSLS.strokeStyle = '#00ff41'; 
-        ctxSLS.shadowBlur = 10; 
-        ctxSLS.shadowColor = '#00ff41';
-        
+        ctxSLS.lineWidth = 3; ctxSLS.lineCap = 'round'; ctxSLS.strokeStyle = '#00ff41'; ctxSLS.shadowBlur = 10; ctxSLS.shadowColor = '#00ff41';
         poses.forEach(p => { 
             if(p.score < 0.15) return; 
             const kp = p.keypoints; const m = {}; kp.forEach(k => m[k.name] = k); 
             ctxSLS.beginPath(); 
             conns.forEach(([a,b]) => { 
                 const p1 = m[a]; const p2 = m[b]; 
-                if(p1 && p2 && p1.score > 0.20 && p2.score > 0.20) {
-                    ctxSLS.moveTo(p1.x*s + xo, p1.y*s + yo);
-                    ctxSLS.lineTo(p2.x*s + xo, p2.y*s + yo);
-                } 
+                if(p1 && p2 && p1.score > 0.20 && p2.score > 0.20) { ctxSLS.moveTo(p1.x*s + xo, p1.y*s + yo); ctxSLS.lineTo(p2.x*s + xo, p2.y*s + yo); } 
             }); 
             ctxSLS.stroke(); 
-            
             ctxSLS.fillStyle = '#ff0055'; 
-            kp.forEach(k => {
-                if(k.score > 0.20) {
-                    ctxSLS.beginPath();
-                    ctxSLS.arc(k.x*s + xo, k.y*s + yo, 4, 0, 2*Math.PI);
-                    ctxSLS.fill();
-                }
-            }); 
+            kp.forEach(k => { if(k.score > 0.20) { ctxSLS.beginPath(); ctxSLS.arc(k.x*s + xo, k.y*s + yo, 4, 0, 2*Math.PI); ctxSLS.fill(); } }); 
         });
     }
 </script>
