@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v15.3 FINAL-RECOVERY</title> 
+    <title>DETECTOR-OBR v17.4 RX-LOGIC-FIX</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -27,7 +27,6 @@
             --hud-red: #ff3333;
             --hud-blue: #0088ff;
             --glass-panel: rgba(5, 8, 15, 0.95);
-            
             --left-panel-w: 280px;
             --bottom-panel-h: 160px;
         }
@@ -40,23 +39,18 @@
             -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
         }
 
-        /* --- LAYOUT PRINCIPAL --- */
+        /* --- LAYOUT --- */
         #app-ui { 
             width: 100%; height: 100%; 
             display: grid;
             grid-template-columns: var(--left-panel-w) 1fr; 
             grid-template-rows: 1fr var(--bottom-panel-h);
-            grid-template-areas: 
-                "left cam"
-                "left bottom";
+            grid-template-areas: "left cam" "left bottom";
             transition: all 0.5s ease;
             opacity: 0; pointer-events: none;
         }
 
-        body.panels-hidden #app-ui {
-            grid-template-columns: 0px 1fr;
-            grid-template-rows: 1fr 0px;
-        }
+        body.panels-hidden #app-ui { grid-template-columns: 0px 1fr; grid-template-rows: 1fr 0px; }
 
         #left-panel { 
             grid-area: left; border-right: 2px solid var(--hud-cyan); 
@@ -74,11 +68,11 @@
             grid-area: cam; position: relative; overflow: hidden; background: #000; width: 100%; height: 100%; 
             touch-action: none;
         }
-
         #touch-layer { position: absolute; inset: 0; z-index: 10; touch-action: none; }
 
         body.panels-hidden #left-panel, body.panels-hidden #bottom-panel { display: none; }
 
+        /* PANELES */
         .panel-container {
             box-shadow: inset 0 0 20px rgba(0, 243, 255, 0.1);
             padding: 10px;
@@ -101,6 +95,7 @@
 
         .rec-container { position: absolute; top: 15px; left: 15px; color: var(--hud-red); font-family: 'Orbitron'; font-weight: bold; display: flex; align-items: center; gap: 8px; z-index: 30; text-shadow: 0 0 5px var(--hud-red); font-size: 0.8rem; pointer-events: none; }
         .rec-dot { width: 10px; height: 10px; background: var(--hud-red); border-radius: 50%; animation: blinkRed 1s infinite; }
+        
         @keyframes blinkRed { 50% { opacity: 0.3; } }
         @keyframes pulseGreen { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0.8); } 100% { box-shadow: 0 0 0 15px rgba(0, 255, 65, 0); } }
         @keyframes pulseOrange { 0% { box-shadow: 0 0 0 0 rgba(255, 174, 0, 0.8); } 100% { box-shadow: 0 0 0 15px rgba(255, 174, 0, 0); } }
@@ -153,7 +148,7 @@
         .btn-control { background: #111; border: 1px solid #444; color: #aaa; font-family: 'Orbitron'; font-size: 0.8rem; padding: 10px; width: 100%; cursor: pointer; font-weight: bold; }
         .btn-control.pwr-on { border-color: var(--hud-green); color: var(--hud-green); background: rgba(0,50,0,0.3); box-shadow: 0 0 10px var(--hud-green) inset; }
 
-        /* SENSORES COMPACTOS */
+        /* SENSORES (2 COLUMNAS) */
         .panel-section { flex-grow: 0; overflow: hidden; position: relative; padding: 8px; background: rgba(0,0,0,0.4); border-radius: 4px; margin-bottom: 5px; } 
         .sensor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; position: relative; z-index: 2; }
         .sensor-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.6rem; padding: 3px 5px; background: rgba(20,20,30,0.6); border-radius: 3px; border-left: 2px solid #333; backdrop-filter: blur(2px); }
@@ -162,19 +157,34 @@
         .status-orange { border-left-color: var(--hud-orange); color: var(--hud-orange); text-shadow: 0 0 5px rgba(255,174,0,0.3); }
         .status-red { border-left-color: var(--hud-red); color: #777; }
 
-        .btn-rx { margin-top: 5px; padding: 10px; border-radius: 4px; font-weight: bold; text-align: center; cursor: pointer; font-family: 'Orbitron'; letter-spacing: 1px; font-size: 0.8rem; transition: all 0.2s; text-shadow: 0 0 5px rgba(0,0,0,0.5); position: relative; z-index: 2; }
+        /* BTN RX (VISUALIZACION) */
+        .btn-rx { 
+            margin-top: 5px; padding: 10px; border-radius: 4px; font-weight: bold; 
+            text-align: center; cursor: pointer; font-family: 'Orbitron'; letter-spacing: 1px;
+            font-size: 0.8rem; transition: all 0.2s; text-shadow: 0 0 5px rgba(0,0,0,0.5);
+            position: relative; z-index: 2;
+        }
         .rx-off { background: #330000; border: 2px solid #ff0000; color: #ff0000; box-shadow: inset 0 0 10px #550000; }
-        .rx-on { background: #004400; border: 2px solid #00ff41; color: #00ff41; box-shadow: 0 0 15px #00ff41; animation: none; }
+        /* RX ON + CONECTADO */
+        .rx-on-ok { 
+            background: #004400; border: 2px solid #00ff41; color: #00ff41; 
+            box-shadow: 0 0 15px #00ff41; animation: none; 
+        }
+        /* RX ON + DESCONECTADO (BUSCANDO) */
+        .rx-on-warn { 
+            background: #442200; border: 2px solid var(--hud-orange); color: var(--hud-orange); 
+            box-shadow: 0 0 15px var(--hud-orange); animation: rxWarn 1s infinite; 
+        }
+
         @keyframes rxRipple { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0.8); } 100% { box-shadow: 0 0 0 20px rgba(0, 255, 65, 0); } }
-        .rx-pulse-green { animation: rxRipple 1s infinite; border-color: #fff !important; color: #fff !important; text-shadow: 0 0 10px #00ff41; background: #006600; }
-        
+        .rx-pulse-green { animation: rxRipple 1s infinite; }
+        @keyframes rxWarn { 0% { box-shadow: 0 0 0 0 rgba(255, 174, 0, 0.8); } 100% { box-shadow: 0 0 0 20px rgba(255, 174, 0, 0); } }
+
         .dials-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; height: 60px; align-items: center; flex-shrink: 0; }
         .instrument-wrapper { background: rgba(0,0,0,0.5); border: 1px solid #333; border-radius: 4px; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; }
         .digital-display { font-family: 'VT323', monospace; font-size: 1.8rem; line-height: 1; text-shadow: 0 0 5px currentColor; }
         .digi-cyan { color: var(--hud-cyan); } .digi-green { color: var(--hud-green); } .digi-orange { color: var(--hud-orange); } .digi-red { color: var(--hud-red); }
         .knob-label { font-size: 0.6rem; color: #777; font-weight: bold; margin-top: 2px; }
-        
-        /* ENERGY BAR GRUESA */
         #energy-container { flex-grow: 1; display: flex; gap: 3px; align-items: flex-end; margin-top: 5px; background: rgba(0,0,0,0.8); border: 1px solid #333; padding: 2px; min-height: 50px; }
         .energy-bar-seg { flex: 1; background: #151515; height: 100%; transition: height 0.05s; border-top: 2px solid #000; }
         .energy-bar-seg.active { background: var(--hud-green); box-shadow: 0 0 8px var(--hud-green); }
@@ -186,6 +196,17 @@
         .filter-btn.active { background: var(--hud-cyan); color: #000; box-shadow: 0 0 10px var(--hud-cyan); }
         #btn-hud.active { background: var(--hud-cyan); color: #000; }
         #btn-hud { background: rgba(0, 10, 20, 0.9); color: var(--hud-cyan); }
+
+        /* BOTON RESET UI */
+        #btn-reset-ui {
+            position: absolute; bottom: 70px; right: 15px; z-index: 99999;
+            background: rgba(20,0,0,0.8); border: 1px solid #ff3333; color: #ff3333;
+            font-size: 1.5rem; width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; pointer-events: auto; border-radius: 6px;
+            box-shadow: 0 0 5px #ff3333;
+        }
+        #btn-reset-ui:active { background: #ff3333; color: white; }
 
         .ui-hiding { animation: waterPop 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important; pointer-events: none; }
         @keyframes waterPop { 0% { transform: scale(1); opacity: 1; blur(0); } 100% { transform: scale(2.5); opacity: 0; blur(10px); } }
@@ -202,7 +223,7 @@
         #zoom-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 5px; color: #fff; font-family: 'Share Tech Mono'; font-size: 0.8rem; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 40; }
         
         /* VIDEO OVERLAY */
-        #video-overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: none; }
+        #video-overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: none; opacity: 0; transition: opacity 1.5s ease; }
         #intro-video { width: 100%; height: 100%; object-fit: contain; }
         #btn-intro { 
             position: absolute; bottom: 20px; left: 20px; z-index: 60; 
@@ -218,6 +239,9 @@
 <body class="panels-hidden"> 
 
 <div id="video-overlay" onclick="stopIntro()"><video id="intro-video" playsinline></video></div>
+
+<!-- BOTON DEBUG -->
+<button id="btn-reset-ui" onclick="forceResetUI()">⚠</button>
 
 <div id="loading-overlay">
     <img src="obr-logo.png" class="horror-logo" id="load-logo">
@@ -276,7 +300,7 @@
 
         <div class="camera-border"><div class="cb-inner"></div></div>
         <div class="rec-container" id="rec-indicator"><div class="rec-dot"></div>REC</div>
-        <div class="stats-container"><div><span class="stats-val" id="cam-fps">--</span> FPS</div><div><span class="stats-val" id="cam-res">--x--</span></div><div><span class="stats-val" id="zoom-lvl">1.0x</span></div></div>
+        <div class="stats-container"><div><span class="stats-val" id="cam-fps">--</span> FPS</div><div><span class="stats-val" id="cam-res">--x--</span></div></div>
         <div id="logo-container"><img id="logo-image" src="obr-logo.png"></div>
         <div id="follow-banner">
             <div class="banner-content">
@@ -295,6 +319,7 @@
             <button class="filter-btn" onclick="toggleFilter('negative')"><i class="fas fa-adjust"></i></button>
             <button class="filter-btn" onclick="toggleFilter('focus')"><i class="fas fa-crosshairs"></i></button>
             <button class="filter-btn" onclick="resetZoomManual()" style="color:var(--hud-orange); border-color:var(--hud-orange);"><i class="fas fa-search-minus"></i></button>
+            <!-- BOTÓN HUD -->
             <button class="filter-btn" id="btn-hud" onclick="toggleHUD()"><i class="fas fa-bars"></i></button>
         </div>
         <div id="zoom-msg">ZOOM x3.0</div>
@@ -332,9 +357,9 @@
     let micMaxVol = 0;
     let restoreAudioTimer;
 
-    // PEERJS VARS
     let peer, dataConn;
     let isRxOn = false;
+    let isMixerConnected = false; // ESTADO REAL DEL ENLACE
     let incomingAudioEl = document.getElementById('incoming-feed');
     let rxStreamSource = null;
     let micStreamSource = null;
@@ -353,8 +378,15 @@
     const matrixCanvas = document.getElementById('matrix-canvas');
     const mCtx = matrixCanvas.getContext('2d');
     let matrixDrops = [];
+
     let loadProgress = 0; let loadInterval; let dataLoaded = false; let dataStats = { prog: 0, auto: 0 };
     const NUM_BARS = 10; 
+    let baseTemp = 22.0;
+    let targetTemp = 22.0;
+    let currentTemp = 22.0;
+    let lastTempTime = 0;
+    let currentProx = 0;
+    let targetProx = 0;
 
     window.onload = () => {
         const eContainer = document.getElementById('energy-container');
@@ -364,7 +396,42 @@
         loadData();
     };
 
-    // INTRO
+    function forceResetUI() {
+        document.body.classList.remove('panels-hidden');
+        document.getElementById('app-ui').style.opacity = '1';
+        document.getElementById('app-ui').style.pointerEvents = 'auto';
+        document.getElementById('loading-overlay').style.display = 'none';
+        uiVisible = true;
+        showControls();
+    }
+
+    function startBannerLoop() {
+        const banner = document.getElementById('follow-banner');
+        const s1=document.getElementById('step-1'), s2=document.getElementById('step-2'), s3=document.getElementById('step-3');
+        const run = () => {
+            banner.classList.add('active'); s1.classList.add('active');
+            setTimeout(() => { s1.classList.remove('active'); s2.style.display='flex'; s2.classList.add('active'); }, 2000);
+            setTimeout(() => { s2.classList.remove('active'); s2.style.display='none'; s3.classList.add('active'); }, 5000);
+            setTimeout(() => { s3.classList.remove('active'); banner.classList.remove('active'); setTimeout(run, 15000); }, 8000);
+        }; run();
+    }
+
+    async function fetchWeather(lat, lon) {
+        try {
+            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+            const data = await res.json();
+            return data.current_weather.temperature;
+        } catch(e) { return 18.0; } 
+    }
+    
+    function initTemp() {
+        if(navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(async pos => {
+                baseTemp = await fetchWeather(pos.coords.latitude, pos.coords.longitude);
+            }, () => { baseTemp = 18.0; });
+        } else { baseTemp = 18.0; }
+    }
+
     function playIntro() {
         isIntroPlaying = true;
         const overlay = document.getElementById('video-overlay');
@@ -393,19 +460,7 @@
         }, 1500);
     }
 
-    // BANNERS
-    function startBannerLoop() {
-        const banner = document.getElementById('follow-banner');
-        const s1=document.getElementById('step-1'), s2=document.getElementById('step-2'), s3=document.getElementById('step-3');
-        const run = () => {
-            banner.classList.add('active'); s1.classList.add('active');
-            setTimeout(() => { s1.classList.remove('active'); s2.style.display='flex'; s2.classList.add('active'); }, 2000);
-            setTimeout(() => { s2.classList.remove('active'); s2.style.display='none'; s3.classList.add('active'); }, 5000);
-            setTimeout(() => { s3.classList.remove('active'); banner.classList.remove('active'); setTimeout(run, 15000); }, 8000);
-        }; run();
-    }
-
-    // AUDIO ROUTING
+    // --- AUDIO ROUTING & VISUALS ---
     function updateAudioRouting() {
         if (!audioCtx || !analyser) return;
         try { if(micStreamSource) micStreamSource.disconnect(analyser); if(rxStreamSource) rxStreamSource.disconnect(analyser); } catch(e){}
@@ -419,6 +474,36 @@
         }
     }
 
+    function updateRXVisuals() {
+        const btn = document.getElementById('btn-rx');
+        const rec = document.getElementById('rec-indicator');
+        
+        // Limpiar todo
+        btn.className = "btn-rx"; 
+        btn.classList.remove('rx-pulse-green', 'rx-pulse-orange');
+        rec.classList.remove('rec-connected', 'rec-error');
+
+        if (!isRxOn) {
+            // OFF
+            btn.classList.add('rx-off');
+            btn.innerHTML = "🔴 RX OFF<br><span style='font-size:0.6rem; font-weight:normal;'>(AUDIO EN MEZCLADOR)</span>";
+        } else {
+            if (isMixerConnected) {
+                // ON + CONECTADO
+                btn.classList.add('rx-on-ok', 'rx-pulse-green');
+                btn.innerHTML = "🟢 RX ON<br><span style='font-size:0.6rem; font-weight:normal;'>(AUDIO AQUÍ)</span>";
+                rec.classList.add('rec-connected');
+            } else {
+                // ON + DESCONECTADO
+                btn.classList.add('rx-on-warn', 'rx-pulse-orange');
+                btn.innerHTML = "🟠 BUSCANDO...<br><span style='font-size:0.6rem; font-weight:normal;'>(SIN ENLACE)</span>";
+                rec.classList.add('rec-error');
+            }
+        }
+        
+        updateAudioRouting();
+    }
+
     function initPeer() {
         peer = new Peer(); 
         peer.on('open', id => { connectData(); });
@@ -430,34 +515,40 @@
                 if(isRxOn) updateAudioRouting();
             });
         });
-        peer.on('disconnected', () => updateConnectionStatus(false));
     }
+    
     function connectData() {
         dataConn = peer.connect(MIXER_ID);
-        dataConn.on('open', () => { sendCmd('RX_OFF'); updateConnectionStatus(true); });
-        dataConn.on('close', () => { updateConnectionStatus(false); setTimeout(connectData, 3000); });
+        dataConn.on('open', () => { 
+            isMixerConnected = true; // CONECTADO
+            sendCmd('RX_OFF'); 
+            updateRXVisuals();
+        });
+        dataConn.on('close', () => { 
+            isMixerConnected = false; // DESCONECTADO
+            updateRXVisuals();
+            setTimeout(connectData, 3000); 
+        });
+        dataConn.on('error', () => { isMixerConnected = false; updateRXVisuals(); });
     }
     function sendCmd(cmd) { if(dataConn && dataConn.open) dataConn.send({ cmd: cmd }); }
-    
-    function updateConnectionStatus(connected) {
-        const rec = document.getElementById('rec-indicator');
-        if(connected) { rec.classList.add('rec-connected'); rec.classList.remove('rec-error'); } 
-        else { rec.classList.add('rec-error'); rec.classList.remove('rec-connected'); }
-    }
 
     function toggleRX() {
         isRxOn = !isRxOn;
-        const btn = document.getElementById('btn-rx');
-        const rec = document.getElementById('rec-indicator');
+        
+        // Mute local si activamos RX (para evitar eco)
         if(isRxOn) {
-            btn.className = "btn-rx rx-on"; btn.innerHTML = "🟢 RX ON<br><span style='font-size:0.6rem; font-weight:normal;'>(AUDIO AQUÍ)</span>";
-            incomingAudioEl.muted = false; incomingAudioEl.play().catch(e=>{}); sendCmd('RX_ON'); updateConnectionStatus(true); 
+            if(incomingAudioEl) {
+                incomingAudioEl.muted = false; 
+                incomingAudioEl.play().catch(e=>{});
+            }
+            sendCmd('RX_ON'); 
         } else {
-            btn.className = "btn-rx rx-off"; btn.classList.remove('rx-pulse'); 
-            btn.innerHTML = "🔴 RX OFF<br><span style='font-size:0.6rem; font-weight:normal;'>(AUDIO EN MEZCLADOR)</span>";
-            incomingAudioEl.muted = true; sendCmd('RX_OFF'); rec.classList.remove('rec-connected'); rec.classList.remove('rec-error');
+            if(incomingAudioEl) incomingAudioEl.muted = true;
+            sendCmd('RX_OFF'); 
         }
-        updateAudioRouting();
+        
+        updateRXVisuals();
     }
 
     function startLoadingSequence() {
@@ -500,7 +591,7 @@
     function handleMouseUp(e) { clearTimeout(longPressTimer); if (!isLongPressing) toggleUIOverlay(); isLongPressing = false; }
     function triggerLongPressZoom(x, y) { isLongPressing = true; const rect = mainView.getBoundingClientRect(); const relX = x - rect.left; const relY = y - rect.top; if (zoomLevel < 2.5) { zoomLevel = 3.0; } else { zoomLevel = 5.0; } zoomContainer.style.transformOrigin = `${relX}px ${relY}px`; applyZoom(); }
     function resetZoomManual() { zoomLevel = 1.0; zoomContainer.style.transformOrigin = "center center"; applyZoom(); }
-    function applyZoom() { zoomContainer.style.transform = `scale(${zoomLevel})`; document.getElementById('zoom-lvl').innerText = zoomLevel.toFixed(1) + "x"; }
+    function applyZoom() { zoomContainer.style.transform = `scale(${zoomLevel})`; }
     function toggleUIOverlay() { if (uiVisible) hideControls(); else showControls(); }
     function showControls() { uiVisible = true; document.getElementById('filter-controls-container').style.opacity = '1'; document.getElementById('filter-controls-container').style.pointerEvents = 'auto'; document.getElementById('logo-container').classList.add('ui-hiding'); document.getElementById('follow-banner').classList.add('ui-hiding'); clearTimeout(hideTimeout); hideTimeout = setTimeout(hideControls, 5000); }
     function hideControls() { uiVisible = false; document.getElementById('filter-controls-container').style.opacity = '0'; document.getElementById('filter-controls-container').style.pointerEvents = 'none'; document.getElementById('logo-container').classList.remove('ui-hiding'); document.getElementById('follow-banner').classList.remove('ui-hiding'); }
@@ -517,7 +608,7 @@
         
         initMic(); await startCam(); await initMoveNet(); initSensors();
         initMatrix(); startBannerLoop();
-        initPeer();
+        initPeer(); initTemp();
         loop();
     }
 
@@ -556,7 +647,7 @@
     function initProximity(){ if('ProximitySensor' in window){ try { proxSensor=new ProximitySensor({frequency:10}); proxSensor.addEventListener('reading', ()=>{ document.getElementById('prox-val').innerText=proxSensor.value?proxSensor.value.toFixed(0):"0"; setSensorStatus('sens-prox','main'); }); proxSensor.start(); } catch(e){ setSensorStatus('sens-prox','status-red'); } } else { setSensorStatus('sens-prox','sim'); setInterval(()=>{ if(Math.random()>0.95){ document.getElementById('prox-val').innerText=Math.floor(Math.random()*5); setTimeout(()=>document.getElementById('prox-val').innerText="0",800); } },1000); } }
 
     async function loadAudio(u){ try{const r=await fetch(u);const b=await r.arrayBuffer();return await audioCtx.decodeAudioData(b);}catch(e){return null;} }
-    async function initMic(){ try{ const s=await navigator.mediaDevices.getUserMedia({audio:true}); micStreamSource=audioCtx.createMediaStreamSource(s); analyser=audioCtx.createAnalyser(); analyser.fftSize=64; micStreamSource.connect(analyser); setSensorStatus('sens-mic','main'); }catch(e){ setSensorStatus('sens-mic','status-red'); } }
+    async function initMic(){ try{ const s=await navigator.mediaDevices.getUserMedia({audio:true}); micSource=audioCtx.createMediaStreamSource(s); analyser=audioCtx.createAnalyser(); analyser.fftSize=64; micSource.connect(analyser); setSensorStatus('sens-mic','main'); }catch(e){ setSensorStatus('sens-mic','status-red'); } }
     
     function toggleSpirit(){
         isSpiritOn = !isSpiritOn;
@@ -618,12 +709,19 @@
         if(!window.speechSynthesis) return;
         document.getElementById('sb-status').innerText = "DESCODIFICANDO...";
         const now = audioCtx.currentTime;
-        if(bgGain) { bgGain.gain.cancelScheduledValues(now); bgGain.gain.setValueAtTime(bgGain.gain.value, now); bgGain.gain.linearRampToValueAtTime(0.01, now + 0.1); }
+        // DUCKING 0% (SILENCIO TOTAL FONDO)
+        if(bgGain) { bgGain.gain.cancelScheduledValues(now); bgGain.gain.setValueAtTime(bgGain.gain.value, now); bgGain.gain.linearRampToValueAtTime(0.0, now + 0.1); }
         
         clearTimeout(restoreAudioTimer);
         restoreAudioTimer = setTimeout(restoreAudioLevels, (txt.length * 100) + 2000); 
 
-        const u = new SpeechSynthesisUtterance(txt); u.lang='es-MX'; u.rate = 0.9; u.pitch = 0.8; u.volume = 1.0; 
+        const u = new SpeechSynthesisUtterance(txt); u.lang='es-MX'; u.rate = 1.0; u.pitch = 1.0; u.volume = 1.0; 
+        
+        // INTENTAR USAR VOZ DE GOOGLE
+        const voices = window.speechSynthesis.getVoices();
+        const googleVoice = voices.find(v => v.name.includes('Google') && v.lang.includes('es'));
+        if(googleVoice) u.voice = googleVoice;
+
         u.onend = () => { clearTimeout(restoreAudioTimer); restoreAudioLevels(); if(isSpiritOn) setTimeout(startListeningCycle, 2000); };
         window.speechSynthesis.speak(u);
     }
@@ -634,16 +732,48 @@
     function loop(){
         frames++;
         if(performance.now()-lastFps>=1000){ document.getElementById('cam-fps').innerText = frames; frames=0; lastFps=performance.now(); }
-        if(currentFilter==='sls'){ ctxSLS.clearRect(0,0,canvasSLS.width,canvasSLS.height); if (latestPoses.length > 0) drawSLS(latestPoses); }
+        
+        // SLS V13.9
+        if(currentFilter==='sls' && vid.readyState >= 2){ 
+            ctxSLS.clearRect(0,0,canvasSLS.width,canvasSLS.height); 
+            if (latestPoses.length > 0) drawSLS(latestPoses); 
+        }
+        
         drawMatrix();
         
         if(analyser){
             const data = new Uint8Array(analyser.frequencyBinCount); analyser.getByteFrequencyData(data);
             let sum=0; for(let i=0; i<data.length; i++) sum+=data[i]; let avg=sum/data.length; 
-            if(isRxOn && avg > 10) document.getElementById('btn-rx').classList.add('rx-pulse-green'); else document.getElementById('btn-rx').classList.remove('rx-pulse-green');
+            // RX PULSE LOGIC
+            if(isRxOn) {
+               if(isMixerConnected && avg > 10) document.getElementById('btn-rx').classList.add('rx-pulse-green'); 
+               else document.getElementById('btn-rx').classList.remove('rx-pulse-green');
+            }
+            
             if(isRecognizing) { if(avg > micMaxVol) micMaxVol=avg; }
             for(let i=0; i<NUM_BARS; i++){ let val=(data[i*2] + (data[i*2+1]||0))/2; let bar=energyBars[i]; bar.className='energy-bar-seg'; if(val>50)bar.classList.add('active'); if(val>150)bar.classList.add('mid'); if(val>220)bar.classList.add('high'); bar.style.height=Math.max(5,(val/255)*100)+"%"; }
         }
+
+        // SENSORS
+        if(proxSensor) {
+            if(currentFilter==='sls' && latestPoses.length > 0) targetProx = Math.min(99, (latestPoses[0].score * 100));
+            else targetProx = Math.random() * 3;
+        } else {
+            if(currentFilter==='sls' && latestPoses.length > 0) targetProx = Math.random() * 90;
+            else targetProx = Math.random() * 3;
+        }
+        if(Math.abs(currentProx - targetProx) > 1) currentProx += (targetProx - currentProx) * 0.1;
+        document.getElementById('prox-val').innerText = Math.floor(currentProx).toString();
+
+        const now = performance.now();
+        if(now - lastTempTime > 3000) { 
+             let drop = 2 + Math.random() * 6; 
+             targetTemp = baseTemp - drop;
+             lastTempTime = now;
+        }
+        if(Math.abs(currentTemp - targetTemp) > 0.1) currentTemp += (targetTemp - currentTemp) * 0.02; 
+        document.getElementById('temp-display').innerText = currentTemp.toFixed(1);
+
         requestAnimationFrame(loop);
     }
 
@@ -654,21 +784,47 @@
         await tf.ready(); 
         const d = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING }); 
         setInterval(async () => { 
-            // RESTORED SLS LOGIC (Aggressive 0.15 threshold + 0.25 connection check)
-            if(currentFilter==='sls' && vid.readyState===4) { try { latestPoses = await d.estimatePoses(vid, {maxPoses: 5, scoreThreshold: 0.15}); } catch(e) { latestPoses = []; } } else { latestPoses = []; } 
+            if(currentFilter==='sls' && vid.readyState>=2) { 
+                try { latestPoses = await d.estimatePoses(vid, {maxPoses: 5, scoreThreshold: 0.15}); } catch(e) { latestPoses = []; } 
+            } else { latestPoses = []; } 
         }, 100); 
     }
+    
     const conns = [['left_shoulder','right_shoulder'],['left_shoulder','left_hip'],['right_shoulder','right_hip'],['left_hip','right_hip'],['left_shoulder','left_elbow'],['left_elbow','left_wrist'],['right_shoulder','right_elbow'],['right_elbow','right_wrist'],['left_hip','left_knee'],['left_knee','left_ankle'],['right_hip','right_knee'],['right_knee','right_ankle']];
+    
     function drawSLS(poses) {
-        const s = Math.max(canvasSLS.width/vid.videoWidth, canvasSLS.height/vid.videoHeight); const xo=(canvasSLS.width-vid.videoWidth*s)/2, yo=(canvasSLS.height-vid.videoHeight*s)/2;
-        ctxSLS.lineWidth=3; ctxSLS.lineCap='round'; ctxSLS.strokeStyle='#00ff41'; ctxSLS.shadowBlur=10; ctxSLS.shadowColor='#00ff41';
+        const s = Math.max(canvasSLS.width/vid.videoWidth, canvasSLS.height/vid.videoHeight); 
+        const xo = (canvasSLS.width - vid.videoWidth*s)/2;
+        const yo = (canvasSLS.height - vid.videoHeight*s)/2;
+        
+        ctxSLS.lineWidth = 3; 
+        ctxSLS.lineCap = 'round'; 
+        ctxSLS.strokeStyle = '#00ff41'; 
+        ctxSLS.shadowBlur = 10; 
+        ctxSLS.shadowColor = '#00ff41';
+        
         poses.forEach(p => { 
-            if(p.score<0.15)return; const kp=p.keypoints; const m={}; kp.forEach(k=>m[k.name]=k); 
+            if(p.score < 0.15) return; 
+            const kp = p.keypoints; const m = {}; kp.forEach(k => m[k.name] = k); 
+            
             ctxSLS.beginPath(); 
-            conns.forEach(([a,b])=>{ const p1=m[a],p2=m[b]; if(p1 && p2 && p1.score > 0.25 && p2.score > 0.25){ctxSLS.moveTo(p1.x*s+xo,p1.y*s+yo);ctxSLS.lineTo(p2.x*s+xo,p2.y*s+yo);} }); 
+            conns.forEach(([a,b]) => { 
+                const p1 = m[a]; const p2 = m[b]; 
+                if(p1 && p2 && p1.score > 0.20 && p2.score > 0.20) {
+                    ctxSLS.moveTo(p1.x*s + xo, p1.y*s + yo);
+                    ctxSLS.lineTo(p2.x*s + xo, p2.y*s + yo);
+                } 
+            }); 
             ctxSLS.stroke(); 
-            ctxSLS.fillStyle='#ff0055'; 
-            kp.forEach(k=>{if(k.score>0.25){ctxSLS.beginPath();ctxSLS.arc(k.x*s+xo,k.y*s+yo,4,0,2*Math.PI);ctxSLS.fill();}}); 
+            
+            ctxSLS.fillStyle = '#ff0055'; 
+            kp.forEach(k => {
+                if(k.score > 0.20) {
+                    ctxSLS.beginPath();
+                    ctxSLS.arc(k.x*s + xo, k.y*s + yo, 4, 0, 2*Math.PI);
+                    ctxSLS.fill();
+                }
+            }); 
         });
     }
 </script>
