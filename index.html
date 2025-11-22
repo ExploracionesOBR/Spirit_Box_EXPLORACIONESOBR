@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v17.4 RX-LOGIC-FIX</title> 
+    <title>DETECTOR-OBR v18.2 ANTI-OVERLAP</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -39,18 +39,23 @@
             -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
         }
 
-        /* --- LAYOUT --- */
+        /* --- LAYOUT PRINCIPAL --- */
         #app-ui { 
             width: 100%; height: 100%; 
             display: grid;
             grid-template-columns: var(--left-panel-w) 1fr; 
             grid-template-rows: 1fr var(--bottom-panel-h);
-            grid-template-areas: "left cam" "left bottom";
+            grid-template-areas: 
+                "left cam"
+                "left bottom";
             transition: all 0.5s ease;
             opacity: 0; pointer-events: none;
         }
 
-        body.panels-hidden #app-ui { grid-template-columns: 0px 1fr; grid-template-rows: 1fr 0px; }
+        body.panels-hidden #app-ui {
+            grid-template-columns: 0px 1fr;
+            grid-template-rows: 1fr 0px;
+        }
 
         #left-panel { 
             grid-area: left; border-right: 2px solid var(--hud-cyan); 
@@ -68,11 +73,12 @@
             grid-area: cam; position: relative; overflow: hidden; background: #000; width: 100%; height: 100%; 
             touch-action: none;
         }
+
         #touch-layer { position: absolute; inset: 0; z-index: 10; touch-action: none; }
 
         body.panels-hidden #left-panel, body.panels-hidden #bottom-panel { display: none; }
 
-        /* PANELES */
+        /* PANELES ESTILO */
         .panel-container {
             box-shadow: inset 0 0 20px rgba(0, 243, 255, 0.1);
             padding: 10px;
@@ -95,7 +101,6 @@
 
         .rec-container { position: absolute; top: 15px; left: 15px; color: var(--hud-red); font-family: 'Orbitron'; font-weight: bold; display: flex; align-items: center; gap: 8px; z-index: 30; text-shadow: 0 0 5px var(--hud-red); font-size: 0.8rem; pointer-events: none; }
         .rec-dot { width: 10px; height: 10px; background: var(--hud-red); border-radius: 50%; animation: blinkRed 1s infinite; }
-        
         @keyframes blinkRed { 50% { opacity: 0.3; } }
         @keyframes pulseGreen { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0.8); } 100% { box-shadow: 0 0 0 15px rgba(0, 255, 65, 0); } }
         @keyframes pulseOrange { 0% { box-shadow: 0 0 0 0 rgba(255, 174, 0, 0.8); } 100% { box-shadow: 0 0 0 15px rgba(255, 174, 0, 0); } }
@@ -148,7 +153,7 @@
         .btn-control { background: #111; border: 1px solid #444; color: #aaa; font-family: 'Orbitron'; font-size: 0.8rem; padding: 10px; width: 100%; cursor: pointer; font-weight: bold; }
         .btn-control.pwr-on { border-color: var(--hud-green); color: var(--hud-green); background: rgba(0,50,0,0.3); box-shadow: 0 0 10px var(--hud-green) inset; }
 
-        /* SENSORES (2 COLUMNAS) */
+        /* PANEL SENSORES (2 COLUMNAS) */
         .panel-section { flex-grow: 0; overflow: hidden; position: relative; padding: 8px; background: rgba(0,0,0,0.4); border-radius: 4px; margin-bottom: 5px; } 
         .sensor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; position: relative; z-index: 2; }
         .sensor-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.6rem; padding: 3px 5px; background: rgba(20,20,30,0.6); border-radius: 3px; border-left: 2px solid #333; backdrop-filter: blur(2px); }
@@ -157,29 +162,12 @@
         .status-orange { border-left-color: var(--hud-orange); color: var(--hud-orange); text-shadow: 0 0 5px rgba(255,174,0,0.3); }
         .status-red { border-left-color: var(--hud-red); color: #777; }
 
-        /* BTN RX (VISUALIZACION) */
-        .btn-rx { 
-            margin-top: 5px; padding: 10px; border-radius: 4px; font-weight: bold; 
-            text-align: center; cursor: pointer; font-family: 'Orbitron'; letter-spacing: 1px;
-            font-size: 0.8rem; transition: all 0.2s; text-shadow: 0 0 5px rgba(0,0,0,0.5);
-            position: relative; z-index: 2;
-        }
+        .btn-rx { margin-top: 5px; padding: 10px; border-radius: 4px; font-weight: bold; text-align: center; cursor: pointer; font-family: 'Orbitron'; letter-spacing: 1px; font-size: 0.8rem; transition: all 0.2s; text-shadow: 0 0 5px rgba(0,0,0,0.5); position: relative; z-index: 2; }
         .rx-off { background: #330000; border: 2px solid #ff0000; color: #ff0000; box-shadow: inset 0 0 10px #550000; }
-        /* RX ON + CONECTADO */
-        .rx-on-ok { 
-            background: #004400; border: 2px solid #00ff41; color: #00ff41; 
-            box-shadow: 0 0 15px #00ff41; animation: none; 
-        }
-        /* RX ON + DESCONECTADO (BUSCANDO) */
-        .rx-on-warn { 
-            background: #442200; border: 2px solid var(--hud-orange); color: var(--hud-orange); 
-            box-shadow: 0 0 15px var(--hud-orange); animation: rxWarn 1s infinite; 
-        }
-
+        .rx-on { background: #004400; border: 2px solid #00ff41; color: #00ff41; box-shadow: 0 0 15px #00ff41; animation: none; }
         @keyframes rxRipple { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0.8); } 100% { box-shadow: 0 0 0 20px rgba(0, 255, 65, 0); } }
-        .rx-pulse-green { animation: rxRipple 1s infinite; }
-        @keyframes rxWarn { 0% { box-shadow: 0 0 0 0 rgba(255, 174, 0, 0.8); } 100% { box-shadow: 0 0 0 20px rgba(255, 174, 0, 0); } }
-
+        .rx-pulse-green { animation: rxRipple 1s infinite; border-color: #fff !important; color: #fff !important; text-shadow: 0 0 10px #00ff41; background: #006600; }
+        
         .dials-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; height: 60px; align-items: center; flex-shrink: 0; }
         .instrument-wrapper { background: rgba(0,0,0,0.5); border: 1px solid #333; border-radius: 4px; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; }
         .digital-display { font-family: 'VT323', monospace; font-size: 1.8rem; line-height: 1; text-shadow: 0 0 5px currentColor; }
@@ -197,16 +185,14 @@
         #btn-hud.active { background: var(--hud-cyan); color: #000; }
         #btn-hud { background: rgba(0, 10, 20, 0.9); color: var(--hud-cyan); }
 
-        /* BOTON RESET UI */
+        /* BOTON RESET UI (IZQUIERDA - VISIBLE) */
         #btn-reset-ui {
-            position: absolute; bottom: 70px; right: 15px; z-index: 99999;
-            background: rgba(20,0,0,0.8); border: 1px solid #ff3333; color: #ff3333;
-            font-size: 1.5rem; width: 40px; height: 40px;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; pointer-events: auto; border-radius: 6px;
-            box-shadow: 0 0 5px #ff3333;
+            position: absolute; bottom: 80px; left: 20px; z-index: 99999;
+            background: transparent; border: none; color: rgba(255,0,0,0.3);
+            font-size: 1.5rem; cursor: pointer; pointer-events: auto;
+            transition: color 0.3s;
         }
-        #btn-reset-ui:active { background: #ff3333; color: white; }
+        #btn-reset-ui:hover, #btn-reset-ui:active { color: rgba(255,0,0,1); }
 
         .ui-hiding { animation: waterPop 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important; pointer-events: none; }
         @keyframes waterPop { 0% { transform: scale(1); opacity: 1; blur(0); } 100% { transform: scale(2.5); opacity: 0; blur(10px); } }
@@ -240,7 +226,7 @@
 
 <div id="video-overlay" onclick="stopIntro()"><video id="intro-video" playsinline></video></div>
 
-<!-- BOTON DEBUG -->
+<!-- BOTON DEBUG (IZQUIERDA) -->
 <button id="btn-reset-ui" onclick="forceResetUI()">⚠</button>
 
 <div id="loading-overlay">
@@ -253,6 +239,7 @@
 </div>
 
 <div id="app-ui">
+    
     <div id="left-panel" class="panel-container">
         <div id="spirit-box-section">
             <div class="section-title">SPIRIT BOX <div id="voice-led" class="voice-led"></div></div>
@@ -356,14 +343,17 @@
     let interferenceInterval;
     let micMaxVol = 0;
     let restoreAudioTimer;
+    // VARIABLE DE ESTADO DE VOZ
+    let isProcessingResponse = false; 
 
     let peer, dataConn;
     let isRxOn = false;
-    let isMixerConnected = false; // ESTADO REAL DEL ENLACE
     let incomingAudioEl = document.getElementById('incoming-feed');
     let rxStreamSource = null;
     let micStreamSource = null;
     let isIntroPlaying = false;
+    let localStream = null;
+    let commandReceived = false;
     
     let zoomLevel = 1;
     let longPressTimer;
@@ -378,10 +368,9 @@
     const matrixCanvas = document.getElementById('matrix-canvas');
     const mCtx = matrixCanvas.getContext('2d');
     let matrixDrops = [];
-
     let loadProgress = 0; let loadInterval; let dataLoaded = false; let dataStats = { prog: 0, auto: 0 };
     const NUM_BARS = 10; 
-    let baseTemp = 22.0;
+    let baseTemp = 0;
     let targetTemp = 22.0;
     let currentTemp = 22.0;
     let lastTempTime = 0;
@@ -432,6 +421,7 @@
         } else { baseTemp = 18.0; }
     }
 
+    // INTRO VIDEO
     function playIntro() {
         isIntroPlaying = true;
         const overlay = document.getElementById('video-overlay');
@@ -460,7 +450,6 @@
         }, 1500);
     }
 
-    // --- AUDIO ROUTING & VISUALS ---
     function updateAudioRouting() {
         if (!audioCtx || !analyser) return;
         try { if(micStreamSource) micStreamSource.disconnect(analyser); if(rxStreamSource) rxStreamSource.disconnect(analyser); } catch(e){}
@@ -468,40 +457,12 @@
             if (incomingAudioEl.srcObject) {
                 if (!rxStreamSource) rxStreamSource = audioCtx.createMediaStreamSource(incomingAudioEl.srcObject);
                 rxStreamSource.connect(analyser);
+                // CRITICAL FIX: Connect to destination for monitoring
+                rxStreamSource.connect(audioCtx.destination); 
             }
         } else {
             if (micStreamSource) micStreamSource.connect(analyser);
         }
-    }
-
-    function updateRXVisuals() {
-        const btn = document.getElementById('btn-rx');
-        const rec = document.getElementById('rec-indicator');
-        
-        // Limpiar todo
-        btn.className = "btn-rx"; 
-        btn.classList.remove('rx-pulse-green', 'rx-pulse-orange');
-        rec.classList.remove('rec-connected', 'rec-error');
-
-        if (!isRxOn) {
-            // OFF
-            btn.classList.add('rx-off');
-            btn.innerHTML = "🔴 RX OFF<br><span style='font-size:0.6rem; font-weight:normal;'>(AUDIO EN MEZCLADOR)</span>";
-        } else {
-            if (isMixerConnected) {
-                // ON + CONECTADO
-                btn.classList.add('rx-on-ok', 'rx-pulse-green');
-                btn.innerHTML = "🟢 RX ON<br><span style='font-size:0.6rem; font-weight:normal;'>(AUDIO AQUÍ)</span>";
-                rec.classList.add('rec-connected');
-            } else {
-                // ON + DESCONECTADO
-                btn.classList.add('rx-on-warn', 'rx-pulse-orange');
-                btn.innerHTML = "🟠 BUSCANDO...<br><span style='font-size:0.6rem; font-weight:normal;'>(SIN ENLACE)</span>";
-                rec.classList.add('rec-error');
-            }
-        }
-        
-        updateAudioRouting();
     }
 
     function initPeer() {
@@ -516,39 +477,32 @@
             });
         });
     }
-    
     function connectData() {
         dataConn = peer.connect(MIXER_ID);
-        dataConn.on('open', () => { 
-            isMixerConnected = true; // CONECTADO
-            sendCmd('RX_OFF'); 
-            updateRXVisuals();
-        });
-        dataConn.on('close', () => { 
-            isMixerConnected = false; // DESCONECTADO
-            updateRXVisuals();
-            setTimeout(connectData, 3000); 
-        });
-        dataConn.on('error', () => { isMixerConnected = false; updateRXVisuals(); });
+        dataConn.on('open', () => { sendCmd('RX_OFF'); updateConnectionStatus(true); });
+        dataConn.on('close', () => { updateConnectionStatus(false); setTimeout(connectData, 3000); });
     }
     function sendCmd(cmd) { if(dataConn && dataConn.open) dataConn.send({ cmd: cmd }); }
+    
+    function updateConnectionStatus(connected) {
+        const rec = document.getElementById('rec-indicator');
+        if(connected) { rec.classList.add('rec-connected'); rec.classList.remove('rec-error'); } 
+        else { rec.classList.add('rec-error'); rec.classList.remove('rec-connected'); }
+    }
 
     function toggleRX() {
         isRxOn = !isRxOn;
-        
-        // Mute local si activamos RX (para evitar eco)
+        const btn = document.getElementById('btn-rx');
+        const rec = document.getElementById('rec-indicator');
         if(isRxOn) {
-            if(incomingAudioEl) {
-                incomingAudioEl.muted = false; 
-                incomingAudioEl.play().catch(e=>{});
-            }
-            sendCmd('RX_ON'); 
+            btn.className = "btn-rx rx-on"; btn.innerHTML = "🟢 RX ON<br><span style='font-size:0.6rem; font-weight:normal;'>(AUDIO AQUÍ)</span>";
+            incomingAudioEl.muted = false; incomingAudioEl.play().catch(e=>{}); sendCmd('RX_ON'); updateConnectionStatus(true); 
         } else {
-            if(incomingAudioEl) incomingAudioEl.muted = true;
-            sendCmd('RX_OFF'); 
+            btn.className = "btn-rx rx-off"; btn.classList.remove('rx-pulse'); 
+            btn.innerHTML = "🔴 RX OFF<br><span style='font-size:0.6rem; font-weight:normal;'>(AUDIO EN MEZCLADOR)</span>";
+            incomingAudioEl.muted = true; sendCmd('RX_OFF'); rec.classList.remove('rec-connected'); rec.classList.remove('rec-error');
         }
-        
-        updateRXVisuals();
+        updateAudioRouting();
     }
 
     function startLoadingSequence() {
@@ -642,7 +596,10 @@
         const hOr = (e) => { if(e.alpha!==null){ document.getElementById('mag-val').innerText=Math.round(e.alpha).toString().padStart(3,'0'); setSensorStatus('sens-mag','main'); magActive=true; } };
         const hMot = (e) => { const a=e.accelerationIncludingGravity, r=e.rotationRate; if(a){ let t=Math.abs(a.x)+Math.abs(a.y)+Math.abs(a.z); document.getElementById('emf-val').innerText=(t*2.5).toFixed(1); setSensorStatus('sens-acc','main'); setSensorStatus('sens-lidar','sim'); motionActive=true; } if(r&&(r.alpha||r.beta||r.gamma)) setSensorStatus('sens-gyro','main'); };
         req(); initProximity();
-        setInterval(()=>{ if(!magActive) { setSensorStatus('sens-mag','sim'); document.getElementById('mag-val').innerText=Math.floor(Math.random()*360).toString().padStart(3,'0'); } if(!motionActive) { setSensorStatus('sens-acc','sim'); setSensorStatus('sens-gyro','sim'); setSensorStatus('sens-lidar','status-red'); document.getElementById('emf-val').innerText=(0.3+Math.random()*0.9).toFixed(1); } }, 500);
+        setInterval(()=>{ 
+            if(!magActive) { setSensorStatus('sens-mag','sim'); document.getElementById('mag-val').innerText=Math.floor(Math.random()*360).toString().padStart(3,'0'); } 
+            if(!motionActive) { setSensorStatus('sens-acc','sim'); setSensorStatus('sens-gyro','sim'); setSensorStatus('sens-lidar','status-red'); document.getElementById('emf-val').innerText=(0.3+Math.random()*0.9).toFixed(1); } 
+        }, 500);
     }
     function initProximity(){ if('ProximitySensor' in window){ try { proxSensor=new ProximitySensor({frequency:10}); proxSensor.addEventListener('reading', ()=>{ document.getElementById('prox-val').innerText=proxSensor.value?proxSensor.value.toFixed(0):"0"; setSensorStatus('sens-prox','main'); }); proxSensor.start(); } catch(e){ setSensorStatus('sens-prox','status-red'); } } else { setSensorStatus('sens-prox','sim'); setInterval(()=>{ if(Math.random()>0.95){ document.getElementById('prox-val').innerText=Math.floor(Math.random()*5); setTimeout(()=>document.getElementById('prox-val').innerText="0",800); } },1000); } }
 
@@ -655,7 +612,7 @@
         if(isSpiritOn){
             btn.innerText="APAGAR"; btn.classList.add('pwr-on'); document.getElementById('sb-status').innerText="INICIANDO...";
             if(audioCtx.state==='suspended') audioCtx.resume();
-            if(bgBuffer){ bgNode=audioCtx.createBufferSource(); bgNode.buffer=bgBuffer; bgNode.loop=true; bgNode.playbackRate.value=scanSpeed; bgGain=audioCtx.createGain(); bgGain.gain.value=0.8; bgNode.connect(bgGain); bgGain.connect(masterGain); bgNode.start(0); }
+            if(bgBuffer){ bgNode=audioCtx.createBufferSource(); bgNode.buffer=bgBuffer; bgNode.loop=true; bgNode.playbackRate.value=scanSpeed; bgGain=audioCtx.createGain(); bgGain.gain.value=0.3; bgNode.connect(bgGain); bgGain.connect(masterGain); bgNode.start(0); }
             else startFallbackNoise();
             startListeningCycle();
         }else{
@@ -667,23 +624,48 @@
         }
     }
 
-    function startFallbackNoise(){ if(noiseNode)return; const bSize=audioCtx.sampleRate*2, b=audioCtx.createBuffer(1,bSize,audioCtx.sampleRate), d=b.getChannelData(0); for(let i=0;i<bSize;i++)d[i]=Math.random()*2-1; noiseNode=audioCtx.createBufferSource(); noiseNode.buffer=b; noiseNode.loop=true; const f=audioCtx.createBiquadFilter(); f.type="bandpass"; f.frequency.value=1000; noiseGain=audioCtx.createGain(); noiseGain.gain.value=0.15; noiseNode.connect(f); f.connect(noiseGain); noiseGain.connect(masterGain); noiseNode.start(0); }
+    function startFallbackNoise(){ if(noiseNode)return; const bSize=audioCtx.sampleRate*2, b=audioCtx.createBuffer(1,bSize,audioCtx.sampleRate), d=b.getChannelData(0); for(let i=0;i<bSize;i++)d[i]=Math.random()*2-1; noiseNode=audioCtx.createBufferSource(); noiseNode.buffer=b; noiseNode.loop=true; const f=audioCtx.createBiquadFilter(); f.type="bandpass"; f.frequency.value=1000; noiseGain=audioCtx.createGain(); noiseGain.gain.value=0.05; noiseNode.connect(f); f.connect(noiseGain); noiseGain.connect(masterGain); noiseNode.start(0); }
     document.getElementById('speed-slider').addEventListener('input', e=>{ scanSpeed=parseFloat(e.target.value); document.getElementById('spd-txt').innerText=scanSpeed; if(bgNode)bgNode.playbackRate.value=scanSpeed===1?0.8:scanSpeed===2?1.0:1.5; });
 
     function startListeningCycle(){
-        if(!isSpiritOn || isIntroPlaying) return;
+        // BLOCK IF PROCESSING
+        if(isProcessingResponse || !isSpiritOn || isIntroPlaying) return;
+
         if(isRecognizing) return;
         document.getElementById('sb-status').innerText = "SINTONIZANDO...";
+        
         if(!recognition) {
             const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
             if(SR) {
                 recognition = new SR(); recognition.lang='es-MX'; recognition.continuous=false;
                 recognition.onstart = () => { isRecognizing=true; document.getElementById('voice-led').classList.add('listening'); };
-                recognition.onend = () => { isRecognizing=false; document.getElementById('voice-led').classList.remove('listening'); 
-                    if(isSpiritOn && micMaxVol > 15 && !window.speechSynthesis.speaking) processVoiceCommand("NOISE_TRIGGER");
-                    else if(isSpiritOn && !window.speechSynthesis.speaking) setTimeout(startListeningCycle, 500); 
+                
+                // ON RESULT (Speech detected)
+                recognition.onresult = (e) => { 
+                    const txt = e.results[0][0].transcript.toLowerCase().trim();
+                    if(txt.length > 0) {
+                        isProcessingResponse = true; // BLOCK
+                        recognition.stop(); // STOP LISTENING
+                        processVoiceCommand(txt); 
+                    }
                 };
-                recognition.onresult = (e) => { processVoiceCommand(e.results[0][0].transcript.toLowerCase().trim()); };
+
+                // ON END (Silence or End of speech)
+                recognition.onend = () => { 
+                    isRecognizing=false; 
+                    document.getElementById('voice-led').classList.remove('listening'); 
+                    
+                    // Only if NOT processing response already
+                    if(!isProcessingResponse && isSpiritOn) {
+                        if(micMaxVol > 15) { // Noise Trigger
+                             isProcessingResponse = true;
+                             processVoiceCommand("NOISE_TRIGGER");
+                        } else {
+                             setTimeout(startListeningCycle, 500); 
+                        }
+                    }
+                };
+                
                 recognition.onerror = () => { isRecognizing=false; if(isSpiritOn) setTimeout(startListeningCycle, 1000); };
             }
         }
@@ -693,23 +675,31 @@
     function processVoiceCommand(txt){
         document.getElementById('voice-led').classList.remove('listening');
         document.getElementById('sb-status').innerText = "PROCESANDO...";
+        
         let response = null;
-        if(txt!=="NOISE_TRIGGER"){ for(let [k,v] of progData){ if(txt.includes(k)){ response=v; break; } } }
+        if(txt!=="NOISE_TRIGGER"){ 
+            for(let [k,v] of progData){ if(txt.includes(k)){ response=v; break; } } 
+        }
         if(!response) response = autoData[Math.floor(Math.random()*autoData.length)];
-        setTimeout(() => speak(response), 1500); 
+        
+        // Speak Response
+        speak(response);
     }
     
     function restoreAudioLevels() {
         const now = audioCtx.currentTime;
-        if(bgGain) { bgGain.gain.cancelScheduledValues(now); bgGain.gain.setValueAtTime(bgGain.gain.value, now); bgGain.gain.linearRampToValueAtTime(0.8, now + 0.5); }
-        if(noiseGain) { noiseGain.gain.cancelScheduledValues(now); noiseGain.gain.linearRampToValueAtTime(0.15, now + 0.5); }
+        if(bgGain) { bgGain.gain.cancelScheduledValues(now); bgGain.gain.setValueAtTime(bgGain.gain.value, now); bgGain.gain.linearRampToValueAtTime(0.3, now + 0.5); }
+        if(noiseGain) { noiseGain.gain.cancelScheduledValues(now); noiseGain.gain.linearRampToValueAtTime(0.05, now + 0.5); }
     }
 
     function speak(txt){
-        if(!window.speechSynthesis) return;
+        if(!window.speechSynthesis) { isProcessingResponse = false; return; }
+
+        // CANCEL PREVIOUS SPEECH TO AVOID OVERLAP
+        window.speechSynthesis.cancel();
+
         document.getElementById('sb-status').innerText = "DESCODIFICANDO...";
         const now = audioCtx.currentTime;
-        // DUCKING 0% (SILENCIO TOTAL FONDO)
         if(bgGain) { bgGain.gain.cancelScheduledValues(now); bgGain.gain.setValueAtTime(bgGain.gain.value, now); bgGain.gain.linearRampToValueAtTime(0.0, now + 0.1); }
         
         clearTimeout(restoreAudioTimer);
@@ -717,12 +707,18 @@
 
         const u = new SpeechSynthesisUtterance(txt); u.lang='es-MX'; u.rate = 1.0; u.pitch = 1.0; u.volume = 1.0; 
         
-        // INTENTAR USAR VOZ DE GOOGLE
-        const voices = window.speechSynthesis.getVoices();
-        const googleVoice = voices.find(v => v.name.includes('Google') && v.lang.includes('es'));
-        if(googleVoice) u.voice = googleVoice;
+        u.onend = () => { 
+            isProcessingResponse = false; // UNBLOCK
+            clearTimeout(restoreAudioTimer); 
+            restoreAudioLevels(); 
+            if(isSpiritOn) setTimeout(startListeningCycle, 1500); 
+        };
+        
+        u.onerror = () => {
+             isProcessingResponse = false;
+             restoreAudioLevels();
+        };
 
-        u.onend = () => { clearTimeout(restoreAudioTimer); restoreAudioLevels(); if(isSpiritOn) setTimeout(startListeningCycle, 2000); };
         window.speechSynthesis.speak(u);
     }
 
@@ -733,7 +729,7 @@
         frames++;
         if(performance.now()-lastFps>=1000){ document.getElementById('cam-fps').innerText = frames; frames=0; lastFps=performance.now(); }
         
-        // SLS V13.9
+        // SLS V16.6 LOGIC
         if(currentFilter==='sls' && vid.readyState >= 2){ 
             ctxSLS.clearRect(0,0,canvasSLS.width,canvasSLS.height); 
             if (latestPoses.length > 0) drawSLS(latestPoses); 
@@ -744,17 +740,13 @@
         if(analyser){
             const data = new Uint8Array(analyser.frequencyBinCount); analyser.getByteFrequencyData(data);
             let sum=0; for(let i=0; i<data.length; i++) sum+=data[i]; let avg=sum/data.length; 
-            // RX PULSE LOGIC
-            if(isRxOn) {
-               if(isMixerConnected && avg > 10) document.getElementById('btn-rx').classList.add('rx-pulse-green'); 
-               else document.getElementById('btn-rx').classList.remove('rx-pulse-green');
-            }
-            
-            if(isRecognizing) { if(avg > micMaxVol) micMaxVol=avg; }
+            if(isRxOn && avg > 10) document.getElementById('btn-rx').classList.add('rx-pulse-green'); else document.getElementById('btn-rx').classList.remove('rx-pulse-green');
+            // Only trigger volume check if NOT processing
+            if(isRecognizing && !isProcessingResponse) { if(avg > micMaxVol) micMaxVol=avg; }
             for(let i=0; i<NUM_BARS; i++){ let val=(data[i*2] + (data[i*2+1]||0))/2; let bar=energyBars[i]; bar.className='energy-bar-seg'; if(val>50)bar.classList.add('active'); if(val>150)bar.classList.add('mid'); if(val>220)bar.classList.add('high'); bar.style.height=Math.max(5,(val/255)*100)+"%"; }
         }
 
-        // SENSORS
+        // SENSOR SIMULATION
         if(proxSensor) {
             if(currentFilter==='sls' && latestPoses.length > 0) targetProx = Math.min(99, (latestPoses[0].score * 100));
             else targetProx = Math.random() * 3;
@@ -762,6 +754,7 @@
             if(currentFilter==='sls' && latestPoses.length > 0) targetProx = Math.random() * 90;
             else targetProx = Math.random() * 3;
         }
+        
         if(Math.abs(currentProx - targetProx) > 1) currentProx += (targetProx - currentProx) * 0.1;
         document.getElementById('prox-val').innerText = Math.floor(currentProx).toString();
 
@@ -806,7 +799,6 @@
         poses.forEach(p => { 
             if(p.score < 0.15) return; 
             const kp = p.keypoints; const m = {}; kp.forEach(k => m[k.name] = k); 
-            
             ctxSLS.beginPath(); 
             conns.forEach(([a,b]) => { 
                 const p1 = m[a]; const p2 = m[b]; 
