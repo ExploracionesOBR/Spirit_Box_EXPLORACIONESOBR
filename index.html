@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR AI-VISION</title> 
+    <title>DETECTOR-OBR FINAL</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -118,6 +118,7 @@
         .btn-control { background: #111; border: 1px solid #444; color: #aaa; font-family: 'Orbitron'; font-size: 0.8rem; padding: 10px; width: 100%; cursor: pointer; font-weight: bold; }
         .btn-control.pwr-on { border-color: var(--hud-green); color: var(--hud-green); background: rgba(0,50,0,0.3); box-shadow: 0 0 10px var(--hud-green) inset; }
 
+        /* MODO STREAMER */
         .streamer-panel { padding: 10px; background: rgba(20, 0, 20, 0.4); border: 1px solid var(--hud-purple); border-radius: 4px; text-align: center; margin-bottom: 10px; }
         .stream-btn { width: 100%; padding: 15px; font-size: 0.9rem; font-family: 'Orbitron'; background: rgba(0,0,0,0.5); border: 2px solid #555; color: #777; cursor: pointer; transition: all 0.3s; text-shadow: 0 0 5px #000; }
         .stream-active { border-color: var(--hud-purple) !important; color: var(--hud-purple) !important; box-shadow: 0 0 20px var(--hud-purple), inset 0 0 10px rgba(168, 85, 247, 0.3); background: rgba(40, 0, 60, 0.6); animation: pulseStream 2s infinite; }
@@ -142,7 +143,7 @@
         #btn-hud.active { background: var(--hud-cyan); color: #000; }
         #btn-hud { background: rgba(0, 10, 20, 0.9); color: var(--hud-cyan); }
         
-        /* ESTILO PARA BOTON PAREIDOLIA */
+        /* ESTILO PAREIDOLIA */
         #btn-pareidolia.pareidolia-on {
             border-color: var(--hud-purple) !important;
             color: var(--hud-purple) !important;
@@ -519,24 +520,45 @@
         updateRXVisuals();
     }
 
-    // --- APP CORE ---
+    // --- APP CORE (LOADING FIXED) ---
     function startLoadingSequence() {
         const txtMain = document.getElementById('loading-text-main');
         const txtSub = document.getElementById('loading-text-sub');
         const bar = document.getElementById('loading-bar');
         const perc = document.getElementById('loading-percent');
         const btn = document.getElementById('enter-btn');
+        
+        loadProgress = 0; // RESET
+        if (loadInterval) clearInterval(loadInterval);
+
         loadInterval = setInterval(() => {
-            loadProgress += Math.random() * 2; if(loadProgress > 100) loadProgress = 100;
-            if(loadProgress > 30 && loadProgress < 60) { txtMain.innerText = "ACTIVANDO OJO DIGITAL..."; txtSub.innerText = "CALIBRANDO MEMORIA ESPECTRAL..."; }
-            else if(loadProgress > 60 && loadProgress < 90) { txtMain.innerText = "SINTONIZANDO..."; txtSub.innerText = "MODO: AI VISION + MEMORY"; }
-            else if(loadProgress >= 99) {
-                clearInterval(loadInterval); loadProgress = 100;
-                txtMain.innerText = "LISTO..."; txtSub.innerText = "SISTEMA ONLINE";
-                btn.style.display = "block"; btn.classList.add('btn-glitch');
+            loadProgress += Math.random() * 1.5; 
+            if(loadProgress > 100) loadProgress = 100;
+
+            if(loadProgress < 30) {
+                txtMain.innerText = "INICIANDO SISTEMA...";
+                txtSub.innerText = "CARGANDO KERNEL...";
             }
-            bar.style.width = loadProgress + "%"; perc.innerText = Math.floor(loadProgress) + "%";
-        }, 5);
+            else if(loadProgress >= 30 && loadProgress < 60) { 
+                txtMain.innerText = "ACTIVANDO OJO DIGITAL..."; 
+                txtSub.innerText = "CALIBRANDO LENTE ESPECTRAL..."; 
+            }
+            else if(loadProgress >= 60 && loadProgress < 98) { 
+                txtMain.innerText = "SINTONIZANDO..."; 
+                txtSub.innerText = "CONECTANDO A LA RED NEURAL..."; 
+            }
+            else if(loadProgress >= 98) {
+                clearInterval(loadInterval); 
+                loadProgress = 100;
+                txtMain.innerText = "SISTEMA LISTO"; 
+                txtSub.innerText = "ONLINE";
+                btn.style.display = "block"; 
+                btn.classList.add('btn-glitch');
+            }
+            
+            bar.style.width = loadProgress + "%"; 
+            perc.innerText = Math.floor(loadProgress) + "%";
+        }, 50);
     }
 
     function initMatrix() { const pSection = matrixCanvas.parentElement; if(!pSection) return; matrixCanvas.width = pSection.clientWidth; matrixCanvas.height = pSection.clientHeight; const columns = Math.floor(matrixCanvas.width / 15); matrixDrops = Array(columns).fill(1); }
