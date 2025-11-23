@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta http-equiv="Cache-Control" content="max-age=31536000, public">
-    <title>DETECTOR-OBR v19.4 OPTIMIZED</title> 
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <title>DETECTOR-OBR v20.0 AI-MASTER</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&family=Creepster&family=VT323&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     
     <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
@@ -37,19 +37,18 @@
         #bottom-panel { grid-area: bottom; border-top: 2px solid var(--hud-cyan); background: var(--glass-panel); z-index: 50; }
         #main-view-area { grid-area: cam; position: relative; background: #000; width: 100%; height: 100%; overflow: hidden; }
         
-        /* SLS CANVAS */
         #main-filter-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
         
-        /* LOADING SCREEN */
-        #loading-overlay { position: fixed; inset: 0; z-index: 99999; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #000 url('fondo_pantalla.jpg') center/cover no-repeat; }
+        /* PANTALLA DE CARGA */
+        #loading-overlay { position: fixed; inset: 0; z-index: 99999; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #000 url('fondo_pantalla.jpg') center/cover; }
         .horror-logo { width: 120px; margin-bottom: 20px; animation: glitch 0.3s infinite; filter: drop-shadow(0 0 10px var(--hud-cyan)); }
-        #loading-text { font-family: 'Orbitron'; color: var(--hud-cyan); letter-spacing: 3px; margin-bottom: 10px; text-shadow: 0 0 5px var(--hud-cyan); }
-        .loader-bar-bg { width: 300px; height: 4px; background: rgba(0,0,0,0.5); border: 1px solid #333; }
-        #loader-bar { width: 0%; height: 100%; background: var(--hud-cyan); box-shadow: 0 0 10px var(--hud-cyan); transition: width 0.1s; }
+        #loading-text { font-family: 'Orbitron'; color: var(--hud-cyan); letter-spacing: 3px; margin-bottom: 10px; }
+        .loader-bg { width: 300px; height: 4px; background: rgba(255,255,255,0.1); border: 1px solid #333; }
+        #loader-bar { width: 0%; height: 100%; background: var(--hud-cyan); transition: width 0.1s; }
         #start-btn { display: none; margin-top: 30px; padding: 15px 40px; border: 2px solid var(--hud-green); color: var(--hud-green); background: rgba(0,0,0,0.8); font-family: 'Orbitron'; font-size: 1.2rem; cursor: pointer; box-shadow: 0 0 15px var(--hud-green); }
         
-        /* UI ELEMENTS */
-        .section-title { font-family: 'Orbitron'; font-size: 0.7rem; color: var(--hud-cyan); border-bottom: 1px solid #333; margin-bottom: 5px; padding-bottom: 2px; display: flex; justify-content: space-between; }
+        /* UI */
+        .section-title { font-family: 'Orbitron'; font-size: 0.7rem; color: var(--hud-cyan); border-bottom: 1px solid #333; margin-bottom: 5px; display: flex; justify-content: space-between; }
         .sb-box { border: 1px solid var(--hud-green); background: rgba(0,20,0,0.3); padding: 10px; border-radius: 4px; margin-bottom: 10px; }
         .streamer-box { border: 1px solid var(--hud-purple); background: rgba(20,0,30,0.3); padding: 10px; border-radius: 4px; text-align: center; margin-bottom: 10px; }
         
@@ -59,28 +58,28 @@
         .btn-stream { width: 100%; background: transparent; border: 1px solid #555; color: #777; padding: 15px; font-family: 'Orbitron'; cursor: pointer; font-size: 0.8rem; }
         .btn-stream.on { border-color: var(--hud-purple); color: var(--hud-purple); box-shadow: 0 0 15px var(--hud-purple); animation: pulse 2s infinite; }
         
-        .btn-rx { width: 100%; padding: 10px; border: 2px solid #550000; background: #220000; color: #ff5555; font-family: 'Orbitron'; font-size: 0.8rem; cursor: pointer; text-align: center; }
+        .btn-rx { width: 100%; padding: 10px; border: 2px solid #550000; background: #220000; color: #ff5555; font-family: 'Orbitron'; cursor: pointer; text-align: center; }
         .btn-rx.on { border-color: var(--hud-green); background: #002200; color: var(--hud-green); }
 
-        /* CONTROLES DERECHA */
         #controls-right { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 40; }
         .ctrl-btn { width: 45px; height: 45px; background: rgba(0,10,20,0.9); border: 1px solid var(--hud-cyan); color: var(--hud-cyan); display: flex; justify-content: center; align-items: center; cursor: pointer; clip-path: polygon(15% 0, 100% 0, 100% 85%, 85% 100%, 0 100%, 0 15%); }
         .ctrl-btn.active { background: var(--hud-cyan); color: #000; box-shadow: 0 0 15px var(--hud-cyan); }
-        
-        /* PAREIDOLIA BTN */
         #btn-eye.active { border-color: var(--hud-purple); background: var(--hud-purple); color: #fff; box-shadow: 0 0 20px var(--hud-purple); }
 
-        /* PANEL INFERIOR */
+        /* PANELES INFERIORES */
         .dials { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; padding: 10px; }
         .dial { background: rgba(0,0,0,0.5); border: 1px solid #333; text-align: center; padding: 5px; }
         .dial-val { font-family: 'VT323'; font-size: 1.5rem; }
         .dial-lbl { font-size: 0.6rem; color: #777; }
-        #energy-graph { height: 40px; display: flex; gap: 2px; align-items: flex-end; padding: 0 10px; margin-bottom: 5px; }
+        #energy-graph { height: 40px; display: flex; gap: 2px; align-items: flex-end; padding: 0 10px; }
         .bar { flex: 1; background: #222; height: 5%; transition: height 0.1s; }
         .bar.lit { background: var(--hud-green); box-shadow: 0 0 5px var(--hud-green); }
 
+        #status-overlay { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 5px 10px; border: 1px solid #333; color: #fff; font-family: 'Share Tech Mono'; font-size: 0.8rem; pointer-events: none; display: none; z-index: 100; }
+
         @keyframes pulse { 50% { opacity: 0.6; } }
         @keyframes glitch { 0% { transform: translate(0); } 20% { transform: translate(-2px, 2px); } 40% { transform: translate(-2px, -2px); } 60% { transform: translate(2px, 2px); } 80% { transform: translate(2px, -2px); } 100% { transform: translate(0); } }
+        #btn-reset-ui { position: absolute; bottom: 80px; left: 20px; z-index: 100; background: rgba(0,0,0,0.3); border: 1px solid #ff3333; color: #ff3333; font-size: 1.2rem; width: 35px; height: 35px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; pointer-events: auto; }
     </style>
 </head>
 <body>
@@ -88,7 +87,7 @@
 <div id="loading-overlay">
     <img src="obr-logo.png" class="horror-logo" alt="OBR">
     <div id="loading-text">INICIALIZANDO...</div>
-    <div class="loader-bar-bg"><div id="loader-bar"></div></div>
+    <div class="loader-bg"><div id="loader-bar"></div></div>
     <button id="start-btn" onclick="startSystem()">INICIAR SISTEMA</button>
 </div>
 
@@ -96,12 +95,9 @@
     <div id="left-panel">
         <div class="sb-box" id="spirit-box-section">
             <div class="section-title">SPIRIT BOX (AI) <div style="width:10px; height:10px; background:#333; border-radius:50%;" id="led-voice"></div></div>
-            <div style="background:#000; padding:5px; text-align:center; font-family:'Share Tech Mono'; margin:5px 0;" id="sb-status">OFFLINE</div>
+            <div style="background:#000; padding:5px; text-align:center; font-family:'Share Tech Mono'; margin:5px 0;" id="sb-display">OFFLINE</div>
             <button class="btn-pwr" id="btn-sb" onclick="toggleSpiritBox()">ENCENDER</button>
-            <div style="margin-top:10px; display:flex; justify-content:space-between; font-size:0.7rem; color:#666;">
-                <span>VOL</span> <span>SPEED</span>
-            </div>
-            <div style="display:flex; gap:5px;">
+            <div style="margin-top:10px; display:flex; gap:5px;">
                 <input type="range" id="vol-sl" style="width:50%" min="0" max="100" value="100">
                 <input type="range" id="spd-sl" style="width:50%" min="1" max="3" value="1">
             </div>
@@ -121,13 +117,17 @@
     <div id="main-view-area">
         <div id="zoom-container" style="width:100%; height:100%;">
             <video id="cam-feed" autoplay playsinline muted style="width:100%; height:100%; object-fit:cover;"></video>
-            <canvas id="main-filter-canvas"></canvas> </div>
+            <canvas id="main-filter-canvas"></canvas>
+        </div>
         
+        <div id="status-overlay">SISTEMA LISTO</div>
+        <button id="btn-reset-ui" onclick="toggleUI()">⚠</button>
+
         <div id="controls-right">
             <div class="ctrl-btn" id="btn-eye" onclick="togglePareidolia()">👁️</div>
             <div class="ctrl-btn" onclick="setFilter('night')"><i class="fas fa-eye"></i></div>
             <div class="ctrl-btn" onclick="setFilter('sls')"><i class="fas fa-child"></i></div>
-            <button class="ctrl-btn" onclick="toggleUI()" style="margin-top:20px;"><i class="fas fa-bars"></i></button>
+            <div class="ctrl-btn" onclick="setFilter('none')"><i class="fas fa-times"></i></div>
         </div>
     </div>
 
@@ -139,11 +139,11 @@
             <div class="dial"><div class="dial-val" style="color:red" id="val-prox">0</div><div class="dial-lbl">PROX</div></div>
         </div>
         <div id="energy-graph"></div>
-        <div style="text-align:center; font-size:0.6rem; color:#555;">ENERGY LEVEL</div>
     </div>
 </div>
 
 <audio id="audio-rx" autoplay></audio>
+<canvas id="capture-canvas" style="display:none;"></canvas>
 
 <script>
     // ================= CONFIGURACIÓN =================
@@ -152,25 +152,18 @@
     
     // ================= ESTADO GLOBAL =================
     const state = {
-        started: false,
-        sb: false,          // Spirit Box
-        streamer: false,    // Modo Streamer
-        rx: false,          // Receptor Audio
-        sls: false,         // Detector Esqueletos
-        pareidolia: false,  // IA Vision
-        filter: 'none',
-        slsModel: null,     // Modelo TensorFlow
-        temp: 18.0
+        started: false, sb: false, streamer: false, rx: false, filter: 'none',
+        slsModel: null, temp: 18.0, pareidolia: false,
+        chatHistory: [
+            { role: "user", parts: [{ text: "Actúa como un espíritu. Di palabras sueltas de miedo." }] },
+            { role: "model", parts: [{ text: "..." }] }
+        ]
     };
 
-    // Audio Context Global
-    let ctxAudio = null;
-    let micNode = null, mainGain = null, analyzer = null;
-    let bgNoise = null;
-    let streamDest = null; // Para Loopback
+    let ctxAudio, micNode, mainGain, analyzer, bgNoise, streamDest;
+    let recognition, isSpeaking = false;
 
-    // ================= SISTEMA DE CARGA (INFALIBLE) =================
-    // Este código corre inmediatamente y no depende de nada externo.
+    // ================= 1. CARGA INMEDIATA (NO BLOQUEANTE) =================
     (function initLoader(){
         let p = 0;
         const bar = document.getElementById('loader-bar');
@@ -178,7 +171,7 @@
         const btn = document.getElementById('start-btn');
 
         const i = setInterval(() => {
-            p += 2; 
+            p += 1.5; 
             if(p > 100) p = 100;
             bar.style.width = p + "%";
             
@@ -188,166 +181,187 @@
             else {
                 clearInterval(i);
                 txt.innerText = "SISTEMA ONLINE";
-                btn.style.display = "block"; // Botón siempre aparece
+                btn.style.display = "block"; // ¡El botón aparece SIEMPRE!
             }
         }, 30);
     })();
 
-    // ================= INICIO REAL (AL PULSAR BOTON) =================
+    // ================= 2. ARRANQUE REAL =================
     async function startSystem() {
         document.getElementById('loading-overlay').style.display = 'none';
         document.getElementById('app-ui').style.opacity = 1;
         document.getElementById('app-ui').style.pointerEvents = 'auto';
-        state.started = true;
-
-        // 1. Iniciar Audio (Necesita gesto de usuario)
+        
+        // Iniciar Audio
         try {
             ctxAudio = new (window.AudioContext || window.webkitAudioContext)();
             mainGain = ctxAudio.createGain();
             mainGain.connect(ctxAudio.destination);
-            
             analyzer = ctxAudio.createAnalyser();
             analyzer.fftSize = 64;
             mainGain.connect(analyzer);
-
-            // Cargar ruido blanco
             loadNoise();
-        } catch(e) { console.log("Audio err", e); }
+        } catch(e) {}
 
-        // 2. Iniciar Cámara
         initCamera();
-
-        // 3. Iniciar Sensores Reales
         initSensors();
-
-        // 4. Iniciar Bucle Gráfico
         initEnergyBars();
         requestAnimationFrame(loop);
-
-        // 5. Carga Diferida de TensorFlow (SLS)
-        // Esto ocurre en segundo plano para no bloquear
-        setTimeout(loadSLSModel, 1000);
+        
+        // Cargar SLS en SEGUNDO PLANO para no trabar
+        setTimeout(loadSLSModel, 2000);
     }
 
-    // ================= CÁMARA & SLS =================
+    // ================= CAMARA Y SLS =================
     async function initCamera() {
         const vid = document.getElementById('cam-feed');
         try {
-            const s = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: "environment", width: {ideal: 1280}, height: {ideal: 720} }, 
-                audio: false 
-            });
+            const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: {ideal:1280}, height:{ideal:720} }, audio: false });
             vid.srcObject = s;
-        } catch(e) { console.log("Cam fail"); }
+        } catch(e) {}
     }
 
     async function loadSLSModel() {
-        if(typeof poseDetection !== 'undefined' && typeof tf !== 'undefined') {
-            await tf.ready();
-            state.slsModel = await poseDetection.createDetector(
-                poseDetection.SupportedModels.MoveNet, 
-                { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING }
-            );
-            console.log("SLS Ready");
-        }
-    }
-
-    // ================= BUCLE PRINCIPAL (60 FPS) =================
-    function loop() {
-        updateEnergyBars();
-        
-        // Lógica SLS (Solo si el filtro está activo y el modelo cargó)
-        if(state.filter === 'sls' && state.slsModel) {
-            runSLS();
-        }
-
-        requestAnimationFrame(loop);
-    }
-
-    // ================= SPIRIT BOX & AUDIO =================
-    async function loadNoise() {
         try {
-            const r = await fetch('FONDO_1.mp3'); // Asegúrate de tener este archivo
-            const b = await r.arrayBuffer();
-            bgNoise = await ctxAudio.decodeAudioData(b);
-        } catch(e) { console.log("No background noise found"); }
+            await tf.ready();
+            state.slsModel = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING });
+            showStatus("SLS MOTOR LISTO");
+        } catch(e) { console.log("SLS Error", e); }
+    }
+
+    function runSLS() {
+        const vid = document.getElementById('cam-feed');
+        const canvas = document.getElementById('main-filter-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        if(canvas.width != vid.videoWidth) { canvas.width = vid.videoWidth; canvas.height = vid.videoHeight; }
+        
+        state.slsModel.estimatePoses(vid, {maxPoses: 3, scoreThreshold: 0.2}).then(poses => {
+            ctx.clearRect(0,0,canvas.width, canvas.height);
+            poses.forEach(pose => {
+                // Dibujo Esqueleto V18.6
+                const kp = pose.keypoints;
+                const conns = [['left_shoulder','right_shoulder'],['left_shoulder','left_hip'],['right_shoulder','right_hip'],['left_hip','right_hip'],['left_shoulder','left_elbow'],['left_elbow','left_wrist'],['right_shoulder','right_elbow'],['right_elbow','right_wrist'],['left_hip','left_knee'],['left_knee','left_ankle'],['right_hip','right_knee'],['right_knee','right_ankle']];
+                
+                ctx.lineWidth = 3; ctx.strokeStyle = '#00ff41';
+                const m = {}; kp.forEach(k => m[k.name] = k);
+                
+                ctx.beginPath();
+                conns.forEach(([a,b]) => {
+                    if(m[a] && m[b] && m[a].score > 0.2 && m[b].score > 0.2) {
+                        ctx.moveTo(m[a].x, m[a].y); ctx.lineTo(m[b].x, m[b].y);
+                    }
+                });
+                ctx.stroke();
+                
+                ctx.fillStyle = '#ff0055';
+                kp.forEach(k => { if(k.score > 0.2) { ctx.beginPath(); ctx.arc(k.x, k.y, 4, 0, 2*Math.PI); ctx.fill(); } });
+            });
+        });
+    }
+
+    // ================= SPIRIT BOX IA + PAREIDOLIA =================
+    async function loadNoise() {
+        try { const r = await fetch('FONDO_1.mp3'); const b = await r.arrayBuffer(); bgNoise = await ctxAudio.decodeAudioData(b); } catch(e){}
     }
 
     function toggleSpiritBox() {
         state.sb = !state.sb;
         const btn = document.getElementById('btn-sb');
-        const lbl = document.getElementById('sb-status');
-        
         if(state.sb) {
-            btn.classList.add('on');
-            btn.innerText = "APAGAR";
-            lbl.innerText = "ESCANEANDO...";
+            btn.classList.add('on'); btn.innerText = "APAGAR";
+            document.getElementById('sb-display').innerText = "SINTONIZANDO...";
             if(ctxAudio.state === 'suspended') ctxAudio.resume();
-            
-            // Iniciar ruido de fondo en loop
-            if(bgNoise) playNoiseLoop();
-            
-            // Iniciar ciclo de escucha IA
+            playNoiseLoop();
             startListening();
         } else {
-            btn.classList.remove('on');
-            btn.innerText = "ENCENDER";
-            lbl.innerText = "OFFLINE";
+            btn.classList.remove('on'); btn.innerText = "ENCENDER";
+            document.getElementById('sb-display').innerText = "OFFLINE";
             stopNoiseLoop();
-            // Stop IA logic
         }
     }
 
-    let noiseSource = null;
+    let noiseNode = null;
     function playNoiseLoop() {
-        if(noiseSource) noiseSource.stop();
-        noiseSource = ctxAudio.createBufferSource();
-        noiseSource.buffer = bgNoise;
-        noiseSource.loop = true;
+        if(noiseNode) return;
+        noiseNode = ctxAudio.createBufferSource();
+        noiseNode.buffer = bgNoise;
+        noiseNode.loop = true;
         const g = ctxAudio.createGain();
         g.gain.value = 0.15;
-        noiseSource.connect(g);
+        noiseNode.connect(g);
         g.connect(mainGain);
-        noiseSource.start(0);
+        if(analyzer) g.connect(analyzer);
+        noiseNode.start(0);
     }
-    function stopNoiseLoop() {
-        if(noiseSource) { noiseSource.stop(); noiseSource = null; }
-    }
+    function stopNoiseLoop() { if(noiseNode) { noiseNode.stop(); noiseNode = null; } }
 
-    // ================= IA GEMINI (CHAT) =================
     function startListening() {
         if(!state.sb) return;
-        const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if(Recognition) {
-            const r = new Recognition();
-            r.lang = 'es-MX';
-            r.continuous = false;
-            r.onstart = () => document.getElementById('led-voice').style.background = "#0f0";
-            r.onend = () => { 
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if(SR) {
+            recognition = new SR();
+            recognition.lang = 'es-MX'; recognition.continuous = false;
+            recognition.onstart = () => document.getElementById('led-voice').style.background = "#0f0";
+            recognition.onend = () => { 
                 document.getElementById('led-voice').style.background = "#333"; 
-                if(state.sb) setTimeout(startListening, 1000); // Reiniciar si sigue encendido
+                if(state.sb && !isSpeaking) {
+                    // Si hay silencio, probabilidad de activar Pareidolia o palabra random
+                    if(Math.random() > 0.8) triggerAutoAI();
+                    else setTimeout(startListening, 500);
+                }
             };
-            r.onresult = (e) => {
-                const txt = e.results[0][0].transcript;
-                askGemini(txt);
-            };
-            try { r.start(); } catch(e) {}
-        } else {
-            // Fallback para navegadores sin SpeechRecognition: Modo Auto
-            setInterval(() => { if(state.sb && Math.random()>0.8) speak(FALLBACK_WORDS[Math.floor(Math.random()*FALLBACK_WORDS.length)]); }, 5000);
+            recognition.onresult = (e) => { processQuery(e.results[0][0].transcript); };
+            try { recognition.start(); } catch(e){}
         }
     }
 
-    async function askGemini(input) {
-        const prompt = `Eres un espiritu en esta casa. Responde corto y con miedo a: "${input}"`;
+    async function triggerAutoAI() {
+        // Si Pareidolia está activa, usa visión, si no, usa texto random
+        if(state.pareidolia) {
+            processQuery("Mira esto");
+        } else {
+            processQuery("Di algo");
+        }
+    }
+
+    async function processQuery(txt) {
+        document.getElementById('sb-display').innerText = "PROCESANDO...";
+        let prompt = txt;
+        let imagePart = null;
+
+        // Lógica PAREIDOLIA (Captura visual)
+        if(state.pareidolia) {
+            const vid = document.getElementById('cam-feed');
+            const c = document.getElementById('capture-canvas');
+            c.width = 320; c.height = 240; // Baja res para velocidad
+            c.getContext('2d').drawImage(vid, 0, 0, c.width, c.height);
+            const base64 = c.toDataURL('image/jpeg', 0.5).split(',')[1];
+            imagePart = { inline_data: { mime_type: "image/jpeg", data: base64 } };
+            prompt = "Analiza la imagen. Si ves algo paranormal, descríbelo brevemente. Si no, di una palabra de miedo.";
+        }
+
+        // Construir payload
+        const parts = [{ text: prompt }];
+        if(imagePart) parts.push(imagePart);
+        
+        const history = [...state.chatHistory, { role: "user", parts: parts }];
+
         try {
             const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                body: JSON.stringify({ contents: history, generationConfig: { maxOutputTokens: 60 } })
             });
-            const data = await res.json();
-            const reply = data.candidates[0].content.parts[0].text;
+            const data = await response.json(); // ERROR TYPO FIX BELOW
+            const json = await res.json();
+            
+            let reply = "...";
+            if(json.candidates) {
+                reply = json.candidates[0].content.parts[0].text;
+                state.chatHistory.push({ role: "user", parts: [{ text: txt }] });
+                state.chatHistory.push({ role: "model", parts: [{ text: reply }] });
+            }
             speak(reply);
         } catch(e) {
             speak(FALLBACK_WORDS[Math.floor(Math.random()*FALLBACK_WORDS.length)]);
@@ -355,95 +369,62 @@
     }
 
     function speak(text) {
-        document.getElementById('sb-status').innerText = text.toUpperCase();
+        isSpeaking = true;
+        document.getElementById('sb-display').innerText = text.toUpperCase().substring(0, 20);
         const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'es-MX'; u.pitch = 0.8; u.rate = 0.9;
+        u.lang = 'es-MX'; u.pitch = 0.8; u.rate = 1.1;
+        u.onend = () => { isSpeaking = false; if(state.sb) startListening(); };
         window.speechSynthesis.speak(u);
     }
 
-    // ================= MODO STREAMER =================
-    function toggleStreamer() {
-        state.streamer = !state.streamer;
-        const btn = document.getElementById('btn-stream');
-        
-        if(state.streamer) {
-            btn.innerHTML = "MODO STREAMER: ON<br><span style='font-size:0.6rem'>(AUDIO -> ALTAVOZ)</span>";
-            btn.classList.add('stream-active');
-            enableLoopback();
+    // ================= PAREIDOLIA & TOOLS =================
+    function togglePareidolia() {
+        state.pareidolia = !state.pareidolia;
+        const btn = document.getElementById('btn-eye');
+        if(state.pareidolia) {
+            btn.classList.add('active');
+            showStatus("VISIÓN AI: ACTIVADA");
         } else {
-            btn.innerHTML = "MODO STREAMER: OFF";
-            btn.classList.remove('stream-active');
-            disableLoopback();
+            btn.classList.remove('active');
+            showStatus("VISIÓN AI: DESACTIVADA");
         }
     }
 
-    async function enableLoopback() {
-        // Capturar microfono crudo y enviarlo al destino (altavoz)
-        try {
-            const s = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false } });
-            const src = ctxAudio.createMediaStreamSource(s);
-            src.connect(ctxAudio.destination); // ESTO ES EL TRUCO PARA TIKTOK
-            // También al analizador para que se vean las barras
-            src.connect(analyzer);
-        } catch(e) {}
-    }
-    function disableLoopback() {
-        // En una app real compleja habría que desconectar nodos especificos, 
-        // aqui simplificamos asumiendo que el usuario reiniciará si quiere limpiar todo.
-    }
-
-    // ================= SLS DIBUJO =================
-    async function runSLS() {
-        const vid = document.getElementById('cam-feed');
-        const canvas = document.getElementById('main-filter-canvas');
-        const ctx = canvas.getContext('2d');
-        
-        // Sincronizar tamaño
-        if(canvas.width != vid.videoWidth) {
-            canvas.width = vid.videoWidth; canvas.height = vid.videoHeight;
-        }
-
-        try {
-            const poses = await state.slsModel.estimatePoses(vid, {maxPoses: 3, scoreThreshold: 0.2});
-            ctx.clearRect(0,0,canvas.width, canvas.height);
-            
-            // Dibujar esqueleto
-            poses.forEach(pose => {
-                // Dibujar puntos
-                ctx.fillStyle = '#00ff00';
-                pose.keypoints.forEach(kp => {
-                    if(kp.score > 0.2) {
-                        ctx.beginPath(); ctx.arc(kp.x, kp.y, 4, 0, 2*Math.PI); ctx.fill();
-                    }
-                });
-                // (Aquí se podrían añadir líneas entre puntos)
-            });
-        } catch(e) {}
-    }
-
-    // ================= UTILIDADES VISUALES =================
     function setFilter(f) {
         state.filter = f;
         const vid = document.getElementById('cam-feed');
         vid.style.filter = 'none';
-        const canvas = document.getElementById('main-filter-canvas');
-        canvas.style.display = 'none';
-
-        if(f === 'night') vid.style.filter = 'grayscale(1) contrast(1.5) brightness(1.2)';
+        document.getElementById('main-filter-canvas').style.display = 'none';
+        if(f === 'night') vid.style.filter = 'grayscale(1) contrast(1.5) brightness(1.3)';
         if(f === 'negative') vid.style.filter = 'invert(1)';
         if(f === 'sls') {
-            vid.style.filter = 'grayscale(1) brightness(0.5)';
-            canvas.style.display = 'block';
+            vid.style.filter = 'grayscale(1) brightness(0.4)';
+            document.getElementById('main-filter-canvas').style.display = 'block';
         }
+    }
+
+    function toggleStreamer() {
+        state.streamer = !state.streamer;
+        const btn = document.getElementById('btn-stream');
+        if(state.streamer) {
+            btn.innerHTML = "MODO STREAMER: ON"; btn.classList.add('stream-active');
+            enableLoopback();
+        } else {
+            btn.innerHTML = "MODO STREAMER: OFF"; btn.classList.remove('stream-active');
+        }
+    }
+
+    async function enableLoopback() {
+        try {
+            const s = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false } });
+            const src = ctxAudio.createMediaStreamSource(s);
+            src.connect(ctxAudio.destination);
+        } catch(e) {}
     }
 
     function initEnergyBars() {
         const c = document.getElementById('energy-graph');
-        for(let i=0; i<10; i++) {
-            let d = document.createElement('div');
-            d.className = 'bar';
-            c.appendChild(d);
-        }
+        for(let i=0; i<10; i++) { let d = document.createElement('div'); d.className = 'bar'; c.appendChild(d); }
     }
 
     function updateEnergyBars() {
@@ -451,39 +432,45 @@
         const data = new Uint8Array(analyzer.frequencyBinCount);
         analyzer.getByteFrequencyData(data);
         const bars = document.querySelectorAll('.bar');
+        const talking = window.speechSynthesis.speaking;
         for(let i=0; i<bars.length; i++) {
-            let h = (data[i] / 255) * 100;
-            if(h < 5) h = 5;
-            bars[i].style.height = h + "%";
-            if(h > 50) bars[i].classList.add('lit'); else bars[i].classList.remove('lit');
+            let h = talking ? Math.random()*100 : (data[i]/255)*100;
+            bars[i].style.height = Math.max(5, h) + "%";
+            if(h > 60) bars[i].classList.add('lit'); else bars[i].classList.remove('lit');
         }
-    }
-    
-    function togglePareidolia() {
-        state.pareidolia = !state.pareidolia;
-        document.getElementById('btn-eye').classList.toggle('active');
-        // Aquí iría la lógica de captura de imagen para Gemini Vision si se deseara
     }
 
-    // Sensores Falsos (Si no hay hardware) + GPS Real
     function initSensors() {
+        // GPS Temperatura Real
         if(navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(p => {
-                 fetch(`https://api.open-meteo.com/v1/forecast?latitude=${p.coords.latitude}&longitude=${p.coords.longitude}&current_weather=true`)
-                 .then(r=>r.json()).then(d => state.temp = d.current_weather.temperature);
+                fetch(`https://api.open-meteo.com/v1/forecast?latitude=${p.coords.latitude}&longitude=${p.coords.longitude}&current_weather=true`)
+                .then(r=>r.json()).then(d => state.temp = d.current_weather.temperature);
             });
         }
-        
+        // Simulación Sensores
         setInterval(() => {
-            // Oscilar valores
-            document.getElementById('val-mag').innerText = Math.floor(Math.random()*100);
-            document.getElementById('val-emf').innerText = (Math.random()*2).toFixed(1);
-            document.getElementById('val-temp').innerText = state.temp;
+            document.getElementById('val-mag').innerText = Math.floor(Math.random()*50 + 10);
+            document.getElementById('val-emf').innerText = (Math.random()*0.5).toFixed(1);
+            document.getElementById('val-temp').innerText = (state.temp - Math.random()).toFixed(1);
         }, 500);
     }
 
-    function toggleUI() {
-        document.body.classList.toggle('panels-hidden');
+    function showStatus(msg) {
+        const el = document.getElementById('status-overlay');
+        el.innerText = msg; el.style.display = 'block';
+        setTimeout(() => el.style.display = 'none', 2000);
+    }
+
+    function toggleUI() { document.body.classList.toggle('panels-hidden'); }
+
+    // BUCLE PRINCIPAL
+    function loop() {
+        if(state.started) {
+            updateEnergyBars();
+            if(state.filter === 'sls' && state.slsModel) runSLS();
+        }
+        requestAnimationFrame(loop);
     }
 </script>
 </body>
