@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR ULTIMATE</title> 
+    <title>DETECTOR-OBR FINAL-FIX</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -118,7 +118,6 @@
         .btn-control { background: #111; border: 1px solid #444; color: #aaa; font-family: 'Orbitron'; font-size: 0.8rem; padding: 10px; width: 100%; cursor: pointer; font-weight: bold; }
         .btn-control.pwr-on { border-color: var(--hud-green); color: var(--hud-green); background: rgba(0,50,0,0.3); box-shadow: 0 0 10px var(--hud-green) inset; }
 
-        /* MODO STREAMER */
         .streamer-panel { padding: 10px; background: rgba(20, 0, 20, 0.4); border: 1px solid var(--hud-purple); border-radius: 4px; text-align: center; margin-bottom: 10px; }
         .stream-btn { width: 100%; padding: 15px; font-size: 0.9rem; font-family: 'Orbitron'; background: rgba(0,0,0,0.5); border: 2px solid #555; color: #777; cursor: pointer; transition: all 0.3s; text-shadow: 0 0 5px #000; }
         .stream-active { border-color: var(--hud-purple) !important; color: var(--hud-purple) !important; box-shadow: 0 0 20px var(--hud-purple), inset 0 0 10px rgba(168, 85, 247, 0.3); background: rgba(40, 0, 60, 0.6); animation: pulseStream 2s infinite; }
@@ -321,10 +320,8 @@
     const mainView = document.getElementById('main-view-area');
     const vid = document.getElementById('bg-camera-feed');
     
-    // --- SLS GLOBAL CONTEXT (EXACTAMENTE COMO VERSION BASE) ---
     const canvasSLS = document.getElementById('main-filter-canvas'); 
-    const ctxSLS = canvasSLS.getContext('2d');
-    
+    let ctxSLS = null;
     const matrixCanvas = document.getElementById('matrix-canvas');
     const mCtx = matrixCanvas ? matrixCanvas.getContext('2d') : null;
     let matrixDrops = [];
@@ -337,7 +334,7 @@
     let currentProx = 0; let targetProx = 0;
 
     // ==========================================
-    // SISTEMA DE CARGA (FIXED)
+    // SISTEMA DE CARGA INDEPENDIENTE (NO SE PEGA)
     // ==========================================
     function startLoadingSequence() {
         const txtMain = document.getElementById('loading-text-main');
@@ -348,10 +345,11 @@
         
         let p = 0;
         
+        // Limpiamos intervalos previos por seguridad
         if(window.loadInterval) clearInterval(window.loadInterval);
 
         window.loadInterval = setInterval(() => {
-            p += 1; 
+            p += 1; // Incremento constante para no depender de nada externo
             if(p > 100) p = 100;
 
             if(p < 30) {
@@ -381,10 +379,11 @@
         }, 40);
     }
 
-    // Inicialización al cargar la ventana
+    // INICIO INMEDIATO
+    startLoadingSequence();
+
     window.onload = () => {
         try {
-            startLoadingSequence();
             const eContainer = document.getElementById('energy-container');
             if(eContainer) {
                 for(let i=0; i<NUM_BARS; i++){ 
@@ -398,10 +397,10 @@
             chatHistory.push(AI_SYSTEM_INSTRUCTION);
             chatHistory.push({ role: "model", parts: [{ text: "..." }] });
             
+            if(canvasSLS) ctxSLS = canvasSLS.getContext('2d');
+
         } catch (err) {
-            console.error("Error crítico en inicio:", err);
-            const btn = document.getElementById('enter-btn');
-            if(btn) btn.style.display = "block";
+            console.error("Error inicio:", err);
         }
     };
 
@@ -417,7 +416,6 @@
         setTimeout(() => { btn.innerHTML = "⚠"; btn.classList.remove('reset-success'); }, 2000);
     }
 
-    // --- FUNCIÓN TOGGLE VISIÓN (CORREGIDA) ---
     function togglePareidolia() {
         isPareidoliaActive = !isPareidoliaActive;
         const btn = document.getElementById('btn-pareidolia');
@@ -430,7 +428,6 @@
         }
     }
 
-    // --- CAPTURAR FRAME ---
     function captureVideoFrame() {
         try {
             const canvas = document.createElement('canvas');
@@ -439,12 +436,10 @@
             ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
             return canvas.toDataURL('image/jpeg', 0.6).split(',')[1]; 
         } catch (e) {
-            console.error("Error captura video:", e);
             return null;
         }
     }
 
-    // --- FUNCIÓN AI GEMINI ---
     async function askGemini(text) {
         let base64Image = null;
         if (isPareidoliaActive) base64Image = captureVideoFrame();
@@ -483,7 +478,6 @@
         }
     }
 
-    // --- AUDIO & STREAMER MODE ---
     function updateAudioRouting() {
         if (!audioCtx || !analyser) return;
         try { if(micStreamSource) { micStreamSource.disconnect(analyser); micStreamSource.disconnect(audioCtx.destination); } } catch(e){}
@@ -515,7 +509,6 @@
         updateAudioRouting();
     }
 
-    // --- PEER & COMMS ---
     function initPeer() {
         try {
             peer = new Peer(); 
@@ -527,7 +520,7 @@
                     if(isRxOn) updateAudioRouting();
                 });
             });
-        } catch(e){ console.log("PeerJS Error (Offline Mode)"); }
+        } catch(e){ }
     }
     function connectAudioToMixer() {
         if(localStream && peer) {
@@ -559,7 +552,6 @@
         updateRXVisuals();
     }
 
-    // --- APP CORE ---
     function initMatrix() { const pSection = matrixCanvas.parentElement; if(!pSection) return; matrixCanvas.width = pSection.clientWidth; matrixCanvas.height = pSection.clientHeight; const columns = Math.floor(matrixCanvas.width / 15); matrixDrops = Array(columns).fill(1); }
     function drawMatrix() {
         if(!mCtx) return;
@@ -731,8 +723,8 @@
         frames++;
         if(performance.now()-lastFps>=1000){ document.getElementById('cam-fps').innerText = frames; frames=0; lastFps=performance.now(); }
         
-        // --- SLS RENDERER (ORIGINAL LOGIC) ---
-        if(currentFilter==='sls' && vid.readyState >= 2){ 
+        // SLS V16.6 LOGIC (RESTORED)
+        if(currentFilter==='sls' && vid.readyState >= 2 && ctxSLS){ 
             ctxSLS.clearRect(0,0,canvasSLS.width,canvasSLS.height); 
             if (latestPoses.length > 0) drawSLS(latestPoses); 
         }
@@ -769,15 +761,13 @@
         requestAnimationFrame(loop);
     }
 
-    // =========================================================
-    // SLS CORE (CÓDIGO EXACTO DE v18.6 STABLE-FIX)
-    // =========================================================
-    let latestPoses = [];
+    // ==========================================
+    // SLS CORE (V18.6 RESTORED)
+    // ==========================================
     async function initMoveNet() { 
         await tf.ready(); 
         detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING }); 
         setInterval(async () => { 
-            // RESTORED v13.9 Logic: Threshold 0.15
             if(currentFilter==='sls' && vid.readyState>=2) { 
                 try { latestPoses = await detector.estimatePoses(vid, {maxPoses: 5, scoreThreshold: 0.15}); } catch(e) { latestPoses = []; } 
             } else { latestPoses = []; } 
@@ -785,7 +775,9 @@
     }
     
     const conns = [['left_shoulder','right_shoulder'],['left_shoulder','left_hip'],['right_shoulder','right_hip'],['left_hip','right_hip'],['left_shoulder','left_elbow'],['left_elbow','left_wrist'],['right_shoulder','right_elbow'],['right_elbow','right_wrist'],['left_hip','left_knee'],['left_knee','left_ankle'],['right_hip','right_knee'],['right_knee','right_ankle']];
+    
     function drawSLS(poses) {
+        if(!ctxSLS) return;
         const s = Math.max(canvasSLS.width/vid.videoWidth, canvasSLS.height/vid.videoHeight); 
         const xo = (canvasSLS.width - vid.videoWidth*s)/2;
         const yo = (canvasSLS.height - vid.videoHeight*s)/2;
