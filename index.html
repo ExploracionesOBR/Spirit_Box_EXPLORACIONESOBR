@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v22.0 LITE</title> 
+    <title>DETECTOR-OBR v22.1 SAFE</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -12,10 +12,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&family=Creepster&family=VT323&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
 
     <style>
         :root {
@@ -71,6 +71,17 @@
             90% { clip-path: inset(0 0 0 0); transform: translate(0, 0); }
             100% { clip-path: inset(0 0 0 0); transform: translate(0, 0); filter: drop-shadow(0 0 5px var(--hud-cyan)); } 
         }
+        
+        #follow-banner { position: absolute; bottom: 20px; left: 0; right: 0; display: flex; justify-content: center; pointer-events: none; opacity: 0; transition: opacity 1s; z-index: 30; }
+        #follow-banner.active { opacity: 1; }
+        .banner-content { background: transparent; padding: 0; border: none; display: flex; flex-direction: column; align-items: center; gap: 5px; text-shadow: 0 0 5px #000; }
+        .seq-step { display: none; animation: fadeIn 0.5s; text-align: center; }
+        .seq-step.active { display: block; }
+        #step-1 { font-family: 'Orbitron'; color: #fff; letter-spacing: 2px; font-weight: bold; text-shadow: 0 0 10px var(--hud-cyan); }
+        #step-2 { gap: 20px; display: none; filter: drop-shadow(0 0 5px #000); } 
+        #step-3 { font-family: 'Creepster'; color: var(--hud-red); letter-spacing: 2px; font-size: 1.5rem; text-shadow: 2px 2px 0 #000; }
+        .social-icon { font-size: 2rem; color: #fff; transition: transform 0.2s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
         .section-title { font-family: 'Orbitron'; font-size: 0.65rem; font-weight: 800; color: var(--hud-cyan); margin-bottom: 5px; border-bottom: 1px solid rgba(0, 243, 255, 0.3); display: flex; justify-content: space-between; align-items: center; padding-bottom: 2px; z-index: 2; position: relative; }
         #spirit-box-section { border: 1px solid var(--hud-green); background: rgba(0, 15, 5, 0.5); padding: 8px; border-radius: 4px; margin-bottom: 10px; display: flex; flex-direction: column; z-index: 2; position: relative; }
@@ -92,7 +103,6 @@
         .rx-off { background: #330000; border: 2px solid #ff0000; color: #ff0000; box-shadow: inset 0 0 10px #550000; }
         .rx-on { background: #004400; border: 2px solid #00ff41; color: #00ff41; box-shadow: 0 0 15px #00ff41; animation: none; }
         
-        /* BOTON RESET UI */
         #btn-reset-ui {
             position: absolute; bottom: 80px; left: 20px; z-index: 100;
             background: rgba(0,0,0,0.3); border: 1px solid #ff3333; color: #ff3333;
@@ -162,7 +172,7 @@
 <div id="app-ui">
     <div id="left-panel" class="panel-container">
         <div id="spirit-box-section">
-            <div class="section-title">SPIRIT BOX (CLASSIC) <div id="voice-led" class="voice-led"></div></div>
+            <div class="section-title">SPIRIT BOX (LITE) <div id="voice-led" class="voice-led"></div></div>
             <div class="sb-display-area"><span id="sb-status">OFFLINE</span></div>
             <button id="btn-pwr" class="btn-control" onclick="toggleSpirit()">ENCENDER</button>
             <div style="margin-top:8px; display:flex; flex-direction:column; gap:5px;">
@@ -247,13 +257,12 @@
 
 <script>
     // ==========================================
-    // CONFIGURACIÓN BASE
+    // CONFIGURACIÓN
     // ==========================================
     const GEMINI_API_KEY = "AIzaSyBkWd1MK0ip4D_PWiMTsDYmp5g22c3duIQ"; 
     const MIXER_ID = "obr-mezclador-central"; 
-    // BANCO DE PALABRAS LOCAL (Rápido y sin lag)
+    // PALABRAS LOCALES (Carga inmediata, sin IA en Spirit Box)
     const SPIRIT_WORDS = ["AYUDA", "FRIO", "MIEDO", "AQUI", "DETRAS", "SOTANO", "LUZ", "VETE", "SOLO", "MUERTE", "DOLOR", "FUEGO", "NIÑO", "MAMA", "CORRE", "ESPERA", "SALIR", "ENTRAR"];
-    const FALLBACK_AUTO = SPIRIT_WORDS;
 
     // Variables Globales
     let audioCtx = null, masterGain = null, micSource = null, analyser = null;
@@ -276,41 +285,46 @@
     let currentProx = 0, targetProx = 0;
 
     // ==========================================
-    // 1. SISTEMA DE CARGA TEMPORIZADO
+    // 1. SISTEMA DE CARGA GARANTIZADO (NO BLOQUEANTE)
     // ==========================================
-    (function() {
-        var p = 0;
-        var loadInt = setInterval(function() {
-            var bar = document.getElementById('loading-bar');
-            var perc = document.getElementById('loading-percent');
-            var btn = document.getElementById('enter-btn');
-            var txtMain = document.getElementById('loading-text-main');
-            
-            if(!bar || !perc || !btn) return;
-
+    window.addEventListener('load', function() {
+        const txtMain = document.getElementById('loading-text-main');
+        const txtSub = document.getElementById('loading-text-sub');
+        const bar = document.getElementById('loading-bar');
+        const perc = document.getElementById('loading-percent');
+        const btn = document.getElementById('enter-btn');
+        
+        let p = 0;
+        
+        // Iniciar barras de energía mientras carga
+        const c = document.getElementById('energy-container');
+        if(c) for(let i=0; i<NUM_BARS; i++){ let d = document.createElement('div'); d.className = 'energy-bar-seg'; c.appendChild(d); energyBars.push(d); }
+        
+        const loadInt = setInterval(() => {
             p += 2; if (p > 100) p = 100;
-            bar.style.width = p + "%"; perc.innerText = Math.floor(p) + "%";
+            if(bar) bar.style.width = p + "%"; 
+            if(perc) perc.innerText = Math.floor(p) + "%";
 
             if(p < 30 && txtMain) txtMain.innerText = "INICIANDO SISTEMA...";
             else if(p >= 60 && txtMain) txtMain.innerText = "SINTONIZANDO...";
             else if(p >= 98) {
                 clearInterval(loadInt);
-                if(txtMain) txtMain.innerText = "SISTEMA LISTO";
-                btn.style.display = "block";
-                btn.classList.add('btn-glitch');
+                if(txtMain) txtMain.innerText = "LISTO";
+                if(txtSub) txtSub.innerText = "SISTEMA ONLINE";
+                if(btn) {
+                    btn.style.display = "block"; 
+                    btn.classList.add('btn-glitch');
+                }
             }
         }, 30);
-    })();
-
-    // ==========================================
-    // 2. INICIO AL PULSAR
-    // ==========================================
-    window.onload = () => {
-        const c = document.getElementById('energy-container');
-        if(c) for(let i=0; i<NUM_BARS; i++){ let d = document.createElement('div'); d.className = 'energy-bar-seg'; c.appendChild(d); energyBars.push(d); }
+        
+        // Configurar Zoom
         setupZoomEvents();
-    };
+    });
 
+    // ==========================================
+    // 2. INICIO AL PULSAR (ACTIVACIÓN DIFERIDA)
+    // ==========================================
     async function enterApp(){
         document.getElementById('loading-overlay').style.display='none';
         document.getElementById('app-ui').style.opacity = 1;
@@ -345,7 +359,7 @@
         initMic(); 
         initRealTemperature();
         await startCam(); 
-        await initMoveNet(); 
+        await initMoveNet(); // Carga SLS en segundo plano
         initSensors();
         initPeer();
         initMatrix();
@@ -354,7 +368,7 @@
     }
 
     // ==========================================
-    // 3. FUNCIONES PRINCIPALES
+    // 3. FUNCIONES
     // ==========================================
     async function startCam(){
         const vid = document.getElementById('bg-camera-feed');
@@ -407,7 +421,59 @@
         }
     }
 
-    // --- SPIRIT BOX (CLÁSICA) ---
+    // --- PAREIDOLIA (VISIÓN IA) ---
+    function togglePareidolia() {
+        isPareidoliaActive = !isPareidoliaActive;
+        const btn = document.getElementById('btn-pareidolia');
+        if(isPareidoliaActive) {
+            btn.classList.add('pareidolia-on');
+            speak("Visión activada"); 
+            analyzeVision(); // Iniciar bucle de visión
+        } else {
+            btn.classList.remove('pareidolia-on');
+            speak("Visión desactivada");
+        }
+    }
+
+    function captureVideoFrame() {
+        try {
+            const vid = document.getElementById('bg-camera-feed');
+            const canvas = document.getElementById('capture-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 640; canvas.height = 480;
+            ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL('image/jpeg', 0.5).split(',')[1]; 
+        } catch (e) { return null; }
+    }
+
+    async function analyzeVision() {
+        if(!isPareidoliaActive) return;
+        const base64 = captureVideoFrame();
+        if(!base64) { setTimeout(analyzeVision, 5000); return; }
+
+        const prompt = "Analiza esta imagen. Si ves algo paranormal, sombra o figura, descríbelo en 3 palabras. Si no, di 'NADA'.";
+        
+        try {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: "image/jpeg", data: base64 } }] }],
+                    generationConfig: { maxOutputTokens: 20 }
+                })
+            });
+            const data = await res.json();
+            if(data.candidates) {
+                const reply = data.candidates[0].content.parts[0].text;
+                if(!reply.toUpperCase().includes("NADA")) speak(reply);
+            }
+        } catch(e) {}
+        
+        // Reintentar cada 8 segundos si sigue activo
+        if(isPareidoliaActive) setTimeout(analyzeVision, 8000);
+    }
+
+    // --- SPIRIT BOX (LOCAL) ---
     function toggleSpirit() {
         isSpiritOn = !isSpiritOn;
         const btn = document.getElementById('btn-pwr');
@@ -441,23 +507,20 @@
                 recognition.onstart = () => { isRecognizing=true; document.getElementById('voice-led').classList.add('listening'); };
                 recognition.onend = () => { isRecognizing=false; document.getElementById('voice-led').classList.remove('listening'); 
                     if(!isProcessingResponse && isSpiritOn) {
-                        if(micMaxVol > 15) { processVoiceCommand("NOISE_TRIGGER"); } 
+                        if(micMaxVol > 15) { processVoiceCommand(); } 
                         else { setTimeout(startListeningCycle, 500); }
                     }
                 };
-                recognition.onresult = (e) => { processVoiceCommand(e.results[0][0].transcript.toLowerCase().trim()); };
+                recognition.onresult = (e) => { processVoiceCommand(); };
                 recognition.onerror = () => { isRecognizing=false; if(isSpiritOn) setTimeout(startListeningCycle, 1000); };
             }
         }
         try{ recognition.start(); }catch(e){}
     }
 
-    // --- RESPUESTAS LOCALES ---
-    async function processVoiceCommand(txt){
+    // RESPUESTAS LOCALES (CERO LAG)
+    function processVoiceCommand(){
         document.getElementById('voice-led').classList.remove('listening');
-        document.getElementById('sb-status').innerText = "PROCESANDO...";
-        
-        // SELECCIONA PALABRA DEL BANCO LOCAL (SIN IA DE AUDIO)
         const word = SPIRIT_WORDS[Math.floor(Math.random() * SPIRIT_WORDS.length)];
         speak(word);
     }
@@ -467,60 +530,13 @@
         window.speechSynthesis.cancel();
         document.getElementById('sb-status').innerText = txt.substring(0,15)+"...";
         if(bgGain) { bgGain.gain.value = 0.1; } 
-        const u = new SpeechSynthesisUtterance(txt); u.lang='es-MX'; u.rate = 0.9; u.pitch = 0.8; u.volume = 1.0; 
+        const u = new SpeechSynthesisUtterance(txt); u.lang='es-MX'; u.rate = 1.0; u.pitch = 1.0; u.volume = 1.0; 
         u.onend = () => { 
             isProcessingResponse = false; 
             if(bgGain) bgGain.gain.value = 0.3; 
             if(isSpiritOn) setTimeout(startListeningCycle, 1500); 
         };
         window.speechSynthesis.speak(u);
-    }
-
-    // --- PAREIDOLIA (IA VISION ÚNICA) ---
-    function togglePareidolia() {
-        isPareidoliaActive = !isPareidoliaActive;
-        const btn = document.getElementById('btn-pareidolia');
-        if(isPareidoliaActive) {
-            btn.classList.add('pareidolia-on');
-            analyzeVision(); // Dispara análisis
-        } else {
-            btn.classList.remove('pareidolia-on');
-        }
-    }
-
-    function captureVideoFrame() {
-        try {
-            const vid = document.getElementById('bg-camera-feed');
-            const canvas = document.getElementById('capture-canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = 640; canvas.height = 480;
-            ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
-            return canvas.toDataURL('image/jpeg', 0.5).split(',')[1]; 
-        } catch (e) { return null; }
-    }
-
-    async function analyzeVision() {
-        if(!isPareidoliaActive) return;
-        const base64 = captureVideoFrame();
-        if(!base64) return;
-
-        const prompt = "Analiza esta imagen. Si ves algo que parezca una figura humana, sombra o cara, descríbelo en 3 palabras. Si no, di 'Nada'.";
-        const parts = [{ text: prompt }, { inline_data: { mime_type: "image/jpeg", data: base64 } }];
-
-        try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: parts }], generationConfig: { maxOutputTokens: 20 } })
-            });
-            const data = await res.json();
-            if(data.candidates) {
-                const reply = data.candidates[0].content.parts[0].text;
-                if(!reply.includes("Nada")) speak(reply);
-            }
-        } catch(e) {}
-
-        // Re-analizar cada 10 segundos si sigue activo
-        if(isPareidoliaActive) setTimeout(analyzeVision, 10000);
     }
 
     // --- UI & LOOP ---
