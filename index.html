@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v18.6 STABLE-FIX</title> 
+    <title>DETECTOR-OBR v18.7 STREAMER-EDITION</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -26,6 +26,7 @@
             --hud-orange: #ffae00;
             --hud-red: #ff3333;
             --hud-blue: #0088ff;
+            --hud-purple: #a855f7;
             --glass-panel: rgba(5, 8, 15, 0.95);
             --left-panel-w: 280px;
             --bottom-panel-h: 160px;
@@ -132,6 +133,27 @@
         .btn-control { background: #111; border: 1px solid #444; color: #aaa; font-family: 'Orbitron'; font-size: 0.8rem; padding: 10px; width: 100%; cursor: pointer; font-weight: bold; }
         .btn-control.pwr-on { border-color: var(--hud-green); color: var(--hud-green); background: rgba(0,50,0,0.3); box-shadow: 0 0 10px var(--hud-green) inset; }
 
+        /* ESTILOS NUEVOS PARA MODO STREAMER */
+        .stream-btn {
+            margin-top: 10px;
+            font-size: 0.7rem;
+            border: 1px solid #555;
+            color: #777;
+            transition: all 0.3s;
+        }
+        .stream-active {
+            border-color: var(--hud-purple) !important;
+            color: var(--hud-purple) !important;
+            box-shadow: 0 0 10px var(--hud-purple), inset 0 0 5px rgba(168, 85, 247, 0.2);
+            text-shadow: 0 0 5px var(--hud-purple);
+            background: rgba(20, 0, 30, 0.6);
+            animation: pulseStream 2s infinite;
+        }
+        @keyframes pulseStream { 
+            0%, 100% { border-color: var(--hud-purple); color: var(--hud-purple); }
+            50% { border-color: var(--hud-green); color: var(--hud-green); box-shadow: 0 0 15px var(--hud-green); } 
+        }
+
         /* PANEL SENSORES (2 COLUMNAS) */
         .panel-section { flex-grow: 0; overflow: hidden; position: relative; padding: 8px; background: rgba(0,0,0,0.4); border-radius: 4px; margin-bottom: 5px; } 
         .sensor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; position: relative; z-index: 2; }
@@ -221,6 +243,7 @@
                 <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:#888; margin-top:5px;"><span>SCAN SPEED</span><span id="spd-txt">1</span></div>
                 <input type="range" id="speed-slider" min="1" max="3" step="1" value="1" style="width:100%; accent-color:var(--hud-orange);">
             </div>
+            <button id="btn-streamer" class="btn-control stream-btn" onclick="toggleStreamMode()">MODO STREAMER: OFF</button>
         </div>
         
         <div class="panel-section">
@@ -254,7 +277,6 @@
 
         <button id="btn-intro" onclick="playIntro()">🎞️</button>
 
-        <!-- BOTON RESET ANIDADO -->
         <button id="btn-reset-ui" onclick="forceResetUI()">⚠</button>
 
         <div class="camera-border"><div class="cb-inner"></div></div>
@@ -325,6 +347,9 @@
     let isIntroPlaying = false;
     let localStream = null;
     let commandReceived = false;
+    
+    // VARIABLE PARA MODO STREAMER
+    let isStreamMode = false;
     
     let zoomLevel = 1;
     let longPressTimer;
@@ -436,18 +461,62 @@
         }, 1500);
     }
 
+    /* --- LÓGICA DE RUTEO DE AUDIO ACTUALIZADA PARA MODO STREAMER --- */
     function updateAudioRouting() {
         if (!audioCtx || !analyser) return;
-        try { if(micStreamSource) micStreamSource.disconnect(analyser); if(rxStreamSource) rxStreamSource.disconnect(analyser); } catch(e){}
+        
+        // 1. Desconectar todo primero para evitar duplicados
+        try { 
+            if(micStreamSource) { 
+                micStreamSource.disconnect(analyser); 
+                micStreamSource.disconnect(audioCtx.destination); // Desconectar loopback anterior
+            } 
+        } catch(e){}
+        
+        try { 
+            if(rxStreamSource) { 
+                rxStreamSource.disconnect(analyser); 
+                rxStreamSource.disconnect(audioCtx.destination); 
+            } 
+        } catch(e){}
+
         if (isRxOn) {
+            // Si el RX (Mezclador) está activo
             if (incomingAudioEl.srcObject) {
                 if (!rxStreamSource) rxStreamSource = audioCtx.createMediaStreamSource(incomingAudioEl.srcObject);
                 rxStreamSource.connect(analyser);
-                rxStreamSource.connect(audioCtx.destination);
+                rxStreamSource.connect(audioCtx.destination); // El audio del mezclador SIEMPRE sale al altavoz
             }
         } else {
-            if (micStreamSource) micStreamSource.connect(analyser);
+            // Si el RX está OFF (Uso local)
+            if (micStreamSource) {
+                micStreamSource.connect(analyser); // Siempre conectar al analizador para visuales
+                
+                // LÓGICA MODO STREAMER:
+                if (isStreamMode) {
+                    // Si el modo Streamer está activo, enviar micrófono a los altavoces (Loopback)
+                    // ESTO ES LO QUE TIKTOK ESCUCHA
+                    micStreamSource.connect(audioCtx.destination);
+                }
+            }
         }
+    }
+
+    // FUNCIÓN PARA ACTIVAR/DESACTIVAR MODO STREAMER
+    function toggleStreamMode() {
+        isStreamMode = !isStreamMode;
+        const btn = document.getElementById('btn-streamer');
+        
+        if(isStreamMode) {
+            btn.innerHTML = "MODO STREAMER: ON<br><span style='font-size:0.55rem'>(USE AUDÍFONOS)</span>";
+            btn.classList.add('stream-active');
+        } else {
+            btn.innerHTML = "MODO STREAMER: OFF";
+            btn.classList.remove('stream-active');
+        }
+        
+        // Actualizar el ruteo de audio
+        updateAudioRouting();
     }
 
     function initPeer() {
@@ -633,7 +702,36 @@
     function initProximity(){ if('ProximitySensor' in window){ try { proxSensor=new ProximitySensor({frequency:10}); proxSensor.addEventListener('reading', ()=>{ document.getElementById('prox-val').innerText=proxSensor.value?proxSensor.value.toFixed(0):"0"; setSensorStatus('sens-prox','main'); }); proxSensor.start(); } catch(e){ setSensorStatus('sens-prox','status-red'); } } else { setSensorStatus('sens-prox','sim'); setInterval(()=>{ if(Math.random()>0.95){ document.getElementById('prox-val').innerText=Math.floor(Math.random()*5); setTimeout(()=>document.getElementById('prox-val').innerText="0",800); } },1000); } }
 
     async function loadAudio(u){ try{const r=await fetch(u);const b=await r.arrayBuffer();return await audioCtx.decodeAudioData(b);}catch(e){return null;} }
-    async function initMic(){ try{ const s=await navigator.mediaDevices.getUserMedia({audio:true}); localStream=s; micSource=audioCtx.createMediaStreamSource(s); analyser=audioCtx.createAnalyser(); analyser.fftSize=64; micSource.connect(analyser); setSensorStatus('sens-mic','main'); connectAudioToMixer(); }catch(e){ setSensorStatus('sens-mic','status-red'); } }
+    
+    // --- MIC INIT MODIFICADO PARA AUDIO "RAW" ---
+    async function initMic(){ 
+        try{ 
+            // CAMBIO: Audio RAW explícito para evitar modo "Llamada"
+            const s = await navigator.mediaDevices.getUserMedia({
+                audio: { 
+                    echoCancellation: false, 
+                    noiseSuppression: false, 
+                    autoGainControl: false 
+                }
+            }); 
+            localStream = s; 
+            micSource = audioCtx.createMediaStreamSource(s);
+            
+            // Asignar a micStreamSource global para el ruteo
+            micStreamSource = micSource;
+            
+            analyser = audioCtx.createAnalyser(); 
+            analyser.fftSize = 64; 
+            
+            // El ruteo inicial ahora se maneja en updateAudioRouting
+            updateAudioRouting();
+            
+            setSensorStatus('sens-mic','main'); 
+            connectAudioToMixer(); 
+        } catch(e) { 
+            setSensorStatus('sens-mic','status-red'); 
+        } 
+    }
     
     function toggleSpirit(){
         isSpiritOn = !isSpiritOn;
