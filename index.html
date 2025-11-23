@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v19.1 FINAL</title> 
+    <title>DETECTOR-OBR v19.2 REAL-TEMP</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -107,17 +107,6 @@
             90% { clip-path: inset(0 0 0 0); transform: translate(0, 0); }
             100% { clip-path: inset(0 0 0 0); transform: translate(0, 0); filter: drop-shadow(0 0 5px var(--hud-cyan)); } 
         }
-        
-        #follow-banner { position: absolute; bottom: 20px; left: 0; right: 0; display: flex; justify-content: center; pointer-events: none; opacity: 0; transition: opacity 1s; z-index: 30; }
-        #follow-banner.active { opacity: 1; }
-        .banner-content { background: transparent; padding: 0; border: none; display: flex; flex-direction: column; align-items: center; gap: 5px; text-shadow: 0 0 5px #000; }
-        .seq-step { display: none; animation: fadeIn 0.5s; text-align: center; }
-        .seq-step.active { display: block; }
-        #step-1 { font-family: 'Orbitron'; color: #fff; letter-spacing: 2px; font-weight: bold; text-shadow: 0 0 10px var(--hud-cyan); }
-        #step-2 { gap: 20px; display: none; filter: drop-shadow(0 0 5px #000); } 
-        #step-3 { font-family: 'Creepster'; color: var(--hud-red); letter-spacing: 2px; font-size: 1.5rem; text-shadow: 2px 2px 0 #000; }
-        .social-icon { font-size: 2rem; color: #fff; transition: transform 0.2s; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
         .section-title { font-family: 'Orbitron'; font-size: 0.65rem; font-weight: 800; color: var(--hud-cyan); margin-bottom: 5px; border-bottom: 1px solid rgba(0, 243, 255, 0.3); display: flex; justify-content: space-between; align-items: center; padding-bottom: 2px; z-index: 2; position: relative; }
         #spirit-box-section { border: 1px solid var(--hud-green); background: rgba(0, 15, 5, 0.5); padding: 8px; border-radius: 4px; margin-bottom: 10px; display: flex; flex-direction: column; z-index: 2; position: relative; }
@@ -153,6 +142,10 @@
         .filter-btn.active { background: var(--hud-cyan); color: #000; box-shadow: 0 0 10px var(--hud-cyan); }
         #btn-hud.active { background: var(--hud-cyan); color: #000; }
         #btn-hud { background: rgba(0, 10, 20, 0.9); color: var(--hud-cyan); }
+        
+        /* ESTILO PARA BOTON VISIÓN */
+        #btn-pareidolia.pareidolia-on { border-color: var(--hud-purple) !important; color: var(--hud-purple) !important; box-shadow: 0 0 15px var(--hud-purple); animation: pulseEye 1s infinite; }
+        @keyframes pulseEye { 50% { opacity: 0.5; transform: scale(0.95); } }
 
         .ui-hiding { animation: waterPop 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important; pointer-events: none; }
         @keyframes waterPop { 0% { transform: scale(1); opacity: 1; blur(0); } 100% { transform: scale(2.5); opacity: 0; blur(10px); } }
@@ -286,34 +279,7 @@
 
 <script>
     // ==========================================
-    // VARIABLES GLOBALES INICIALIZADAS SEGURAS
-    // ==========================================
-    const GEMINI_API_KEY = "AIzaSyBkWd1MK0ip4D_PWiMTsDYmp5g22c3duIQ"; 
-    const MIXER_ID = "obr-mezclador-central"; 
-    const FALLBACK_AUTO = ["¿Hay alguien?", "Te escucho", "Acércate", "Detrás", "Frío", "Ayuda", "Vete", "Sótano", "Miedo", "Luz", "Oscuridad", "Aquí"];
-    const AI_SYSTEM_INSTRUCTION = { role: "user", parts: [{ text: `Actúa como un espíritu atrapado. Di palabras sueltas y confusas.` }] };
-
-    // Todas las variables iniciadas en null o valores por defecto
-    let audioCtx = null, masterGain = null, micSource = null, analyser = null;
-    let bgBuffer = null, bgNode = null, bgGain = null, recognition = null, isSpiritOn = false;
-    let videoTrack = null, currentFilter = 'none', uiVisible = false, hideTimeout;
-    let proxSensor = null, energyBars = [];
-    let isRecognizing = false, scanSpeed = 1.0, micMaxVol = 0, restoreAudioTimer, isProcessingResponse = false; 
-    let chatHistory = [], peer = null, dataConn = null, isRxOn = false, isMixerConnected = false;
-    let incomingAudioEl = null, rxStreamSource = null, micStreamSource = null;
-    let isIntroPlaying = false, localStream = null, isStreamMode = false;
-    let zoomLevel = 1, longPressTimer, isLongPressing = false, initialPinchDist = 0;
-    
-    // Variables Gráficas (Se asignan después)
-    let ctxSLS = null, mCtx = null;
-    let matrixDrops = [], latestPoses = [], detector = null;
-    
-    const NUM_BARS = 10; 
-    let baseTemp = 0, targetTemp = 22.0, currentTemp = 22.0, lastTempTime = 0;
-    let currentProx = 0, targetProx = 0;
-
-    // ==========================================
-    // 1. SISTEMA DE CARGA (SAFE BOOT)
+    // 1. SISTEMA DE CARGA INDEPENDIENTE (SAFE BOOT)
     // ==========================================
     (function() {
         var p = 0;
@@ -343,7 +309,34 @@
     })();
 
     // ==========================================
-    // 2. INICIO AL PULSAR EL BOTÓN (CRÍTICO)
+    // 2. CONFIGURACIÓN GLOBAL
+    // ==========================================
+    const GEMINI_API_KEY = "AIzaSyBkWd1MK0ip4D_PWiMTsDYmp5g22c3duIQ"; 
+    const MIXER_ID = "obr-mezclador-central"; 
+    const FALLBACK_AUTO = ["¿Hay alguien?", "Te escucho", "Acércate", "Detrás", "Frío", "Ayuda", "Vete", "Sótano", "Miedo", "Luz", "Oscuridad", "Aquí"];
+    const AI_SYSTEM_INSTRUCTION = { role: "user", parts: [{ text: `Actúa como un espíritu atrapado. Di palabras sueltas y confusas. Máximo 5 palabras.` }] };
+
+    // Todas las variables iniciadas en null o valores por defecto
+    let audioCtx = null, masterGain = null, micSource = null, analyser = null;
+    let bgBuffer = null, bgNode = null, bgGain = null, recognition = null, isSpiritOn = false;
+    let videoTrack = null, currentFilter = 'none', uiVisible = false, hideTimeout;
+    let proxSensor = null, energyBars = [];
+    let isRecognizing = false, scanSpeed = 1.0, micMaxVol = 0, restoreAudioTimer, isProcessingResponse = false; 
+    let chatHistory = [], peer = null, dataConn = null, isRxOn = false, isMixerConnected = false;
+    let incomingAudioEl = null, rxStreamSource = null, micStreamSource = null;
+    let isIntroPlaying = false, localStream = null, isStreamMode = false;
+    let zoomLevel = 1, longPressTimer, isLongPressing = false, initialPinchDist = 0;
+    
+    // Variables Gráficas (Se asignan después)
+    let ctxSLS = null, mCtx = null;
+    let matrixDrops = [], latestPoses = [], detector = null;
+    
+    const NUM_BARS = 10; 
+    let baseTemp = 18.0, targetTemp = 22.0, currentTemp = 22.0, lastTempTime = 0;
+    let currentProx = 0, targetProx = 0;
+
+    // ==========================================
+    // 3. INICIO REAL DE LA APP (DESPUÉS DE CLICK)
     // ==========================================
     async function enterApp(){
         // 1. Ocultar Carga
@@ -378,6 +371,7 @@
 
         // 4. Iniciar Componentes Pesados
         initMic(); 
+        initRealTemperature();
         await startCam(); 
         await initMoveNet(); 
         initSensors();
@@ -388,9 +382,27 @@
     }
 
     // ==========================================
-    // 3. FUNCIONES PRINCIPALES
+    // 4. FUNCIONES DE LA APP
     // ==========================================
     
+    // --- TEMP REAL API ---
+    async function getRealTemp(lat, lon) {
+        try {
+            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+            const d = await res.json();
+            return d.current_weather.temperature;
+        } catch(e) { return 18.0; }
+    }
+
+    function initRealTemperature() {
+        if(navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(async (p) => {
+                const t = await getRealTemp(p.coords.latitude, p.coords.longitude);
+                baseTemp = t; currentTemp = t;
+            }, (e) => { baseTemp = 18.0; });
+        }
+    }
+
     async function startCam(){
         const vid = document.getElementById('bg-camera-feed');
         if(!vid) return;
@@ -443,7 +455,7 @@
         // DIBUJAR MATRIX
         if(mCtx) drawMatrix();
         
-        // AUDIO VIZ
+        // AUDIO VIZ & SENSORS
         if(analyser){
             const data = new Uint8Array(analyser.frequencyBinCount); 
             analyser.getByteFrequencyData(data);
@@ -453,38 +465,25 @@
                 if(avg > micMaxVol) micMaxVol=avg; 
             }
             
-            // BARRA DE ENERGÍA VISUAL (RUIDO + VOZ)
+            // Barras Energía
             const eContainer = document.getElementById('energy-container');
             if(energyBars.length === 0 && eContainer) {
                  for(let i=0; i<NUM_BARS; i++){ let d = document.createElement('div'); d.className = 'energy-bar-seg'; eContainer.appendChild(d); energyBars.push(d); }
             }
-            // SIMULACIÓN CUANDO LA IA HABLA
-            if(window.speechSynthesis.speaking) {
-                // Falsificar datos de audio para visualización
-                for(let i=0; i<energyBars.length; i++){
-                     let val = Math.random() * 255;
-                     let bar=energyBars[i];
-                     bar.className='energy-bar-seg';
-                     if(val>50)bar.classList.add('active');
-                     if(val>150)bar.classList.add('mid');
-                     if(val>220)bar.classList.add('high');
-                     bar.style.height=Math.max(5,(val/255)*100)+"%";
-                }
-            } else {
-                // DATOS REALES DEL ANALIZADOR (RUIDO BLANCO)
-                for(let i=0; i<energyBars.length; i++){ 
-                    let val=(data[i*2] + (data[i*2+1]||0))/2; 
-                    let bar=energyBars[i]; 
-                    bar.className='energy-bar-seg'; 
-                    if(val>50)bar.classList.add('active'); 
-                    if(val>150)bar.classList.add('mid'); 
-                    if(val>220)bar.classList.add('high'); 
-                    bar.style.height=Math.max(5,(val/255)*100)+"%"; 
-                }
+            
+            let speaking = window.speechSynthesis.speaking;
+            for(let i=0; i<energyBars.length; i++){ 
+                let val = speaking ? Math.random() * 255 : (data[i*2] + (data[i*2+1]||0))/2; 
+                let bar=energyBars[i]; 
+                bar.className='energy-bar-seg'; 
+                if(val>50)bar.classList.add('active'); 
+                if(val>150)bar.classList.add('mid'); 
+                if(val>220)bar.classList.add('high'); 
+                bar.style.height=Math.max(5,(val/255)*100)+"%"; 
             }
         }
         
-        // SENSORES (SIMULACION + REAL)
+        // SENSORES INFERIORES (SIMULACION + REAL)
         if(Math.abs(currentProx - targetProx) > 1) currentProx += (targetProx - currentProx) * 0.1;
         document.getElementById('prox-val').innerText = Math.floor(currentProx).toString();
 
@@ -508,10 +507,8 @@
             if(bgBuffer && audioCtx){ 
                 bgNode=audioCtx.createBufferSource(); bgNode.buffer=bgBuffer; bgNode.loop=true; bgNode.playbackRate.value=scanSpeed; 
                 bgGain=audioCtx.createGain(); bgGain.gain.value=0.3; 
-                // CONECTAR RUIDO AL ANALIZADOR PARA QUE SE MUEVAN LAS BARRAS
-                bgNode.connect(bgGain); 
-                bgGain.connect(masterGain); 
-                bgGain.connect(analyser); 
+                bgNode.connect(bgGain); bgGain.connect(masterGain); 
+                if(analyser) bgGain.connect(analyser); // Conectar a visualizador
                 bgNode.start(0); 
             }
             startListeningCycle();
@@ -583,11 +580,11 @@
         if(!window.speechSynthesis) { isProcessingResponse = false; return; }
         window.speechSynthesis.cancel();
         document.getElementById('sb-status').innerText = txt.substring(0,15)+"...";
-        if(bgGain) { bgGain.gain.value = 0.1; } // Ducking volume
+        if(bgGain) { bgGain.gain.value = 0.1; } 
         const u = new SpeechSynthesisUtterance(txt); u.lang='es-MX'; u.rate = 1.0; u.pitch = 1.0; u.volume = 1.0; 
         u.onend = () => { 
             isProcessingResponse = false; 
-            if(bgGain) bgGain.gain.value = 0.3; // Restore volume
+            if(bgGain) bgGain.gain.value = 0.3; 
             if(isSpiritOn) setTimeout(startListeningCycle, 1500); 
         };
         window.speechSynthesis.speak(u);
@@ -680,7 +677,6 @@
         window.addEventListener('deviceorientation', hOr);
         window.addEventListener('devicemotion', hMot);
         
-        // Simulation Fallback
         setInterval(()=>{
              if(!window.DeviceOrientationEvent) document.getElementById('mag-val').innerText=Math.floor(Math.random()*360).toString().padStart(3,'0');
              if(!window.DeviceMotionEvent) document.getElementById('emf-val').innerText=(0.3+Math.random()*0.9).toFixed(1);
@@ -704,7 +700,6 @@
     function connectAudioToMixer() { if(localStream && peer) { const call = peer.call(MIXER_ID, localStream); call.on('stream', remoteStream => { if(incomingAudioEl) { incomingAudioEl.srcObject = remoteStream; incomingAudioEl.muted = !isRxOn; if(isRxOn) updateAudioRouting(); } }); } }
     function connectData() { dataConn = peer.connect(MIXER_ID); dataConn.on('open', () => { isMixerConnected = true; updateRXVisuals(); }); }
 
-    // INICIO INMEDIATO
     window.onload = () => {
         const c = document.getElementById('energy-container');
         if(c) for(let i=0; i<NUM_BARS; i++){ let d = document.createElement('div'); d.className = 'energy-bar-seg'; c.appendChild(d); energyBars.push(d); }
