@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v22.1 SAFE</title> 
+    <title>DETECTOR-OBR v18.6 STREAMER</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -19,25 +19,62 @@
 
     <style>
         :root {
-            --hud-bg: #050510; --hud-cyan: #00f3ff; --hud-pink: #ff0055; --hud-green: #00ff41; 
-            --hud-orange: #ffae00; --hud-red: #ff3333; --hud-blue: #0088ff; --hud-purple: #a855f7;
-            --glass-panel: rgba(5, 8, 15, 0.95); --left-panel-w: 280px; --bottom-panel-h: 160px;
+            --hud-bg: #050510; 
+            --hud-cyan: #00f3ff; 
+            --hud-pink: #ff0055; 
+            --hud-green: #00ff41; 
+            --hud-orange: #ffae00;
+            --hud-red: #ff3333;
+            --hud-blue: #0088ff;
+            --hud-purple: #a855f7;
+            --glass-panel: rgba(5, 8, 15, 0.95);
+            --left-panel-w: 280px;
+            --bottom-panel-h: 160px;
         }
+
         body {
-            font-family: 'Share Tech Mono', monospace; background-color: #000; color: var(--hud-cyan);
-            overflow: hidden; width: 100vw; height: 100vh; margin: 0; touch-action: none; -webkit-user-select: none;
+            font-family: 'Share Tech Mono', monospace;
+            background-color: #000; color: var(--hud-cyan);
+            overflow: hidden; width: 100vw; height: 100vh; margin: 0;
+            touch-action: none; 
+            -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
         }
+
         #app-ui { 
-            width: 100%; height: 100%; display: grid;
-            grid-template-columns: var(--left-panel-w) 1fr; grid-template-rows: 1fr var(--bottom-panel-h);
-            grid-template-areas: "left cam" "left bottom"; opacity: 0; pointer-events: none; transition: opacity 0.5s;
+            width: 100%; height: 100%; 
+            display: grid;
+            grid-template-columns: var(--left-panel-w) 1fr; 
+            grid-template-rows: 1fr var(--bottom-panel-h);
+            grid-template-areas: "left cam" "left bottom";
+            transition: all 0.5s ease;
+            opacity: 0; pointer-events: none;
         }
+
         body.panels-hidden #app-ui { grid-template-columns: 0px 1fr; grid-template-rows: 1fr 0px; }
-        #left-panel { grid-area: left; border-right: 2px solid var(--hud-cyan); background: var(--glass-panel); z-index: 50; padding: 10px; display: flex; flex-direction: column; }
-        #bottom-panel { grid-area: bottom; border-top: 2px solid var(--hud-cyan); background: var(--glass-panel); z-index: 50; }
-        #main-view-area { grid-area: cam; position: relative; background: #000; width: 100%; height: 100%; overflow: hidden; }
+
+        #left-panel { grid-area: left; border-right: 2px solid var(--hud-cyan); overflow: hidden; transition: all 0.5s ease; position: relative; display: flex; flex-direction: column; justify-content: flex-start; z-index: 50; background: var(--glass-panel); }
+        #bottom-panel { grid-area: bottom; border-top: 2px solid var(--hud-cyan); overflow: hidden; transition: all 0.5s ease; z-index: 50; background: var(--glass-panel); }
         
-        #main-filter-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; display: block; }
+        #main-view-area { 
+            grid-area: cam; position: relative; overflow: hidden; background: #000; width: 100%; height: 100%; 
+            touch-action: none;
+        }
+
+        #touch-layer { position: absolute; inset: 0; z-index: 10; touch-action: none; }
+
+        body.panels-hidden #left-panel, body.panels-hidden #bottom-panel { display: none; }
+
+        .panel-container {
+            box-shadow: inset 0 0 20px rgba(0, 243, 255, 0.1);
+            padding: 10px;
+            background-image: linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        #matrix-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.2; pointer-events: none; z-index: 0; }
+        #zoom-container { width: 100%; height: 100%; transform-origin: center center; transition: transform 0.3s ease-out; will-change: transform; z-index: 1; }
+        #bg-camera-feed { width: 100%; height: 100%; object-fit: cover; transition: filter 0.3s ease; }
+        #main-filter-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; display: block; }
 
         .camera-border { position: absolute; inset: 10px; pointer-events: none; z-index: 20; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1); }
         .camera-border::before, .camera-border::after, .cb-inner::before, .cb-inner::after { content: ''; position: absolute; width: 20px; height: 20px; border-color: var(--hud-cyan); border-style: solid; transition: all 0.5s; }
@@ -93,7 +130,7 @@
         .btn-control { background: #111; border: 1px solid #444; color: #aaa; font-family: 'Orbitron'; font-size: 0.8rem; padding: 10px; width: 100%; cursor: pointer; font-weight: bold; }
         .btn-control.pwr-on { border-color: var(--hud-green); color: var(--hud-green); background: rgba(0,50,0,0.3); box-shadow: 0 0 10px var(--hud-green) inset; }
 
-        /* MODO STREAMER */
+        /* ESTILOS MODO STREAMER */
         .streamer-panel { padding: 10px; background: rgba(20, 0, 20, 0.4); border: 1px solid var(--hud-purple); border-radius: 4px; text-align: center; margin-bottom: 10px; }
         .stream-btn { width: 100%; padding: 15px; font-size: 0.9rem; font-family: 'Orbitron'; background: rgba(0,0,0,0.5); border: 2px solid #555; color: #777; cursor: pointer; transition: all 0.3s; text-shadow: 0 0 5px #000; }
         .stream-active { border-color: var(--hud-purple) !important; color: var(--hud-purple) !important; box-shadow: 0 0 20px var(--hud-purple), inset 0 0 10px rgba(168, 85, 247, 0.3); background: rgba(40, 0, 60, 0.6); animation: pulseStream 2s infinite; }
@@ -103,6 +140,7 @@
         .rx-off { background: #330000; border: 2px solid #ff0000; color: #ff0000; box-shadow: inset 0 0 10px #550000; }
         .rx-on { background: #004400; border: 2px solid #00ff41; color: #00ff41; box-shadow: 0 0 15px #00ff41; animation: none; }
         
+        /* BOTON RESET UI */
         #btn-reset-ui {
             position: absolute; bottom: 80px; left: 20px; z-index: 100;
             background: rgba(0,0,0,0.3); border: 1px solid #ff3333; color: #ff3333;
@@ -117,10 +155,6 @@
         .filter-btn.active { background: var(--hud-cyan); color: #000; box-shadow: 0 0 10px var(--hud-cyan); }
         #btn-hud.active { background: var(--hud-cyan); color: #000; }
         #btn-hud { background: rgba(0, 10, 20, 0.9); color: var(--hud-cyan); }
-        
-        /* BOTON PAREIDOLIA */
-        #btn-pareidolia.pareidolia-on { border-color: var(--hud-purple) !important; color: var(--hud-purple) !important; box-shadow: 0 0 15px var(--hud-purple); animation: pulseEye 1s infinite; }
-        @keyframes pulseEye { 50% { opacity: 0.5; transform: scale(0.95); } }
 
         .ui-hiding { animation: waterPop 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important; pointer-events: none; }
         @keyframes waterPop { 0% { transform: scale(1); opacity: 1; blur(0); } 100% { transform: scale(2.5); opacity: 0; blur(10px); } }
@@ -162,8 +196,8 @@
 
 <div id="loading-overlay">
     <img src="obr-logo.png" class="horror-logo" id="load-logo">
-    <div id="loading-text-main">CONECTANDO A LA MATRIX...</div>
-    <div id="loading-text-sub">CARGANDO SISTEMAS...</div>
+    <div id="loading-text-main">CARGANDO MÓDULOS...</div>
+    <div id="loading-text-sub">INICIALIZANDO KERNEL...</div>
     <div class="loading-bar-container"><div id="loading-bar"></div></div>
     <div id="loading-percent">0%</div>
     <button id="enter-btn" onclick="enterApp()">INICIAR SISTEMA</button>
@@ -172,7 +206,7 @@
 <div id="app-ui">
     <div id="left-panel" class="panel-container">
         <div id="spirit-box-section">
-            <div class="section-title">SPIRIT BOX (LITE) <div id="voice-led" class="voice-led"></div></div>
+            <div class="section-title">SPIRIT BOX <div id="voice-led" class="voice-led"></div></div>
             <div class="sb-display-area"><span id="sb-status">OFFLINE</span></div>
             <button id="btn-pwr" class="btn-control" onclick="toggleSpirit()">ENCENDER</button>
             <div style="margin-top:8px; display:flex; flex-direction:column; gap:5px;">
@@ -227,8 +261,6 @@
             </div>
         </div>
         <div id="filter-controls-container">
-            <button class="filter-btn" id="btn-pareidolia" onclick="togglePareidolia()" style="margin-bottom:10px; border-color:var(--hud-purple); color:var(--hud-purple);">👁️</button>
-            
             <button class="filter-btn" onclick="toggleFilter('night-vision')"><i class="fas fa-eye"></i></button>
             <button class="filter-btn" onclick="toggleFilter('sls')"><i class="fas fa-child"></i></button>
             <button class="filter-btn" onclick="toggleFilter('negative')"><i class="fas fa-adjust"></i></button>
@@ -251,80 +283,71 @@
     </div>
 
     <audio id="incoming-feed" autoplay></audio> 
-    <canvas id="matrix-canvas" style="display:none;"></canvas>
-    <canvas id="capture-canvas" style="display:none;"></canvas>
 </div>
 
 <script>
     // ==========================================
     // CONFIGURACIÓN
     // ==========================================
-    const GEMINI_API_KEY = "AIzaSyBkWd1MK0ip4D_PWiMTsDYmp5g22c3duIQ"; 
     const MIXER_ID = "obr-mezclador-central"; 
-    // PALABRAS LOCALES (Carga inmediata, sin IA en Spirit Box)
     const SPIRIT_WORDS = ["AYUDA", "FRIO", "MIEDO", "AQUI", "DETRAS", "SOTANO", "LUZ", "VETE", "SOLO", "MUERTE", "DOLOR", "FUEGO", "NIÑO", "MAMA", "CORRE", "ESPERA", "SALIR", "ENTRAR"];
 
-    // Variables Globales
+    // Variables Globales (Inicializadas en null)
     let audioCtx = null, masterGain = null, micSource = null, analyser = null;
     let bgBuffer = null, bgNode = null, bgGain = null, recognition = null, isSpiritOn = false;
     let videoTrack = null, currentFilter = 'none', uiVisible = false, hideTimeout;
     let proxSensor = null, energyBars = [];
     let isRecognizing = false, scanSpeed = 1.0, micMaxVol = 0, restoreAudioTimer, isProcessingResponse = false; 
-    let isPareidoliaActive = false, isStreamMode = false;
+    let isStreamMode = false;
     let peer = null, dataConn = null, isRxOn = false, isMixerConnected = false;
     let incomingAudioEl = null, rxStreamSource = null, micStreamSource = null;
     let isIntroPlaying = false, localStream = null;
     let zoomLevel = 1, longPressTimer, isLongPressing = false, initialPinchDist = 0;
     
     // Variables Gráficas
-    let ctxSLS = null, mCtx = null;
-    let matrixDrops = [], latestPoses = [], detector = null;
+    let ctxSLS = null;
+    let latestPoses = [], detector = null;
     
     const NUM_BARS = 10; 
     let baseTemp = 18.0, targetTemp = 22.0, currentTemp = 22.0, lastTempTime = 0;
     let currentProx = 0, targetProx = 0;
 
     // ==========================================
-    // 1. SISTEMA DE CARGA GARANTIZADO (NO BLOQUEANTE)
+    // 1. SISTEMA DE CARGA INDEPENDIENTE (SAFE BOOT)
     // ==========================================
-    window.addEventListener('load', function() {
-        const txtMain = document.getElementById('loading-text-main');
-        const txtSub = document.getElementById('loading-text-sub');
-        const bar = document.getElementById('loading-bar');
-        const perc = document.getElementById('loading-percent');
-        const btn = document.getElementById('enter-btn');
-        
-        let p = 0;
-        
-        // Iniciar barras de energía mientras carga
-        const c = document.getElementById('energy-container');
-        if(c) for(let i=0; i<NUM_BARS; i++){ let d = document.createElement('div'); d.className = 'energy-bar-seg'; c.appendChild(d); energyBars.push(d); }
-        
-        const loadInt = setInterval(() => {
+    (function() {
+        var p = 0;
+        var loadInt = setInterval(function() {
+            var bar = document.getElementById('loading-bar');
+            var perc = document.getElementById('loading-percent');
+            var btn = document.getElementById('enter-btn');
+            var txtMain = document.getElementById('loading-text-main');
+            
+            if(!bar || !perc || !btn) return;
+
             p += 2; if (p > 100) p = 100;
-            if(bar) bar.style.width = p + "%"; 
-            if(perc) perc.innerText = Math.floor(p) + "%";
+            bar.style.width = p + "%"; perc.innerText = Math.floor(p) + "%";
 
             if(p < 30 && txtMain) txtMain.innerText = "INICIANDO SISTEMA...";
             else if(p >= 60 && txtMain) txtMain.innerText = "SINTONIZANDO...";
             else if(p >= 98) {
                 clearInterval(loadInt);
-                if(txtMain) txtMain.innerText = "LISTO";
-                if(txtSub) txtSub.innerText = "SISTEMA ONLINE";
-                if(btn) {
-                    btn.style.display = "block"; 
-                    btn.classList.add('btn-glitch');
-                }
+                if(txtMain) txtMain.innerText = "SISTEMA LISTO";
+                btn.style.display = "block";
+                btn.classList.add('btn-glitch');
             }
         }, 30);
-        
-        // Configurar Zoom
-        setupZoomEvents();
-    });
+    })();
 
     // ==========================================
-    // 2. INICIO AL PULSAR (ACTIVACIÓN DIFERIDA)
+    // 2. INICIO AL PULSAR
     // ==========================================
+    window.onload = () => {
+        const c = document.getElementById('energy-container');
+        if(c) for(let i=0; i<NUM_BARS; i++){ let d = document.createElement('div'); d.className = 'energy-bar-seg'; c.appendChild(d); energyBars.push(d); }
+        setupZoomEvents();
+    };
+
     async function enterApp(){
         document.getElementById('loading-overlay').style.display='none';
         document.getElementById('app-ui').style.opacity = 1;
@@ -341,34 +364,22 @@
             bgBuffer = await loadAudio('FONDO_1.mp3'); 
         } catch(e) {}
 
-        // CANVAS
+        // CANVAS SLS
         const cSLS = document.getElementById('main-filter-canvas');
         if(cSLS) ctxSLS = cSLS.getContext('2d');
         
-        const cMtx = document.getElementById('matrix-canvas');
-        if(cMtx) {
-            mCtx = cMtx.getContext('2d');
-            if(cMtx.parentElement) {
-                cMtx.width = cMtx.parentElement.clientWidth; 
-                cMtx.height = cMtx.parentElement.clientHeight;
-                const columns = Math.floor(cMtx.width / 15);
-                matrixDrops = Array(columns).fill(1);
-            }
-        }
-
         initMic(); 
         initRealTemperature();
         await startCam(); 
-        await initMoveNet(); // Carga SLS en segundo plano
+        await initMoveNet(); 
         initSensors();
         initPeer();
-        initMatrix();
         
         requestAnimationFrame(loop);
     }
 
     // ==========================================
-    // 3. FUNCIONES
+    // 3. FUNCIONES PRINCIPALES
     // ==========================================
     async function startCam(){
         const vid = document.getElementById('bg-camera-feed');
@@ -380,7 +391,6 @@
         }catch(e){}
     }
 
-    // --- MIC Y STREAMER ---
     async function initMic(){ 
         try{ 
             const s = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false } }); 
@@ -421,59 +431,7 @@
         }
     }
 
-    // --- PAREIDOLIA (VISIÓN IA) ---
-    function togglePareidolia() {
-        isPareidoliaActive = !isPareidoliaActive;
-        const btn = document.getElementById('btn-pareidolia');
-        if(isPareidoliaActive) {
-            btn.classList.add('pareidolia-on');
-            speak("Visión activada"); 
-            analyzeVision(); // Iniciar bucle de visión
-        } else {
-            btn.classList.remove('pareidolia-on');
-            speak("Visión desactivada");
-        }
-    }
-
-    function captureVideoFrame() {
-        try {
-            const vid = document.getElementById('bg-camera-feed');
-            const canvas = document.getElementById('capture-canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = 640; canvas.height = 480;
-            ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
-            return canvas.toDataURL('image/jpeg', 0.5).split(',')[1]; 
-        } catch (e) { return null; }
-    }
-
-    async function analyzeVision() {
-        if(!isPareidoliaActive) return;
-        const base64 = captureVideoFrame();
-        if(!base64) { setTimeout(analyzeVision, 5000); return; }
-
-        const prompt = "Analiza esta imagen. Si ves algo paranormal, sombra o figura, descríbelo en 3 palabras. Si no, di 'NADA'.";
-        
-        try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: "image/jpeg", data: base64 } }] }],
-                    generationConfig: { maxOutputTokens: 20 }
-                })
-            });
-            const data = await res.json();
-            if(data.candidates) {
-                const reply = data.candidates[0].content.parts[0].text;
-                if(!reply.toUpperCase().includes("NADA")) speak(reply);
-            }
-        } catch(e) {}
-        
-        // Reintentar cada 8 segundos si sigue activo
-        if(isPareidoliaActive) setTimeout(analyzeVision, 8000);
-    }
-
-    // --- SPIRIT BOX (LOCAL) ---
+    // --- SPIRIT BOX (LOCAL - SIN IA) ---
     function toggleSpirit() {
         isSpiritOn = !isSpiritOn;
         const btn = document.getElementById('btn-pwr');
@@ -518,7 +476,6 @@
         try{ recognition.start(); }catch(e){}
     }
 
-    // RESPUESTAS LOCALES (CERO LAG)
     function processVoiceCommand(){
         document.getElementById('voice-led').classList.remove('listening');
         const word = SPIRIT_WORDS[Math.floor(Math.random() * SPIRIT_WORDS.length)];
@@ -530,7 +487,7 @@
         window.speechSynthesis.cancel();
         document.getElementById('sb-status').innerText = txt.substring(0,15)+"...";
         if(bgGain) { bgGain.gain.value = 0.1; } 
-        const u = new SpeechSynthesisUtterance(txt); u.lang='es-MX'; u.rate = 1.0; u.pitch = 1.0; u.volume = 1.0; 
+        const u = new SpeechSynthesisUtterance(txt); u.lang='es-MX'; u.rate = 0.9; u.pitch = 0.8; u.volume = 1.0; 
         u.onend = () => { 
             isProcessingResponse = false; 
             if(bgGain) bgGain.gain.value = 0.3; 
@@ -571,9 +528,6 @@
             ctxSLS.clearRect(0,0,cSLS.width,cSLS.height); 
             if (latestPoses.length > 0) drawSLS(latestPoses); 
         }
-        
-        // Matrix
-        if(mCtx) drawMatrix();
         
         // Audio Viz
         if(analyser){
@@ -646,25 +600,6 @@
     function connectAudioToMixer() { if(localStream && peer) { const call = peer.call(MIXER_ID, localStream); call.on('stream', remoteStream => { if(incomingAudioEl) { incomingAudioEl.srcObject = remoteStream; incomingAudioEl.muted = !isRxOn; if(isRxOn) updateAudioRouting(); } }); } }
     function connectData() { dataConn = peer.connect(MIXER_ID); dataConn.on('open', () => { isMixerConnected = true; updateRXVisuals(); }); }
 
-    function initMatrix() { 
-        if(mCtx && matrixCanvas.parentElement) {
-            matrixCanvas.width = matrixCanvas.parentElement.clientWidth; 
-            matrixCanvas.height = matrixCanvas.parentElement.clientHeight; 
-            const columns = Math.floor(matrixCanvas.width / 15); 
-            matrixDrops = Array(columns).fill(1);
-        }
-    }
-    function drawMatrix() {
-        if(!mCtx) return;
-        mCtx.fillStyle = 'rgba(0, 0, 0, 0.1)'; mCtx.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height); mCtx.fillStyle = '#00f3ff'; mCtx.font = '10px Share Tech Mono';
-        for(let i = 0; i < matrixDrops.length; i++) {
-            let text = String.fromCharCode(65 + Math.floor(Math.random() * 26));
-            mCtx.fillText(text, i * 15, h - (matrixDrops[i] * 15));
-            if(h - (matrixDrops[i] * 15) < 0 && Math.random() > 0.975) matrixDrops[i] = 0;
-            matrixDrops[i]++;
-        }
-    }
-    
     async function initMoveNet() { 
         try {
             await tf.ready(); 
