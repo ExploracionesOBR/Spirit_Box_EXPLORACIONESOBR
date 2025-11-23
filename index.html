@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR: AUTO-AI</title> 
+    <title>DETECTOR-OBR: FAILSAFE</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -73,7 +73,7 @@
         #matrix-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.2; pointer-events: none; z-index: 0; }
         #zoom-container { width: 100%; height: 100%; transform-origin: center center; transition: transform 0.3s ease-out; will-change: transform; z-index: 1; }
         #bg-camera-feed { width: 100%; height: 100%; object-fit: cover; transition: filter 0.3s ease; }
-        #main-filter-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+        #main-filter-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; display: block; z-index: 50; }
 
         .camera-border { position: absolute; inset: 10px; pointer-events: none; z-index: 20; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1); }
         .camera-border::before, .camera-border::after, .cb-inner::before, .cb-inner::after { content: ''; position: absolute; width: 20px; height: 20px; border-color: var(--hud-cyan); border-style: solid; transition: all 0.5s; }
@@ -97,8 +97,6 @@
         body.filter-negative #bg-camera-feed { filter: invert(1) hue-rotate(180deg); }
         body.filter-focus #main-view-area::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); mask-image: radial-gradient(circle, transparent 30%, black 90%); -webkit-mask-image: radial-gradient(circle, transparent 30%, black 90%); background: transparent; }
         body.filter-focus #bg-camera-feed { filter: contrast(1.2) saturate(0.9) brightness(1.1); }
-        
-        /* SLS SIEMPRE VISIBLE PERO OCULTO POR LOGICA */
         body.filter-sls #main-filter-canvas { display: block; }
 
         #logo-container { position: absolute; top: 15px; right: 15px; z-index: 50; pointer-events: none; }
@@ -275,30 +273,18 @@
 
 <script>
     // ==========================================
-    // CONFIGURACIÓN
+    // CONFIGURACIÓN & VARIABLES
     // ==========================================
     const GEMINI_API_KEY = "AIzaSyBkWd1MK0ip4D_PWiMTsDYmp5g22c3duIQ"; 
     const MIXER_ID = "obr-mezclador-central"; 
-    
-    // FALLBACK + IA CONTEXTO
-    const FALLBACK_AUTO = ["¿Hay alguien?", "Te escucho", "Acércate", "Detrás", "Frío", "Ayuda", "Vete", "Sótano", "Miedo", "Luz", "Oscuridad", "Aquí", "Muerte", "Solo", "Duele"];
-    
-    const AI_SYSTEM_INSTRUCTION = {
-        role: "user",
-        parts: [{ text: `Actúa como un espíritu atrapado en esta ubicación. Di palabras sueltas relacionadas con hospitales, cementerios o lugares abandonados. Si el usuario no pregunta nada, di solo una palabra al azar. Si pregunta, responde corto y confuso.`}]
-    };
+    const FALLBACK_AUTO = ["¿Hay alguien?", "Te escucho", "Acércate", "Detrás", "Frío", "Ayuda", "Vete", "Sótano", "Miedo", "Luz", "Oscuridad", "Aquí"];
+    const AI_SYSTEM_INSTRUCTION = { role: "user", parts: [{ text: `Actúa como un espíritu atrapado. Di palabras sueltas y confusas. Máximo 5 palabras.` }] };
 
-    // Variables Globales
-    let audioCtx, masterGain, micSource, analyser, bgBuffer, bgNode, bgGain;
-    let recognition, isSpiritOn = false;
+    let audioCtx, masterGain, micSource, analyser, bgBuffer, bgNode, bgGain, recognition, isSpiritOn = false;
     let videoTrack, currentFilter = 'none', uiVisible = false, hideTimeout;
     let proxSensor, energyBars = [];
-    let isRecognizing = false, scanSpeed = 1.0, micMaxVol = 0;
-    let restoreAudioTimer, isProcessingResponse = false; 
-    
-    // Variables IA
-    let chatHistory = [];
-    let peer, dataConn, isRxOn = false, isMixerConnected = false;
+    let isRecognizing = false, scanSpeed = 1.0, micMaxVol = 0, restoreAudioTimer, isProcessingResponse = false; 
+    let chatHistory = [], peer, dataConn, isRxOn = false, isMixerConnected = false;
     let incomingAudioEl = document.getElementById('incoming-feed');
     let rxStreamSource = null, micStreamSource = null;
     let isIntroPlaying = false, localStream = null, isStreamMode = false;
@@ -308,14 +294,13 @@
     const touchLayer = document.getElementById('touch-layer');
     const mainView = document.getElementById('main-view-area');
     const vid = document.getElementById('bg-camera-feed');
-    
-    // SLS VARIABLES (V18.6)
     const canvasSLS = document.getElementById('main-filter-canvas'); 
-    const ctxSLS = canvasSLS.getContext('2d');
+    
+    // VARIABLES SLS (INICIALIZADAS NULAS PARA EVITAR ERROR)
+    let ctxSLS = null;
     const matrixCanvas = document.getElementById('matrix-canvas');
     const mCtx = matrixCanvas ? matrixCanvas.getContext('2d') : null;
     let matrixDrops = [];
-    
     let latestPoses = [];
     let detector = null; 
 
@@ -324,7 +309,7 @@
     let currentProx = 0, targetProx = 0;
 
     // ==========================================
-    // SISTEMA DE CARGA
+    // 1. SISTEMA DE CARGA INDEPENDIENTE
     // ==========================================
     function startLoadingSequence() {
         const txtMain = document.getElementById('loading-text-main');
@@ -337,7 +322,7 @@
         window.loadInterval = setInterval(() => {
             p += 2; if(p > 100) p = 100;
             if(p < 30) { if(txtMain) txtMain.innerText = "INICIANDO SISTEMA..."; if(txtSub) txtSub.innerText = "CARGANDO KERNEL..."; }
-            else if(p >= 30 && p < 60) { if(txtMain) txtMain.innerText = "ACTIVANDO SENSORES..."; if(txtSub) txtSub.innerText = "CALIBRANDO GIROSCOPIO..."; }
+            else if(p >= 30 && p < 60) { if(txtMain) txtMain.innerText = "ACTIVANDO SENSORES..."; if(txtSub) txtSub.innerText = "CALIBRANDO..."; }
             else if(p >= 60 && p < 98) { if(txtMain) txtMain.innerText = "SINTONIZANDO..."; if(txtSub) txtSub.innerText = "CONECTANDO A LA RED..."; }
             else if(p >= 98) {
                 clearInterval(window.loadInterval); p = 100;
@@ -347,15 +332,18 @@
             if(bar) bar.style.width = p + "%"; if(perc) perc.innerText = Math.floor(p) + "%";
         }, 30);
     }
+    // EJECUTAR CARGA INMEDIATAMENTE
     startLoadingSequence();
 
     window.onload = () => {
-        const eContainer = document.getElementById('energy-container');
-        for(let i=0; i<NUM_BARS; i++){ let d = document.createElement('div'); d.className = 'energy-bar-seg'; eContainer.appendChild(d); energyBars.push(d); }
-        setupZoomEvents();
-        // INIT IA HISTORY
-        chatHistory.push(AI_SYSTEM_INSTRUCTION);
-        chatHistory.push({ role: "model", parts: [{ text: "..." }] });
+        // INICIALIZACIÓN SEGURA
+        try {
+            const eContainer = document.getElementById('energy-container');
+            if(eContainer) { for(let i=0; i<NUM_BARS; i++){ let d = document.createElement('div'); d.className = 'energy-bar-seg'; eContainer.appendChild(d); energyBars.push(d); } }
+            setupZoomEvents();
+            chatHistory.push(AI_SYSTEM_INSTRUCTION);
+            chatHistory.push({ role: "model", parts: [{ text: "..." }] });
+        } catch(e) { console.log("Error init:", e); }
     };
 
     function forceResetUI() {
@@ -370,7 +358,6 @@
         setTimeout(() => { btn.innerHTML = "⚠"; btn.classList.remove('reset-success'); }, 2000);
     }
 
-    // --- AI & AUTO MODE LOGIC ---
     async function askGemini(text) {
         const payloadHistory = [...chatHistory, { role: "user", parts: [{ text: `Investigador: "${text}"` }] }];
         try {
@@ -390,16 +377,10 @@
         } catch (error) { return FALLBACK_AUTO[Math.floor(Math.random()*FALLBACK_AUTO.length)]; }
     }
 
-    // FUNCIÓN PARA DISPARAR PALABRAS AUTOMÁTICAS (EFECTO SPIRIT BOX)
     async function triggerAutoSpirit() {
         if(!isSpiritOn || isProcessingResponse) return;
-        // Probabilidad del 30% de hablar si hay silencio
-        if(Math.random() > 0.7) {
-            processVoiceCommand("NOISE_TRIGGER");
-        } else {
-            // Si no habla, reinicia el ciclo
-            setTimeout(startListeningCycle, 1000);
-        }
+        if(Math.random() > 0.7) processVoiceCommand("NOISE_TRIGGER");
+        else setTimeout(startListeningCycle, 1000);
     }
 
     function updateAudioRouting() {
@@ -480,10 +461,12 @@
         document.getElementById('app-ui').style.opacity = 1;
         document.getElementById('app-ui').style.pointerEvents = 'auto';
         document.body.classList.add('panels-hidden');
-        
         audioCtx = new (window.AudioContext||window.webkitAudioContext)();
         masterGain = audioCtx.createGain(); masterGain.connect(audioCtx.destination);
-        bgBuffer = await loadAudio('FONDO_1.mp3');
+        bgBuffer = await loadAudio('FONDO_1.mp3'); 
+        
+        // INICIALIZAR SLS DESPUES DE CARGAR
+        if(canvasSLS) ctxSLS = canvasSLS.getContext('2d');
         
         initMic(); await startCam(); await initMoveNet(); initSensors();
         initMatrix(); startBannerLoop(); initPeer(); initTemp();
@@ -517,18 +500,18 @@
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') { try { const p=await DeviceOrientationEvent.requestPermission(); if(p==='granted') window.addEventListener('deviceorientation', hOr); } catch(e){} } else window.addEventListener('deviceorientation', hOr);
             if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') { try { const p=await DeviceMotionEvent.requestPermission(); if(p==='granted') window.addEventListener('devicemotion', hMot); } catch(e){} } else window.addEventListener('devicemotion', hMot);
         };
-        const hOr = (e) => { if(e.alpha!==null){ document.getElementById('mag-val').innerText=Math.round(e.alpha).toString().padStart(3,'0'); setSensorStatus('sens-mag','main'); magActive=true; } };
+        const hOr = (e) => { if(e.alpha!==null){ setSensorStatus('sens-mag','main'); magActive=true; } };
         const hMot = (e) => { const a=e.accelerationIncludingGravity, r=e.rotationRate; if(a){ let t=Math.abs(a.x)+Math.abs(a.y)+Math.abs(a.z); document.getElementById('emf-val').innerText=(t*2.5).toFixed(1); setSensorStatus('sens-acc','main'); setSensorStatus('sens-lidar','sim'); motionActive=true; } if(r&&(r.alpha||r.beta||r.gamma)) setSensorStatus('sens-gyro','main'); };
         req(); initProximity();
         setInterval(()=>{ 
-            if(!magActive) { setSensorStatus('sens-mag','sim'); document.getElementById('mag-val').innerText=Math.floor(Math.random()*360).toString().padStart(3,'0'); } 
+            if(!magActive) { setSensorStatus('sens-mag','sim'); } 
             if(!motionActive) { setSensorStatus('sens-acc','sim'); setSensorStatus('sens-gyro','sim'); setSensorStatus('sens-lidar','status-red'); document.getElementById('emf-val').innerText=(0.3+Math.random()*0.9).toFixed(1); } 
         }, 500);
     }
     function initProximity(){ if('ProximitySensor' in window){ try { proxSensor=new ProximitySensor({frequency:10}); proxSensor.addEventListener('reading', ()=>{ document.getElementById('prox-val').innerText=proxSensor.value?proxSensor.value.toFixed(0):"0"; setSensorStatus('sens-prox','main'); }); proxSensor.start(); } catch(e){ setSensorStatus('sens-prox','status-red'); } } else { setSensorStatus('sens-prox','sim'); setInterval(()=>{ if(Math.random()>0.95){ document.getElementById('prox-val').innerText=Math.floor(Math.random()*5); setTimeout(()=>document.getElementById('prox-val').innerText="0",800); } },1000); } }
 
     async function loadAudio(u){ try{const r=await fetch(u);const b=await r.arrayBuffer();return await audioCtx.decodeAudioData(b);}catch(e){return null;} }
-    async function initMic(){ try{ const s=await navigator.mediaDevices.getUserMedia({audio:true}); localStream=s; micSource=audioCtx.createMediaStreamSource(s); analyser=audioCtx.createAnalyser(); analyser.fftSize=64; micSource.connect(analyser); setSensorStatus('sens-mic','main'); connectAudioToMixer(); }catch(e){ setSensorStatus('sens-mic','status-red'); } }
+    async function initMic(){ try{ const s=await navigator.mediaDevices.getUserMedia({audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); localStream=s; micSource=audioCtx.createMediaStreamSource(s); analyser=audioCtx.createAnalyser(); analyser.fftSize=64; micSource.connect(analyser); setSensorStatus('sens-mic','main'); connectAudioToMixer(); }catch(e){ setSensorStatus('sens-mic','status-red'); } }
     
     function toggleSpirit(){
         isSpiritOn = !isSpiritOn;
@@ -542,7 +525,6 @@
         }else{
             btn.innerText="ENCENDER"; btn.classList.remove('pwr-on'); document.getElementById('sb-status').innerText="APAGADO";
             if(bgNode){bgNode.stop(); bgNode=null;} if(noiseNode){noiseNode.stop(); noiseNode=null;}
-            if(interferenceInterval) clearInterval(interferenceInterval);
             if(window.speechSynthesis) window.speechSynthesis.cancel();
             document.getElementById('voice-led').classList.remove('listening'); if(recognition) recognition.stop();
         }
@@ -563,7 +545,7 @@
                 recognition.onend = () => { isRecognizing=false; document.getElementById('voice-led').classList.remove('listening'); 
                     if(!isProcessingResponse && isSpiritOn) {
                         if(micMaxVol > 15) { isProcessingResponse = true; processVoiceCommand("NOISE_TRIGGER"); } 
-                        else { setTimeout(startListeningCycle, 500); }
+                        else { triggerAutoSpirit(); } 
                     }
                 };
                 recognition.onresult = (e) => { processVoiceCommand(e.results[0][0].transcript.toLowerCase().trim()); };
@@ -576,15 +558,9 @@
     async function processVoiceCommand(txt){
         document.getElementById('voice-led').classList.remove('listening');
         document.getElementById('sb-status').innerText = "PROCESANDO...";
-        
         let response = null;
-        if(txt === "NOISE_TRIGGER") {
-            // Si fue ruido, intentamos generar palabra
-            response = await askGemini("Dime una palabra al azar de este lugar.");
-        } else {
-            // Si fue voz real, respondemos
-            response = await askGemini(txt);
-        }
+        if(txt === "NOISE_TRIGGER") { response = await askGemini("Dime una palabra al azar de este lugar."); } 
+        else { response = await askGemini(txt); }
         speak(response);
     }
     
@@ -615,7 +591,8 @@
         frames++;
         if(performance.now()-lastFps>=1000){ document.getElementById('cam-fps').innerText = frames; frames=0; lastFps=performance.now(); }
         
-        if(currentFilter==='sls' && vid.readyState >= 2){ 
+        // SLS DRAW (SOLO SI ESTA ACTIVO Y HAY CONTEXTO)
+        if(currentFilter==='sls' && vid.readyState >= 2 && ctxSLS){ 
             ctxSLS.clearRect(0,0,canvasSLS.width,canvasSLS.height); 
             if (latestPoses.length > 0) drawSLS(latestPoses); 
         }
