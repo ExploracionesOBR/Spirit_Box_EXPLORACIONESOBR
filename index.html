@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR FINAL-V2</title> 
+    <title>DETECTOR-OBR ULTIMATE</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -320,8 +320,11 @@
     const touchLayer = document.getElementById('touch-layer');
     const mainView = document.getElementById('main-view-area');
     const vid = document.getElementById('bg-camera-feed');
+    
+    // --- SLS GLOBAL CONTEXT (EXACTAMENTE COMO VERSION BASE) ---
     const canvasSLS = document.getElementById('main-filter-canvas'); 
-    const ctxSLS = canvasSLS.getContext('2d'); // INICIALIZACION GLOBAL ORIGINAL (SLS FIX)
+    const ctxSLS = canvasSLS.getContext('2d');
+    
     const matrixCanvas = document.getElementById('matrix-canvas');
     const mCtx = matrixCanvas ? matrixCanvas.getContext('2d') : null;
     let matrixDrops = [];
@@ -420,7 +423,7 @@
         const btn = document.getElementById('btn-pareidolia');
         if(isPareidoliaActive) {
             btn.classList.add('pareidolia-on');
-            speak("Visión activada"); // TEXTO CAMBIADO
+            speak("Visión activada"); 
         } else {
             btn.classList.remove('pareidolia-on');
             speak("Visión desactivada");
@@ -728,6 +731,7 @@
         frames++;
         if(performance.now()-lastFps>=1000){ document.getElementById('cam-fps').innerText = frames; frames=0; lastFps=performance.now(); }
         
+        // --- SLS RENDERER (ORIGINAL LOGIC) ---
         if(currentFilter==='sls' && vid.readyState >= 2){ 
             ctxSLS.clearRect(0,0,canvasSLS.width,canvasSLS.height); 
             if (latestPoses.length > 0) drawSLS(latestPoses); 
@@ -765,13 +769,15 @@
         requestAnimationFrame(loop);
     }
 
-    // ---------------------------------------------------------
-    // SLS CORE - RESTORED & FIXED
-    // ---------------------------------------------------------
+    // =========================================================
+    // SLS CORE (CÓDIGO EXACTO DE v18.6 STABLE-FIX)
+    // =========================================================
+    let latestPoses = [];
     async function initMoveNet() { 
         await tf.ready(); 
         detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING }); 
         setInterval(async () => { 
+            // RESTORED v13.9 Logic: Threshold 0.15
             if(currentFilter==='sls' && vid.readyState>=2) { 
                 try { latestPoses = await detector.estimatePoses(vid, {maxPoses: 5, scoreThreshold: 0.15}); } catch(e) { latestPoses = []; } 
             } else { latestPoses = []; } 
@@ -779,7 +785,6 @@
     }
     
     const conns = [['left_shoulder','right_shoulder'],['left_shoulder','left_hip'],['right_shoulder','right_hip'],['left_hip','right_hip'],['left_shoulder','left_elbow'],['left_elbow','left_wrist'],['right_shoulder','right_elbow'],['right_elbow','right_wrist'],['left_hip','left_knee'],['left_knee','left_ankle'],['right_hip','right_knee'],['right_knee','right_ankle']];
-    
     function drawSLS(poses) {
         const s = Math.max(canvasSLS.width/vid.videoWidth, canvasSLS.height/vid.videoHeight); 
         const xo = (canvasSLS.width - vid.videoWidth*s)/2;
