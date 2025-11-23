@@ -118,7 +118,7 @@
         .btn-control { background: #111; border: 1px solid #444; color: #aaa; font-family: 'Orbitron'; font-size: 0.8rem; padding: 10px; width: 100%; cursor: pointer; font-weight: bold; }
         .btn-control.pwr-on { border-color: var(--hud-green); color: var(--hud-green); background: rgba(0,50,0,0.3); box-shadow: 0 0 10px var(--hud-green) inset; }
 
-        /* MODO STREAMER */
+        /* ESTILOS NUEVOS PARA MODO STREAMER */
         .streamer-panel { padding: 10px; background: rgba(20, 0, 20, 0.4); border: 1px solid var(--hud-purple); border-radius: 4px; text-align: center; margin-bottom: 10px; }
         .stream-btn { width: 100%; padding: 15px; font-size: 0.9rem; font-family: 'Orbitron'; background: rgba(0,0,0,0.5); border: 2px solid #555; color: #777; cursor: pointer; transition: all 0.3s; text-shadow: 0 0 5px #000; }
         .stream-active { border-color: var(--hud-purple) !important; color: var(--hud-purple) !important; box-shadow: 0 0 20px var(--hud-purple), inset 0 0 10px rgba(168, 85, 247, 0.3); background: rgba(40, 0, 60, 0.6); animation: pulseStream 2s infinite; }
@@ -143,13 +143,8 @@
         #btn-hud.active { background: var(--hud-cyan); color: #000; }
         #btn-hud { background: rgba(0, 10, 20, 0.9); color: var(--hud-cyan); }
         
-        /* ESTILO PAREIDOLIA */
-        #btn-pareidolia.pareidolia-on {
-            border-color: var(--hud-purple) !important;
-            color: var(--hud-purple) !important;
-            box-shadow: 0 0 15px var(--hud-purple);
-            animation: pulseEye 1s infinite;
-        }
+        /* ESTILO PARA BOTON PAREIDOLIA */
+        #btn-pareidolia.pareidolia-on { border-color: var(--hud-purple) !important; color: var(--hud-purple) !important; box-shadow: 0 0 15px var(--hud-purple); animation: pulseEye 1s infinite; }
         @keyframes pulseEye { 50% { opacity: 0.5; transform: scale(0.95); } }
 
         .ui-hiding { animation: waterPop 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important; pointer-events: none; }
@@ -275,9 +270,8 @@
     // ==========================================
     // CONFIGURACIÓN DE INTELIGENCIA ARTIFICIAL
     // ==========================================
-    const GEMINI_API_KEY = "AIzaSyBkWd1MK0ip4D_PWiMTsDYmp5g22c3duIQ"; // <--- TU API KEY
+    const GEMINI_API_KEY = "AIzaSyBkWd1MK0ip4D_PWiMTsDYmp5g22c3duIQ"; 
     
-    // PERSONALIDAD DEL ENTE
     const AI_SYSTEM_INSTRUCTION = {
         role: "user",
         parts: [{ text: `
@@ -290,11 +284,11 @@
             5. Máximo 10 palabras por respuesta.
         `}]
     };
-    // ==========================================
 
     const FALLBACK_AUTO = ["¿Hay alguien?", "Te escucho", "Acércate", "Detrás", "Frío", "Ayuda", "Vete", "Sótano", "Miedo", "Luz", "Oscuridad", "Aquí"];
     const MIXER_ID = "obr-mezclador-central"; 
     
+    // Variables Globales
     let audioCtx, masterGain, micSource, analyser;
     let bgBuffer, bgNode, bgGain;
     let recognition, isSpiritOn = false;
@@ -305,11 +299,8 @@
     let micMaxVol = 0;
     let restoreAudioTimer;
     let isProcessingResponse = false; 
-
-    // VARIABLES AI AVANZADAS
     let chatHistory = []; 
-    let isPareidoliaActive = false; // ESTADO DEL OJO DIGITAL
-    
+    let isPareidoliaActive = false;
     let peer, dataConn;
     let isRxOn = false;
     let isMixerConnected = false;
@@ -319,34 +310,113 @@
     let isIntroPlaying = false;
     let localStream = null;
     let isStreamMode = false;
-    
     let zoomLevel = 1;
     let longPressTimer;
     let isLongPressing = false;
     let initialPinchDist = 0;
+    
+    // Referencias DOM
     const zoomContainer = document.getElementById('zoom-container');
     const touchLayer = document.getElementById('touch-layer');
     const mainView = document.getElementById('main-view-area');
-
     const vid = document.getElementById('bg-camera-feed');
-    const canvasSLS = document.getElementById('main-filter-canvas'); const ctxSLS = canvasSLS.getContext('2d');
+    const canvasSLS = document.getElementById('main-filter-canvas'); 
+    const ctxSLS = canvasSLS ? canvasSLS.getContext('2d') : null;
     const matrixCanvas = document.getElementById('matrix-canvas');
-    const mCtx = matrixCanvas.getContext('2d');
+    const mCtx = matrixCanvas ? matrixCanvas.getContext('2d') : null;
     let matrixDrops = [];
+    let latestPoses = [];
+    let detector = null; 
 
-    let loadProgress = 0; let loadInterval; 
+    // Sensores Simulados
     const NUM_BARS = 10; 
     let baseTemp = 0; let targetTemp = 22.0; let currentTemp = 22.0; let lastTempTime = 0;
     let currentProx = 0; let targetProx = 0;
-    let detector = null; 
 
+    // ==========================================
+    // SISTEMA DE CARGA (FIXED)
+    // ==========================================
+    function startLoadingSequence() {
+        const txtMain = document.getElementById('loading-text-main');
+        const txtSub = document.getElementById('loading-text-sub');
+        const bar = document.getElementById('loading-bar');
+        const perc = document.getElementById('loading-percent');
+        const btn = document.getElementById('enter-btn');
+        
+        let p = 0;
+        
+        // Limpiamos cualquier intervalo previo
+        if(window.loadInterval) clearInterval(window.loadInterval);
+
+        window.loadInterval = setInterval(() => {
+            // Incremento constante para evitar atascos
+            p += 1; 
+            if(p > 100) p = 100;
+
+            // Actualizar Textos según porcentaje
+            if(p < 30) {
+                if(txtMain) txtMain.innerText = "INICIANDO SISTEMA...";
+                if(txtSub) txtSub.innerText = "CARGANDO KERNEL...";
+            }
+            else if(p >= 30 && p < 60) { 
+                if(txtMain) txtMain.innerText = "ACTIVANDO OJO DIGITAL..."; 
+                if(txtSub) txtSub.innerText = "CALIBRANDO LENTE ESPECTRAL..."; 
+            }
+            else if(p >= 60 && p < 98) { 
+                if(txtMain) txtMain.innerText = "SINTONIZANDO..."; 
+                if(txtSub) txtSub.innerText = "CONECTANDO A LA RED NEURAL..."; 
+            }
+            else if(p >= 98) {
+                // FINALIZACIÓN
+                clearInterval(window.loadInterval); 
+                p = 100;
+                
+                if(txtMain) txtMain.innerText = "SISTEMA LISTO"; 
+                if(txtSub) txtSub.innerText = "ONLINE";
+                
+                if(btn) {
+                    btn.style.display = "block"; 
+                    btn.classList.add('btn-glitch');
+                }
+            }
+            
+            // Actualizar barra visual
+            if(bar) bar.style.width = p + "%"; 
+            if(perc) perc.innerText = p + "%";
+
+        }, 40); // Velocidad: 40ms por 1% (aprox 4 segundos total)
+    }
+
+    // Inicialización al cargar la ventana
     window.onload = () => {
-        const eContainer = document.getElementById('energy-container');
-        for(let i=0; i<NUM_BARS; i++){ let d = document.createElement('div'); d.className = 'energy-bar-seg'; eContainer.appendChild(d); energyBars.push(d); }
-        setupZoomEvents();
-        startLoadingSequence();
-        chatHistory.push(AI_SYSTEM_INSTRUCTION);
-        chatHistory.push({ role: "model", parts: [{ text: "..." }] });
+        try {
+            // 1. Iniciar barra de carga inmediatamente
+            startLoadingSequence();
+
+            // 2. Inicializar Barras de Energía
+            const eContainer = document.getElementById('energy-container');
+            if(eContainer) {
+                for(let i=0; i<NUM_BARS; i++){ 
+                    let d = document.createElement('div'); 
+                    d.className = 'energy-bar-seg'; 
+                    eContainer.appendChild(d); 
+                    energyBars.push(d); 
+                }
+            }
+
+            // 3. Inicializar Zoom y Eventos
+            setupZoomEvents();
+            
+            // 4. Inicializar Historial IA
+            chatHistory.push(AI_SYSTEM_INSTRUCTION);
+            chatHistory.push({ role: "model", parts: [{ text: "..." }] });
+
+        } catch (err) {
+            console.error("Error crítico en inicio:", err);
+            // En caso de error, forzar final de carga
+            const btn = document.getElementById('enter-btn');
+            if(btn) btn.style.display = "block";
+        }
     };
 
     function forceResetUI() {
@@ -365,7 +435,6 @@
     function togglePareidolia() {
         isPareidoliaActive = !isPareidoliaActive;
         const btn = document.getElementById('btn-pareidolia');
-        
         if(isPareidoliaActive) {
             btn.classList.add('pareidolia-on');
             speak("Pareidolia digital activada");
@@ -379,41 +448,25 @@
     function captureVideoFrame() {
         try {
             const canvas = document.createElement('canvas');
-            canvas.width = 640; 
-            canvas.height = 480;
+            canvas.width = 640; canvas.height = 480;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.6); 
-            return dataUrl.split(',')[1]; 
+            return canvas.toDataURL('image/jpeg', 0.6).split(',')[1]; 
         } catch (e) {
             console.error("Error captura video:", e);
             return null;
         }
     }
 
-    // --- FUNCIÓN AI GEMINI (CONDICIONAL) ---
+    // --- FUNCIÓN AI GEMINI ---
     async function askGemini(text) {
-        // 1. Decidir si enviamos imagen
         let base64Image = null;
-        if (isPareidoliaActive) {
-            base64Image = captureVideoFrame();
-        }
+        if (isPareidoliaActive) base64Image = captureVideoFrame();
         
-        // 2. Preparar mensaje
-        const userMessage = {
-            role: "user",
-            parts: [
-                { text: `Investigador: "${text}".` }
-            ]
-        };
+        const userMessage = { role: "user", parts: [{ text: `Investigador: "${text}".` }] };
 
         if (base64Image) {
-            userMessage.parts.push({
-                inline_data: {
-                    mime_type: "image/jpeg",
-                    data: base64Image
-                }
-            });
+            userMessage.parts.push({ inline_data: { mime_type: "image/jpeg", data: base64Image } });
             userMessage.parts[0].text += " (Analiza lo que ves en la imagen adjunta)";
         } else {
             userMessage.parts[0].text += " (No puedo ver, mis ojos están cerrados)";
@@ -430,9 +483,7 @@
                     generationConfig: { maxOutputTokens: 60, temperature: 1.0 }
                 })
             });
-            
             const data = await response.json();
-            
             if(data.candidates && data.candidates[0].content) {
                 const aiText = data.candidates[0].content.parts[0].text;
                 chatHistory.push({ role: "user", parts: [{ text: text }] }); 
@@ -446,7 +497,7 @@
         }
     }
 
-    // --- AUDIO ROUTING & STREAMER MODE ---
+    // --- AUDIO & STREAMER MODE ---
     function updateAudioRouting() {
         if (!audioCtx || !analyser) return;
         try { if(micStreamSource) { micStreamSource.disconnect(analyser); micStreamSource.disconnect(audioCtx.destination); } } catch(e){}
@@ -480,15 +531,17 @@
 
     // --- PEER & COMMS ---
     function initPeer() {
-        peer = new Peer(); 
-        peer.on('open', id => { connectData(); connectAudioToMixer(); });
-        peer.on('call', call => {
-            call.answer(localStream);
-            call.on('stream', remoteStream => {
-                incomingAudioEl.srcObject = remoteStream; incomingAudioEl.muted = !isRxOn; 
-                if(isRxOn) updateAudioRouting();
+        try {
+            peer = new Peer(); 
+            peer.on('open', id => { connectData(); connectAudioToMixer(); });
+            peer.on('call', call => {
+                call.answer(localStream);
+                call.on('stream', remoteStream => {
+                    incomingAudioEl.srcObject = remoteStream; incomingAudioEl.muted = !isRxOn; 
+                    if(isRxOn) updateAudioRouting();
+                });
             });
-        });
+        } catch(e){ console.log("PeerJS Error (Offline Mode)"); }
     }
     function connectAudioToMixer() {
         if(localStream && peer) {
@@ -520,49 +573,10 @@
         updateRXVisuals();
     }
 
-    // --- APP CORE (LOADING FIXED) ---
-    function startLoadingSequence() {
-        const txtMain = document.getElementById('loading-text-main');
-        const txtSub = document.getElementById('loading-text-sub');
-        const bar = document.getElementById('loading-bar');
-        const perc = document.getElementById('loading-percent');
-        const btn = document.getElementById('enter-btn');
-        
-        loadProgress = 0; // RESET
-        if (loadInterval) clearInterval(loadInterval);
-
-        loadInterval = setInterval(() => {
-            loadProgress += Math.random() * 1.5; 
-            if(loadProgress > 100) loadProgress = 100;
-
-            if(loadProgress < 30) {
-                txtMain.innerText = "INICIANDO SISTEMA...";
-                txtSub.innerText = "CARGANDO KERNEL...";
-            }
-            else if(loadProgress >= 30 && loadProgress < 60) { 
-                txtMain.innerText = "ACTIVANDO OJO DIGITAL..."; 
-                txtSub.innerText = "CALIBRANDO LENTE ESPECTRAL..."; 
-            }
-            else if(loadProgress >= 60 && loadProgress < 98) { 
-                txtMain.innerText = "SINTONIZANDO..."; 
-                txtSub.innerText = "CONECTANDO A LA RED NEURAL..."; 
-            }
-            else if(loadProgress >= 98) {
-                clearInterval(loadInterval); 
-                loadProgress = 100;
-                txtMain.innerText = "SISTEMA LISTO"; 
-                txtSub.innerText = "ONLINE";
-                btn.style.display = "block"; 
-                btn.classList.add('btn-glitch');
-            }
-            
-            bar.style.width = loadProgress + "%"; 
-            perc.innerText = Math.floor(loadProgress) + "%";
-        }, 50);
-    }
-
+    // --- APP CORE ---
     function initMatrix() { const pSection = matrixCanvas.parentElement; if(!pSection) return; matrixCanvas.width = pSection.clientWidth; matrixCanvas.height = pSection.clientHeight; const columns = Math.floor(matrixCanvas.width / 15); matrixDrops = Array(columns).fill(1); }
     function drawMatrix() {
+        if(!mCtx) return;
         mCtx.fillStyle = 'rgba(0, 0, 0, 0.1)'; mCtx.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height);
         mCtx.fillStyle = '#00f3ff'; mCtx.font = '10px Share Tech Mono';
         for(let i = 0; i < matrixDrops.length; i++) {
@@ -574,7 +588,14 @@
         }
     }
 
-    function setupZoomEvents() { touchLayer.addEventListener('touchstart', handleTouchStart, {passive: false}); touchLayer.addEventListener('touchmove', handleTouchMove, {passive: false}); touchLayer.addEventListener('touchend', handleTouchEnd); touchLayer.addEventListener('mousedown', handleMouseDown); touchLayer.addEventListener('mouseup', handleMouseUp); }
+    function setupZoomEvents() { 
+        if(!touchLayer) return;
+        touchLayer.addEventListener('touchstart', handleTouchStart, {passive: false}); 
+        touchLayer.addEventListener('touchmove', handleTouchMove, {passive: false}); 
+        touchLayer.addEventListener('touchend', handleTouchEnd); 
+        touchLayer.addEventListener('mousedown', handleMouseDown); 
+        touchLayer.addEventListener('mouseup', handleMouseUp); 
+    }
     function handleTouchStart(e) { if (e.touches.length === 1) { isLongPressing = false; const t = e.touches[0]; longPressTimer = setTimeout(() => { triggerLongPressZoom(t.clientX, t.clientY); }, 600); } else if (e.touches.length === 2) { clearTimeout(longPressTimer); initialPinchDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); } }
     function handleTouchMove(e) { if (e.touches.length === 1) { clearTimeout(longPressTimer); } else if (e.touches.length === 2) { e.preventDefault(); clearTimeout(longPressTimer); const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); if (initialPinchDist > 0) { const delta = dist - initialPinchDist; zoomLevel += delta * 0.005; zoomLevel = Math.min(Math.max(1, zoomLevel), 5); applyZoom(); initialPinchDist = dist; } } }
     function handleTouchEnd(e) { if (longPressTimer) { clearTimeout(longPressTimer); if (!isLongPressing && e.touches.length === 0) { toggleUIOverlay(); } } isLongPressing = false; }
@@ -675,14 +696,12 @@
     async function processVoiceCommand(txt){
         document.getElementById('voice-led').classList.remove('listening');
         
-        // INDICADOR DE ESTADO VISUAL
-        if(isPareidoliaActive) document.getElementById('sb-status').innerText = "ANALIZANDO IMAGEN...";
+        if(isPareidoliaActive) document.getElementById('sb-status').innerText = "ANALIZANDO...";
         else document.getElementById('sb-status').innerText = "CONSULTANDO...";
 
         let response;
         if(txt === "NOISE_TRIGGER") {
             if(Math.random() > 0.7) {
-                // Si hay ruido y el ojo está abierto, preguntar qué ve
                 const q = isPareidoliaActive ? "Escuché un ruido extraño. Mira la imagen. ¿Hay algo ahí?" : "Escuché un ruido. ¿Hay alguien?";
                 response = await askGemini(q);
             } else {
@@ -727,8 +746,10 @@
         if(performance.now()-lastFps>=1000){ document.getElementById('cam-fps').innerText = frames; frames=0; lastFps=performance.now(); }
         
         if(currentFilter==='sls' && vid.readyState >= 2){ 
-            ctxSLS.clearRect(0,0,canvasSLS.width,canvasSLS.height); 
-            if (latestPoses.length > 0) drawSLS(latestPoses); 
+            if(ctxSLS) {
+                ctxSLS.clearRect(0,0,canvasSLS.width,canvasSLS.height); 
+                if (latestPoses.length > 0) drawSLS(latestPoses); 
+            }
         }
         
         drawMatrix();
@@ -740,7 +761,17 @@
             else document.getElementById('btn-rx').classList.remove('rx-pulse-green');
             
             if(isRecognizing && !isProcessingResponse) { if(avg > micMaxVol) micMaxVol=avg; }
-            for(let i=0; i<NUM_BARS; i++){ let val=(data[i*2] + (data[i*2+1]||0))/2; let bar=energyBars[i]; bar.className='energy-bar-seg'; if(val>50)bar.classList.add('active'); if(val>150)bar.classList.add('mid'); if(val>220)bar.classList.add('high'); bar.style.height=Math.max(5,(val/255)*100)+"%"; }
+            for(let i=0; i<NUM_BARS; i++){ 
+                if(energyBars[i]) {
+                    let val=(data[i*2] + (data[i*2+1]||0))/2; 
+                    let bar=energyBars[i]; 
+                    bar.className='energy-bar-seg'; 
+                    if(val>50)bar.classList.add('active'); 
+                    if(val>150)bar.classList.add('mid'); 
+                    if(val>220)bar.classList.add('high'); 
+                    bar.style.height=Math.max(5,(val/255)*100)+"%"; 
+                }
+            }
         }
 
         if(Math.abs(currentProx - targetProx) > 1) currentProx += (targetProx - currentProx) * 0.1;
@@ -753,19 +784,21 @@
         requestAnimationFrame(loop);
     }
 
-    let latestPoses = [];
     async function initMoveNet() { 
-        await tf.ready(); 
-        detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING }); 
-        setInterval(async () => { 
-            if(currentFilter==='sls' && vid.readyState>=2) { 
-                try { latestPoses = await detector.estimatePoses(vid, {maxPoses: 5, scoreThreshold: 0.15}); } catch(e) { latestPoses = []; } 
-            } else { latestPoses = []; } 
-        }, 100); 
+        try {
+            await tf.ready(); 
+            detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING }); 
+            setInterval(async () => { 
+                if(currentFilter==='sls' && vid.readyState>=2 && detector) { 
+                    try { latestPoses = await detector.estimatePoses(vid, {maxPoses: 5, scoreThreshold: 0.15}); } catch(e) { latestPoses = []; } 
+                } else { latestPoses = []; } 
+            }, 100); 
+        } catch(e) { console.log("TF Error"); }
     }
     
     const conns = [['left_shoulder','right_shoulder'],['left_shoulder','left_hip'],['right_shoulder','right_hip'],['left_hip','right_hip'],['left_shoulder','left_elbow'],['left_elbow','left_wrist'],['right_shoulder','right_elbow'],['right_elbow','right_wrist'],['left_hip','left_knee'],['left_knee','left_ankle'],['right_hip','right_knee'],['right_knee','right_ankle']];
     function drawSLS(poses) {
+        if(!ctxSLS) return;
         const s = Math.max(canvasSLS.width/vid.videoWidth, canvasSLS.height/vid.videoHeight); 
         const xo = (canvasSLS.width - vid.videoWidth*s)/2;
         const yo = (canvasSLS.height - vid.videoHeight*s)/2;
