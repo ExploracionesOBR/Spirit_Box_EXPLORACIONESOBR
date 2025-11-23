@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR HYBRID-SLS</title> 
+    <title>DETECTOR-OBR: AI-AUTO</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -55,14 +55,12 @@
         #left-panel { grid-area: left; border-right: 2px solid var(--hud-cyan); overflow: hidden; transition: all 0.5s ease; position: relative; display: flex; flex-direction: column; justify-content: flex-start; z-index: 50; background: var(--glass-panel); }
         #bottom-panel { grid-area: bottom; border-top: 2px solid var(--hud-cyan); overflow: hidden; transition: all 0.5s ease; z-index: 50; background: var(--glass-panel); }
         
-        /* CAMARA (Contenedor principal) */
         #main-view-area { 
             grid-area: cam; position: relative; overflow: hidden; background: #000; width: 100%; height: 100%; 
             touch-action: none;
         }
 
         #touch-layer { position: absolute; inset: 0; z-index: 10; touch-action: none; }
-
         body.panels-hidden #left-panel, body.panels-hidden #bottom-panel { display: none; }
 
         .panel-container {
@@ -88,10 +86,8 @@
         .rec-container { position: absolute; top: 15px; left: 15px; color: var(--hud-red); font-family: 'Orbitron'; font-weight: bold; display: flex; align-items: center; gap: 8px; z-index: 30; text-shadow: 0 0 5px var(--hud-red); font-size: 0.8rem; pointer-events: none; }
         .rec-dot { width: 10px; height: 10px; background: var(--hud-red); border-radius: 50%; animation: blinkRed 1s infinite; }
         @keyframes blinkRed { 50% { opacity: 0.3; } }
-        @keyframes pulseGreen { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0.8); } 100% { box-shadow: 0 0 0 15px rgba(0, 255, 65, 0); } }
-        @keyframes pulseOrange { 0% { box-shadow: 0 0 0 0 rgba(255, 174, 0, 0.8); } 100% { box-shadow: 0 0 0 15px rgba(255, 174, 0, 0); } }
-        .rec-connected .rec-dot { background: var(--hud-green); animation: pulseGreen 1.5s infinite; }
-        .rec-error .rec-dot { background: var(--hud-orange); animation: pulseOrange 1s infinite; }
+        .rec-connected .rec-dot { background: var(--hud-green); animation: none; box-shadow: 0 0 10px var(--hud-green); }
+        .rec-error .rec-dot { background: var(--hud-orange); animation: none; }
 
         .stats-container { position: absolute; bottom: 15px; right: 20px; font-family: 'Share Tech Mono'; font-size: 0.65rem; color: rgba(0, 243, 255, 0.7); text-shadow: 0 0 2px #000; z-index: 30; text-align: right; pointer-events: none; display: flex; gap: 10px; }
         .stats-val { color: #fff; font-weight: bold; }
@@ -111,17 +107,6 @@
             90% { clip-path: inset(0 0 0 0); transform: translate(0, 0); }
             100% { clip-path: inset(0 0 0 0); transform: translate(0, 0); filter: drop-shadow(0 0 5px var(--hud-cyan)); } 
         }
-        
-        #follow-banner { position: absolute; bottom: 20px; left: 0; right: 0; display: flex; justify-content: center; pointer-events: none; opacity: 0; transition: opacity 1s; z-index: 30; }
-        #follow-banner.active { opacity: 1; }
-        .banner-content { background: transparent; padding: 0; border: none; display: flex; flex-direction: column; align-items: center; gap: 5px; text-shadow: 0 0 5px #000; }
-        .seq-step { display: none; animation: fadeIn 0.5s; text-align: center; }
-        .seq-step.active { display: block; }
-        #step-1 { font-family: 'Orbitron'; color: #fff; letter-spacing: 2px; font-weight: bold; text-shadow: 0 0 10px var(--hud-cyan); }
-        #step-2 { gap: 20px; display: none; filter: drop-shadow(0 0 5px #000); } 
-        #step-3 { font-family: 'Creepster'; color: var(--hud-red); letter-spacing: 2px; font-size: 1.5rem; text-shadow: 2px 2px 0 #000; }
-        .social-icon { font-size: 2rem; color: #fff; transition: transform 0.2s; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
         .section-title { font-family: 'Orbitron'; font-size: 0.65rem; font-weight: 800; color: var(--hud-cyan); margin-bottom: 5px; border-bottom: 1px solid rgba(0, 243, 255, 0.3); display: flex; justify-content: space-between; align-items: center; padding-bottom: 2px; z-index: 2; position: relative; }
         #spirit-box-section { border: 1px solid var(--hud-green); background: rgba(0, 15, 5, 0.5); padding: 8px; border-radius: 4px; margin-bottom: 10px; display: flex; flex-direction: column; z-index: 2; position: relative; }
@@ -133,35 +118,24 @@
         .btn-control { background: #111; border: 1px solid #444; color: #aaa; font-family: 'Orbitron'; font-size: 0.8rem; padding: 10px; width: 100%; cursor: pointer; font-weight: bold; }
         .btn-control.pwr-on { border-color: var(--hud-green); color: var(--hud-green); background: rgba(0,50,0,0.3); box-shadow: 0 0 10px var(--hud-green) inset; }
 
-        /* MODO STREAMER ESTILOS */
+        /* MODO STREAMER */
         .streamer-panel { padding: 10px; background: rgba(20, 0, 20, 0.4); border: 1px solid var(--hud-purple); border-radius: 4px; text-align: center; margin-bottom: 10px; }
         .stream-btn { width: 100%; padding: 15px; font-size: 0.9rem; font-family: 'Orbitron'; background: rgba(0,0,0,0.5); border: 2px solid #555; color: #777; cursor: pointer; transition: all 0.3s; text-shadow: 0 0 5px #000; }
         .stream-active { border-color: var(--hud-purple) !important; color: var(--hud-purple) !important; box-shadow: 0 0 20px var(--hud-purple), inset 0 0 10px rgba(168, 85, 247, 0.3); background: rgba(40, 0, 60, 0.6); animation: pulseStream 2s infinite; }
         @keyframes pulseStream { 0%, 100% { border-color: var(--hud-purple); color: var(--hud-purple); text-shadow: 0 0 10px var(--hud-purple); } 50% { border-color: var(--hud-green); color: var(--hud-green); text-shadow: 0 0 15px var(--hud-green); } }
 
-        /* PANEL SENSORES (2 COLUMNAS) */
-        .panel-section { flex-grow: 0; overflow: hidden; position: relative; padding: 8px; background: rgba(0,0,0,0.4); border-radius: 4px; margin-bottom: 5px; } 
-        .sensor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; position: relative; z-index: 2; }
-        .sensor-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.6rem; padding: 3px 5px; background: rgba(20,20,30,0.6); border-radius: 3px; border-left: 2px solid #333; backdrop-filter: blur(2px); }
-        .status-green { border-left-color: var(--hud-green); color: var(--hud-green); }
-        .status-red { border-left-color: var(--hud-red); color: #777; }
-
         .btn-rx { margin-top: 5px; padding: 10px; border-radius: 4px; font-weight: bold; text-align: center; cursor: pointer; font-family: 'Orbitron'; letter-spacing: 1px; font-size: 0.8rem; transition: all 0.2s; text-shadow: 0 0 5px rgba(0,0,0,0.5); position: relative; z-index: 2; }
         .rx-off { background: #330000; border: 2px solid #ff0000; color: #ff0000; box-shadow: inset 0 0 10px #550000; }
         .rx-on { background: #004400; border: 2px solid #00ff41; color: #00ff41; box-shadow: 0 0 15px #00ff41; animation: none; }
         
-        /* BOTON RESET UI (INTEGRADO Y IZQUIERDA) */
         #btn-reset-ui {
-            position: absolute; bottom: 80px; left: 20px; z-index: 100; /* Z-INDEX AJUSTADO */
+            position: absolute; bottom: 80px; left: 20px; z-index: 100;
             background: rgba(0,0,0,0.3); border: 1px solid #ff3333; color: #ff3333;
             font-size: 1.2rem; width: 35px; height: 35px; border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
             cursor: pointer; pointer-events: auto; transition: all 0.3s;
         }
-        #btn-reset-ui.reset-success {
-            border-color: #00ff41; color: #00ff41; background: rgba(0,20,0,0.5);
-            box-shadow: 0 0 10px #00ff41;
-        }
+        #btn-reset-ui.reset-success { border-color: #00ff41; color: #00ff41; background: rgba(0,20,0,0.5); box-shadow: 0 0 10px #00ff41; }
 
         #filter-controls-container { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
         .filter-btn { width: 38px; height: 38px; background: rgba(0, 10, 20, 0.9); color: var(--hud-cyan); font-size: 1rem; border: 1px solid var(--hud-cyan); cursor: pointer; clip-path: polygon(15% 0, 100% 0, 100% 85%, 85% 100%, 0 100%, 0 15%); display: flex; align-items: center; justify-content: center; pointer-events: auto; }
@@ -209,8 +183,8 @@
 
 <div id="loading-overlay">
     <img src="obr-logo.png" class="horror-logo" id="load-logo">
-    <div id="loading-text-main">CARGANDO MÓDULOS...</div>
-    <div id="loading-text-sub">INICIALIZANDO KERNEL...</div>
+    <div id="loading-text-main">CONECTANDO A LA MATRIX...</div>
+    <div id="loading-text-sub">CARGANDO SISTEMAS...</div>
     <div class="loading-bar-container"><div id="loading-bar"></div></div>
     <div id="loading-percent">0%</div>
     <button id="enter-btn" onclick="enterApp()">INICIAR SISTEMA</button>
@@ -255,24 +229,13 @@
         <div id="touch-layer"></div>
 
         <button id="btn-intro" onclick="playIntro()">🎞️</button>
-
         <button id="btn-reset-ui" onclick="forceResetUI()">⚠</button>
 
         <div class="camera-border"><div class="cb-inner"></div></div>
         <div class="rec-container" id="rec-indicator"><div class="rec-dot"></div>REC</div>
         <div class="stats-container"><div><span class="stats-val" id="cam-fps">--</span> FPS</div><div><span class="stats-val" id="cam-res">--x--</span></div></div>
         <div id="logo-container"><img id="logo-image" src="obr-logo.png"></div>
-        <div id="follow-banner">
-            <div class="banner-content">
-                <div id="step-1" class="seq-step">SÍGUENOS EN</div>
-                <div id="step-2" class="seq-step" style="display:none; gap:15px; justify-content:center;">
-                    <i class="fab fa-tiktok social-icon" style="color:#ff0050;"></i>
-                    <i class="fab fa-facebook social-icon" style="color:#1877f2;"></i>
-                    <i class="fab fa-youtube social-icon" style="color:#f00;"></i>
-                </div>
-                <div id="step-3" class="seq-step">@EXPLORACIONES OBR</div>
-            </div>
-        </div>
+        
         <div id="filter-controls-container">
             <button class="filter-btn" onclick="toggleFilter('night-vision')"><i class="fas fa-eye"></i></button>
             <button class="filter-btn" onclick="toggleFilter('sls')"><i class="fas fa-child"></i></button>
@@ -304,76 +267,81 @@
     // ==========================================
     const GEMINI_API_KEY = "AIzaSyBkWd1MK0ip4D_PWiMTsDYmp5g22c3duIQ"; 
     const MIXER_ID = "obr-mezclador-central"; 
-    const FALLBACK_AUTO = ["¿Hay alguien?", "Te escucho", "Acércate", "Detrás", "Frío", "Ayuda", "Vete", "Sótano", "Miedo", "Luz", "Oscuridad", "Aquí"];
     
-    // Historial IA
-    let chatHistory = []; 
-    const AI_SYSTEM_INSTRUCTION = { 
-        role: "user", 
-        parts: [{ text: `Actúa como un espíritu atrapado en esta ubicación. Eres confuso, hablas con palabras sueltas o frases cortas. Máximo 5 palabras.` }] 
+    // FALLBACK + IA CONTEXTO
+    const FALLBACK_AUTO = ["¿Hay alguien?", "Te escucho", "Acércate", "Detrás", "Frío", "Ayuda", "Vete", "Sótano", "Miedo", "Luz", "Oscuridad", "Aquí", "Muerte", "Solo", "Duele"];
+    
+    const AI_SYSTEM_INSTRUCTION = {
+        role: "user",
+        parts: [{ text: `Actúa como un espíritu atrapado en esta ubicación. Di palabras sueltas relacionadas con hospitales, cementerios o lugares abandonados. Si el usuario no pregunta nada, di solo una palabra al azar. Si pregunta, responde corto y confuso.`}]
     };
 
-    // Variables Audio
-    let audioCtx, masterGain, micSource, analyser;
-    let bgBuffer, bgNode, bgGain;
+    // Variables Globales
+    let audioCtx, masterGain, micSource, analyser, bgBuffer, bgNode, bgGain;
     let recognition, isSpiritOn = false;
-    
-    // Variables UI/Video
     let videoTrack, currentFilter = 'none', uiVisible = false, hideTimeout;
     let proxSensor, energyBars = [];
-    let isRecognizing = false; 
-    let scanSpeed = 1.0;
-    let micMaxVol = 0;
-    let restoreAudioTimer;
-    let isProcessingResponse = false; 
-
-    // Variables Red/Peer
-    let peer, dataConn;
-    let isRxOn = false;
-    let isMixerConnected = false;
+    let isRecognizing = false, scanSpeed = 1.0, micMaxVol = 0;
+    let restoreAudioTimer, isProcessingResponse = false; 
+    
+    // Variables IA
+    let chatHistory = [];
+    let peer, dataConn, isRxOn = false, isMixerConnected = false;
     let incomingAudioEl = document.getElementById('incoming-feed');
-    let rxStreamSource = null;
-    let micStreamSource = null;
-    let isIntroPlaying = false;
-    let localStream = null;
+    let rxStreamSource = null, micStreamSource = null;
+    let isIntroPlaying = false, localStream = null, isStreamMode = false;
+    let zoomLevel = 1, longPressTimer, isLongPressing = false, initialPinchDist = 0;
     
-    // Streamer Mode
-    let isStreamMode = false;
-    
-    // Zoom/Touch
-    let zoomLevel = 1;
-    let longPressTimer;
-    let isLongPressing = false;
-    let initialPinchDist = 0;
     const zoomContainer = document.getElementById('zoom-container');
     const touchLayer = document.getElementById('touch-layer');
     const mainView = document.getElementById('main-view-area');
-
-    // Canvas/SLS
     const vid = document.getElementById('bg-camera-feed');
+    
+    // SLS VARIABLES (V18.6)
     const canvasSLS = document.getElementById('main-filter-canvas'); 
     const ctxSLS = canvasSLS.getContext('2d');
     const matrixCanvas = document.getElementById('matrix-canvas');
-    const mCtx = matrixCanvas.getContext('2d');
+    const mCtx = matrixCanvas ? matrixCanvas.getContext('2d') : null;
     let matrixDrops = [];
-
-    let loadProgress = 0; let loadInterval; let dataLoaded = false;
-    const NUM_BARS = 10; 
-    let baseTemp = 0;
-    let targetTemp = 22.0;
-    let currentTemp = 22.0;
-    let lastTempTime = 0;
-    let currentProx = 0;
-    let targetProx = 0;
+    
+    let latestPoses = [];
     let detector = null; 
+
+    const NUM_BARS = 10; 
+    let baseTemp = 0, targetTemp = 22.0, currentTemp = 22.0, lastTempTime = 0;
+    let currentProx = 0, targetProx = 0;
+
+    // ==========================================
+    // SISTEMA DE CARGA
+    // ==========================================
+    function startLoadingSequence() {
+        const txtMain = document.getElementById('loading-text-main');
+        const txtSub = document.getElementById('loading-text-sub');
+        const bar = document.getElementById('loading-bar');
+        const perc = document.getElementById('loading-percent');
+        const btn = document.getElementById('enter-btn');
+        let p = 0;
+        if(window.loadInterval) clearInterval(window.loadInterval);
+        window.loadInterval = setInterval(() => {
+            p += 2; if(p > 100) p = 100;
+            if(p < 30) { if(txtMain) txtMain.innerText = "INICIANDO SISTEMA..."; if(txtSub) txtSub.innerText = "CARGANDO KERNEL..."; }
+            else if(p >= 30 && p < 60) { if(txtMain) txtMain.innerText = "ACTIVANDO SENSORES..."; if(txtSub) txtSub.innerText = "CALIBRANDO GIROSCOPIO..."; }
+            else if(p >= 60 && p < 98) { if(txtMain) txtMain.innerText = "SINTONIZANDO..."; if(txtSub) txtSub.innerText = "CONECTANDO A LA RED..."; }
+            else if(p >= 98) {
+                clearInterval(window.loadInterval); p = 100;
+                if(txtMain) txtMain.innerText = "LISTO..."; if(txtSub) txtSub.innerText = "SISTEMA ONLINE";
+                if(btn) { btn.style.display = "block"; btn.classList.add('btn-glitch'); }
+            }
+            if(bar) bar.style.width = p + "%"; if(perc) perc.innerText = Math.floor(p) + "%";
+        }, 30);
+    }
+    startLoadingSequence();
 
     window.onload = () => {
         const eContainer = document.getElementById('energy-container');
         for(let i=0; i<NUM_BARS; i++){ let d = document.createElement('div'); d.className = 'energy-bar-seg'; eContainer.appendChild(d); energyBars.push(d); }
         setupZoomEvents();
-        startLoadingSequence();
-        
-        // Init Chat History
+        // INIT IA HISTORY
         chatHistory.push(AI_SYSTEM_INSTRUCTION);
         chatHistory.push({ role: "model", parts: [{ text: "..." }] });
     };
@@ -390,107 +358,51 @@
         setTimeout(() => { btn.innerHTML = "⚠"; btn.classList.remove('reset-success'); }, 2000);
     }
 
-    function startBannerLoop() {
-        const banner = document.getElementById('follow-banner');
-        const s1=document.getElementById('step-1'), s2=document.getElementById('step-2'), s3=document.getElementById('step-3');
-        const run = () => {
-            banner.classList.add('active'); s1.classList.add('active');
-            setTimeout(() => { s1.classList.remove('active'); s2.style.display='flex'; s2.classList.add('active'); }, 2000);
-            setTimeout(() => { s2.classList.remove('active'); s2.style.display='none'; s3.classList.add('active'); }, 5000);
-            setTimeout(() => { s3.classList.remove('active'); banner.classList.remove('active'); setTimeout(run, 15000); }, 8000);
-        }; run();
-    }
-
-    async function fetchWeather(lat, lon) {
-        try {
-            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
-            const data = await res.json();
-            return data.current_weather.temperature;
-        } catch(e) { return 18.0; } 
-    }
-    
-    function initTemp() {
-        if(navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(async pos => {
-                const realTemp = await fetchWeather(pos.coords.latitude, pos.coords.longitude);
-                baseTemp = realTemp; currentTemp = realTemp; targetTemp = realTemp;
-            }, () => { baseTemp = 18.0; });
-        } else { baseTemp = 18.0; }
-    }
-
-    // INTRO
-    function playIntro() {
-        isIntroPlaying = true;
-        const overlay = document.getElementById('video-overlay');
-        const video = document.getElementById('intro-video');
-        if(incomingAudioEl) incomingAudioEl.muted = true;
-        if(audioCtx && audioCtx.state === 'running') audioCtx.suspend();
-        if(recognition) try { recognition.stop(); } catch(e){}
-        overlay.style.display = 'flex'; 
-        setTimeout(() => overlay.style.opacity = 1, 10);
-        video.src = 'INTRO_1.mp4'; video.load();
-        video.play().catch(e => { stopIntro(); });
-        video.onended = stopIntro;
-    }
-    function stopIntro() {
-        isIntroPlaying = false;
-        const overlay = document.getElementById('video-overlay');
-        const video = document.getElementById('intro-video');
-        overlay.style.opacity = 0;
-        setTimeout(() => {
-            video.pause(); video.currentTime = 0;
-            overlay.style.display = 'none';
-            if(isRxOn && incomingAudioEl) incomingAudioEl.muted = false;
-            if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-            if(isSpiritOn) startListeningCycle();
-        }, 1500);
-    }
-
-    // --- GEMINI AI LOGIC (TEXT ONLY) ---
+    // --- AI & AUTO MODE LOGIC ---
     async function askGemini(text) {
-        // Solo texto para no romper SLS
-        const payloadHistory = [...chatHistory, { role: "user", parts: [{ text: `Investigador dice: "${text}"` }] }];
-        
+        const payloadHistory = [...chatHistory, { role: "user", parts: [{ text: `Investigador: "${text}"` }] }];
         try {
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: payloadHistory,
-                    generationConfig: { maxOutputTokens: 60, temperature: 1.0 }
-                })
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: payloadHistory, generationConfig: { maxOutputTokens: 60, temperature: 1.0 } })
             });
-            
             const data = await response.json();
             if(data.candidates && data.candidates[0].content) {
                 const aiText = data.candidates[0].content.parts[0].text;
-                // Update History
                 chatHistory.push({ role: "user", parts: [{ text: text }] }); 
                 chatHistory.push({ role: "model", parts: [{ text: aiText }] });
                 if(chatHistory.length > 10) chatHistory = [chatHistory[0], ...chatHistory.slice(-6)];
                 return aiText;
             }
-            return "...";
-        } catch (error) {
             return FALLBACK_AUTO[Math.floor(Math.random()*FALLBACK_AUTO.length)];
+        } catch (error) { return FALLBACK_AUTO[Math.floor(Math.random()*FALLBACK_AUTO.length)]; }
+    }
+
+    // FUNCIÓN PARA DISPARAR PALABRAS AUTOMÁTICAS (EFECTO SPIRIT BOX)
+    async function triggerAutoSpirit() {
+        if(!isSpiritOn || isProcessingResponse) return;
+        // Probabilidad del 30% de hablar si hay silencio
+        if(Math.random() > 0.7) {
+            processVoiceCommand("NOISE_TRIGGER");
+        } else {
+            // Si no habla, reinicia el ciclo
+            setTimeout(startListeningCycle, 1000);
         }
     }
 
-    // --- AUDIO ROUTING (STREAMER) ---
     function updateAudioRouting() {
         if (!audioCtx || !analyser) return;
-        try { if(micStreamSource) micStreamSource.disconnect(analyser); if(rxStreamSource) rxStreamSource.disconnect(analyser); try{ micStreamSource.disconnect(audioCtx.destination); }catch(e){} } catch(e){}
-        
+        try { if(micStreamSource) { micStreamSource.disconnect(analyser); micStreamSource.disconnect(audioCtx.destination); } } catch(e){}
+        try { if(rxStreamSource) { rxStreamSource.disconnect(analyser); rxStreamSource.disconnect(audioCtx.destination); } } catch(e){}
         if (isRxOn) {
             if (incomingAudioEl.srcObject) {
                 if (!rxStreamSource) rxStreamSource = audioCtx.createMediaStreamSource(incomingAudioEl.srcObject);
-                rxStreamSource.connect(analyser);
-                rxStreamSource.connect(audioCtx.destination);
+                rxStreamSource.connect(analyser); rxStreamSource.connect(audioCtx.destination);
             }
         } else {
             if (micStreamSource) {
-                micStreamSource.connect(analyser);
-                if (isStreamMode) micStreamSource.connect(audioCtx.destination); // Loopback
+                micStreamSource.connect(analyser); 
+                if (isStreamMode) micStreamSource.connect(audioCtx.destination); 
             }
         }
     }
@@ -498,107 +410,36 @@
     function toggleStreamMode() {
         isStreamMode = !isStreamMode;
         const btn = document.getElementById('btn-streamer');
-        if(isStreamMode) {
-            btn.innerHTML = "MODO STREAMER: ON<br><span style='font-size:0.6rem; color:#fff;'>(MICROFONO -> ALTAVOZ ACTIVADO)</span>";
-            btn.classList.add('stream-active');
-        } else {
-            btn.innerHTML = "MODO STREAMER: OFF<br><span style='font-size:0.6rem; color:#888;'>(EVITA SILENCIO EN LIVES)</span>";
-            btn.classList.remove('stream-active');
-        }
+        if(isStreamMode) { btn.innerHTML = "MODO STREAMER: ON<br><span style='font-size:0.6rem; color:#fff;'>(MICROFONO -> ALTAVOZ ACTIVADO)</span>"; btn.classList.add('stream-active'); } 
+        else { btn.innerHTML = "MODO STREAMER: OFF<br><span style='font-size:0.6rem; color:#888;'>(EVITA SILENCIO EN LIVES)</span>"; btn.classList.remove('stream-active'); }
         updateAudioRouting();
     }
 
-    // --- PEER & COMMS ---
     function initPeer() {
         try {
             peer = new Peer(); 
             peer.on('open', id => { connectData(); connectAudioToMixer(); });
-            peer.on('call', call => {
-                call.answer(localStream);
-                call.on('stream', remoteStream => {
-                    incomingAudioEl.srcObject = remoteStream;
-                    incomingAudioEl.muted = !isRxOn; 
-                    if(isRxOn) updateAudioRouting();
-                });
-            });
-        } catch(e){}
+            peer.on('call', call => { call.answer(localStream); call.on('stream', remoteStream => { incomingAudioEl.srcObject = remoteStream; incomingAudioEl.muted = !isRxOn; if(isRxOn) updateAudioRouting(); }); });
+        } catch(e){ }
     }
-    function connectAudioToMixer() {
-        if(localStream && peer) {
-            const call = peer.call(MIXER_ID, localStream);
-            call.on('stream', remoteStream => {
-                incomingAudioEl.srcObject = remoteStream;
-                incomingAudioEl.muted = !isRxOn;
-                if(isRxOn) updateAudioRouting();
-            });
-        }
-    }
-    function connectData() {
-        dataConn = peer.connect(MIXER_ID);
-        dataConn.on('open', () => { isMixerConnected = true; sendCmd('RX_OFF'); updateRXVisuals(); });
-        dataConn.on('close', () => { isMixerConnected = false; updateRXVisuals(); setTimeout(connectData, 3000); });
-        dataConn.on('error', () => { isMixerConnected = false; updateRXVisuals(); });
-    }
+    function connectAudioToMixer() { if(localStream && peer) { const call = peer.call(MIXER_ID, localStream); call.on('stream', remoteStream => { incomingAudioEl.srcObject = remoteStream; incomingAudioEl.muted = !isRxOn; if(isRxOn) updateAudioRouting(); }); } }
+    function connectData() { dataConn = peer.connect(MIXER_ID); dataConn.on('open', () => { isMixerConnected = true; sendCmd('RX_OFF'); updateRXVisuals(); }); dataConn.on('close', () => { isMixerConnected = false; updateRXVisuals(); setTimeout(connectData, 3000); }); dataConn.on('error', () => { isMixerConnected = false; updateRXVisuals(); }); }
     function sendCmd(cmd) { if(dataConn && dataConn.open) dataConn.send({ cmd: cmd }); }
-    
     function updateRXVisuals() {
-        const btn = document.getElementById('btn-rx');
-        const rec = document.getElementById('rec-indicator');
-        btn.className = "btn-rx"; 
-        if (!isRxOn) {
-            btn.classList.add('rx-off');
-            btn.innerHTML = "🔴 RX OFF<br><span style='font-size:0.6rem; font-weight:normal;'>(AUDIO EN MEZCLADOR)</span>";
-        } else {
-            if (isMixerConnected) {
-                btn.classList.add('rx-on', 'rx-pulse-green');
-                btn.innerHTML = "🟢 RX ON<br><span style='font-size:0.6rem; font-weight:normal;'>(AUDIO AQUÍ)</span>";
-            } else {
-                btn.classList.add('rx-on-warn');
-                btn.innerHTML = "🟠 BUSCANDO...<br><span style='font-size:0.6rem; font-weight:normal;'>(SIN ENLACE)</span>";
-            }
+        const btn = document.getElementById('btn-rx'); btn.className = "btn-rx"; 
+        if (!isRxOn) { btn.classList.add('rx-off'); btn.innerHTML = "🔴 RX OFF<br><span style='font-size:0.6rem; font-weight:normal;'>(AUDIO EN MEZCLADOR)</span>"; }
+        else {
+            if (isMixerConnected) { btn.classList.add('rx-on', 'rx-pulse-green'); btn.innerHTML = "🟢 RX ON<br><span style='font-size:0.6rem; font-weight:normal;'>(AUDIO AQUÍ)</span>"; }
+            else { btn.classList.add('rx-on-warn'); btn.innerHTML = "🟠 BUSCANDO...<br><span style='font-size:0.6rem; font-weight:normal;'>(SIN ENLACE)</span>"; }
         }
         updateAudioRouting();
     }
-
-    function toggleRX() {
-        isRxOn = !isRxOn;
-        if(isRxOn) { if(incomingAudioEl) { incomingAudioEl.muted = false; incomingAudioEl.play().catch(e=>{}); } sendCmd('RX_ON'); } else { if(incomingAudioEl) incomingAudioEl.muted = true; sendCmd('RX_OFF'); }
-        updateRXVisuals();
-    }
-
-    // --- LOADING ---
-    function startLoadingSequence() {
-        const txtMain = document.getElementById('loading-text-main');
-        const txtSub = document.getElementById('loading-text-sub');
-        const bar = document.getElementById('loading-bar');
-        const perc = document.getElementById('loading-percent');
-        const btn = document.getElementById('enter-btn');
-        
-        // Reiniciar
-        loadProgress = 0;
-        if (window.loadInterval) clearInterval(window.loadInterval);
-
-        window.loadInterval = setInterval(() => {
-            loadProgress += 2; 
-            if(loadProgress > 100) loadProgress = 100;
-
-            if(loadProgress < 30) { txtMain.innerText = "INICIANDO SISTEMA..."; txtSub.innerText = "CARGANDO KERNEL..."; }
-            else if(loadProgress >= 30 && loadProgress < 60) { txtMain.innerText = "ACTIVANDO SENSORES..."; txtSub.innerText = "CALIBRANDO..."; }
-            else if(loadProgress >= 60 && loadProgress < 98) { txtMain.innerText = "SINTONIZANDO..."; txtSub.innerText = "CONECTANDO A LA RED..."; }
-            else if(loadProgress >= 98) {
-                clearInterval(window.loadInterval); 
-                loadProgress = 100;
-                txtMain.innerText = "SISTEMA LISTO"; txtSub.innerText = "ONLINE";
-                btn.style.display = "block"; btn.classList.add('btn-glitch');
-            }
-            bar.style.width = loadProgress + "%"; perc.innerText = Math.floor(loadProgress) + "%";
-        }, 30);
-    }
+    function toggleRX() { isRxOn = !isRxOn; if(isRxOn) { if(incomingAudioEl) { incomingAudioEl.muted = false; incomingAudioEl.play().catch(e=>{}); } sendCmd('RX_ON'); } else { if(incomingAudioEl) incomingAudioEl.muted = true; sendCmd('RX_OFF'); } updateRXVisuals(); }
 
     function initMatrix() { const pSection = matrixCanvas.parentElement; if(!pSection) return; matrixCanvas.width = pSection.clientWidth; matrixCanvas.height = pSection.clientHeight; const columns = Math.floor(matrixCanvas.width / 15); matrixDrops = Array(columns).fill(1); }
     function drawMatrix() {
-        mCtx.fillStyle = 'rgba(0, 0, 0, 0.1)'; mCtx.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height);
-        mCtx.fillStyle = '#00f3ff'; mCtx.font = '10px Share Tech Mono';
+        if(!mCtx) return;
+        mCtx.fillStyle = 'rgba(0, 0, 0, 0.1)'; mCtx.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height); mCtx.fillStyle = '#00f3ff'; mCtx.font = '10px Share Tech Mono';
         for(let i = 0; i < matrixDrops.length; i++) {
             let text = String.fromCharCode(65 + Math.floor(Math.random() * 26));
             if (Math.random() > 0.99 && autoData.length > 0) { text = autoData[Math.floor(Math.random() * autoData.length)].toUpperCase(); mCtx.fillStyle = '#ff0055'; } else { mCtx.fillStyle = '#00f3ff'; }
@@ -608,32 +449,32 @@
         }
     }
 
-    function setupZoomEvents() { touchLayer.addEventListener('touchstart', handleTouchStart, {passive: false}); touchLayer.addEventListener('touchmove', handleTouchMove, {passive: false}); touchLayer.addEventListener('touchend', handleTouchEnd); touchLayer.addEventListener('mousedown', handleMouseDown); touchLayer.addEventListener('mouseup', handleMouseUp); }
+    function setupZoomEvents() { 
+        if(!touchLayer) return;
+        touchLayer.addEventListener('touchstart', handleTouchStart, {passive: false}); touchLayer.addEventListener('touchmove', handleTouchMove, {passive: false}); touchLayer.addEventListener('touchend', handleTouchEnd); touchLayer.addEventListener('mousedown', handleMouseDown); touchLayer.addEventListener('mouseup', handleMouseUp); 
+    }
     function handleTouchStart(e) { if (e.touches.length === 1) { isLongPressing = false; const t = e.touches[0]; longPressTimer = setTimeout(() => { triggerLongPressZoom(t.clientX, t.clientY); }, 600); } else if (e.touches.length === 2) { clearTimeout(longPressTimer); initialPinchDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); } }
     function handleTouchMove(e) { if (e.touches.length === 1) { clearTimeout(longPressTimer); } else if (e.touches.length === 2) { e.preventDefault(); clearTimeout(longPressTimer); const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); if (initialPinchDist > 0) { const delta = dist - initialPinchDist; zoomLevel += delta * 0.005; zoomLevel = Math.min(Math.max(1, zoomLevel), 5); applyZoom(); initialPinchDist = dist; } } }
     function handleTouchEnd(e) { if (longPressTimer) { clearTimeout(longPressTimer); if (!isLongPressing && e.touches.length === 0) { toggleUIOverlay(); } } isLongPressing = false; }
     function handleMouseDown(e) { isLongPressing = false; longPressTimer = setTimeout(() => { triggerLongPressZoom(e.clientX, e.clientY); }, 600); }
     function handleMouseUp(e) { clearTimeout(longPressTimer); if (!isLongPressing) toggleUIOverlay(); isLongPressing = false; }
-    function triggerLongPressZoom(x, y) { isLongPressing = true; const rect = mainView.getBoundingClientRect(); const relX = x - rect.left; const relY = y - rect.top; if (zoomLevel < 2.5) { zoomLevel = 3.0; } else { zoomLevel = 5.0; } zoomContainer.style.transformOrigin = `${relX}px ${relY}px`; applyZoom(); }
+    function triggerLongPressZoom(x, y) { isLongPressing = true; const rect = mainView.getBoundingClientRect(); const relX = x - rect.left; const relY = y - rect.top; zoomLevel = (zoomLevel < 2.5) ? 3.0 : 5.0; zoomContainer.style.transformOrigin = `${relX}px ${relY}px`; applyZoom(); }
     function resetZoomManual() { zoomLevel = 1.0; zoomContainer.style.transformOrigin = "center center"; applyZoom(); }
     function applyZoom() { zoomContainer.style.transform = `scale(${zoomLevel})`; }
     function toggleUIOverlay() { if (uiVisible) hideControls(); else showControls(); }
-    function showControls() { uiVisible = true; document.getElementById('filter-controls-container').style.opacity = '1'; document.getElementById('filter-controls-container').style.pointerEvents = 'auto'; document.getElementById('logo-container').classList.add('ui-hiding'); document.getElementById('follow-banner').classList.add('ui-hiding'); clearTimeout(hideTimeout); hideTimeout = setTimeout(hideControls, 5000); }
-    function hideControls() { uiVisible = false; document.getElementById('filter-controls-container').style.opacity = '0'; document.getElementById('filter-controls-container').style.pointerEvents = 'none'; document.getElementById('logo-container').classList.remove('ui-hiding'); document.getElementById('follow-banner').classList.remove('ui-hiding'); }
+    function showControls() { uiVisible = true; document.getElementById('filter-controls-container').style.opacity = '1'; document.getElementById('filter-controls-container').style.pointerEvents = 'auto'; document.getElementById('logo-container').classList.add('ui-hiding'); clearTimeout(hideTimeout); hideTimeout = setTimeout(hideControls, 5000); }
+    function hideControls() { uiVisible = false; document.getElementById('filter-controls-container').style.opacity = '0'; document.getElementById('filter-controls-container').style.pointerEvents = 'none'; document.getElementById('logo-container').classList.remove('ui-hiding'); }
 
     async function enterApp(){
         document.getElementById('loading-overlay').style.display='none';
         document.getElementById('app-ui').style.opacity = 1;
         document.getElementById('app-ui').style.pointerEvents = 'auto';
         document.body.classList.add('panels-hidden');
-        
         audioCtx = new (window.AudioContext||window.webkitAudioContext)();
         masterGain = audioCtx.createGain(); masterGain.connect(audioCtx.destination);
-        bgBuffer = await loadAudio('FONDO_1.mp3');
-        
+        bgBuffer = await loadAudio('FONDO_1.mp3'); 
         initMic(); await startCam(); await initMoveNet(); initSensors();
-        initMatrix(); startBannerLoop();
-        initPeer(); initTemp();
+        initMatrix(); startBannerLoop(); initPeer();
         loop();
     }
 
@@ -659,7 +500,6 @@
     function setSensorStatus(id, s) { const el=document.getElementById(id); if(!el)return; el.className='sensor-item'; if(s==='main')el.classList.add('status-green'); else if(s==='backup')el.classList.add('status-blue'); else if(s==='sim')el.classList.add('status-orange'); else el.classList.add('status-red'); }
 
     function initSensors(){
-        // SENSORES REEMPLAZADOS POR MODO STREAMER EN UI, PERO MANTENEMOS LOGICA INTERNA
         let magActive=false, motionActive=false;
         const req = async () => {
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') { try { const p=await DeviceOrientationEvent.requestPermission(); if(p==='granted') window.addEventListener('deviceorientation', hOr); } catch(e){} } else window.addEventListener('deviceorientation', hOr);
@@ -676,25 +516,7 @@
     function initProximity(){ if('ProximitySensor' in window){ try { proxSensor=new ProximitySensor({frequency:10}); proxSensor.addEventListener('reading', ()=>{ document.getElementById('prox-val').innerText=proxSensor.value?proxSensor.value.toFixed(0):"0"; setSensorStatus('sens-prox','main'); }); proxSensor.start(); } catch(e){ setSensorStatus('sens-prox','status-red'); } } else { setSensorStatus('sens-prox','sim'); setInterval(()=>{ if(Math.random()>0.95){ document.getElementById('prox-val').innerText=Math.floor(Math.random()*5); setTimeout(()=>document.getElementById('prox-val').innerText="0",800); } },1000); } }
 
     async function loadAudio(u){ try{const r=await fetch(u);const b=await r.arrayBuffer();return await audioCtx.decodeAudioData(b);}catch(e){return null;} }
-    
-    // --- MIC INITIALIZATION MODIFIED FOR STREAMER ---
-    async function initMic(){ 
-        try{ 
-            const s = await navigator.mediaDevices.getUserMedia({ 
-                audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } // RAW AUDIO
-            }); 
-            localStream = s; 
-            micSource = audioCtx.createMediaStreamSource(s); 
-            micStreamSource = micSource; // Global Ref
-            analyser = audioCtx.createAnalyser(); 
-            analyser.fftSize = 64; 
-            
-            updateAudioRouting(); // ROUTING INITIAL CALL
-            
-            setSensorStatus('sens-mic','main'); 
-            connectAudioToMixer(); 
-        } catch(e){ setSensorStatus('sens-mic','status-red'); } 
-    }
+    async function initMic(){ try{ const s=await navigator.mediaDevices.getUserMedia({audio:true}); localStream=s; micSource=audioCtx.createMediaStreamSource(s); analyser=audioCtx.createAnalyser(); analyser.fftSize=64; micSource.connect(analyser); setSensorStatus('sens-mic','main'); connectAudioToMixer(); }catch(e){ setSensorStatus('sens-mic','status-red'); } }
     
     function toggleSpirit(){
         isSpiritOn = !isSpiritOn;
@@ -708,7 +530,6 @@
         }else{
             btn.innerText="ENCENDER"; btn.classList.remove('pwr-on'); document.getElementById('sb-status').innerText="APAGADO";
             if(bgNode){bgNode.stop(); bgNode=null;} if(noiseNode){noiseNode.stop(); noiseNode=null;}
-            if(interferenceInterval) clearInterval(interferenceInterval);
             if(window.speechSynthesis) window.speechSynthesis.cancel();
             document.getElementById('voice-led').classList.remove('listening'); if(recognition) recognition.stop();
         }
@@ -729,7 +550,7 @@
                 recognition.onend = () => { isRecognizing=false; document.getElementById('voice-led').classList.remove('listening'); 
                     if(!isProcessingResponse && isSpiritOn) {
                         if(micMaxVol > 15) { isProcessingResponse = true; processVoiceCommand("NOISE_TRIGGER"); } 
-                        else { setTimeout(startListeningCycle, 500); }
+                        else { triggerAutoSpirit(); } // LLAMADA AL MODO AUTO
                     }
                 };
                 recognition.onresult = (e) => { processVoiceCommand(e.results[0][0].transcript.toLowerCase().trim()); };
@@ -741,14 +562,15 @@
     
     async function processVoiceCommand(txt){
         document.getElementById('voice-led').classList.remove('listening');
-        document.getElementById('sb-status').innerText = "CONSULTANDO...";
+        document.getElementById('sb-status').innerText = "PROCESANDO...";
         
-        // IA REEMPLAZO GOOGLE SHEETS
         let response = null;
         if(txt === "NOISE_TRIGGER") {
-             isProcessingResponse = false; setTimeout(startListeningCycle, 500); return;
+            // Si fue ruido, intentamos generar palabra
+            response = await askGemini("Dime una palabra al azar de este lugar.");
         } else {
-             response = await askGemini(txt);
+            // Si fue voz real, respondemos
+            response = await askGemini(txt);
         }
         speak(response);
     }
@@ -780,7 +602,6 @@
         frames++;
         if(performance.now()-lastFps>=1000){ document.getElementById('cam-fps').innerText = frames; frames=0; lastFps=performance.now(); }
         
-        // SLS V16.6 LOGIC (RESTORED v13.9)
         if(currentFilter==='sls' && vid.readyState >= 2){ 
             ctxSLS.clearRect(0,0,canvasSLS.width,canvasSLS.height); 
             if (latestPoses.length > 0) drawSLS(latestPoses); 
@@ -799,18 +620,8 @@
             for(let i=0; i<NUM_BARS; i++){ let val=(data[i*2] + (data[i*2+1]||0))/2; let bar=energyBars[i]; bar.className='energy-bar-seg'; if(val>50)bar.classList.add('active'); if(val>150)bar.classList.add('mid'); if(val>220)bar.classList.add('high'); bar.style.height=Math.max(5,(val/255)*100)+"%"; }
         }
 
-        // SENSOR SIMULATION
-        if(proxSensor) {
-            if(currentFilter==='sls' && latestPoses.length > 0) targetProx = Math.min(99, (latestPoses[0].score * 100));
-            else targetProx = Math.random() * 3;
-        } else {
-            if(currentFilter==='sls' && latestPoses.length > 0) targetProx = Math.random() * 90;
-            else targetProx = Math.random() * 3;
-        }
-        
         if(Math.abs(currentProx - targetProx) > 1) currentProx += (targetProx - currentProx) * 0.1;
         document.getElementById('prox-val').innerText = Math.floor(currentProx).toString();
-
         const now = performance.now();
         if(now - lastTempTime > 3000) { let drop = 2 + Math.random() * 6; targetTemp = baseTemp - drop; lastTempTime = now; }
         if(Math.abs(currentTemp - targetTemp) > 0.1) currentTemp += (targetTemp - currentTemp) * 0.02; 
@@ -824,7 +635,6 @@
         await tf.ready(); 
         detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING }); 
         setInterval(async () => { 
-            // RESTORED v13.9 Logic: Threshold 0.15
             if(currentFilter==='sls' && vid.readyState>=2) { 
                 try { latestPoses = await detector.estimatePoses(vid, {maxPoses: 5, scoreThreshold: 0.15}); } catch(e) { latestPoses = []; } 
             } else { latestPoses = []; } 
