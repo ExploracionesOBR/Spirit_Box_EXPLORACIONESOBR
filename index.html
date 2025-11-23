@@ -1,10 +1,11 @@
-<!DOCTYPE html>
+
+    <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v20.2 STABLE-UI</title> 
+    <title>DETECTOR-OBR v18.6 STABLE-FIX</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -18,23 +19,59 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
 
     <style>
-        /* ESTILOS BASE v18.6 (INTACTOS) */
         :root {
-            --hud-bg: #050510; --hud-cyan: #00f3ff; --hud-pink: #ff0055; --hud-green: #00ff41; --hud-orange: #ffae00; --hud-red: #ff3333; --hud-blue: #0088ff; --glass-panel: rgba(5, 8, 15, 0.95);
-            --left-panel-w: 280px; --bottom-panel-h: 160px;
+            --hud-bg: #050510; 
+            --hud-cyan: #00f3ff; 
+            --hud-pink: #ff0055; 
+            --hud-green: #00ff41; 
+            --hud-orange: #ffae00;
+            --hud-red: #ff3333;
+            --hud-blue: #0088ff;
+            --glass-panel: rgba(5, 8, 15, 0.95);
+            --left-panel-w: 280px;
+            --bottom-panel-h: 160px;
         }
-        body { font-family: 'Share Tech Mono', monospace; background-color: #000; color: var(--hud-cyan); overflow: hidden; width: 100vw; height: 100vh; margin: 0; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 
-        #app-ui { width: 100%; height: 100%; display: grid; grid-template-columns: var(--left-panel-w) 1fr; grid-template-rows: 1fr var(--bottom-panel-h); grid-template-areas: "left cam" "left bottom"; transition: all 0.5s ease; opacity: 0; pointer-events: none; }
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background-color: #000; color: var(--hud-cyan);
+            overflow: hidden; width: 100vw; height: 100vh; margin: 0;
+            touch-action: none; 
+            -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+        }
+
+        #app-ui { 
+            width: 100%; height: 100%; 
+            display: grid;
+            grid-template-columns: var(--left-panel-w) 1fr; 
+            grid-template-rows: 1fr var(--bottom-panel-h);
+            grid-template-areas: "left cam" "left bottom";
+            transition: all 0.5s ease;
+            opacity: 0; pointer-events: none;
+        }
+
         body.panels-hidden #app-ui { grid-template-columns: 0px 1fr; grid-template-rows: 1fr 0px; }
 
         #left-panel { grid-area: left; border-right: 2px solid var(--hud-cyan); overflow: hidden; transition: all 0.5s ease; position: relative; display: flex; flex-direction: column; justify-content: flex-start; z-index: 50; background: var(--glass-panel); }
         #bottom-panel { grid-area: bottom; border-top: 2px solid var(--hud-cyan); overflow: hidden; transition: all 0.5s ease; z-index: 50; background: var(--glass-panel); }
-        #main-view-area { grid-area: cam; position: relative; overflow: hidden; background: #000; width: 100%; height: 100%; touch-action: none; }
+        
+        /* CAMARA (Contenedor principal) */
+        #main-view-area { 
+            grid-area: cam; position: relative; overflow: hidden; background: #000; width: 100%; height: 100%; 
+            touch-action: none;
+        }
+
         #touch-layer { position: absolute; inset: 0; z-index: 10; touch-action: none; }
+
         body.panels-hidden #left-panel, body.panels-hidden #bottom-panel { display: none; }
 
-        .panel-container { box-shadow: inset 0 0 20px rgba(0, 243, 255, 0.1); padding: 10px; background-image: linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px); background-size: 20px 20px; }
+        .panel-container {
+            box-shadow: inset 0 0 20px rgba(0, 243, 255, 0.1);
+            padding: 10px;
+            background-image: linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
         #matrix-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.2; pointer-events: none; z-index: 0; }
         #zoom-container { width: 100%; height: 100%; transform-origin: center center; transition: transform 0.3s ease-out; will-change: transform; z-index: 1; }
         #bg-camera-feed { width: 100%; height: 100%; object-fit: cover; transition: filter 0.3s ease; }
@@ -51,10 +88,10 @@
         .rec-container { position: absolute; top: 15px; left: 15px; color: var(--hud-red); font-family: 'Orbitron'; font-weight: bold; display: flex; align-items: center; gap: 8px; z-index: 30; text-shadow: 0 0 5px var(--hud-red); font-size: 0.8rem; pointer-events: none; }
         .rec-dot { width: 10px; height: 10px; background: var(--hud-red); border-radius: 50%; animation: blinkRed 1s infinite; }
         @keyframes blinkRed { 50% { opacity: 0.3; } }
-        .rec-connected .rec-dot { background: var(--hud-green); animation: pulseGreen 1.5s infinite; }
-        .rec-error .rec-dot { background: var(--hud-orange); animation: pulseOrange 1s infinite; }
         @keyframes pulseGreen { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0.8); } 100% { box-shadow: 0 0 0 15px rgba(0, 255, 65, 0); } }
         @keyframes pulseOrange { 0% { box-shadow: 0 0 0 0 rgba(255, 174, 0, 0.8); } 100% { box-shadow: 0 0 0 15px rgba(255, 174, 0, 0); } }
+        .rec-connected .rec-dot { background: var(--hud-green); animation: pulseGreen 1.5s infinite; }
+        .rec-error .rec-dot { background: var(--hud-orange); animation: pulseOrange 1s infinite; }
 
         .stats-container { position: absolute; bottom: 15px; right: 20px; font-family: 'Share Tech Mono'; font-size: 0.65rem; color: rgba(0, 243, 255, 0.7); text-shadow: 0 0 2px #000; z-index: 30; text-align: right; pointer-events: none; display: flex; gap: 10px; }
         .stats-val { color: #fff; font-weight: bold; }
@@ -68,7 +105,12 @@
 
         #logo-container { position: absolute; top: 15px; right: 15px; z-index: 50; pointer-events: none; }
         #logo-image { width: 60px; height: 60px; filter: drop-shadow(0 0 5px var(--hud-cyan)); animation: horrorPulse 4s infinite; }
-        @keyframes horrorPulse { 0%, 85% { clip-path: inset(0 0 0 0); opacity: 1; } 90% { clip-path: inset(0 0 0 0); } 95% { clip-path: inset(80% 0 5% 0); transform: translate(-1px, -2px); } 100% { clip-path: inset(0 0 0 0); } }
+        @keyframes horrorPulse { 
+            0%, 85% { clip-path: inset(0 0 0 0); transform: translate(0, 0); opacity: 1; }
+            86% { clip-path: inset(20% 0 50% 0); transform: translate(-2px, 1px); filter: hue-rotate(90deg) contrast(2); }
+            90% { clip-path: inset(0 0 0 0); transform: translate(0, 0); }
+            100% { clip-path: inset(0 0 0 0); transform: translate(0, 0); filter: drop-shadow(0 0 5px var(--hud-cyan)); } 
+        }
         
         #follow-banner { position: absolute; bottom: 20px; left: 0; right: 0; display: flex; justify-content: center; pointer-events: none; opacity: 0; transition: opacity 1s; z-index: 30; }
         #follow-banner.active { opacity: 1; }
@@ -91,414 +133,32 @@
         .btn-control { background: #111; border: 1px solid #444; color: #aaa; font-family: 'Orbitron'; font-size: 0.8rem; padding: 10px; width: 100%; cursor: pointer; font-weight: bold; }
         .btn-control.pwr-on { border-color: var(--hud-green); color: var(--hud-green); background: rgba(0,50,0,0.3); box-shadow: 0 0 10px var(--hud-green) inset; }
 
-        /* PANEL SENSORES */
+        /* PANEL SENSORES (2 COLUMNAS) */
         .panel-section { flex-grow: 0; overflow: hidden; position: relative; padding: 8px; background: rgba(0,0,0,0.4); border-radius: 4px; margin-bottom: 5px; } 
-        .sensor-grid { display: none; } /* OCULTO POR PETICION */
-        
-        /* BOTON STREAMER REEMPLAZANDO SENSORES */
-        .stream-btn {
-            width: 100%; padding: 15px; background: #111; border: 1px solid #444; color: #666;
-            font-family: 'Orbitron'; font-weight: bold; font-size: 0.7rem; cursor: pointer;
-            border-radius: 4px; transition: 0.2s; text-align: center;
+        .sensor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; position: relative; z-index: 2; }
+        .sensor-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.6rem; padding: 3px 5px; background: rgba(20,20,30,0.6); border-radius: 3px; border-left: 2px solid #333; backdrop-filter: blur(2px); }
+        .status-green { border-left-color: var(--hud-green); color: var(--hud-green); }
+        .status-red { border-left-color: var(--hud-red); color: #777; }
+
+        if(currentFilter==='sls' && vid.readyState >= 2){ 
+            ctxSLS.clearRect(0,0,canvasSLS.width,canvasSLS.height); 
+            if (latestPoses.length > 0) drawSLS(latestPoses); 
         }
-        .stream-btn.active {
-            background: #220033; border-color: #aa00ff; color: #aa00ff;
-            box-shadow: 0 0 15px #aa00ff inset;
-        }
-
-        .btn-rx { margin-top: 5px; padding: 10px; border-radius: 4px; font-weight: bold; text-align: center; cursor: pointer; font-family: 'Orbitron'; letter-spacing: 1px; font-size: 0.8rem; transition: all 0.2s; text-shadow: 0 0 5px rgba(0,0,0,0.5); position: relative; z-index: 2; }
-        .rx-off { background: #330000; border: 2px solid #ff0000; color: #ff0000; box-shadow: inset 0 0 10px #550000; }
-        .rx-on { background: #004400; border: 2px solid #00ff41; color: #00ff41; box-shadow: 0 0 15px #00ff41; animation: none; }
-
-        .dials-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; height: 60px; align-items: center; flex-shrink: 0; }
-        .instrument-wrapper { background: rgba(0,0,0,0.5); border: 1px solid #333; border-radius: 4px; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; }
-        .digital-display { font-family: 'VT323', monospace; font-size: 1.8rem; line-height: 1; text-shadow: 0 0 5px currentColor; }
-        .digi-cyan { color: var(--hud-cyan); } .digi-green { color: var(--hud-green); } .digi-orange { color: var(--hud-orange); } .digi-red { color: var(--hud-red); }
-        .knob-label { font-size: 0.6rem; color: #777; font-weight: bold; margin-top: 2px; }
-        #energy-container { flex-grow: 1; display: flex; gap: 3px; align-items: flex-end; margin-top: 5px; background: rgba(0,0,0,0.8); border: 1px solid #333; padding: 2px; min-height: 40px; }
-        .energy-bar-seg { flex: 1; background: #151515; height: 100%; transition: height 0.05s; border-top: 2px solid #000; }
-        .energy-bar-seg.active { background: var(--hud-green); box-shadow: 0 0 8px var(--hud-green); }
-        .energy-bar-seg.mid { background: var(--hud-orange); box-shadow: 0 0 8px var(--hud-orange); }
-        .energy-bar-seg.high { background: var(--hud-red); box-shadow: 0 0 10px var(--hud-red); }
         
-        #filter-controls-container { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
-        .filter-btn { width: 38px; height: 38px; background: rgba(0, 10, 20, 0.9); color: var(--hud-cyan); font-size: 1rem; border: 1px solid var(--hud-cyan); cursor: pointer; clip-path: polygon(15% 0, 100% 0, 100% 85%, 85% 100%, 0 100%, 0 15%); display: flex; align-items: center; justify-content: center; pointer-events: auto; }
-        .filter-btn.active { background: var(--hud-cyan); color: #000; box-shadow: 0 0 10px var(--hud-cyan); }
-        #btn-hud.active { background: var(--hud-cyan); color: #000; }
-        #btn-hud { background: rgba(0, 10, 20, 0.9); color: var(--hud-cyan); }
-
-        /* BOTON RESET UI (IZQUIERDA ABAJO) */
-        #btn-reset-ui {
-            position: absolute; bottom: 40px; left: 20px; z-index: 9999;
-            background: transparent; border: none; color: rgba(255,255,255,0.2);
-            font-size: 1rem; cursor: pointer; pointer-events: auto;
-            transition: color 0.3s;
-        }
-        #btn-reset-ui:active { color: red; }
-
-        .ui-hiding { animation: waterPop 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important; pointer-events: none; }
-        @keyframes waterPop { 0% { transform: scale(1); opacity: 1; blur(0); } 100% { transform: scale(2.5); opacity: 0; blur(10px); } }
-        #loading-overlay { position: fixed; inset: 0; z-index: 99999; display: flex; flex-direction: column; justify-content: center; align-items: center; background-color: #000; background-image: url('fondo_pantalla.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat; }
-        #zoom-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 5px; color: #fff; font-family: 'Share Tech Mono'; font-size: 0.8rem; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 40; }
-        #video-overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: none; opacity: 0; transition: opacity 1.5s ease; }
-        #intro-video { width: 100%; height: 100%; object-fit: contain; }
-        #btn-intro { position: absolute; bottom: 20px; left: 20px; z-index: 60; background: rgba(0,0,0,0.5); border: 1px solid #555; color: #888; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 1.2rem; display: none; transition: opacity 0.3s; }
-        body.panels-hidden #btn-intro { display: block; }
-    </style>
-</head>
-<body class="panels-hidden"> 
-
-<div id="video-overlay" onclick="stopIntro()"><video id="intro-video" playsinline></video></div>
-
-<button id="btn-reset-ui" onclick="forceResetUI()">⚠</button>
-
-<div id="loading-overlay">
-    <img src="obr-logo.png" class="horror-logo" id="load-logo">
-    <div id="loading-text-main">CARGANDO MÓDULOS...</div>
-    <div id="loading-text-sub">INICIALIZANDO KERNEL...</div>
-    <div class="loading-bar-container"><div id="loading-bar"></div></div>
-    <div id="loading-percent">0%</div>
-    <button id="enter-btn" onclick="enterApp()">INICIAR SISTEMA</button>
-</div>
-
-<div id="app-ui">
-    <div id="left-panel" class="panel-container">
-        <div id="spirit-box-section">
-            <div class="section-title">SPIRIT BOX <div id="voice-led" class="voice-led"></div></div>
-            <div class="sb-display-area"><span id="sb-status">OFFLINE</span></div>
-            <button id="btn-pwr" class="btn-control" onclick="toggleSpirit()">ENCENDER</button>
-            <div style="margin-top:8px; display:flex; flex-direction:column; gap:5px;">
-                <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:#888;"><span>VOLUMEN</span><span id="vol-txt">100%</span></div>
-                <input type="range" id="vol-slider" min="0" max="100" value="100" style="width:100%; accent-color:var(--hud-green);">
-                <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:#888; margin-top:5px;"><span>SCAN SPEED</span><span id="spd-txt">1</span></div>
-                <input type="range" id="speed-slider" min="1" max="3" step="1" value="1" style="width:100%; accent-color:var(--hud-orange);">
-            </div>
-        </div>
-        
-        <div class="panel-section">
-            <canvas id="matrix-canvas"></canvas> 
-            <div class="section-title">SISTEMA</div>
-            <!-- BOTON STREAMER -->
-            <button id="btn-stream" class="stream-btn" onclick="toggleStreamMode()">STREAM: OFF</button>
-        </div>
-
-        <div class="panel-section" style="margin-top:2px; flex-grow:0;">
-             <div class="section-title">AUDIO RX (ENLACE)</div>
-             <div id="btn-rx" class="btn-rx rx-off" onclick="toggleRX()">
-                 🔴 RX OFF<br><span style="font-size:0.6rem; font-weight:normal;">(AUDIO EN MEZCLADOR)</span>
-             </div>
-        </div>
-    </div>
-
-    <div id="main-view-area">
-        <div id="zoom-container">
-            <video id="bg-camera-feed" playsinline autoplay muted></video>
-            <canvas id="main-filter-canvas" style="display:none;"></canvas>
-        </div>
-        <div id="touch-layer"></div>
-
-        <button id="btn-intro" onclick="playIntro()">🎞️</button>
-
-        <div class="camera-border"><div class="cb-inner"></div></div>
-        <div class="rec-container" id="rec-indicator"><div class="rec-dot"></div>REC</div>
-        <div class="stats-container"><div><span class="stats-val" id="cam-fps">--</span> FPS</div><div><span class="stats-val" id="cam-res">--x--</span></div></div>
-        <div id="logo-container"><img id="logo-image" src="obr-logo.png"></div>
-        <div id="follow-banner">
-            <div class="banner-content">
-                <div id="step-1" class="seq-step">SÍGUENOS EN</div>
-                <div id="step-2" class="seq-step" style="display:none; gap:15px; justify-content:center;">
-                    <i class="fab fa-tiktok social-icon" style="color:#ff0050;"></i>
-                    <i class="fab fa-facebook social-icon" style="color:#1877f2;"></i>
-                    <i class="fab fa-youtube social-icon" style="color:#f00;"></i>
-                </div>
-                <div id="step-3" class="seq-step">@EXPLORACIONES OBR</div>
-            </div>
-        </div>
-        <div id="filter-controls-container">
-            <button class="filter-btn" onclick="toggleFilter('night-vision')"><i class="fas fa-eye"></i></button>
-            <button class="filter-btn" onclick="toggleFilter('sls')"><i class="fas fa-child"></i></button>
-            <button class="filter-btn" onclick="toggleFilter('negative')"><i class="fas fa-adjust"></i></button>
-            <button class="filter-btn" onclick="toggleFilter('focus')"><i class="fas fa-crosshairs"></i></button>
-            <button class="filter-btn" onclick="resetZoomManual()" style="color:var(--hud-orange); border-color:var(--hud-orange);"><i class="fas fa-search-minus"></i></button>
-            <button class="filter-btn" id="btn-hud" onclick="toggleHUD()"><i class="fas fa-bars"></i></button>
-        </div>
-        <div id="zoom-msg">ZOOM x3.0</div>
-    </div>
-
-    <div id="bottom-panel" class="panel-container">
-        <div class="dials-grid">
-            <div class="instrument-wrapper"><div class="digital-display digi-cyan" id="mag-val">000</div><div class="knob-label">MAG</div></div>
-            <div class="instrument-wrapper"><div class="digital-display digi-green" id="emf-val">0.0</div><div class="knob-label">EMF</div></div>
-            <div class="instrument-wrapper"><div class="digital-display digi-orange" id="temp-display">--.-</div><div class="knob-label">TEMP</div></div>
-            <div class="instrument-wrapper"><div class="digital-display digi-red" id="prox-val">0</div><div class="knob-label">PROX</div></div>
-        </div>
-        <div id="energy-container"></div>
-        <div class="knob-label" style="text-align:left; margin-top:2px;">ENERGY LEVEL</div>
-    </div>
-
-    <audio id="incoming-feed" autoplay></audio> 
-    <audio id="silent-hack" loop src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA"></audio>
-</div>
-
-<script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzOf3crQxBdPylwMTAd34W-nBShN31MkIUtaMdKsZHMZVVniI2HjMesD6DpOlO363T1/exec";
-    const FALLBACK_AUTO = ["¿Hay alguien?", "Te escucho", "Acércate", "Detrás", "Frío", "Ayuda", "Vete", "Sótano", "Miedo", "Luz", "Oscuridad", "Aquí"];
-    const MIXER_ID = "obr-mezclador-central"; 
-    
-    let audioCtx, masterGain, micSource, analyser;
-    let bgBuffer, bgNode, bgGain;
-    let noiseNode, noiseGain;
-    let recognition, isSpiritOn = false;
-    let autoData = [...FALLBACK_AUTO], progData = new Map();
-    let videoTrack, currentFilter = 'none', uiVisible = false, hideTimeout;
-    let proxSensor, energyBars = [];
-    let isRecognizing = false; 
-    let scanSpeed = 1.0;
-    let interferenceInterval;
-    let micMaxVol = 0;
-    let restoreAudioTimer;
-    let isProcessingResponse = false; 
-    
-    // STREAM MODE VAR
-    let isStreamMode = false; 
-    let localMicStream = null; 
-    let wakeLock = null;
-
-    let peer, dataConn;
-    let isRxOn = false;
-    let isMixerConnected = false;
-    let incomingAudioEl = document.getElementById('incoming-feed');
-    let rxStreamSource = null;
-    let micStreamSource = null;
-    let isIntroPlaying = false;
-    let localStream = null;
-    
-    let zoomLevel = 1;
-    let longPressTimer;
-    let isLongPressing = false;
-    let initialPinchDist = 0;
-    const zoomContainer = document.getElementById('zoom-container');
-    const touchLayer = document.getElementById('touch-layer');
-    const mainView = document.getElementById('main-view-area');
-
-    const vid = document.getElementById('bg-camera-feed');
-    const canvasSLS = document.getElementById('main-filter-canvas'); const ctxSLS = canvasSLS.getContext('2d');
-    const matrixCanvas = document.getElementById('matrix-canvas');
-    const mCtx = matrixCanvas.getContext('2d');
-    let matrixDrops = [];
-
-    let loadProgress = 0; let loadInterval; let dataLoaded = false; let dataStats = { prog: 0, auto: 0 };
-    const NUM_BARS = 10; 
-    let baseTemp = 0;
-    let targetTemp = 22.0; let currentTemp = 22.0; let lastTempTime = 0;
-    let currentProx = 0; let targetProx = 0;
-
-    window.onload = () => {
-        const eContainer = document.getElementById('energy-container');
-        for(let i=0; i<NUM_BARS; i++){ let d = document.createElement('div'); d.className = 'energy-bar-seg'; eContainer.appendChild(d); energyBars.push(d); }
-        
-        setupZoomEvents();
-        startLoadingSequence();
-        loadData();
-    };
-
-    // --- WAKE LOCK ---
-    async function requestWakeLock() {
-        if ('wakeLock' in navigator) { try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} }
-    }
-    document.addEventListener('visibilitychange', async () => { if (wakeLock !== null && document.visibilityState === 'visible') await requestWakeLock(); });
-
-    // --- STREAMER MODE ---
-    function toggleStreamMode() {
-        isStreamMode = !isStreamMode;
-        const btn = document.getElementById('btn-stream');
-        if(isStreamMode) {
-            btn.classList.add('active'); btn.innerText = "STREAM: ON";
-            alert("⚠️ AUDIO FORZADO: El micrófono saldrá por el altavoz para que TikTok lo grabe. USA AUDÍFONOS.");
-            if(micStreamSource && audioCtx) { try { micStreamSource.connect(audioCtx.destination); } catch(e){} }
-        } else {
-            btn.classList.remove('active'); btn.innerText = "STREAM: OFF";
-            if(micStreamSource && audioCtx) {
-                try { micStreamSource.disconnect(audioCtx.destination); } catch(e){}
-                micStreamSource.connect(analyser);
-            }
-        }
-    }
-
-    async function initMic(){ 
-        try{ 
-            const s = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); 
-            localStream = s; localMicStream = s;
-            micStreamSource = audioCtx.createMediaStreamSource(s); 
-            analyser = audioCtx.createAnalyser(); analyser.fftSize=64; 
-            micStreamSource.connect(analyser); 
-            if(isStreamMode) micStreamSource.connect(audioCtx.destination);
-            initPeer(); 
-        }catch(e){ 
-            initPeer(); // Iniciar aunque falle micro para recibir audio
-        } 
-    }
-
-    function forceResetUI() {
-        document.body.classList.remove('panels-hidden');
-        document.getElementById('app-ui').style.opacity = '1';
-        document.getElementById('app-ui').style.pointerEvents = 'auto';
-        document.getElementById('loading-overlay').style.display = 'none';
-        uiVisible = true; showControls();
-        if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-        document.getElementById('silent-hack').play().catch(e=>{});
-    }
-
-    // --- LOGICA ORIGINAL V18.6 (EXPANDIDA) ---
-
-    function startLoadingSequence() {
-        const txtMain = document.getElementById('loading-text-main');
-        const txtSub = document.getElementById('loading-text-sub');
-        const bar = document.getElementById('loading-bar');
-        const perc = document.getElementById('loading-percent');
-        const btn = document.getElementById('enter-btn');
-        loadInterval = setInterval(() => {
-            loadProgress += Math.random() * 2; if(loadProgress > 100) loadProgress = 100;
-            if(loadProgress > 30 && loadProgress < 60) { txtMain.innerText = "ACTIVANDO SENSORES..."; txtSub.innerText = "CALIBRANDO GIROSCOPIO..."; }
-            else if(loadProgress > 60 && loadProgress < 90) { txtMain.innerText = "SINTONIZANDO..."; txtSub.innerText = dataLoaded ? `SINCRONIZADO PROG:${dataStats.prog} | AUTO:${dataStats.auto}` : "ESPERANDO RED..."; }
-            else if(loadProgress >= 99) {
-                if(!dataLoaded) dataLoaded = true;
-                clearInterval(loadInterval); loadProgress = 100;
-                txtMain.innerText = "LISTO..."; txtSub.innerText = "SISTEMA ONLINE";
-                btn.style.display = "block"; btn.classList.add('btn-glitch');
-            }
-            bar.style.width = loadProgress + "%"; perc.innerText = Math.floor(loadProgress) + "%";
-        }, 5);
-    }
-
-    async function enterApp() {
-        document.getElementById('loading-overlay').style.display='none';
-        document.getElementById('app-ui').style.opacity = 1;
-        document.getElementById('app-ui').style.pointerEvents = 'auto';
-        document.body.classList.add('panels-hidden');
-        
-        audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-        masterGain = audioCtx.createGain(); masterGain.connect(audioCtx.destination);
-        
-        bgBuffer = null; 
-        loadAudio('FONDO_1.mp3').then(b => { bgBuffer = b; });
-        
-        initMic(); 
-        startCam(); 
-        initMoveNet(); 
-        initMatrix(); 
-        startBannerLoop();
-        initTemp();
-        loop();
-        
-        document.getElementById('silent-hack').play().catch(e=>{});
-    }
-
-    async function loadAudio(u){ 
-        try{
-            const r=await fetch(u);
-            const b=await r.arrayBuffer();
-            return await audioCtx.decodeAudioData(b);
-        }catch(e){ return null; } 
-    }
-
-    async function loadData(){ 
-        try { 
-            const r=await fetch(SCRIPT_URL); 
-            if(!r.ok)throw new Error("Red"); 
-            const d=await r.json(); 
-            if(d.automatico)autoData=d.automatico.map(x=>x.TEXTO); 
-            if(d.programado)d.programado.forEach(i=>{if(i.PREGUNTA)progData.set(i.PREGUNTA.toLowerCase().trim(), i.RESPUESTA)}); 
-            dataLoaded=true; 
-            dataStats.prog=d.programado?d.programado.length:0; 
-            dataStats.auto=d.automatico?d.automatico.length:0; 
-        } catch(e){ dataLoaded=false; } 
-    }
-
-    function setupZoomEvents() { 
-        touchLayer.addEventListener('touchstart', handleTouchStart, {passive: false}); 
-        touchLayer.addEventListener('touchmove', handleTouchMove, {passive: false}); 
-        touchLayer.addEventListener('touchend', handleTouchEnd); 
-        touchLayer.addEventListener('mousedown', handleMouseDown); 
-        touchLayer.addEventListener('mouseup', handleMouseUp); 
-    }
-    function handleTouchStart(e) { if (e.touches.length === 1) { isLongPressing = false; const t = e.touches[0]; longPressTimer = setTimeout(() => { triggerLongPressZoom(t.clientX, t.clientY); }, 600); } else if (e.touches.length === 2) { clearTimeout(longPressTimer); initialPinchDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); } }
-    function handleTouchMove(e) { if (e.touches.length === 1) { clearTimeout(longPressTimer); } else if (e.touches.length === 2) { e.preventDefault(); clearTimeout(longPressTimer); const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); if (initialPinchDist > 0) { const delta = dist - initialPinchDist; zoomLevel += delta * 0.005; zoomLevel = Math.min(Math.max(1, zoomLevel), 5); applyZoom(); initialPinchDist = dist; } } }
-    function handleTouchEnd(e) { if (longPressTimer) { clearTimeout(longPressTimer); if (!isLongPressing && e.touches.length === 0) { toggleUIOverlay(); } } isLongPressing = false; }
-    function handleMouseDown(e) { isLongPressing = false; longPressTimer = setTimeout(() => { triggerLongPressZoom(e.clientX, e.clientY); }, 600); }
-    function handleMouseUp(e) { clearTimeout(longPressTimer); if (!isLongPressing) toggleUIOverlay(); isLongPressing = false; }
-    function triggerLongPressZoom(x, y) { isLongPressing = true; const rect = mainView.getBoundingClientRect(); const relX = x - rect.left; const relY = y - rect.top; if (zoomLevel < 2.5) { zoomLevel = 3.0; } else { zoomLevel = 5.0; } zoomContainer.style.transformOrigin = `${relX}px ${relY}px`; applyZoom(); }
-    function resetZoomManual() { zoomLevel = 1.0; zoomContainer.style.transformOrigin = "center center"; applyZoom(); }
-    function applyZoom() { zoomContainer.style.transform = `scale(${zoomLevel})`; document.getElementById('zoom-msg').innerText = `ZOOM x${zoomLevel.toFixed(1)}`; document.getElementById('zoom-msg').style.opacity = 1; setTimeout(() => document.getElementById('zoom-msg').style.opacity = 0, 1500); }
-    function toggleUIOverlay() { if (uiVisible) hideControls(); else showControls(); }
-    function showControls() { document.getElementById('filter-controls-container').style.opacity = '1'; document.getElementById('filter-controls-container').style.pointerEvents = 'auto'; document.getElementById('logo-container').classList.add('ui-hiding'); document.getElementById('follow-banner').classList.add('ui-hiding'); clearTimeout(hideTimeout); hideTimeout = setTimeout(hideControls, 5000); }
-    function hideControls() { document.getElementById('filter-controls-container').style.opacity = '0'; document.getElementById('filter-controls-container').style.pointerEvents = 'none'; document.getElementById('logo-container').classList.remove('ui-hiding'); document.getElementById('follow-banner').classList.remove('ui-hiding'); }
-
-    function initMatrix() { const pSection = matrixCanvas.parentElement; if(!pSection) return; matrixCanvas.width = pSection.clientWidth; matrixCanvas.height = pSection.clientHeight; const columns = Math.floor(matrixCanvas.width / 15); matrixDrops = Array(columns).fill(1); }
-    function drawMatrix() {
-        mCtx.fillStyle = 'rgba(0, 0, 0, 0.1)'; mCtx.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height);
-        mCtx.fillStyle = '#00f3ff'; mCtx.font = '10px Share Tech Mono';
-        for(let i = 0; i < matrixDrops.length; i++) {
-            let text = String.fromCharCode(65 + Math.floor(Math.random() * 26));
-            if (Math.random() > 0.99 && autoData.length > 0) { text = autoData[Math.floor(Math.random() * autoData.length)].toUpperCase(); mCtx.fillStyle = '#ff0055'; } else { mCtx.fillStyle = '#00f3ff'; }
-            mCtx.fillText(text, i * 15, matrixCanvas.height - (matrixDrops[i] * 15));
-            if(matrixCanvas.height - (matrixDrops[i] * 15) < 0 && Math.random() > 0.975) matrixDrops[i] = 0;
-            matrixDrops[i]++;
-        }
-    }
-
-    function startBannerLoop() { const banner = document.getElementById('follow-banner'); const s1=document.getElementById('step-1'), s2=document.getElementById('step-2'), s3=document.getElementById('step-3'); const run = () => { banner.classList.add('active'); s1.classList.add('active'); setTimeout(() => { s1.classList.remove('active'); s2.style.display='flex'; s2.classList.add('active'); }, 2000); setTimeout(() => { s2.classList.remove('active'); s2.style.display='none'; s3.classList.add('active'); }, 5000); setTimeout(() => { s3.classList.remove('active'); banner.classList.remove('active'); setTimeout(run, 15000); }, 8000); }; run(); }
-    async function fetchWeather(lat, lon) { try { const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`); const data = await res.json(); return data.current_weather.temperature; } catch(e) { return 18.0; } }
-    function initTemp() { if(navigator.geolocation) { navigator.geolocation.getCurrentPosition(async pos => { baseTemp = await fetchWeather(pos.coords.latitude, pos.coords.longitude); }, () => { baseTemp = 18.0; }); } else { baseTemp = 18.0; } }
-    
-    function playIntro() { isIntroPlaying = true; const overlay = document.getElementById('video-overlay'); const video = document.getElementById('intro-video'); if(incomingAudioEl) incomingAudioEl.muted = true; if(audioCtx && audioCtx.state === 'running') audioCtx.suspend(); if(window.speechSynthesis) window.speechSynthesis.cancel(); if(recognition) try { recognition.stop(); } catch(e){} overlay.style.display = 'flex'; setTimeout(() => overlay.style.opacity = 1, 10); video.src = 'INTRO_1.mp4'; video.load(); video.play().catch(e => { console.log("Error video", e); alert("Error: INTRO_1.mp4 no encontrado"); stopIntro(); }); video.onended = stopIntro; }
-    function stopIntro() { isIntroPlaying = false; const overlay = document.getElementById('video-overlay'); const video = document.getElementById('intro-video'); overlay.style.opacity = 0; setTimeout(() => { video.pause(); video.currentTime = 0; overlay.style.display = 'none'; if(isRxOn && incomingAudioEl) incomingAudioEl.muted = false; if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); if(isSpiritOn) startListeningCycle(); }, 1500); }
-
-    function updateAudioRouting() { if (!audioCtx || !analyser) return; try { if(micStreamSource) { micStreamSource.disconnect(analyser); if(!isStreamMode) micStreamSource.disconnect(audioCtx.destination); } if(rxStreamSource) { rxStreamSource.disconnect(analyser); rxStreamSource.disconnect(audioCtx.destination); } } catch(e){} if (isRxOn) { if (incomingAudioEl.srcObject) { if (!rxStreamSource) rxStreamSource = audioCtx.createMediaStreamSource(incomingAudioEl.srcObject); rxStreamSource.connect(analyser); rxStreamSource.connect(audioCtx.destination); } } else { if (micStreamSource) { micStreamSource.connect(analyser); if(isStreamMode) micStreamSource.connect(audioCtx.destination); } } }
-    
-    function initPeer() { peer = new Peer(); peer.on('open', id => { connectData(); connectAudioToMixer(); }); peer.on('call', call => { call.answer(localStream); call.on('stream', remoteStream => { incomingAudioEl.srcObject = remoteStream; incomingAudioEl.muted = !isRxOn; if(isRxOn) updateAudioRouting(); }); }); }
-    function connectAudioToMixer() { if(localStream && peer) { const call = peer.call(MIXER_ID, localStream); call.on('stream', remoteStream => { incomingAudioEl.srcObject = remoteStream; incomingAudioEl.muted = !isRxOn; if(isRxOn) updateAudioRouting(); }); } }
-    function connectData() { dataConn = peer.connect(MIXER_ID); dataConn.on('open', () => { isMixerConnected = true; sendCmd('RX_OFF'); updateRXVisuals(); }); dataConn.on('close', () => { isMixerConnected = false; updateRXVisuals(); setTimeout(connectData, 3000); }); dataConn.on('error', () => { isMixerConnected = false; updateRXVisuals(); }); }
-    function sendCmd(cmd) { if(dataConn && dataConn.open) dataConn.send({ cmd: cmd }); }
-    function updateRXVisuals() { const btn = document.getElementById('btn-rx'); const rec = document.getElementById('rec-indicator'); btn.className = "btn-rx"; btn.classList.remove('rx-pulse-green', 'rx-pulse-orange'); rec.classList.remove('rec-connected', 'rec-error'); if (!isRxOn) { btn.classList.add('rx-off'); btn.innerHTML = "🔴 RX OFF<br><span style='font-size:0.6rem; font-weight:normal;'>(AUDIO EN MEZCLADOR)</span>"; } else { if (isMixerConnected) { btn.classList.add('rx-on-ok', 'rx-pulse-green'); btn.innerHTML = "🟢 RX ON<br><span style='font-size:0.6rem; font-weight:normal;'>(AUDIO AQUÍ)</span>"; rec.classList.add('rec-connected'); } else { btn.classList.add('rx-on-warn', 'rx-pulse-orange'); btn.innerHTML = "🟠 BUSCANDO...<br><span style='font-size:0.6rem; font-weight:normal;'>(SIN ENLACE)</span>"; rec.classList.add('rec-error'); } } updateAudioRouting(); }
-    function toggleRX() { isRxOn = !isRxOn; if(isRxOn) { if(incomingAudioEl) { incomingAudioEl.muted = false; incomingAudioEl.play().catch(e=>{}); } sendCmd('RX_ON'); } else { if(incomingAudioEl) incomingAudioEl.muted = true; sendCmd('RX_OFF'); } updateRXVisuals(); }
-    function toggleSpirit(){ isSpiritOn = !isSpiritOn; const btn = document.getElementById('btn-pwr'); if(isSpiritOn){ btn.innerText="APAGAR"; btn.classList.add('pwr-on'); document.getElementById('sb-status').innerText="INICIANDO..."; if(audioCtx.state==='suspended') audioCtx.resume(); if(bgBuffer){ bgNode=audioCtx.createBufferSource(); bgNode.buffer=bgBuffer; bgNode.loop=true; bgNode.playbackRate.value=scanSpeed; bgGain=audioCtx.createGain(); bgGain.gain.value=0.3; bgNode.connect(bgGain); bgGain.connect(masterGain); bgNode.start(0); } else startFallbackNoise(); startListeningCycle(); } else{ btn.innerText="ENCENDER"; btn.classList.remove('pwr-on'); document.getElementById('sb-status').innerText="APAGADO"; if(bgNode){bgNode.stop(); bgNode=null;} if(noiseNode){noiseNode.stop(); noiseNode=null;} if(interferenceInterval) clearInterval(interferenceInterval); if(window.speechSynthesis) window.speechSynthesis.cancel(); document.getElementById('voice-led').classList.remove('listening'); if(recognition) recognition.stop(); } }
-    function startFallbackNoise(){ if(noiseNode)return; const bSize=audioCtx.sampleRate*2, b=audioCtx.createBuffer(1,bSize,audioCtx.sampleRate), d=b.getChannelData(0); for(let i=0;i<bSize;i++)d[i]=Math.random()*2-1; noiseNode=audioCtx.createBufferSource(); noiseNode.buffer=b; noiseNode.loop=true; const f=audioCtx.createBiquadFilter(); f.type="bandpass"; f.frequency.value=1000; noiseGain=audioCtx.createGain(); noiseGain.gain.value=0.05; noiseNode.connect(f); f.connect(noiseGain); noiseGain.connect(masterGain); noiseNode.start(0); }
-    document.getElementById('speed-slider').addEventListener('input', e=>{ scanSpeed=parseFloat(e.target.value); document.getElementById('spd-txt').innerText=scanSpeed; if(bgNode)bgNode.playbackRate.value=scanSpeed===1?0.8:scanSpeed===2?1.0:1.5; });
-    function startListeningCycle(){ if(isProcessingResponse || !isSpiritOn || isIntroPlaying) return; if(isRecognizing) return; document.getElementById('sb-status').innerText = "SINTONIZANDO..."; if(!recognition) { const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if(SR) { recognition = new SR(); recognition.lang='es-MX'; recognition.continuous=false; recognition.onstart = () => { isRecognizing=true; document.getElementById('voice-led').classList.add('listening'); }; recognition.onresult = (e) => { const txt = e.results[0][0].transcript.toLowerCase().trim(); if(txt.length > 0) { isProcessingResponse = true; recognition.stop(); processVoiceCommand(txt); } }; recognition.onend = () => { isRecognizing=false; document.getElementById('voice-led').classList.remove('listening'); if(!isProcessingResponse && isSpiritOn) { if(micMaxVol > 15) { isProcessingResponse = true; processVoiceCommand("NOISE_TRIGGER"); } else { setTimeout(startListeningCycle, 500); } } }; recognition.onerror = () => { isRecognizing=false; if(isSpiritOn) setTimeout(startListeningCycle, 1000); }; } } try{ recognition.start(); }catch(e){} }
-    function processVoiceCommand(txt){ document.getElementById('voice-led').classList.remove('listening'); document.getElementById('sb-status').innerText = "PROCESANDO..."; let response = null; if(txt!=="NOISE_TRIGGER"){ for(let [k,v] of progData){ if(txt.includes(k)){ response=v; break; } } } if(!response) response = autoData[Math.floor(Math.random()*autoData.length)]; speak(response); }
-    function restoreAudioLevels() { const now = audioCtx.currentTime; if(bgGain) { bgGain.gain.cancelScheduledValues(now); bgGain.gain.setValueAtTime(bgGain.gain.value, now); bgGain.gain.linearRampToValueAtTime(0.3, now + 0.5); } if(noiseGain) { noiseGain.gain.cancelScheduledValues(now); noiseGain.gain.linearRampToValueAtTime(0.05, now + 0.5); } }
-    function speak(txt){ if(!window.speechSynthesis) { isProcessingResponse = false; return; } window.speechSynthesis.cancel(); document.getElementById('sb-status').innerText = "DESCODIFICANDO..."; const now = audioCtx.currentTime; if(bgGain) { bgGain.gain.cancelScheduledValues(now); bgGain.gain.setValueAtTime(bgGain.gain.value, now); bgGain.gain.linearRampToValueAtTime(0.0, now + 0.1); } clearTimeout(restoreAudioTimer); restoreAudioTimer = setTimeout(restoreAudioLevels, (txt.length * 100) + 2000); const u = new SpeechSynthesisUtterance(txt); u.lang='es-MX'; u.rate = 1.0; u.pitch = 1.0; u.volume = 1.0; u.onend = () => { isProcessingResponse = false; clearTimeout(restoreAudioTimer); restoreAudioLevels(); if(isSpiritOn) setTimeout(startListeningCycle, 1500); }; u.onerror = () => { isProcessingResponse = false; restoreAudioLevels(); }; window.speechSynthesis.speak(u); }
-    document.getElementById('vol-slider').addEventListener('input', e=>{ if(masterGain) masterGain.gain.value = e.target.value/100; document.getElementById('vol-txt').innerText=e.target.value+"%"; });
-    function toggleHUD(){ const body = document.body; const btn = document.getElementById('btn-hud'); body.classList.toggle('panels-hidden'); if(body.classList.contains('panels-hidden')) btn.classList.remove('active'); else btn.classList.add('active'); setTimeout(resize, 550); }
-    function toggleFilter(f){ if(currentFilter===f) f='none'; document.body.classList.remove('filter-night-vision', 'filter-negative', 'filter-sls', 'filter-focus'); document.querySelectorAll('.filter-btn').forEach(b=> { if(b.id !== 'btn-hud') b.classList.remove('active'); }); if(f!=='none') { document.body.classList.add('filter-'+f); document.querySelector(`button[onclick="toggleFilter('${f}')"]`).classList.add('active'); } document.getElementById('main-filter-canvas').style.display = f==='sls'?'block':'none'; if(videoTrack) try{ videoTrack.applyConstraints({advanced:[{torch: f==='night-vision'}]}); }catch(e){} currentFilter = f; }
-    function resetZoomManual() { zoomLevel = 1.0; zoomContainer.style.transformOrigin = "center center"; applyZoom(); }
-    function applyZoom() { zoomContainer.style.transform = `scale(${zoomLevel})`; document.getElementById('zoom-msg').innerText = `ZOOM x${zoomLevel.toFixed(1)}`; document.getElementById('zoom-msg').style.opacity = 1; setTimeout(() => document.getElementById('zoom-msg').style.opacity = 0, 1500); }
-
-    async function startCam(){
-        try{
-            try { const s = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { exact: "environment" }, width: { ideal: 3840 }, height: { ideal: 2160 } } }); handleStream(s); } 
-            catch (e) { const s = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } } }); handleStream(s); }
-        }catch(e){}
-    }
-    function handleStream(stream) { vid.srcObject = stream; videoTrack = stream.getVideoTracks()[0]; vid.onloadedmetadata = ()=> { resize(); document.getElementById('cam-res').innerText = `${vid.videoWidth}x${vid.videoHeight}`; }; window.onresize = resize; }
-    function resize(){ const area = document.getElementById('main-view-area'); canvasSLS.width = area.clientWidth; canvasSLS.height = area.clientHeight; const ps=document.querySelector('.panel-section'); if(ps){matrixCanvas.width=ps.clientWidth; matrixCanvas.height=ps.clientHeight;} }
-
-    let lastFps=0, frames=0;
-    function loop(){
-        frames++;
-        if(performance.now()-lastFps>=1000){ document.getElementById('cam-fps').innerText = frames; frames=0; lastFps=performance.now(); }
-        if(currentFilter==='sls' && vid.readyState >= 2){ ctxSLS.clearRect(0,0,canvasSLS.width,canvasSLS.height); if (latestPoses.length > 0) drawSLS(latestPoses); }
         drawMatrix();
+        
         if(analyser){
             const data = new Uint8Array(analyser.frequencyBinCount); analyser.getByteFrequencyData(data);
             let sum=0; for(let i=0; i<data.length; i++) sum+=data[i]; let avg=sum/data.length; 
-            if(isRxOn) { if(isMixerConnected && avg > 10) document.getElementById('btn-rx').classList.add('rx-pulse-green'); else document.getElementById('btn-rx').classList.remove('rx-pulse-green'); }
+            if(isRxOn) {
+               if(isMixerConnected && avg > 10) document.getElementById('btn-rx').classList.add('rx-pulse-green'); 
+               else document.getElementById('btn-rx').classList.remove('rx-pulse-green');
+            }
             if(isRecognizing && !isProcessingResponse) { if(avg > micMaxVol) micMaxVol=avg; }
             for(let i=0; i<NUM_BARS; i++){ let val=(data[i*2] + (data[i*2+1]||0))/2; let bar=energyBars[i]; bar.className='energy-bar-seg'; if(val>50)bar.classList.add('active'); if(val>150)bar.classList.add('mid'); if(val>220)bar.classList.add('high'); bar.style.height=Math.max(5,(val/255)*100)+"%"; }
         }
-        
-        // SENSOR SIMULATION (v18.6 Restaurado)
+
+        // SENSOR SIMULATION
         if(proxSensor) {
             if(currentFilter==='sls' && latestPoses.length > 0) targetProx = Math.min(99, (latestPoses[0].score * 100));
             else targetProx = Math.random() * 3;
@@ -506,29 +166,37 @@
             if(currentFilter==='sls' && latestPoses.length > 0) targetProx = Math.random() * 90;
             else targetProx = Math.random() * 3;
         }
-        if(Math.abs(currentProx - targetProx) > 1) currentProx += (targetProx - currentProx) * 0.1; document.getElementById('prox-val').innerText = Math.floor(currentProx).toString();
-        const now = performance.now(); if(now - lastTempTime > 3000) { let drop = 2 + Math.random() * 6; targetTemp = baseTemp - drop; lastTempTime = now; } if(Math.abs(currentTemp - targetTemp) > 0.1) currentTemp += (targetTemp - currentTemp) * 0.02; document.getElementById('temp-display').innerText = currentTemp.toFixed(1);
+        
+        if(Math.abs(currentProx - targetProx) > 1) currentProx += (targetProx - currentProx) * 0.1;
+        document.getElementById('prox-val').innerText = Math.floor(currentProx).toString();
+
+        const now = performance.now();
+        if(now - lastTempTime > 3000) { let drop = 2 + Math.random() * 6; targetTemp = baseTemp - drop; lastTempTime = now; }
+        if(Math.abs(currentTemp - targetTemp) > 0.1) currentTemp += (targetTemp - currentTemp) * 0.02; 
+        document.getElementById('temp-display').innerText = currentTemp.toFixed(1);
+
         requestAnimationFrame(loop);
     }
+
+    async function loadData(){ try { const r=await fetch(SCRIPT_URL); if(!r.ok)throw new Error("Red"); const d=await r.json(); if(d.automatico)autoData=d.automatico.map(x=>x.TEXTO); if(d.programado)d.programado.forEach(i=>{if(i.PREGUNTA)progData.set(i.PREGUNTA.toLowerCase().trim(), i.RESPUESTA)}); dataLoaded=true; dataStats.prog=d.programado?d.programado.length:0; dataStats.auto=d.automatico?d.automatico.length:0; } catch(e){ dataLoaded=false; } }
 
     let latestPoses = [];
     async function initMoveNet() { 
         await tf.ready(); 
-        // VARIABLE LOCAL PARA EVITAR CONFLICTO GLOBAL
-        const detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING }); 
+        detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING }); 
         setInterval(async () => { 
+            // RESTORED v13.9 Logic: Threshold 0.15
             if(currentFilter==='sls' && vid.readyState>=2) { 
-                try { 
-                    // UMBRAL v18.6
-                    latestPoses = await detector.estimatePoses(vid, {maxPoses: 5, scoreThreshold: 0.15}); 
-                } catch(e) { latestPoses = []; } 
+                try { latestPoses = await detector.estimatePoses(vid, {maxPoses: 5, scoreThreshold: 0.15}); } catch(e) { latestPoses = []; } 
             } else { latestPoses = []; } 
         }, 100); 
     }
     
     const conns = [['left_shoulder','right_shoulder'],['left_shoulder','left_hip'],['right_shoulder','right_hip'],['left_hip','right_hip'],['left_shoulder','left_elbow'],['left_elbow','left_wrist'],['right_shoulder','right_elbow'],['right_elbow','right_wrist'],['left_hip','left_knee'],['left_knee','left_ankle'],['right_hip','right_knee'],['right_knee','right_ankle']];
     function drawSLS(poses) {
-        const s = Math.max(canvasSLS.width/vid.videoWidth, canvasSLS.height/vid.videoHeight); const xo = (canvasSLS.width - vid.videoWidth*s)/2; const yo = (canvasSLS.height - vid.videoHeight*s)/2;
+        const s = Math.max(canvasSLS.width/vid.videoWidth, canvasSLS.height/vid.videoHeight); 
+        const xo = (canvasSLS.width - vid.videoWidth*s)/2;
+        const yo = (canvasSLS.height - vid.videoHeight*s)/2;
         ctxSLS.lineWidth = 3; ctxSLS.lineCap = 'round'; ctxSLS.strokeStyle = '#00ff41'; ctxSLS.shadowBlur = 10; ctxSLS.shadowColor = '#00ff41';
         poses.forEach(p => { 
             if(p.score < 0.15) return; 
@@ -536,7 +204,6 @@
             ctxSLS.beginPath(); 
             conns.forEach(([a,b]) => { 
                 const p1 = m[a]; const p2 = m[b]; 
-                // LOGICA DIBUJO v18.6 (0.20)
                 if(p1 && p2 && p1.score > 0.20 && p2.score > 0.20) { ctxSLS.moveTo(p1.x*s + xo, p1.y*s + yo); ctxSLS.lineTo(p2.x*s + xo, p2.y*s + yo); } 
             }); 
             ctxSLS.stroke(); 
@@ -546,4 +213,5 @@
     }
 </script>
 </body>
-</html>
+</html>    
+         
