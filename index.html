@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR: SLS FIXED</title> 
+    <title>DETECTOR-OBR: SLS-ULTIMATE</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -74,8 +74,15 @@
         #zoom-container { width: 100%; height: 100%; transform-origin: center center; transition: transform 0.3s ease-out; will-change: transform; z-index: 1; }
         #bg-camera-feed { width: 100%; height: 100%; object-fit: cover; transition: filter 0.3s ease; }
         
-        /* FIX CRÍTICO CANVAS SLS: POINTER EVENTS NONE Y Z-INDEX ALTO */
-        #main-filter-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
+        /* SLS CANVAS - CRÍTICO: Z-INDEX SUPERIOR */
+        #main-filter-canvas { 
+            position: absolute; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%; 
+            pointer-events: none; 
+            z-index: 10; 
+            display: block; /* Siempre en DOM, oculto por JS */
+        }
 
         .camera-border { position: absolute; inset: 10px; pointer-events: none; z-index: 20; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1); }
         .camera-border::before, .camera-border::after, .cb-inner::before, .cb-inner::after { content: ''; position: absolute; width: 20px; height: 20px; border-color: var(--hud-cyan); border-style: solid; transition: all 0.5s; }
@@ -100,9 +107,6 @@
         body.filter-focus #main-view-area::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); mask-image: radial-gradient(circle, transparent 30%, black 90%); -webkit-mask-image: radial-gradient(circle, transparent 30%, black 90%); background: transparent; }
         body.filter-focus #bg-camera-feed { filter: contrast(1.2) saturate(0.9) brightness(1.1); }
         
-        /* ASEGURAR QUE EL CANVAS SLS SE VEA CUANDO EL FILTRO ESTÁ ACTIVO */
-        body.filter-sls #main-filter-canvas { display: block !important; }
-
         #logo-container { position: absolute; top: 15px; right: 15px; z-index: 50; pointer-events: none; }
         #logo-image { width: 60px; height: 60px; filter: drop-shadow(0 0 5px var(--hud-cyan)); animation: horrorPulse 4s infinite; }
         @keyframes horrorPulse { 
@@ -110,6 +114,15 @@
             86% { clip-path: inset(20% 0 50% 0); transform: translate(-2px, 1px); filter: hue-rotate(90deg) contrast(2); }
             90% { clip-path: inset(0 0 0 0); transform: translate(0, 0); }
             100% { clip-path: inset(0 0 0 0); transform: translate(0, 0); filter: drop-shadow(0 0 5px var(--hud-cyan)); } 
+        }
+
+        /* DEBUGGER SLS */
+        #sls-status {
+            position: absolute; top: 80px; right: 20px; 
+            font-size: 0.6rem; color: var(--hud-green);
+            z-index: 60; text-align: right;
+            font-family: 'Orbitron'; text-shadow: 0 0 5px var(--hud-green);
+            display: none; /* Se activa con JS */
         }
 
         .section-title { font-family: 'Orbitron'; font-size: 0.65rem; font-weight: 800; color: var(--hud-cyan); margin-bottom: 5px; border-bottom: 1px solid rgba(0, 243, 255, 0.3); display: flex; justify-content: space-between; align-items: center; padding-bottom: 2px; z-index: 2; position: relative; }
@@ -240,6 +253,7 @@
         <div class="rec-container" id="rec-indicator"><div class="rec-dot"></div>REC</div>
         <div class="stats-container"><div><span class="stats-val" id="cam-fps">--</span> FPS</div><div><span class="stats-val" id="cam-res">--x--</span></div></div>
         <div id="logo-container"><img id="logo-image" src="obr-logo.png"></div>
+        <div id="sls-status">CARGANDO MODELO...</div>
         
         <div id="filter-controls-container">
             <button class="filter-btn" id="btn-pareidolia" onclick="togglePareidolia()" style="margin-bottom:10px; border-color:var(--hud-purple); color:var(--hud-purple);">👁️</button>
@@ -269,73 +283,62 @@
 </div>
 
 <script>
+    // ==========================================
+    // CONFIGURACIÓN
+    // ==========================================
     const GEMINI_API_KEY = "AIzaSyBkWd1MK0ip4D_PWiMTsDYmp5g22c3duIQ"; 
-    
-    const AI_SYSTEM_INSTRUCTION = {
-        role: "user",
-        parts: [{ text: `Actúa como un espíritu atrapado. Tus respuestas deben ser cortas, confusas y a veces escalofriantes. Si te envío una imagen, descríbela si ves algo paranormal. Máximo 10 palabras.`}]
-    };
-
-    const FALLBACK_AUTO = ["¿Hay alguien?", "Te escucho", "Acércate", "Detrás", "Frío", "Ayuda", "Vete", "Sótano", "Miedo", "Luz", "Oscuridad", "Aquí"];
     const MIXER_ID = "obr-mezclador-central"; 
-    
-    let audioCtx, masterGain, micSource, analyser;
-    let bgBuffer, bgNode, bgGain;
+    const FALLBACK_AUTO = ["¿Hay alguien?", "Te escucho", "Acércate", "Detrás", "Frío", "Ayuda", "Vete"];
+    const AI_SYSTEM_INSTRUCTION = { role: "user", parts: [{ text: `Actúa como un espíritu atrapado. Respuestas cortas y escalofriantes.` }]};
+
+    // Variables Globales
+    let audioCtx, masterGain, micSource, analyser, bgBuffer, bgNode, bgGain;
     let recognition, isSpiritOn = false;
     let videoTrack, currentFilter = 'none', uiVisible = false, hideTimeout;
     let proxSensor, energyBars = [];
-    let isRecognizing = false; 
-    let scanSpeed = 1.0;
-    let micMaxVol = 0;
-    let restoreAudioTimer;
-    let isProcessingResponse = false; 
-    let chatHistory = []; 
-    let isPareidoliaActive = false;
-    let peer, dataConn;
-    let isRxOn = false;
-    let isMixerConnected = false;
+    let isRecognizing = false, scanSpeed = 1.0, micMaxVol = 0;
+    let restoreAudioTimer, isProcessingResponse = false; 
+    let chatHistory = [], isPareidoliaActive = false;
+    let peer, dataConn, isRxOn = false, isMixerConnected = false;
     let incomingAudioEl = document.getElementById('incoming-feed');
-    let rxStreamSource = null;
-    let micStreamSource = null;
-    let isIntroPlaying = false;
-    let localStream = null;
-    let isStreamMode = false;
-    let zoomLevel = 1;
-    let longPressTimer;
-    let isLongPressing = false;
-    let initialPinchDist = 0;
+    let rxStreamSource = null, micStreamSource = null;
+    let isIntroPlaying = false, localStream = null, isStreamMode = false;
+    let zoomLevel = 1, longPressTimer, isLongPressing = false, initialPinchDist = 0;
     
     const zoomContainer = document.getElementById('zoom-container');
     const touchLayer = document.getElementById('touch-layer');
     const mainView = document.getElementById('main-view-area');
     const vid = document.getElementById('bg-camera-feed');
+    
+    // SLS / MATRIX
     const canvasSLS = document.getElementById('main-filter-canvas'); 
+    let ctxSLS = null; // SE INICIALIZA EN ENTERAPP
     const matrixCanvas = document.getElementById('matrix-canvas');
     const mCtx = matrixCanvas ? matrixCanvas.getContext('2d') : null;
     let matrixDrops = [];
+    
+    // SLS Variables
+    let detector = null;
     let latestPoses = [];
-    let detector = null; 
-    let ctxSLS = null;
-    let modelReady = false; // FLAG PARA EVITAR CRASH
+    const conns = [['left_shoulder','right_shoulder'],['left_shoulder','left_hip'],['right_shoulder','right_hip'],['left_hip','right_hip'],['left_shoulder','left_elbow'],['left_elbow','left_wrist'],['right_shoulder','right_elbow'],['right_elbow','right_wrist'],['left_hip','left_knee'],['left_knee','left_ankle'],['right_hip','right_knee'],['right_knee','right_ankle']];
 
     const NUM_BARS = 10; 
-    let baseTemp = 0; let targetTemp = 22.0; let currentTemp = 22.0; let lastTempTime = 0;
-    let currentProx = 0; let targetProx = 0;
+    let baseTemp = 0, targetTemp = 22.0, currentTemp = 22.0, lastTempTime = 0;
+    let currentProx = 0, targetProx = 0;
 
-    // --- SISTEMA DE CARGA INDEPENDIENTE (NO SE PEGA) ---
+    // ==========================================
+    // SISTEMA DE CARGA (INDEPENDIENTE)
+    // ==========================================
     function startLoadingSequence() {
         const txtMain = document.getElementById('loading-text-main');
         const txtSub = document.getElementById('loading-text-sub');
         const bar = document.getElementById('loading-bar');
         const perc = document.getElementById('loading-percent');
         const btn = document.getElementById('enter-btn');
-        
         let p = 0;
         if(window.loadInterval) clearInterval(window.loadInterval);
-
         window.loadInterval = setInterval(() => {
-            p += 1.5; if(p > 100) p = 100;
-
+            p += 2; if(p > 100) p = 100;
             if(p < 30) { if(txtMain) txtMain.innerText = "INICIANDO SISTEMA..."; if(txtSub) txtSub.innerText = "CARGANDO KERNEL..."; }
             else if(p >= 30 && p < 60) { if(txtMain) txtMain.innerText = "ACTIVANDO OJO DIGITAL..."; if(txtSub) txtSub.innerText = "CALIBRANDO LENTE ESPECTRAL..."; }
             else if(p >= 60 && p < 98) { if(txtMain) txtMain.innerText = "SINTONIZANDO..."; if(txtSub) txtSub.innerText = "CONECTANDO A LA RED NEURAL..."; }
@@ -345,23 +348,14 @@
                 if(btn) { btn.style.display = "block"; btn.classList.add('btn-glitch'); }
             }
             if(bar) bar.style.width = p + "%"; if(perc) perc.innerText = Math.floor(p) + "%";
-        }, 40);
+        }, 30);
     }
-
-    // INICIO INMEDIATO
     startLoadingSequence();
 
     window.onload = () => {
         try {
             const eContainer = document.getElementById('energy-container');
-            if(eContainer) {
-                for(let i=0; i<NUM_BARS; i++){ 
-                    let d = document.createElement('div'); 
-                    d.className = 'energy-bar-seg'; 
-                    eContainer.appendChild(d); 
-                    energyBars.push(d); 
-                }
-            }
+            if(eContainer) { for(let i=0; i<NUM_BARS; i++){ let d = document.createElement('div'); d.className = 'energy-bar-seg'; eContainer.appendChild(d); energyBars.push(d); } }
             setupZoomEvents();
             chatHistory.push(AI_SYSTEM_INSTRUCTION);
             chatHistory.push({ role: "model", parts: [{ text: "..." }] });
@@ -505,7 +499,7 @@
         masterGain = audioCtx.createGain(); masterGain.connect(audioCtx.destination);
         bgBuffer = await loadAudio('FONDO_1.mp3'); 
         
-        // INICIALIZAR SLS
+        // INICIALIZAR CONTEXTO SLS
         if(canvasSLS) ctxSLS = canvasSLS.getContext('2d');
         
         initMic(); await startCam(); await initMoveNet(); 
@@ -527,7 +521,7 @@
         document.body.classList.remove('filter-night-vision', 'filter-negative', 'filter-sls', 'filter-focus');
         document.querySelectorAll('.filter-btn').forEach(b=> { if(b.id !== 'btn-hud' && b.id !== 'btn-pareidolia') b.classList.remove('active'); });
         if(f!=='none') { document.body.classList.add('filter-'+f); document.querySelector(`button[onclick="toggleFilter('${f}')"]`).classList.add('active'); }
-        document.getElementById('main-filter-canvas').style.display = f==='sls'?'block':'none';
+        document.getElementById('main-filter-canvas').style.display = f==='sls'?'block':'none'; // VISIBLE
         if(videoTrack) try{ await videoTrack.applyConstraints({advanced:[{torch: f==='night-vision'}]}); }catch(e){}
         currentFilter = f;
     }
@@ -625,10 +619,15 @@
         frames++;
         if(performance.now()-lastFps>=1000){ document.getElementById('cam-fps').innerText = frames; frames=0; lastFps=performance.now(); }
         
-        // --- SLS DRAWING LOGIC (ORIGINAL v18.6) ---
-        if(currentFilter==='sls' && vid.readyState >= 2 && ctxSLS && modelReady){ 
-            ctxSLS.clearRect(0,0,canvasSLS.width,canvasSLS.height); 
-            if (latestPoses.length > 0) drawSLS(latestPoses); 
+        // --- MOTOR SLS V2.0 ---
+        if(currentFilter==='sls'){
+            // FORZAR TAMAÑO DE CANVAS IGUAL AL VIDEO EN CADA FRAME
+            if(vid.readyState >= 2 && ctxSLS) {
+                canvasSLS.width = vid.videoWidth;
+                canvasSLS.height = vid.videoHeight;
+                ctxSLS.clearRect(0,0,canvasSLS.width,canvasSLS.height); 
+                if (latestPoses.length > 0) drawSLS(latestPoses); 
+            }
         }
         
         drawMatrix();
@@ -659,38 +658,46 @@
         requestAnimationFrame(loop);
     }
 
-    // --- SLS ENGINE (v18.6 ORIGINAL) ---
+    // ==========================================
+    // SLS MOTOR (INDEPENDIENTE)
+    // ==========================================
     async function initMoveNet() { 
         try {
             await tf.ready(); 
+            // DEBUG: Indicador de modelo listo
+            document.getElementById('sls-status').style.display = 'block';
+            document.getElementById('sls-status').innerText = "SISTEMA SLS: ONLINE";
+            
             detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING }); 
-            modelReady = true; // FLAG ACTIVADO
+            
+            // BUCLE DE DETECCIÓN (SEPARADO DEL BUCLE VISUAL)
             setInterval(async () => { 
                 if(currentFilter==='sls' && vid.readyState>=2) { 
-                    try { latestPoses = await detector.estimatePoses(vid, {maxPoses: 5, scoreThreshold: 0.15}); } catch(e) { latestPoses = []; } 
+                    try { latestPoses = await detector.estimatePoses(vid, {maxPoses: 5, scoreThreshold: 0.1}); } catch(e) { latestPoses = []; } 
                 } else { latestPoses = []; } 
             }, 100); 
-        } catch(e) { console.error("TF Error", e); }
+        } catch(e) { console.error("SLS Error:", e); }
     }
     
     const conns = [['left_shoulder','right_shoulder'],['left_shoulder','left_hip'],['right_shoulder','right_hip'],['left_hip','right_hip'],['left_shoulder','left_elbow'],['left_elbow','left_wrist'],['right_shoulder','right_elbow'],['right_elbow','right_wrist'],['left_hip','left_knee'],['left_knee','left_ankle'],['right_hip','right_knee'],['right_knee','right_ankle']];
     
     function drawSLS(poses) {
-        const s = Math.max(canvasSLS.width/vid.videoWidth, canvasSLS.height/vid.videoHeight); 
-        const xo = (canvasSLS.width - vid.videoWidth*s)/2;
-        const yo = (canvasSLS.height - vid.videoHeight*s)/2;
+        const s = 1; // YA NO ES NECESARIO ESCALAR PORQUE EL CANVAS SE ADAPTA AL VIDEO
+        const xo = 0;
+        const yo = 0;
+        
         ctxSLS.lineWidth = 3; ctxSLS.lineCap = 'round'; ctxSLS.strokeStyle = '#00ff41'; ctxSLS.shadowBlur = 10; ctxSLS.shadowColor = '#00ff41';
         poses.forEach(p => { 
-            if(p.score < 0.15) return; 
+            if(p.score < 0.1) return; 
             const kp = p.keypoints; const m = {}; kp.forEach(k => m[k.name] = k); 
             ctxSLS.beginPath(); 
             conns.forEach(([a,b]) => { 
                 const p1 = m[a]; const p2 = m[b]; 
-                if(p1 && p2 && p1.score > 0.20 && p2.score > 0.20) { ctxSLS.moveTo(p1.x*s + xo, p1.y*s + yo); ctxSLS.lineTo(p2.x*s + xo, p2.y*s + yo); } 
+                if(p1 && p2 && p1.score > 0.1 && p2.score > 0.1) { ctxSLS.moveTo(p1.x, p1.y); ctxSLS.lineTo(p2.x, p2.y); } 
             }); 
             ctxSLS.stroke(); 
             ctxSLS.fillStyle = '#ff0055'; 
-            kp.forEach(k => { if(k.score > 0.20) { ctxSLS.beginPath(); ctxSLS.arc(k.x*s + xo, k.y*s + yo, 4, 0, 2*Math.PI); ctxSLS.fill(); } }); 
+            kp.forEach(k => { if(k.score > 0.1) { ctxSLS.beginPath(); ctxSLS.arc(k.x, k.y, 4, 0, 2*Math.PI); ctxSLS.fill(); } }); 
         });
     }
 </script>
