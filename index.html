@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR: AI-AUTO</title> 
+    <title>DETECTOR-OBR: AUTO-AI</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -97,6 +97,8 @@
         body.filter-negative #bg-camera-feed { filter: invert(1) hue-rotate(180deg); }
         body.filter-focus #main-view-area::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); mask-image: radial-gradient(circle, transparent 30%, black 90%); -webkit-mask-image: radial-gradient(circle, transparent 30%, black 90%); background: transparent; }
         body.filter-focus #bg-camera-feed { filter: contrast(1.2) saturate(0.9) brightness(1.1); }
+        
+        /* SLS SIEMPRE VISIBLE PERO OCULTO POR LOGICA */
         body.filter-sls #main-filter-canvas { display: block; }
 
         #logo-container { position: absolute; top: 15px; right: 15px; z-index: 50; pointer-events: none; }
@@ -114,11 +116,10 @@
         .voice-led.active { background: var(--hud-blue); box-shadow: 0 0 10px var(--hud-blue); }
         .voice-led.listening { background: var(--hud-green); box-shadow: 0 0 15px var(--hud-green); animation: pulseLed 1s infinite; }
         @keyframes pulseLed { 50% { opacity: 0.5; } }
-        .sb-display-area { background: #000; border: 1px inset #333; padding: 10px; margin: 8px 0; font-family: 'Share Tech Mono'; color: var(--hud-green); text-align: center; font-size: 0.9rem; text-transform: uppercase; border-radius: 4px; }
+        .sb-display-area { background: #000; border: 1px inset #333; padding: 10px; margin: 8px 0; font-family: 'Share Tech Mono'; color: var(--hud-green); text-align: center; font-size: 0.9rem; text-transform: uppercase; border-radius: 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
         .btn-control { background: #111; border: 1px solid #444; color: #aaa; font-family: 'Orbitron'; font-size: 0.8rem; padding: 10px; width: 100%; cursor: pointer; font-weight: bold; }
         .btn-control.pwr-on { border-color: var(--hud-green); color: var(--hud-green); background: rgba(0,50,0,0.3); box-shadow: 0 0 10px var(--hud-green) inset; }
 
-        /* MODO STREAMER */
         .streamer-panel { padding: 10px; background: rgba(20, 0, 20, 0.4); border: 1px solid var(--hud-purple); border-radius: 4px; text-align: center; margin-bottom: 10px; }
         .stream-btn { width: 100%; padding: 15px; font-size: 0.9rem; font-family: 'Orbitron'; background: rgba(0,0,0,0.5); border: 2px solid #555; color: #777; cursor: pointer; transition: all 0.3s; text-shadow: 0 0 5px #000; }
         .stream-active { border-color: var(--hud-purple) !important; color: var(--hud-purple) !important; box-shadow: 0 0 20px var(--hud-purple), inset 0 0 10px rgba(168, 85, 247, 0.3); background: rgba(40, 0, 60, 0.6); animation: pulseStream 2s infinite; }
@@ -142,7 +143,7 @@
         .filter-btn.active { background: var(--hud-cyan); color: #000; box-shadow: 0 0 10px var(--hud-cyan); }
         #btn-hud.active { background: var(--hud-cyan); color: #000; }
         #btn-hud { background: rgba(0, 10, 20, 0.9); color: var(--hud-cyan); }
-
+        
         .ui-hiding { animation: waterPop 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important; pointer-events: none; }
         @keyframes waterPop { 0% { transform: scale(1); opacity: 1; blur(0); } 100% { transform: scale(2.5); opacity: 0; blur(10px); } }
         #loading-overlay { position: fixed; inset: 0; z-index: 99999; display: flex; flex-direction: column; justify-content: center; align-items: center; background-color: #000; background-image: url('fondo_pantalla.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat; }
@@ -229,13 +230,24 @@
         <div id="touch-layer"></div>
 
         <button id="btn-intro" onclick="playIntro()">🎞️</button>
+
         <button id="btn-reset-ui" onclick="forceResetUI()">⚠</button>
 
         <div class="camera-border"><div class="cb-inner"></div></div>
         <div class="rec-container" id="rec-indicator"><div class="rec-dot"></div>REC</div>
         <div class="stats-container"><div><span class="stats-val" id="cam-fps">--</span> FPS</div><div><span class="stats-val" id="cam-res">--x--</span></div></div>
         <div id="logo-container"><img id="logo-image" src="obr-logo.png"></div>
-        
+        <div id="follow-banner">
+            <div class="banner-content">
+                <div id="step-1" class="seq-step">SÍGUENOS EN</div>
+                <div id="step-2" class="seq-step" style="display:none; gap:15px; justify-content:center;">
+                    <i class="fab fa-tiktok social-icon" style="color:#ff0050;"></i>
+                    <i class="fab fa-facebook social-icon" style="color:#1877f2;"></i>
+                    <i class="fab fa-youtube social-icon" style="color:#f00;"></i>
+                </div>
+                <div id="step-3" class="seq-step">@EXPLORACIONES OBR</div>
+            </div>
+        </div>
         <div id="filter-controls-container">
             <button class="filter-btn" onclick="toggleFilter('night-vision')"><i class="fas fa-eye"></i></button>
             <button class="filter-btn" onclick="toggleFilter('sls')"><i class="fas fa-child"></i></button>
@@ -449,9 +461,7 @@
         }
     }
 
-    function setupZoomEvents() { 
-        if(!touchLayer) return;
-        touchLayer.addEventListener('touchstart', handleTouchStart, {passive: false}); touchLayer.addEventListener('touchmove', handleTouchMove, {passive: false}); touchLayer.addEventListener('touchend', handleTouchEnd); touchLayer.addEventListener('mousedown', handleMouseDown); touchLayer.addEventListener('mouseup', handleMouseUp); 
+    function setupZoomEvents() { touchLayer.addEventListener('touchstart', handleTouchStart, {passive: false}); touchLayer.addEventListener('touchmove', handleTouchMove, {passive: false}); touchLayer.addEventListener('touchend', handleTouchEnd); touchLayer.addEventListener('mousedown', handleMouseDown); touchLayer.addEventListener('mouseup', handleMouseUp); 
     }
     function handleTouchStart(e) { if (e.touches.length === 1) { isLongPressing = false; const t = e.touches[0]; longPressTimer = setTimeout(() => { triggerLongPressZoom(t.clientX, t.clientY); }, 600); } else if (e.touches.length === 2) { clearTimeout(longPressTimer); initialPinchDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); } }
     function handleTouchMove(e) { if (e.touches.length === 1) { clearTimeout(longPressTimer); } else if (e.touches.length === 2) { e.preventDefault(); clearTimeout(longPressTimer); const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); if (initialPinchDist > 0) { const delta = dist - initialPinchDist; zoomLevel += delta * 0.005; zoomLevel = Math.min(Math.max(1, zoomLevel), 5); applyZoom(); initialPinchDist = dist; } } }
@@ -462,19 +472,21 @@
     function resetZoomManual() { zoomLevel = 1.0; zoomContainer.style.transformOrigin = "center center"; applyZoom(); }
     function applyZoom() { zoomContainer.style.transform = `scale(${zoomLevel})`; }
     function toggleUIOverlay() { if (uiVisible) hideControls(); else showControls(); }
-    function showControls() { uiVisible = true; document.getElementById('filter-controls-container').style.opacity = '1'; document.getElementById('filter-controls-container').style.pointerEvents = 'auto'; document.getElementById('logo-container').classList.add('ui-hiding'); clearTimeout(hideTimeout); hideTimeout = setTimeout(hideControls, 5000); }
-    function hideControls() { uiVisible = false; document.getElementById('filter-controls-container').style.opacity = '0'; document.getElementById('filter-controls-container').style.pointerEvents = 'none'; document.getElementById('logo-container').classList.remove('ui-hiding'); }
+    function showControls() { uiVisible = true; document.getElementById('filter-controls-container').style.opacity = '1'; document.getElementById('filter-controls-container').style.pointerEvents = 'auto'; document.getElementById('logo-container').classList.add('ui-hiding'); document.getElementById('follow-banner').classList.add('ui-hiding'); clearTimeout(hideTimeout); hideTimeout = setTimeout(hideControls, 5000); }
+    function hideControls() { uiVisible = false; document.getElementById('filter-controls-container').style.opacity = '0'; document.getElementById('filter-controls-container').style.pointerEvents = 'none'; document.getElementById('logo-container').classList.remove('ui-hiding'); document.getElementById('follow-banner').classList.remove('ui-hiding'); }
 
     async function enterApp(){
         document.getElementById('loading-overlay').style.display='none';
         document.getElementById('app-ui').style.opacity = 1;
         document.getElementById('app-ui').style.pointerEvents = 'auto';
         document.body.classList.add('panels-hidden');
+        
         audioCtx = new (window.AudioContext||window.webkitAudioContext)();
         masterGain = audioCtx.createGain(); masterGain.connect(audioCtx.destination);
-        bgBuffer = await loadAudio('FONDO_1.mp3'); 
+        bgBuffer = await loadAudio('FONDO_1.mp3');
+        
         initMic(); await startCam(); await initMoveNet(); initSensors();
-        initMatrix(); startBannerLoop(); initPeer();
+        initMatrix(); startBannerLoop(); initPeer(); initTemp();
         loop();
     }
 
@@ -530,6 +542,7 @@
         }else{
             btn.innerText="ENCENDER"; btn.classList.remove('pwr-on'); document.getElementById('sb-status').innerText="APAGADO";
             if(bgNode){bgNode.stop(); bgNode=null;} if(noiseNode){noiseNode.stop(); noiseNode=null;}
+            if(interferenceInterval) clearInterval(interferenceInterval);
             if(window.speechSynthesis) window.speechSynthesis.cancel();
             document.getElementById('voice-led').classList.remove('listening'); if(recognition) recognition.stop();
         }
@@ -550,7 +563,7 @@
                 recognition.onend = () => { isRecognizing=false; document.getElementById('voice-led').classList.remove('listening'); 
                     if(!isProcessingResponse && isSpiritOn) {
                         if(micMaxVol > 15) { isProcessingResponse = true; processVoiceCommand("NOISE_TRIGGER"); } 
-                        else { triggerAutoSpirit(); } // LLAMADA AL MODO AUTO
+                        else { setTimeout(startListeningCycle, 500); }
                     }
                 };
                 recognition.onresult = (e) => { processVoiceCommand(e.results[0][0].transcript.toLowerCase().trim()); };
