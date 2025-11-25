@@ -520,7 +520,7 @@
             const qrDiv = document.getElementById("qrcode"); 
             qrDiv.innerHTML = ""; 
             // Generar QR inmediatamente al obtener ID
-            new QRCode(qrDiv, { text: id, width: 200, height: 200 });
+            new QRCode(qrDiv, { text: obr-mezclador-central, width: 200, height: 200 });
             qrGenerated = true;
         });
         peer.on('error', err => { if(err.type === 'unavailable-id') { peer = new Peer(); } });
