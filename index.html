@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v20.8 POLTERGEIST STABLE</title> 
+    <title>DETECTOR-OBR v21.6 TRANSITION</title> 
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -33,7 +33,7 @@
             --hud-teal: #6EF8FA;
             --glass-panel: rgba(5, 8, 15, 0.92);
             --left-panel-w: 240px; 
-            --bottom-panel-h: 110px;
+            --bottom-panel-h: 100px;
         }
 
         /* BLOQUEO TOTAL */
@@ -188,6 +188,7 @@
             text-align: right; font-family: 'Share Tech Mono'; font-size: 0.75rem; color: var(--hud-teal);
             text-shadow: 0 0 2px var(--hud-teal); pointer-events: none;
             display: flex; gap: 8px; align-items: center;
+            transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.6s ease; /* Transición para waterpop */
         }
         .stat-item { border-right: 1px solid rgba(110, 248, 250, 0.5); padding-right: 8px; }
         .stat-item:last-child { border: none; padding-right: 0; }
@@ -209,52 +210,64 @@
         @keyframes pulseRed { 0% { opacity: 0.8; } 50% { opacity: 1; text-shadow: 0 0 15px red; } 100% { opacity: 0.8; } }
         @keyframes glitchText { 0% { transform: translate(0); } 20% { transform: translate(-1px, 1px); } 40% { transform: translate(1px, -1px); } 60% { transform: translate(-1px, -1px); } 80% { transform: translate(1px, 1px); } 100% { transform: translate(0); } }
 
-        /* Banner Video */
-        #bottom-banner { position: absolute; bottom: 0; left: 0; width: 100%; height: 150px; z-index: 35; display: none; background: black; border-top: 2px solid var(--hud-red); }
+        /* Banner Video (With Transition) */
+        #bottom-banner { 
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 150px; 
+            z-index: 35; display: none; background: black; border-top: 2px solid var(--hud-red);
+            opacity: 0; transform: translateY(100%);
+            transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.6s ease;
+        }
+        #bottom-banner.active { opacity: 1; transform: translateY(0); }
         #banner-vid { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; }
 
-        /* LIVE Indicator */
-        .live-container { position: absolute; top: 4px; left: 4px; z-index: 20; display: flex; gap: 2px; }
-        .live-dot { width: 10px; height: 10px; background: var(--hud-red); border-radius: 50%; box-shadow: 0 0 10px var(--hud-red); animation: livePulse 0.8s infinite; }
-        .live-text { color: white; font-family: 'Orbitron'; font-size: 0.7rem; font-weight: bold; text-shadow: 0 0 5px var(--hud-red); margin-left: 5px; }
-        @keyframes livePulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.2); } 100% { opacity: 1; transform: scale(1); } }
-
-        /* Intro Button (Fixed Z-Index) */
+        /* Intro & Controls (With Transition) */
         #btn-play-intro { 
-            position: absolute; bottom: 30px; left: 20px; z-index: 100; pointer-events: auto; 
-            font-size: 1.8rem; color: white; cursor: pointer; 
-            filter: drop-shadow(0 0 5px black); transition: transform 0.3s, opacity 0.3s; 
+            position: absolute; bottom: 5px; left: 10px; z-index: 100; pointer-events: auto; 
+            font-size: 1.5rem; color: white; cursor: pointer; 
+            filter: drop-shadow(0 0 5px black); 
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s;
         }
         #btn-play-intro:active { transform: scale(0.9); }
         
-        /* Logo & Elements Transition */
-        #top-right-logo { position: absolute; top: 15px; right: 20px; z-index: 40; width: 80px; opacity: 0.8; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .pop-out { transform: scale(0); opacity: 0; }
-        .pop-in { transform: scale(1); opacity: 0.8; }
-
-        /* AI Feedback */
-        #ai-feedback-overlay { position: absolute; top: 40px; left: 10px; z-index: 45; pointer-events: none; display: none; text-align: left; max-width: 300px; }
-        #ai-feedback-text { 
-            font-family: 'Creepster'; font-size: 1.2rem; color: var(--hud-red); 
-            text-shadow: 0 0 5px red; letter-spacing: 1px; line-height: 1.1;
-            animation: textFlicker 0.1s infinite;
+        /* Video Intro Overlay */
+        #intro-player { 
+            position: fixed; inset: 0; background: black; z-index: 5000; 
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transform: scale(1.2); 
+            transition: opacity 0.8s ease, transform 0.8s ease;
         }
-        @keyframes textFlicker { 0% { opacity: 1; } 50% { opacity: 0.8; transform: translateX(1px); } 100% { opacity: 1; } }
-
-        /* Zoom Indicator */
-        #zoom-target-indicator { position: absolute; width: 40px; height: 40px; border: 2px solid var(--hud-green); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 25; }
-
-        /* Logs */
-        .log-item { font-size: 0.6rem; margin-bottom: 1px; font-family: 'Share Tech Mono'; line-height: 1.1; }
-        .log-normal { color: #0f0; } .log-warn { color: var(--hud-orange); } .log-crit { color: var(--hud-red); text-shadow: 0 0 2px red; }
-
-        /* Intro Overlay */
-        #intro-player { position: fixed; inset: 0; background: black; z-index: 5000; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transform: scale(1.2); transition: opacity 0.8s ease, transform 0.8s ease; }
         #intro-player.active { opacity: 1; pointer-events: auto; transform: scale(1); }
         #intro-vid { width: 100%; height: 100%; object-fit: contain; }
         #intro-fallback-close { position: absolute; bottom: 30px; right: 30px; border: 1px solid #555; padding: 10px; color: #555; cursor: pointer; display: none; font-family: 'Orbitron'; font-size: 0.8rem; }
 
-        /* Mixer */
+        /* AI Feedback Overlay */
+        #ai-feedback-overlay {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 45; text-align: center; pointer-events: none; display: none;
+        }
+        #ai-feedback-text {
+            font-family: 'Creepster'; font-size: 1.5rem; color: var(--hud-red);
+            text-shadow: 0 0 10px #000; background: rgba(0,0,0,0.6); padding: 10px 20px;
+            border: 1px solid var(--hud-red); border-radius: 4px;
+            animation: glitchText 0.5s infinite;
+        }
+
+        /* Logo & Waterpop Classes */
+        #top-right-logo { position: absolute; top: 15px; right: 20px; z-index: 40; width: 50px; opacity: 0.8; transition: 0.3s; }
+        
+        /* WATERPOP CLASSES */
+        .pop-out { transform: scale(0) !important; opacity: 0 !important; pointer-events: none; }
+        .pop-in { transform: scale(1) !important; opacity: 1 !important; pointer-events: auto; }
+        .hidden-element { opacity: 0; pointer-events: none; }
+
+        /* Zoom Indicator */
+        #zoom-target-indicator { position: absolute; width: 40px; height: 40px; border: 2px solid var(--hud-green); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 25; }
+
+        /* Log Panel Styles */
+        .log-item { font-size: 0.6rem; margin-bottom: 1px; font-family: 'Share Tech Mono'; line-height: 1.1; }
+        .log-normal { color: #0f0; } .log-warn { color: var(--hud-orange); } .log-crit { color: var(--hud-red); text-shadow: 0 0 2px red; }
+
+        /* Mixer Window */
         #mixer-window { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9); width: 95vw; max-width: 800px; height: 80vh; background: rgba(10, 12, 18, 0.65); border: 1px solid var(--hud-cyan); z-index: 2000; display: none; flex-direction: column; box-shadow: 0 0 50px rgba(0,0,0,0.8); border-radius: 8px; transition: 0.3s; opacity: 0; pointer-events: none; backdrop-filter: blur(5px); }
         #mixer-window.active { display: flex; opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
         .mixer-header { padding: 10px; border-bottom: 1px solid #333; display: flex; justify-content: center; align-items: center; position: relative; }
@@ -278,50 +291,82 @@
 </head>
 <body>
 
-    <!-- Loading -->
+    <!-- Loading Screen -->
     <div id="loading-screen">
         <div class="loader-container"><div class="loader"></div><img src="obr-logo.png" class="logo-center" onerror="this.style.display='none'"></div>
         <button id="btn-enter-system" onclick="startExperience()">INGRESAR AL SISTEMA</button>
     </div>
 
     <!-- Video Intro -->
-    <div id="intro-player"><video id="intro-vid" playsinline autoplay><source src="INTRO_1.mp4" type="video/mp4"></video><div id="intro-fallback-close" onclick="closeIntro()">CERRAR VIDEO</div></div>
+    <div id="intro-player"><video id="intro-vid" playsinline><source src="INTRO_1.mp4" type="video/mp4"></video><div id="intro-fallback-close" onclick="closeIntro()">CERRAR VIDEO</div></div>
 
-    <!-- UI -->
+    <!-- AI Feedback Overlay -->
+    <div id="ai-feedback-overlay">
+        <div id="ai-feedback-text">ANALIZANDO...</div>
+    </div>
+
+    <!-- UI Principal -->
     <div id="app-ui">
-        <!-- Left -->
+        
+        <!-- Left Panel -->
         <div id="left-panel">
-            <div class="mb-2 text-center border-b border-cyan-900 pb-1"><h1 class="hud-title text-sm text-cyan-400">DETECTOR<span class="text-white">-OBR</span></h1></div>
+            <div class="mb-2 text-center border-b border-cyan-900 pb-1">
+                <h1 class="hud-title text-sm text-cyan-400">DETECTOR<span class="text-white">-OBR</span></h1>
+            </div>
+
             <!-- Sensors -->
-            <div class="sensor-box"><div class="flex justify-between sensor-label">MAGNETOMETRO</div><div class="sensor-val-big text-yellow-400 flex items-end justify-between"><span id="emf-val">0.0</span> <span class="text-xs mb-1">µT</span></div><div class="h-1 bg-gray-800 mt-1 w-full"><div id="emf-bar" class="h-full bg-yellow-500 transition-all duration-100" style="width: 0%"></div></div></div>
-            <div class="sensor-box"><div class="flex justify-between sensor-label">PROXIMIDAD <span id="prox-mode" class="text-[8px]">(CAM)</span></div><div class="sensor-val-big text-blue-400 flex items-end justify-between"><span id="prox-val">--</span> <span class="text-xs mb-1">%</span></div></div>
-            <div class="sensor-box"><div class="flex justify-between sensor-label">TEMPERATURA</div><div class="sensor-val-big font-bold flex items-end justify-between temp-val-text"><span id="temp-val">--</span> <span class="text-xs mb-1">°C</span></div></div>
-            <!-- Buttons -->
+            <div class="sensor-box">
+                <div class="sensor-label">MAGNETOMETRO</div>
+                <div class="sensor-val-big text-yellow-400 flex items-end justify-center">
+                    <span id="emf-val">0.0</span> <span class="sensor-unit">µT</span>
+                </div>
+                <div class="h-1 bg-gray-800 mt-1 w-full"><div id="emf-bar" class="h-full bg-yellow-500 transition-all duration-100" style="width: 0%"></div></div>
+            </div>
+            <div class="sensor-box">
+                <div class="sensor-label">PROXIMIDAD <span id="prox-mode" class="text-[8px]">(CAM)</span></div>
+                <div class="sensor-val-big text-blue-400 flex items-end justify-center">
+                    <span id="prox-val">--</span> <span class="sensor-unit">%</span>
+                </div>
+                <div class="h-1 bg-gray-800 mt-1 w-full"><div id="prox-bar" class="h-full bg-blue-500 transition-all duration-100" style="width: 0%"></div></div>
+            </div>
+            <div class="sensor-box">
+                <div class="sensor-label">TEMPERATURA</div>
+                <div class="sensor-val-big font-bold flex items-end justify-center temp-val-text">
+                    <span id="temp-val">--</span> <span class="sensor-unit">°C</span>
+                </div>
+            </div>
+
+            <!-- Main Controls -->
             <div class="mt-2">
                 <button class="btn-hud" id="btn-night" onclick="setFilter('night', this)"><i class="fas fa-moon"></i> NOCTURNA</button>
                 <button class="btn-hud" id="btn-thermal" onclick="setFilter('thermal', this)"><i class="fas fa-fire"></i> TERMICO</button>
                 <button class="btn-hud" id="btn-bokeh" onclick="setFilter('bokeh', this)"><i class="fas fa-camera"></i> BOKEH</button>
                 <button class="btn-hud" id="btn-sls" onclick="setFilter('sls', this)"><i class="fas fa-running"></i> SLS (AI)</button>
             </div>
-            <div class="mt-2 border-t border-gray-800 pt-2"><button id="btn-mixer-open" class="btn-hud" style="color: #c084fc; border-color: #c084fc;" onclick="toggleMixerWindow()"><i class="fas fa-sliders-h"></i> MEZCLADOR</button></div>
+
+            <!-- Mixer Link -->
+            <div class="mt-2 border-t border-gray-800 pt-2">
+                <button id="btn-mixer-open" class="btn-hud" style="color: #c084fc; border-color: #c084fc;" onclick="toggleMixerWindow()">
+                    <i class="fas fa-sliders-h"></i> MEZCLADOR
+                </button>
+            </div>
         </div>
 
-        <!-- Main -->
+        <!-- Camera Area -->
         <div id="main-view-area">
-            <div id="zoom-container"><video id="video-feed" autoplay playsinline muted></video><canvas id="sls-canvas"></canvas></div>
-            
-            <!-- Touch -->
-            <div id="touch-layer"><div id="zone-zoom"></div><div id="zone-menu"></div></div>
-            <div id="zoom-target-indicator"></div>
-            
-            <!-- Floating Elements -->
-            <img id="top-right-logo" class="pop-in" src="obr-logo.png" onerror="this.style.display='none'">
-            
-            <div class="live-container">
-                <div class="live-dot"></div><span class="live-text">LIVE</span>
+            <div id="zoom-container">
+                <video id="video-feed" autoplay playsinline muted></video>
+                <canvas id="sls-canvas"></canvas>
             </div>
-            <!-- AI Feedback Below Live -->
-            <div id="ai-feedback-overlay"><div id="ai-feedback-text"></div></div>
+            
+            <!-- Touch Zones -->
+            <div id="touch-layer">
+                <div id="zone-zoom" title="Area Zoom"></div>
+                <div id="zone-menu" title="Area Menu"></div>
+            </div>
+
+            <div id="zoom-target-indicator"></div>
+            <img id="top-right-logo" src="obr-logo.png" onerror="this.style.display='none'">
 
             <!-- Right Menu -->
             <div id="right-menu">
@@ -331,36 +376,66 @@
                 <div class="menu-btn-round" onclick="resetZoom()"><i class="fas fa-search-minus"></i></div>
             </div>
 
-            <!-- Follow -->
+            <!-- Follow Us Sequence -->
             <div id="follow-sequence">
                 <div class="seq-item" id="seq-text">SIGUENOS EN</div>
-                <div class="seq-item" id="seq-icons"><div class="flex gap-4"><i class="fab fa-tiktok text-pink-500"></i><i class="fab fa-facebook text-blue-500"></i><i class="fab fa-youtube text-red-500"></i></div></div>
+                <div class="seq-item" id="seq-icons">
+                    <div class="flex gap-4">
+                        <i class="fab fa-tiktok text-pink-500"></i>
+                        <i class="fab fa-facebook text-blue-500"></i>
+                        <i class="fab fa-youtube text-red-500"></i>
+                    </div>
+                </div>
                 <div class="seq-item" id="seq-handle">@EXPLORACIONES OBR</div>
             </div>
 
-            <div id="bottom-banner"><video id="banner-vid" src="BANNER_1.mp4" loop muted playsinline></video></div>
-            <div id="btn-play-intro" class="pop-in" onclick="playIntro()"><i class="fas fa-film"></i></div>
+            <!-- Banner Video -->
+            <div id="bottom-banner">
+                <video id="banner-vid" src="BANNER_1.mp4" loop muted playsinline></video>
+            </div>
 
-            <!-- Stats -->
+            <!-- Intro Button -->
+            <div id="btn-play-intro" onclick="playIntro()"><i class="fas fa-film"></i></div>
+
+            <!-- Stats Bar -->
             <div id="stats-display">
                 <div class="stat-item" id="stats-timer-container"><span id="stats-timer-val">00:00:00</span></div>
-                <div class="stat-item"><span id="fps-val">0</span> FPS</div>
+                <div class="stat-item"><span id="fps-val">--</span> FPS</div>
                 <div class="stat-item text-gray-300"><span id="res-val">--x--</span></div>
+            </div>
+
+            <!-- Live Indicator -->
+            <div class="absolute top-4 left-4 z-20 flex gap-2">
+                <div class="bg-red-600 text-white text-xs px-2 py-1 font-bold animate-pulse rounded flex items-center gap-2">
+                    <div class="w-2 h-2 bg-white rounded-full"></div> LIVE
+                </div>
             </div>
         </div>
 
-        <!-- Bottom -->
+        <!-- Bottom Panel -->
         <div id="bottom-panel">
+            <!-- Left: Logs -->
             <div class="h-full overflow-hidden relative p-2 border-r border-gray-800 flex-grow">
                 <div class="text-[8px] text-green-900 absolute top-1 right-1">SYS.LOG</div>
                 <div id="log-content" class="h-full overflow-y-auto flex flex-col justify-end pb-2"></div>
             </div>
-            <div id="center-timer-container"><div id="timer-label">TIEMPO ACTIVO</div><div id="timer-panel">00:00:00</div></div>
-            <div class="h-full flex items-center justify-end" style="width: 5px;"><div class="mobile-controls w-full flex justify-between gap-2 overflow-x-auto md:hidden"></div></div>
+
+            <!-- Center: Timer -->
+            <div id="center-timer-container">
+                <div id="timer-label">TIEMPO ACTIVO</div>
+                <div id="timer-panel">00:00:00</div>
+            </div>
+
+            <!-- Right: Controls -->
+            <div class="h-full flex items-center justify-end" style="width: 5px;">
+                <div class="mobile-controls w-full flex justify-between gap-2 overflow-x-auto md:hidden">
+                    <!-- Mobile buttons handled by css class -->
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Mixer -->
+    <!-- MEZCLADOR -->
     <div id="mixer-window">
         <div class="mixer-header">
             <div class="mixer-controls-left"><button onclick="showMixerQR()" class="text-xs bg-purple-900 hover:bg-purple-700 text-white px-3 py-1 rounded border border-purple-500"><i class="fas fa-qrcode"></i> QR</button></div>
@@ -368,210 +443,397 @@
             <i class="fas fa-times mixer-close" onclick="toggleMixerWindow()"></i>
         </div>
         <div id="mixer-content">
+            <!-- NO LOCAL STRIP -->
             <div id="remote-strips-container" class="flex gap-2"></div>
+            <!-- MASTER OUT -->
             <div class="channel-strip master-out"><div class="strip-title">🔊 MASTER</div><input type="number" class="vol-display" id="val-master" value="100" onchange="mixerSetVol('master', this.value)"><div class="fader-group"><input type="range" orient="vertical" id="fader-master" min="0" max="200" value="100" oninput="mixerSetVol('master', this.value, true)"><div class="vu-meter-wrap"><div class="vu-active" id="vu-master"></div></div></div><button class="btn-mute" id="mute-master" onclick="mixerToggleMute('master')">MUTE</button></div>
         </div>
         <div id="mixer-qr-modal" onclick="this.style.display='none'"><div class="bg-white p-4 rounded-lg text-center" onclick="event.stopPropagation()"><div id="mixer-qrcode"></div><p class="text-black font-mono text-xs mt-2">ESCANEAR CON DETECTOR</p><p class="text-gray-500 text-[10px] mt-1">Toca fuera para cerrar</p></div></div>
     </div>
-    <div id="remote-audios-hidden"></div>
+    <div id="remote-audios-hidden" style="display:none;"></div>
 
 <script>
-    // --- CONFIG ---
     const GEMINI_API_KEY = "AIzaSyDbFXVNT5jyZZclbOexvgkB_FK8ijC5qU4";
+    let currentFilter = 'normal';
+    let video = document.getElementById('video-feed');
+    let slsCanvas = document.getElementById('sls-canvas');
+    let zoomContainer = document.getElementById('zoom-container');
+    let ctxSLS = slsCanvas.getContext('2d');
+    let detector;
+    let lastFrameTime = 0;
+    let isBannerActive = false;
+    let isPareidoliaActive = false;
+    let menuHideTimeout;
+    let currentZoomLevel = 1;
+    let zoomLongPressTimer;
+    let isTouching = false;
+    let pareidoliaInterval;
+    let smoothedProx = 0;
     
-    // --- VARS ---
-    let currentFilter='normal', video=document.getElementById('video-feed'), slsCanvas=document.getElementById('sls-canvas');
-    let zoomContainer=document.getElementById('zoom-container'), ctxSLS=slsCanvas.getContext('2d');
-    let detector, lastFrameTime=0, isBannerActive=false, isPareidoliaActive=false;
-    let menuHideTimeout, currentZoomLevel=1, zoomLongPressTimer, isTouching=false;
-    let pareidoliaInterval, smoothedProx=0;
-    
-    // Mixer
-    let mixerAudioCtx, mixerPeer, mixerMasterOut, mixerMonitorOut, mixerNodes={}, isMixerInitialized=false, savedMasterVol=1;
+    let mixerAudioCtx, mixerPeer, mixerMasterOut, mixerMonitorOut;
+    let mixerNodes = {};
+    let isMixerInitialized = false;
+    let savedMasterVol = 1;
 
-    // --- START ---
     async function startExperience() {
         document.getElementById('loading-screen').style.opacity = '0';
         try {
-            await initSensors(); await startCamera(); await initMoveNet();
+            await initSensors();
+            await startCamera({ width: { ideal: 4096 }, height: { ideal: 2160 } });
+            await initMoveNet();
             seedInitialLogs();
             setTimeout(() => {
                 document.getElementById('loading-screen').style.display = 'none';
                 startLoop(); startTimer(); startFakeLogs(); setupZones(); runFollowSequence(); fetchRealTemperature();
             }, 500);
-        } catch (e) { document.getElementById('loading-screen').style.opacity = '1'; alert("Error de carga: " + e.message); }
+        } catch (e) {
+            console.error(e);
+            document.getElementById('loading-screen').style.opacity = '1';
+            alert("Error de carga: " + e.message);
+        }
     }
 
-    // --- ZONES ---
     function setupZones() {
         const zZoom = document.getElementById('zone-zoom');
         zZoom.addEventListener('pointerdown', (e) => {
-            isTouching=true; const rect=video.getBoundingClientRect();
-            const x=e.clientX-rect.left; const y=e.clientY-rect.top;
-            zoomLongPressTimer=setTimeout(() => { if(isTouching) executeZoomAt(x,y,rect.width,rect.height); }, 600);
+            isTouching = true;
+            const rect = video.getBoundingClientRect();
+            const x = e.clientX - rect.left; const y = e.clientY - rect.top;
+            zoomLongPressTimer = setTimeout(() => { if(isTouching) executeZoomAt(x, y, rect.width, rect.height); }, 600);
         });
-        zZoom.addEventListener('pointerup', () => { isTouching=false; clearTimeout(zoomLongPressTimer); });
+        zZoom.addEventListener('pointerup', () => { isTouching = false; clearTimeout(zoomLongPressTimer); });
         document.getElementById('zone-menu').addEventListener('click', showMenu);
         hideMenu();
     }
 
-    function showMenu() { document.getElementById('right-menu').classList.remove('hidden-menu'); setFloatingElementsVisibility(false); clearTimeout(menuHideTimeout); menuHideTimeout=setTimeout(hideMenu, 3000); }
-    function hideMenu() { document.getElementById('right-menu').classList.add('hidden-menu'); setFloatingElementsVisibility(true); }
-    function setFloatingElementsVisibility(v) {
-        const l = document.getElementById('top-right-logo'); const f = document.getElementById('follow-sequence');
-        const introBtn = document.getElementById('btn-play-intro');
-        if(v) { l.classList.replace('pop-out','pop-in'); f.style.opacity='1'; if(!isBannerActive) introBtn.classList.replace('pop-out','pop-in'); }
-        else { l.classList.replace('pop-in','pop-out'); f.style.opacity='0'; }
+    function showMenu() {
+        document.getElementById('right-menu').classList.remove('hidden-menu');
+        setFloatingElementsVisibility(false);
+        clearTimeout(menuHideTimeout);
+        menuHideTimeout = setTimeout(hideMenu, 3000);
+    }
+    function hideMenu() {
+        document.getElementById('right-menu').classList.add('hidden-menu');
+        setFloatingElementsVisibility(true);
+    }
+    function setFloatingElementsVisibility(visible) {
+        const logo = document.getElementById('top-right-logo');
+        const follow = document.getElementById('follow-sequence');
+        if (visible) { logo.classList.remove('hidden-element'); follow.style.opacity = '1'; } 
+        else { logo.classList.add('hidden-element'); follow.style.opacity = '0'; }
     }
 
-    // --- ZOOM ---
-    function executeZoomAt(x,y,w,h) {
-        const xP = (x/w)*100; const yP = (y/h)*100;
-        if(currentZoomLevel===1) currentZoomLevel=3; else if(currentZoomLevel===3) currentZoomLevel=5;
-        zoomContainer.style.transformOrigin = `${xP}% ${yP}%`; zoomContainer.style.transform = `scale(${currentZoomLevel})`;
+    function executeZoomAt(x, y, w, h) {
+        const xPct = (x / w) * 100; const yPct = (y / h) * 100;
+        if(currentZoomLevel === 1) currentZoomLevel = 3; else if(currentZoomLevel === 3) currentZoomLevel = 5;
+        zoomContainer.style.transformOrigin = `${xPct}% ${yPct}%`;
+        zoomContainer.style.transform = `scale(${currentZoomLevel})`;
         const ind = document.getElementById('zoom-target-indicator');
-        ind.style.left=(video.offsetLeft+x)+'px'; ind.style.top=(video.offsetTop+y)+'px'; ind.style.opacity=1; setTimeout(()=>ind.style.opacity=0,500);
+        ind.style.left = (video.offsetLeft + x) + 'px'; ind.style.top = (video.offsetTop + y) + 'px';
+        ind.style.opacity = 1; setTimeout(() => ind.style.opacity = 0, 500);
         updateLog(`ZOOM DIGITAL x${currentZoomLevel}`);
     }
-    function resetZoom() { currentZoomLevel=1; zoomContainer.style.transform=`scale(1)`; setTimeout(()=>zoomContainer.style.transformOrigin='center center',1000); updateLog("ZOOM RESET"); }
+    function resetZoom() { currentZoomLevel = 1; zoomContainer.style.transform = `scale(1)`; setTimeout(() => zoomContainer.style.transformOrigin = 'center center', 1000); updateLog("ZOOM REESTABLECIDO"); }
 
-    // --- PAREIDOLIA AI ---
     function togglePareidolia() {
-        const btn = document.getElementById('btn-pareidolia'); isPareidoliaActive=!isPareidoliaActive;
-        if(isPareidoliaActive) { btn.classList.add('active'); document.body.classList.add('filter-pareidolia'); speakText("Visión activada"); pareidoliaInterval=setInterval(analyzeFrameWithGemini, 15000); }
-        else { btn.classList.remove('active'); document.body.classList.remove('filter-pareidolia'); speakText("Visión desactivada"); clearInterval(pareidoliaInterval); document.getElementById('ai-feedback-overlay').style.display='none'; }
+        const btn = document.getElementById('btn-pareidolia'); isPareidoliaActive = !isPareidoliaActive;
+        if(isPareidoliaActive) { btn.classList.add('active'); document.body.classList.add('filter-pareidolia'); speakText("Visión activada"); pareidoliaInterval = setInterval(analyzeFrameWithGemini, 15000); }
+        else { btn.classList.remove('active'); document.body.classList.remove('filter-pareidolia'); speakText("Visión desactivada"); clearInterval(pareidoliaInterval); document.getElementById('ai-feedback-overlay').style.display = 'none'; }
     }
 
     async function analyzeFrameWithGemini() {
-        if(!video || video.paused) return;
-        updateLog("IA: Escaneando...", 'log-warn');
-        const canvas=document.createElement('canvas'); canvas.width=640; canvas.height=360;
-        const ctx=canvas.getContext('2d'); ctx.drawImage(video,0,0,640,360);
-        const base64=canvas.toDataURL('image/jpeg',0.6).split(',')[1];
+        if(!video || video.paused || video.ended) return;
+        updateLog("IA: Analizando...", 'log-warn');
+        const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 360; 
+        const ctx = canvas.getContext('2d'); ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const base64Data = canvas.toDataURL('image/jpeg', 0.6).split(',')[1];
 
         try {
-            const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`, {
-                method:'POST', headers:{'Content-Type':'application/json'},
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
-                    contents: [{ parts: [{text: "Describe el escenario actual que ves en la imagen brevemente (max 6 palabras) y añade un detalle inquietante o paranormal sutil al final. Ejemplo: 'Pasillo vacío... sombra al fondo'. Si hay personas, mencionalas."}, {inline_data: {mime_type: "image/jpeg", data: base64}}] }],
-                    safetySettings: [{category:"HARM_CATEGORY_HARASSMENT",threshold:"BLOCK_NONE"},{category:"HARM_CATEGORY_HATE_SPEECH",threshold:"BLOCK_NONE"},{category:"HARM_CATEGORY_SEXUALLY_EXPLICIT",threshold:"BLOCK_NONE"},{category:"HARM_CATEGORY_DANGEROUS_CONTENT",threshold:"BLOCK_NONE"}]
+                    contents: [{ parts: [{text: "Describe brevemente (max 6 palabras) qué ves. Si no ves nada raro, di 'Sin anomalías'."}, {inline_data: {mime_type: "image/jpeg", data: base64Data}}] }],
+                    safetySettings: [{ category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" }, { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" }, { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" }, { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }]
                 })
             });
-            const d = await r.json();
-            let text = d.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-            
-            if(!text) {
-                const fallback = ["SOMBRA DETECTADA", "PRESENCIA CERCANA", "FIGURA EN EL FONDO", "ANOMALIA VISUAL", "OSCURIDAD DENSA"];
-                text = fallback[Math.floor(Math.random()*fallback.length)];
+            const data = await response.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+            if(text && !text.toLowerCase().includes("sin anomalías")) {
+                updateLog("IA: " + text, 'log-crit'); speakText(text);
+                const overlay = document.getElementById('ai-feedback-overlay');
+                document.getElementById('ai-feedback-text').innerText = text.toUpperCase();
+                overlay.style.display = 'block'; setTimeout(() => overlay.style.display = 'none', 5000);
             }
-
-            updateLog("IA: " + text, 'log-crit');
-            speakText(text);
-            const ov = document.getElementById('ai-feedback-overlay');
-            const ot = document.getElementById('ai-feedback-text');
-            ot.innerText = text.toUpperCase();
-            ov.style.display='block'; setTimeout(()=>ov.style.display='none', 6000);
-
-        } catch(e) { console.error(e); updateLog("Error Neural", 'log-crit'); }
+        } catch(e) { console.error("Gemini Error", e); }
     }
 
-    // --- UTILS ---
-    function toggleBanner() {
-        const b=document.getElementById('bottom-banner'); const v=document.getElementById('banner-vid'); const btn=document.getElementById('btn-banner'); const iBtn=document.getElementById('btn-play-intro');
-        isBannerActive=!isBannerActive;
-        if(isBannerActive) { b.style.display='block'; v.play(); btn.classList.add('active'); iBtn.classList.replace('pop-in','pop-out'); }
-        else { b.style.display='none'; v.pause(); btn.classList.remove('active'); iBtn.classList.replace('pop-out','pop-in'); }
+    async function runFollowSequence() {
+        const txt = document.getElementById('seq-text'); const icons = document.getElementById('seq-icons'); const han = document.getElementById('seq-handle'); const container = document.getElementById('follow-sequence');
+        while(true) {
+            if(isBannerActive) { container.style.display = 'none'; await wait(5000); continue; } else container.style.display = 'flex';
+            txt.style.display = 'block'; await wait(2500); txt.style.display = 'none';
+            icons.style.display = 'block'; await wait(2500); icons.style.display = 'none';
+            han.style.display = 'block'; await wait(3500); han.style.display = 'none';
+            await wait(8000);
+        }
     }
+
+    function seedInitialLogs() { ["Kernel... OK", "Sensores... OK", "Neural... OK", "Sistema OBR v21.6 activo"].forEach(msg => updateLog(msg)); }
+    function startFakeLogs() {
+        const msgs = ["Escaneando espectro...", "Geometría: OK", "Red Peer: ESTABLE", "Buffer video: 100%", "Temp: NOMINAL", "Buscando E.V.P...", "Ciclo red: OK", "Fluctuación detectada", "IR: ACTIVO", "Analizando patrón...", "Ruido de fondo: -40dB", "Lectura magnética estable"];
+        setInterval(() => { if(Math.random() > 0.5) { const isCrit = Math.random() > 0.8; const cls = isCrit ? 'log-crit' : (Math.random()>0.6 ? 'log-warn' : 'log-normal'); updateLog(msgs[Math.floor(Math.random() * msgs.length)], cls); } }, 1500);
+    }
+
+    window.setFilter = function(f, b) {
+        if(currentFilter === f) { f = 'normal'; b = null; }
+        currentFilter = f; document.body.className = ''; 
+        document.querySelectorAll('.btn-hud').forEach(btn => btn.classList.remove('active'));
+        if(f !== 'normal' && b) b.classList.add('active');
+        if(f === 'night') { document.body.classList.add('filter-night-vision'); toggleTorch(true); } else { toggleTorch(false); }
+        if(f === 'thermal') document.body.classList.add('filter-negative');
+        if(f === 'sls') document.body.classList.add('filter-sls');
+        if(f === 'bokeh') document.body.classList.add('filter-bokeh');
+        if(isPareidoliaActive) document.body.classList.add('filter-pareidolia');
+    };
+
     function toggleFullscreenMode() { document.getElementById('app-ui').classList.toggle('full-mode'); }
     
-    function playIntro() { 
-        const p=document.getElementById('intro-player'); const v=document.getElementById('intro-vid'); 
-        p.classList.add('active'); 
-        v.currentTime=0; 
-        if(mixerMasterOut){savedMasterVol=mixerMasterOut.gain.value;mixerMasterOut.gain.value=0;} 
+    function toggleBanner() {
+        const ban = document.getElementById('bottom-banner'); const vid = document.getElementById('banner-vid'); const btn = document.getElementById('btn-banner');
+        const introBtn = document.getElementById('btn-play-intro');
+        const stats = document.getElementById('stats-display');
+        isBannerActive = !isBannerActive;
         
-        // Monitor de fallo
-        const failTimer = setTimeout(() => {
-            if(v.currentTime < 0.1) {
-                console.warn("Video stuck, forcing close");
-                closeIntro();
+        if(isBannerActive) { 
+            ban.style.display = 'block'; 
+            // Add delay to allow display:block to render before transition
+            setTimeout(() => ban.classList.add('active'), 10);
+            vid.play(); 
+            btn.classList.add('active'); 
+            // Waterpop OUT (Hide with pop)
+            introBtn.classList.add('pop-out'); introBtn.classList.remove('pop-in');
+            stats.classList.add('pop-out'); stats.classList.remove('pop-in');
+        } 
+        else { 
+            ban.classList.remove('active'); 
+            // Wait for transition to end before hiding
+            setTimeout(() => ban.style.display = 'none', 600); 
+            vid.pause(); 
+            btn.classList.remove('active'); 
+            // Waterpop IN (Show with pop)
+            introBtn.classList.add('pop-in'); introBtn.classList.remove('pop-out');
+            stats.classList.add('pop-in'); stats.classList.remove('pop-out');
+        }
+    }
+
+    function speakText(t) { if ('speechSynthesis' in window) { const u = new SpeechSynthesisUtterance(t); u.lang = 'es-ES'; window.speechSynthesis.speak(u); } }
+    
+    function playIntro() {
+        const p = document.getElementById('intro-player'); const v = document.getElementById('intro-vid');
+        p.classList.add('active'); v.currentTime = 0;
+        if(mixerMasterOut) { savedMasterVol = mixerMasterOut.gain.value; mixerMasterOut.gain.value = 0; }
+        v.play().catch(()=>document.getElementById('intro-fallback-close').style.display='block');
+        v.onended = () => closeIntro();
+    }
+    function closeIntro() { 
+        document.getElementById('intro-player').classList.remove('active'); document.getElementById('intro-vid').pause(); 
+        if(mixerMasterOut) mixerMasterOut.gain.value = savedMasterVol;
+    }
+    
+    async function startCamera(constraints) { 
+        const defaults = { video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false };
+        if (constraints) defaults.video = { ...defaults.video, ...constraints };
+        const s = await navigator.mediaDevices.getUserMedia(defaults); 
+        video.srcObject = s; 
+        return new Promise(r => video.onloadedmetadata = () => { video.play(); resizeCanvas(); r(); }); 
+    }
+    
+    function resizeCanvas() { 
+        slsCanvas.width = video.videoWidth; slsCanvas.height = video.videoHeight; 
+        document.getElementById('res-val').innerText = `${video.videoWidth}x${video.videoHeight}`; 
+    }
+    window.addEventListener('resize', resizeCanvas);
+    
+    async function initMoveNet() { await tf.ready(); detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING }); }
+    async function startLoop() {
+        async function render(now) {
+            const delta = now - lastFrameTime; lastFrameTime = now;
+            if (now % 20 < 1) document.getElementById('fps-val').innerText = Math.round(1000 / delta) || 0;
+            ctxSLS.clearRect(0, 0, slsCanvas.width, slsCanvas.height);
+            
+            let personDetected = false;
+            let boxSize = 0;
+
+            if (detector && video.readyState >= 2) { 
+                try { 
+                    const p = await detector.estimatePoses(video, { maxPoses: 3, flipHorizontal: false }); 
+                    if (p.length > 0) {
+                        personDetected = true;
+                        const keypoints = p[0].keypoints;
+                        const xs = keypoints.map(k => k.x); const ys = keypoints.map(k => k.y);
+                        const w = Math.max(...xs) - Math.min(...xs);
+                        const h = Math.max(...ys) - Math.min(...ys);
+                        boxSize = (w * h) / (slsCanvas.width * slsCanvas.height); 
+                        
+                        if (currentFilter === 'sls') {
+                            drawSkeleton(p); 
+                        }
+                    }
+                } catch (e) {} 
             }
-        }, 3500);
+            
+            if (isPareidoliaActive && Math.random() > 0.95) {
+                const x = Math.random() * slsCanvas.width;
+                const y = Math.random() * slsCanvas.height;
+                const s = 50 + Math.random() * 100;
+                ctxSLS.strokeStyle = 'rgba(255, 0, 0, 0.8)'; 
+                ctxSLS.lineWidth = 4; 
+                ctxSLS.shadowBlur = 10;
+                ctxSLS.shadowColor = 'red';
+                ctxSLS.strokeRect(x, y, s, s);
+                ctxSLS.shadowBlur = 0; 
+            }
 
-        v.play().then(() => clearTimeout(failTimer)).catch(()=>{
-            clearTimeout(failTimer);
-            document.getElementById('intro-fallback-close').style.display='block';
-        }); 
-        v.onended=()=>closeIntro(); 
+            if(!hasPhysicalProxSensor) {
+                let targetProx = personDetected ? Math.min(99, boxSize * 300) : 0;
+                if(!personDetected) targetProx = Math.random() * 2;
+                
+                smoothedProx += (targetProx - smoothedProx) * 0.1;
+                
+                document.getElementById('prox-val').innerText = Math.floor(smoothedProx);
+                document.getElementById('prox-bar').style.width = Math.floor(smoothedProx)+'%';
+            }
+
+            requestAnimationFrame(render);
+        } render();
     }
-    function closeIntro() { document.getElementById('intro-player').classList.remove('active'); document.getElementById('intro-vid').pause(); if(mixerMasterOut)mixerMasterOut.gain.value=savedMasterVol; }
-    function speakText(t) { if('speechSynthesis' in window){const u=new SpeechSynthesisUtterance(t); u.lang='es-ES'; window.speechSynthesis.speak(u);} }
-    
-    // --- CORE & MIXER FIX ---
-    async function startCamera() { const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:false}); video.srcObject=s; return new Promise(r=>video.onloadedmetadata=()=>{video.play();resizeCanvas();r();}); }
-    function resizeCanvas() { slsCanvas.width=video.videoWidth; slsCanvas.height=video.videoHeight; document.getElementById('res-val').innerText=`${video.videoWidth}x${video.videoHeight}`; }
-    window.addEventListener('resize',resizeCanvas);
-    async function initMoveNet() { await tf.ready(); detector=await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet,{modelType:poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING}); }
-    
-    // Mixer Connection Fix (PeerJS 1.5.4 Logic)
-    async function toggleMixerWindow() { const w=document.getElementById('mixer-window'); if(!w.classList.contains('active')){w.classList.add('active');if(!isMixerInitialized)await initMixerSystem();}else w.classList.remove('active'); }
-    async function initMixerSystem() {
-        mixerAudioCtx=new (window.AudioContext||window.webkitAudioContext)(); await mixerAudioCtx.resume();
-        mixerMasterOut=mixerAudioCtx.createGain(); mixerMonitorOut=mixerAudioCtx.createGain();
-        mixerMasterOut.connect(mixerMonitorOut); mixerMonitorOut.connect(mixerAudioCtx.destination);
-        mixerPeer=new Peer();
-        mixerPeer.on('open', id=>{ document.getElementById('host-id-display').innerText=id; new QRCode(document.getElementById('mixer-qrcode'),{text:id,width:150,height:150}); document.getElementById('btn-mixer-open').classList.add('connected'); });
-        
-        // FIX: Answer Immediately
-        mixerPeer.on('call', c => { 
-            c.answer(); // Handshake
-            c.on('stream', s => handleRemoteStream(c.peer, s));
-            c.on('close', () => removeCh(c.peer));
-            c.on('error', e => console.error("Call Error", e));
-        });
-        
-        setupVuMeter(mixerMasterOut,'vu-master'); isMixerInitialized=true;
+    const CONNECTIONS = [['left_shoulder','right_shoulder'],['left_shoulder','left_hip'],['right_shoulder','right_hip'],['left_hip','right_hip'],['left_shoulder','left_elbow'],['left_elbow','left_wrist'],['right_shoulder','right_elbow'],['right_elbow','right_wrist'],['left_hip','left_knee'],['left_knee','left_ankle'],['right_hip','right_knee'],['right_knee','right_ankle'],['nose','left_eye'],['nose','right_eye'],['left_eye','left_ear'],['right_eye','right_ear']];
+    function drawSkeleton(poses) { ctxSLS.lineCap = 'round'; ctxSLS.lineJoin = 'round'; ctxSLS.lineWidth = 4; ctxSLS.strokeStyle = '#00ff41'; ctxSLS.fillStyle = '#ff0055'; poses.forEach(pose => { if (pose.score < 0.25) return; const kpMap = {}; pose.keypoints.forEach(kp => kpMap[kp.name] = kp); ctxSLS.beginPath(); CONNECTIONS.forEach(([a, b]) => { const p1 = kpMap[a]; const p2 = kpMap[b]; if (p1 && p2 && p1.score > 0.3 && p2.score > 0.3) { ctxSLS.moveTo(p1.x, p1.y); ctxSLS.lineTo(p2.x, p2.y); } }); ctxSLS.stroke(); pose.keypoints.forEach(kp => { if (kp.score > 0.3) { ctxSLS.beginPath(); ctxSLS.arc(kp.x, kp.y, 6, 0, 2 * Math.PI); ctxSLS.fill(); } }); }); }
+
+    let emfValue = 0;
+    let hasPhysicalProxSensor = false;
+
+    async function initSensors() { 
+        if ('Magnetometer' in window) { try { const m = new Magnetometer({frequency:10}); m.addEventListener('reading', () => { emfValue = Math.sqrt(m.x**2 + m.y**2 + m.z**2); updateSensorUI(); }); m.start(); } catch(e){ startSensorSim(); } } else { startSensorSim(); } 
+        if ('ProximitySensor' in window) { 
+            try { 
+                const p = new ProximitySensor({frequency:10}); 
+                p.addEventListener('reading', ()=> {
+                    document.getElementById('prox-val').innerText=p.distance||"--";
+                    document.getElementById('prox-mode').innerText = "(SENSOR)";
+                    hasPhysicalProxSensor = true;
+                    let val = (10 - p.distance) * 10; if (val < 0) val = 0; if (val > 100) val = 100;
+                    document.getElementById('prox-bar').style.width = val+'%';
+                }); 
+                p.start(); 
+            } catch(e){} 
+        } 
     }
-    function handleRemoteStream(id,s){ if(document.getElementById('ch-'+id))return; const a=document.createElement('audio');a.srcObject=s;a.autoplay=true;a.muted=true;document.getElementById('remote-audios-hidden').appendChild(a); const g=mixerAudioCtx.createGain();mixerAudioCtx.createMediaStreamSource(s).connect(g).connect(mixerMasterOut); createChUI(id,g); mixerNodes[id]={gain:g,el:a}; updateLog("Dispositivo conectado", "log-warn"); }
-    function createChUI(id,g){ const d=document.createElement('div');d.className='channel-strip';d.id='ch-'+id;d.innerHTML=`<div class="strip-title" ondblclick="renameChannel('${id}')">📡 ${id.substring(0,4)}</div><input type="number" class="vol-display" id="v-${id}" value="100"><div class="fader-group"><input type="range" orient="vertical" id="f-${id}" max="200" value="100"><div class="vu-meter-wrap"><div class="vu-active" id="vu-${id}"></div></div></div><button class="btn-mute" id="m-${id}">MUTE</button>`; document.getElementById('remote-strips-container').appendChild(d); d.querySelector(`#f-${id}`).oninput=e=>{g.gain.value=e.target.value/100;d.querySelector(`#v-${id}`).value=e.target.value;}; d.querySelector(`#m-${id}`).onclick=e=>{if(g.gain.value===0){g.gain.value=d.querySelector(`#v-${id}`).value/100;e.target.classList.remove('muted');}else{g.gain.value=0;e.target.classList.add('muted');}}; setupVuMeter(g,`vu-${id}`); }
-    function removeCh(id){ document.getElementById('ch-'+id)?.remove(); mixerNodes[id]?.el.remove(); delete mixerNodes[id]; updateLog("Dispositivo desconectado", "log-crit"); }
-    window.mixerSetVol=(t,v,f)=>{const n=t==='local'?null:mixerMasterOut;if(n){n.gain.value=v/100;if(f)document.getElementById(`val-${t}`).value=v;else document.getElementById(`fader-${t}`).value=v;}}
-    window.mixerToggleMute=(t)=>{const b=document.getElementById(`mute-${t}`);const n=t==='local'?null:mixerMasterOut;if(n){if(n.gain.value===0){n.gain.value=document.getElementById(`val-${t}`).value/100;b.classList.remove('muted');}else{n.gain.value=0;b.classList.add('muted');}}}
-    function setupVuMeter(n,id){if(!n)return;const a=mixerAudioCtx.createAnalyser();a.fftSize=256;n.connect(a);const d=new Uint8Array(256);const e=document.getElementById(id);function l(){if(!e)return;requestAnimationFrame(l);a.getByteTimeDomainData(d);let s=0;for(let x of d)s+=(x-128)/128*(x-128)/128;e.style.height=Math.min(100,Math.sqrt(s/256)*400)+"%";}l();}
-    window.showMixerQR=()=>document.getElementById('mixer-qr-modal').style.display='flex';
-    window.renameChannel=id=>{const n=prompt("Nombre:");if(n)document.querySelector(`#ch-${id} .strip-title`).innerText=n;}
-
-    // Loop & Draw
-    async function startLoop(){ async function render(now){ const d=now-lastFrameTime; lastFrameTime=now; if(now%20<1)document.getElementById('fps-val').innerText=Math.round(1000/d)||0; ctxSLS.clearRect(0,0,slsCanvas.width,slsCanvas.height); if(currentFilter==='sls'&&detector&&video.readyState>=2){try{const p=await detector.estimatePoses(video,{maxPoses:3,flipHorizontal:false});if(p.length>0)drawSkeleton(p);}catch(e){}} if(isPareidoliaActive&&Math.random()>0.95){const x=Math.random()*slsCanvas.width,y=Math.random()*slsCanvas.height,s=50+Math.random()*100;ctxSLS.strokeStyle='rgba(255,0,0,0.5)';ctxSLS.lineWidth=2;ctxSLS.strokeRect(x,y,s,s);} if(!hasPhysicalProx){let t=0; if(detector) t = Math.random() * 12; smoothedProx+=(t-smoothedProx)*0.05; document.getElementById('prox-val').innerText=Math.floor(smoothedProx);} requestAnimationFrame(render); } render(); }
-    function drawSkeleton(poses){ ctxSLS.lineCap='round';ctxSLS.lineJoin='round';ctxSLS.lineWidth=4;ctxSLS.strokeStyle='#00ff41';ctxSLS.fillStyle='#ff0055';poses.forEach(p=>{if(p.score<0.25)return;const k=p.keypoints;const m={};k.forEach(kp=>m[kp.name]=kp);ctxSLS.beginPath();[['left_shoulder','right_shoulder'],['left_shoulder','left_hip'],['right_shoulder','right_hip'],['left_hip','right_hip'],['left_shoulder','left_elbow'],['left_elbow','left_wrist'],['right_shoulder','right_elbow'],['right_elbow','right_wrist'],['left_hip','left_knee'],['left_knee','left_ankle'],['right_hip','right_knee'],['right_knee','right_ankle'],['nose','left_eye'],['nose','right_eye'],['left_eye','left_ear'],['right_eye','right_ear']].forEach(([a,b])=>{const p1=m[a],p2=m[b];if(p1&&p2&&p1.score>0.3&&p2.score>0.3){ctxSLS.moveTo(p1.x,p1.y);ctxSLS.lineTo(p2.x,p2.y);}});ctxSLS.stroke();k.forEach(kp=>{if(kp.score>0.3){ctxSLS.beginPath();ctxSLS.arc(kp.x,kp.y,6,0,2*Math.PI);ctxSLS.fill();}});}); }
-
-    // Misc
-    window.setFilter=(f,b)=>{if(currentFilter===f){f='normal';b=null;} currentFilter=f;document.body.className='';document.querySelectorAll('.btn-hud').forEach(x=>x.classList.remove('active'));if(f!=='normal'&&b)b.classList.add('active'); if(f==='night'){document.body.classList.add('filter-night-vision');toggleTorch(true);}else{toggleTorch(false);} if(f==='thermal')document.body.classList.add('filter-negative');if(f==='sls')document.body.classList.add('filter-sls');if(f==='bokeh')document.body.classList.add('filter-bokeh');if(isPareidoliaActive)document.body.classList.add('filter-pareidolia');}
-    async function toggleTorch(e){if(!video.srcObject)return;const t=video.srcObject.getVideoTracks()[0];if(t?.getCapabilities().torch)t.applyConstraints({advanced:[{torch:e}]}).catch(()=>{});}
-    function seedInitialLogs(){ ["Iniciando OBR v20.8...", "Sensores OK", "Neural Engine OK", "Esperando señal..."].forEach(m=>updateLog(m)); }
-    function startFakeLogs(){ const m=["Escaneando...", "Red estable", "Temp nominal", "Buscando EVP", "Lectura magnética"]; setInterval(()=>{if(Math.random()>0.6)updateLog(m[Math.floor(Math.random()*m.length)],'log-normal');},2000); }
-    function updateLog(m,c='log-normal'){const l=document.getElementById('log-content');l.innerHTML+=`<div class="log-item ${c}">[${new Date().toLocaleTimeString()}] ${m}</div>`;l.scrollTop=l.scrollHeight;}
-    function startTimer(){let s=0;setInterval(()=>{s++;const d=new Date(0);d.setSeconds(s);const t=d.toISOString().substr(11,8);document.getElementById('timer-panel').innerText=t;document.getElementById('stats-timer-val').innerText=t;},1000);}
-    async function runFollowSequence(){ const t=document.getElementById('seq-text'),i=document.getElementById('seq-icons'),h=document.getElementById('seq-handle'),c=document.getElementById('follow-sequence'); while(true){ if(isBannerActive){c.style.display='none';await wait(5000);continue;}else c.style.display='flex'; t.style.display='block';await wait(2500);t.style.display='none'; i.style.display='block';await wait(2500);i.style.display='none'; h.style.display='block';await wait(3500);h.style.display='none'; await wait(8000); } }
-    function wait(ms){return new Promise(r=>setTimeout(r,ms));}
-    let hasPhysicalProx=false; async function initSensors(){ if('Magnetometer' in window){try{const m=new Magnetometer({frequency:10});m.addEventListener('reading',()=>{document.getElementById('emf-val').innerText=Math.sqrt(m.x**2+m.y**2+m.z**2).toFixed(1);});m.start();}catch(e){setInterval(()=>{document.getElementById('emf-val').innerText=(Math.random()*100).toFixed(1);},500);}}else{setInterval(()=>{document.getElementById('emf-val').innerText=(Math.random()*100).toFixed(1);},500);} if('ProximitySensor' in window){try{const p=new ProximitySensor({frequency:10});p.addEventListener('reading',()=>{document.getElementById('prox-val').innerText=p.distance;hasPhysicalProx=true;});p.start();}catch(e){}} }
     
-    // TEMP FIX: TIMEOUT FOR LOCATION
-    function fetchRealTemperature(){ 
+    function fetchRealTemperature() {
         if(!navigator.geolocation) return fallbackTemp();
-        
-        const timeout = setTimeout(fallbackTemp, 3000); // 3s max wait
-        
+        const timeout = setTimeout(fallbackTemp, 3000); 
         navigator.geolocation.getCurrentPosition(async p=>{
             clearTimeout(timeout);
             try{
                 const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${p.coords.latitude}&longitude=${p.coords.longitude}&current_weather=true`);
                 const d=await r.json();
-                if(d.current_weather) document.getElementById('temp-val').innerText=d.current_weather.temperature+" °C";
+                if(d.current_weather) document.getElementById('temp-val').innerText=d.current_weather.temperature;
             }catch(e){ fallbackTemp(); }
         }, (e)=>{ clearTimeout(timeout); fallbackTemp(); }); 
     }
-    function fallbackTemp() { let t = 22; setInterval(() => { t += (Math.random()-0.5)*0.1; document.getElementById('temp-val').innerText = t.toFixed(1) + " °C"; }, 2000); }
+    function fallbackTemp() { let t = 22; setInterval(() => { t += (Math.random()-0.5)*0.1; document.getElementById('temp-val').innerText = t.toFixed(1); }, 2000); }
+
+    function startSensorSim() { setInterval(() => { emfValue = Math.max(0, Math.min(100, emfValue+(Math.random()-0.5)*2)); updateSensorUI(); }, 500); }
+    function updateSensorUI() { document.getElementById('emf-val').innerText = emfValue.toFixed(1); const w = Math.min(100, (emfValue/60)*100); const b=document.getElementById('emf-bar'); b.style.width=w+'%'; if(emfValue>50) b.classList.add('bg-red-600'); else b.classList.remove('bg-red-600'); }
+    function updateLog(m, cls='log-normal'){ const l=document.getElementById('log-content'); l.innerHTML+=`<div class="log-item ${cls}">[${new Date().toLocaleTimeString()}] ${m}</div>`; l.scrollTop=l.scrollHeight; }
+    function startTimer(){let s=0;setInterval(()=>{s++;const d=new Date(0);d.setSeconds(s);const t=d.toISOString().substr(11,8);document.getElementById('timer-panel').innerText=t;document.getElementById('stats-timer-val').innerText=t;},1000);}
+    function wait(ms){return new Promise(r=>setTimeout(r,ms));}
+    async function toggleTorch(e) { if(!video.srcObject)return; const t=video.srcObject.getVideoTracks()[0]; if(t?.getCapabilities().torch) t.applyConstraints({advanced:[{torch:e}]}).catch(()=>{}); }
+
+    async function toggleMixerWindow() { const w=document.getElementById('mixer-window'); if(!w.classList.contains('active')){w.classList.add('active');if(!isMixerInitialized)await initMixerSystem();}else w.classList.remove('active'); }
+    async function initMixerSystem() {
+        mixerAudioCtx = new (window.AudioContext||window.webkitAudioContext)(); 
+        await mixerAudioCtx.resume();
+        mixerMasterOut = mixerAudioCtx.createGain(); 
+        mixerMonitorOut = mixerAudioCtx.createGain(); 
+        mixerMasterOut.connect(mixerMonitorOut);
+        mixerMonitorOut.connect(mixerAudioCtx.destination);
+
+        mixerPeer = new Peer(); 
+        mixerPeer.on('open', id => {
+            document.getElementById('host-id-display').innerText = id;
+            new QRCode(document.getElementById('mixer-qrcode'), {text:id,width:150,height:150});
+            document.getElementById('btn-mixer-open').classList.add('connected');
+        });
+
+        mixerPeer.on('connection', conn => { conn.on('open', () => {}); });
+
+        mixerPeer.on('call', call => {
+            call.answer(); 
+            setTimeout(() => {
+                call.on('stream', stream => handleRemoteStream(call.peer, stream));
+            }, 500);
+            call.on('close', () => removeRemoteChannel(call.peer));
+            call.on('error', err => console.log("Call Err", err));
+        });
+        
+        mixerPeer.on('error', err => console.log("Peer Err", err));
+
+        setupVuMeter(mixerMasterOut, 'vu-master');
+        isMixerInitialized = true;
+    }
+
+    function handleRemoteStream(id, stream) {
+        if(document.getElementById('ch-'+id)) return;
+        const audioEl = document.createElement('audio'); 
+        audioEl.srcObject = stream; audioEl.autoplay = true; audioEl.muted = true; 
+        document.getElementById('remote-audios-hidden').appendChild(audioEl);
+
+        const source = mixerAudioCtx.createMediaStreamSource(stream);
+        const gainNode = mixerAudioCtx.createGain();
+        source.connect(gainNode);
+        gainNode.connect(mixerMasterOut); 
+        
+        createChannelStripUI(id, gainNode);
+        mixerNodes[id] = { gain: gainNode, el: audioEl };
+        updateLog(`Dispositivo conectado: ${id.substring(0,4)}`, 'log-warn');
+    }
+
+    function createChannelStripUI(id, gainNode) {
+        const d = document.createElement('div'); d.className='channel-strip'; d.id='ch-'+id;
+        d.innerHTML = `<div class="strip-title" ondblclick="renameChannel('${id}')">📡 ${id.substring(0,4)}</div><input type="number" class="vol-display" id="v-${id}" value="100"><div class="fader-group"><input type="range" orient="vertical" id="f-${id}" max="200" value="100"><div class="vu-meter-wrap"><div class="vu-active" id="vu-${id}"></div></div></div><button class="btn-mute" id="m-${id}">MUTE</button>`;
+        document.getElementById('remote-strips-container').appendChild(d);
+        d.querySelector(`#f-${id}`).oninput = e => { gainNode.gain.value=e.target.value/100; d.querySelector(`#v-${id}`).value=e.target.value; };
+        d.querySelector(`#m-${id}`).onclick = e => { if(gainNode.gain.value===0){ gainNode.gain.value=d.querySelector(`#v-${id}`).value/100; e.target.classList.remove('muted'); } else { gainNode.gain.value=0; e.target.classList.add('muted'); } };
+        setupVuMeter(gainNode, `vu-${id}`);
+    }
+
+    function removeRemoteChannel(id) {
+        document.getElementById('ch-'+id)?.remove();
+        mixerNodes[id]?.el.remove();
+        delete mixerNodes[id];
+        updateLog(`Dispositivo desconectado: ${id.substring(0,4)}`, 'log-crit');
+    }
+
+    window.renameChannel = function(id) {
+        const newName = prompt("Nuevo nombre:", "INVESTIGADOR");
+        if(newName) document.querySelector(`#ch-${id} .strip-title`).innerText = newName;
+    }
+
+    window.mixerSetVol = (t,v,f) => { 
+        const n = t==='local'?null:mixerMasterOut; 
+        if(n) { n.gain.value=v/100; if(f) document.getElementById(`val-${t}`).value=v; else document.getElementById(`fader-${t}`).value=v; }
+    }
+    window.mixerToggleMute = (t) => { 
+        const b=document.getElementById(`mute-${t}`); const n=t==='local'?null:mixerMasterOut; 
+        if(n) { if(n.gain.value===0){n.gain.value=document.getElementById(`val-${t}`).value/100;b.classList.remove('muted');} else{n.gain.value=0;b.classList.add('muted');} }
+    }
+    
+    function setupVuMeter(n,id){
+        if(!n) return;
+        const a=mixerAudioCtx.createAnalyser();a.fftSize=256;n.connect(a);const d=new Uint8Array(256);const e=document.getElementById(id);function l(){if(!e)return;requestAnimationFrame(l);a.getByteTimeDomainData(d);let s=0;for(let x of d)s+=(x-128)/128*(x-128)/128;e.style.height=Math.min(100,Math.sqrt(s/256)*400)+"%";}l();}
+    window.showMixerQR=()=>document.getElementById('mixer-qr-modal').style.display='flex';
 </script>
 </body>
 </html>
