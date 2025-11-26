@@ -6,6 +6,10 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <title>DETECTOR-OBR v21.6 TRANSITION</title> 
     
+    <!-- Iconos de App -->
+    <link rel="apple-touch-icon" href="obr-logo.png">
+    <link rel="icon" type="image/png" href="obr-logo.png">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- TensorFlow JS -->
@@ -182,13 +186,14 @@
         .menu-btn-round:hover { transform: scale(1.1); box-shadow: 0 0 20px var(--hud-cyan); background: var(--hud-cyan); color: #000; }
         .menu-btn-round.active { background: var(--hud-red); border-color: var(--hud-red); color: white; animation: pulseRed 2s infinite; }
 
-        /* Stats Display */
+        /* Stats Display - Added transition for waterpop */
         #stats-display {
             position: absolute; bottom: 5px; right: 10px; z-index: 40;
             text-align: right; font-family: 'Share Tech Mono'; font-size: 0.75rem; color: var(--hud-teal);
             text-shadow: 0 0 2px var(--hud-teal); pointer-events: none;
             display: flex; gap: 8px; align-items: center;
-            transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.6s ease; /* Transición para waterpop */
+            /* Critical for Waterpop effect */
+            transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.6s ease;
         }
         .stat-item { border-right: 1px solid rgba(110, 248, 250, 0.5); padding-right: 8px; }
         .stat-item:last-child { border: none; padding-right: 0; }
@@ -394,7 +399,7 @@
                 <video id="banner-vid" src="BANNER_1.mp4" loop muted playsinline></video>
             </div>
 
-            <!-- Intro Button -->
+            <!-- Intro Button (Fixed) -->
             <div id="btn-play-intro" onclick="playIntro()"><i class="fas fa-film"></i></div>
 
             <!-- Stats Bar -->
@@ -479,7 +484,10 @@
         document.getElementById('loading-screen').style.opacity = '0';
         try {
             await initSensors();
+            
+            // Forzar maxima resolucion posible
             await startCamera({ width: { ideal: 4096 }, height: { ideal: 2160 } });
+            
             await initMoveNet();
             seedInitialLogs();
             setTimeout(() => {
