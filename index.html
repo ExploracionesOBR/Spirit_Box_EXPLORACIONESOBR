@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v21.6 TRANSITION</title> 
+    <title>DETECTOR-OBR v22.0 FULLSCREEN</title> 
     
     <!-- Iconos de App -->
     <link rel="apple-touch-icon" href="obr-logo.png">
@@ -13,12 +13,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- TensorFlow JS -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
     
-    <!-- PeerJS (v1.5.4 Stable) & QR -->
+    <!-- PeerJS & QR -->
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script> 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -29,20 +27,15 @@
     <style>
         :root {
             --hud-bg: #050510; 
-            --hud-cyan: #00f3ff; 
-            --hud-pink: #ff0055; 
-            --hud-green: #00ff41; 
-            --hud-red: #ff3333;
-            --hud-orange: #ffae00;
-            --hud-teal: #6EF8FA;
+            --hud-cyan: #00f3ff; --hud-pink: #ff0055; --hud-green: #00ff41; 
+            --hud-red: #ff3333; --hud-orange: #ffae00; --hud-teal: #6EF8FA;
             --glass-panel: rgba(5, 8, 15, 0.92);
-            --left-panel-w: 240px; 
-            --bottom-panel-h: 100px;
+            --left-panel-w: 240px; --bottom-panel-h: 110px;
         }
 
-        /* BLOQUEO TOTAL */
+        /* BLOQUEO DE INTERACCIÓN NATIVA */
         *, *::before, *::after {
-            -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
+            -webkit-user-select: none; -moz-user-select: none; user-select: none;
             -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
         }
 
@@ -53,7 +46,7 @@
             touch-action: none;
         }
 
-        /* Layout Grid */
+        /* Layout */
         #app-ui { 
             width: 100%; height: 100%; display: grid;
             grid-template-columns: var(--left-panel-w) 1fr; 
@@ -63,33 +56,25 @@
             position: relative; z-index: 10;
         }
         
-        #app-ui.full-mode {
-            grid-template-columns: 0px 1fr;
-            grid-template-rows: 1fr 0px;
-        }
+        /* Modo Pantalla Completa */
+        #app-ui.full-mode { grid-template-columns: 0px 1fr; grid-template-rows: 1fr 0px; }
         #app-ui.full-mode #left-panel { transform: translateX(-100%); opacity: 0; }
         #app-ui.full-mode #bottom-panel { transform: translateY(100%); opacity: 0; }
 
-        /* Mobile Layout */
+        /* Mobile */
         @media (max-width: 768px) {
-            #app-ui {
-                grid-template-columns: 0px 1fr;
-                grid-template-rows: 1fr 140px; 
-                grid-template-areas: "left cam" "bottom bottom";
-            }
+            #app-ui { grid-template-columns: 0px 1fr; grid-template-rows: 1fr 140px; grid-template-areas: "left cam" "bottom bottom"; }
             #left-panel { display: none !important; } 
-            .desktop-only { display: none; }
-            .mobile-controls { display: flex; }
+            .desktop-only { display: none; } .mobile-controls { display: flex; }
         }
         @media (min-width: 769px) { .mobile-controls { display: none; } }
 
-        /* Panels */
+        /* Paneles */
         #left-panel { 
             grid-area: left; border-right: 2px solid var(--hud-cyan); 
             overflow-y: auto; background: var(--glass-panel);
             display: flex; flex-direction: column; gap: 4px; padding: 8px;
-            box-shadow: 5px 0 20px rgba(0,0,0,0.5); backdrop-filter: blur(5px);
-            transition: inherit; white-space: nowrap;
+            backdrop-filter: blur(5px); transition: inherit; white-space: nowrap;
         }
         
         #bottom-panel { 
@@ -99,7 +84,7 @@
             backdrop-filter: blur(5px); transition: inherit;
         }
 
-        /* CAMARA AREA */
+        /* Vista Principal */
         #main-view-area { 
             grid-area: cam; position: relative; overflow: hidden; background: #000; width: 100%; height: 100%; 
             transform-origin: center center;
@@ -108,15 +93,17 @@
             width: 100%; height: 100%; transform-origin: center center;
             transition: transform 1s cubic-bezier(0.25, 0.46, 0.45, 0.94); will-change: transform;
         }
-        #video-feed { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-        #sls-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; transform: scaleX(-1); }
+        
+        /* CORRECCIÓN: object-fit: fill para asegurar alineación SLS en movil */
+        #video-feed { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: fill; }
+        #sls-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
 
-        /* Touch Zones */
+        /* Zonas Táctiles */
         #touch-layer { position: absolute; inset: 0; z-index: 45; display: flex; pointer-events: none; }
         #zone-zoom { width: 75%; height: 100%; pointer-events: auto; }
         #zone-menu { width: 25%; height: 100%; pointer-events: auto; }
 
-        /* Filters */
+        /* Filtros */
         .filter-night-vision #video-feed { filter: grayscale(100%) sepia(100%) hue-rotate(70deg) brightness(1.1) contrast(1.4) saturate(300%); }
         .filter-night-vision #main-view-area::after {
             content: ""; position: absolute; inset: 0; pointer-events: none;
@@ -132,7 +119,7 @@
         }
         .filter-pareidolia #main-view-area { border: 2px solid var(--hud-red); }
 
-        /* UI Elements */
+        /* UI Botones */
         .btn-hud {
             background: rgba(0, 243, 255, 0.05); border: 1px solid var(--hud-cyan); color: var(--hud-cyan);
             padding: 6px; font-family: 'Orbitron'; font-size: 0.65rem; cursor: pointer; transition: all 0.2s;
@@ -141,68 +128,51 @@
         }
         .btn-hud.active { background: var(--hud-cyan); color: #000; box-shadow: 0 0 15px var(--hud-cyan); border-color: #fff; }
         #btn-mixer-open.connected { border-color: var(--hud-green); color: var(--hud-green); box-shadow: 0 0 10px var(--hud-green) inset; }
-        .sensor-box { border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.4); padding: 4px 6px; margin-bottom: 4px; }
-        .sensor-label { font-size: 0.6rem; color: #777; margin-bottom: 0; }
-        .sensor-val-big { font-size: 1.1rem; line-height: 1.2; font-weight: bold; }
+        
+        .sensor-box { border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.4); padding: 4px 6px; margin-bottom: 4px; text-align: center; }
+        .sensor-label { font-size: 0.6rem; color: #777; margin-bottom: 2px; display: block; }
+        .sensor-val-big { font-size: 1.1rem; font-weight: bold; }
         .temp-val-text { color: var(--hud-orange); text-shadow: 0 0 5px var(--hud-orange); }
 
-        /* Loading Screen */
-        #loading-screen { position: fixed; inset: 0; background: #000; z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s; }
+        /* Pantalla Carga */
+        #loading-screen { 
+            position: fixed; inset: 0; z-index: 3000; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s;
+            background-color: #000; background-image: url('fondo_pantalla.jpg'); background-size: cover; background-position: center;
+        }
+        #loading-screen::before { content: ""; position: absolute; inset: 0; background: rgba(0,0,0,0.85); z-index: -1; }
         .loader-container { position: relative; width: 90px; height: 90px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
-        .loader { 
-            position: absolute; inset: 0; border: 2px solid transparent; 
-            border-top: 2px solid var(--hud-cyan); border-right: 2px solid var(--hud-cyan);
-            border-radius: 50%; animation: spin 1.5s linear infinite; 
-        }
-        .loader::after {
-            content: ""; position: absolute; inset: 5px; border: 2px solid transparent;
-            border-bottom: 2px solid var(--hud-red); border-left: 2px solid var(--hud-red);
-            border-radius: 50%; animation: spin 2s linear reverse infinite;
-        }
+        .loader { position: absolute; inset: 0; border: 2px solid transparent; border-top: 2px solid var(--hud-cyan); border-right: 2px solid var(--hud-cyan); border-radius: 50%; animation: spin 1.5s linear infinite; }
         .logo-center { width: 50px; height: 50px; object-fit: contain; filter: drop-shadow(0 0 10px var(--hud-cyan)); }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
         #btn-enter-system {
-            margin-top: 10px; padding: 12px 40px; background: rgba(0, 243, 255, 0.1); border: 1px solid var(--hud-cyan);
-            color: var(--hud-cyan); font-family: 'Orbitron'; font-size: 0.9rem; letter-spacing: 2px; cursor: pointer;
-            box-shadow: 0 0 10px rgba(0,243,255,0.1); transition: 0.3s; 
+            margin-top: 10px; padding: 12px 40px; background: rgba(0, 0, 0, 0.6); border: 1px solid var(--hud-cyan);
+            color: var(--hud-cyan); font-family: 'Orbitron'; font-size: 0.9rem; cursor: pointer;
+            box-shadow: 0 0 15px rgba(0,243,255,0.2); transition: 0.3s; backdrop-filter: blur(5px);
         }
-        #btn-enter-system:hover { background: var(--hud-cyan); color: #000; box-shadow: 0 0 30px var(--hud-cyan); }
 
-        /* Right Menu */
-        #right-menu {
-            position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
-            display: flex; flex-direction: column; gap: 20px; z-index: 50; padding: 10px;
-            transition: opacity 0.5s, transform 0.5s; opacity: 1;
-        }
+        /* Menu Derecho */
+        #right-menu { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 20px; z-index: 50; padding: 10px; transition: opacity 0.5s, transform 0.5s; opacity: 1; }
         #right-menu.hidden-menu { opacity: 0; transform: translateY(-50%) translateX(50px); pointer-events: none; }
         .menu-btn-round {
-            width: 45px; height: 45px; border-radius: 50%;
-            background: rgba(0,0,0,0.6); border: 2px solid var(--hud-cyan); color: var(--hud-cyan);
-            display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
-            cursor: pointer; transition: 0.3s; backdrop-filter: blur(4px);
-            box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
+            width: 45px; height: 45px; border-radius: 50%; background: rgba(0,0,0,0.6); border: 2px solid var(--hud-cyan); color: var(--hud-cyan);
+            display: flex; align-items: center; justify-content: center; font-size: 1.1rem; cursor: pointer; transition: 0.3s; backdrop-filter: blur(4px);
         }
-        .menu-btn-round:hover { transform: scale(1.1); box-shadow: 0 0 20px var(--hud-cyan); background: var(--hud-cyan); color: #000; }
         .menu-btn-round.active { background: var(--hud-red); border-color: var(--hud-red); color: white; animation: pulseRed 2s infinite; }
 
-        /* Stats Display - Added transition for waterpop */
+        /* Elementos Flotantes */
         #stats-display {
-            position: absolute; bottom: 5px; right: 10px; z-index: 40;
-            text-align: right; font-family: 'Share Tech Mono'; font-size: 0.75rem; color: var(--hud-teal);
-            text-shadow: 0 0 2px var(--hud-teal); pointer-events: none;
-            display: flex; gap: 8px; align-items: center;
-            /* Critical for Waterpop effect */
+            position: absolute; bottom: 5px; right: 10px; z-index: 40; text-align: right; font-family: 'Share Tech Mono'; font-size: 0.75rem; color: var(--hud-teal);
+            text-shadow: 0 0 2px var(--hud-teal); pointer-events: none; display: flex; gap: 8px; align-items: center;
             transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.6s ease;
         }
         .stat-item { border-right: 1px solid rgba(110, 248, 250, 0.5); padding-right: 8px; }
         .stat-item:last-child { border: none; padding-right: 0; }
-        #stats-timer-container { display: none; color: var(--hud-red); font-weight: bold; font-family: 'Creepster'; letter-spacing: 1px; text-shadow: 0 0 5px red; }
+        #stats-timer-container { display: none; color: var(--hud-red); font-weight: bold; font-family: 'Creepster'; letter-spacing: 1px; }
         #app-ui.full-mode #stats-timer-container { display: block; }
 
-        /* Center Timer */
         #center-timer-container { text-align: center; flex-shrink: 0; width: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #timer-panel { font-family: 'Creepster'; font-size: 1.2rem; color: var(--hud-red); text-shadow: 0 0 5px red; animation: pulseRed 3s infinite; letter-spacing: 1px; line-height: 1; }
+        #timer-panel { font-family: 'Creepster'; font-size: 1.2rem; color: var(--hud-red); text-shadow: 0 0 5px red; animation: pulseRed 3s infinite; line-height: 1; }
         #timer-label { font-size: 0.4rem; color: #555; letter-spacing: 1px; font-family: 'Orbitron'; margin-bottom: 1px; }
 
         /* Follow Us */
@@ -215,64 +185,41 @@
         @keyframes pulseRed { 0% { opacity: 0.8; } 50% { opacity: 1; text-shadow: 0 0 15px red; } 100% { opacity: 0.8; } }
         @keyframes glitchText { 0% { transform: translate(0); } 20% { transform: translate(-1px, 1px); } 40% { transform: translate(1px, -1px); } 60% { transform: translate(-1px, -1px); } 80% { transform: translate(1px, 1px); } 100% { transform: translate(0); } }
 
-        /* Banner Video (With Transition) */
+        /* Banner & Intro */
         #bottom-banner { 
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 150px; 
-            z-index: 35; display: none; background: black; border-top: 2px solid var(--hud-red);
-            opacity: 0; transform: translateY(100%);
-            transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.6s ease;
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 150px; z-index: 35; display: none; background: black; border-top: 2px solid var(--hud-red);
+            opacity: 0; transform: translateY(100%); transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.6s ease;
         }
         #bottom-banner.active { opacity: 1; transform: translateY(0); }
         #banner-vid { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; }
 
-        /* Intro & Controls (With Transition) */
         #btn-play-intro { 
-            position: absolute; bottom: 5px; left: 10px; z-index: 100; pointer-events: auto; 
-            font-size: 1.5rem; color: white; cursor: pointer; 
-            filter: drop-shadow(0 0 5px black); 
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s;
+            position: absolute; bottom: 5px; left: 10px; z-index: 100; pointer-events: auto; font-size: 1.5rem; color: white; cursor: pointer; 
+            filter: drop-shadow(0 0 5px black); transition: transform 0.4s, opacity 0.4s;
         }
-        #btn-play-intro:active { transform: scale(0.9); }
         
-        /* Video Intro Overlay */
         #intro-player { 
-            position: fixed; inset: 0; background: black; z-index: 5000; 
-            display: flex; align-items: center; justify-content: center;
-            opacity: 0; pointer-events: none; transform: scale(1.2); 
-            transition: opacity 0.8s ease, transform 0.8s ease;
+            position: fixed; inset: 0; background: black; z-index: 5000; display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transform: scale(1.2); transition: opacity 0.8s ease, transform 0.8s ease;
         }
         #intro-player.active { opacity: 1; pointer-events: auto; transform: scale(1); }
         #intro-vid { width: 100%; height: 100%; object-fit: contain; }
         #intro-fallback-close { position: absolute; bottom: 30px; right: 30px; border: 1px solid #555; padding: 10px; color: #555; cursor: pointer; display: none; font-family: 'Orbitron'; font-size: 0.8rem; }
 
-        /* AI Feedback Overlay */
-        #ai-feedback-overlay {
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-            z-index: 45; text-align: center; pointer-events: none; display: none;
-        }
-        #ai-feedback-text {
-            font-family: 'Creepster'; font-size: 1.5rem; color: var(--hud-red);
-            text-shadow: 0 0 10px #000; background: rgba(0,0,0,0.6); padding: 10px 20px;
-            border: 1px solid var(--hud-red); border-radius: 4px;
-            animation: glitchText 0.5s infinite;
-        }
+        /* AI Feedback */
+        #ai-feedback-overlay { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 45; text-align: center; pointer-events: none; display: none; }
+        #ai-feedback-text { font-family: 'Creepster'; font-size: 1.5rem; color: var(--hud-red); text-shadow: 0 0 10px #000; background: rgba(0,0,0,0.6); padding: 10px 20px; border: 1px solid var(--hud-red); border-radius: 4px; animation: glitchText 0.5s infinite; }
 
-        /* Logo & Waterpop Classes */
+        /* Utils */
         #top-right-logo { position: absolute; top: 15px; right: 20px; z-index: 40; width: 50px; opacity: 0.8; transition: 0.3s; }
-        
-        /* WATERPOP CLASSES */
         .pop-out { transform: scale(0) !important; opacity: 0 !important; pointer-events: none; }
         .pop-in { transform: scale(1) !important; opacity: 1 !important; pointer-events: auto; }
         .hidden-element { opacity: 0; pointer-events: none; }
-
-        /* Zoom Indicator */
         #zoom-target-indicator { position: absolute; width: 40px; height: 40px; border: 2px solid var(--hud-green); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 25; }
-
-        /* Log Panel Styles */
         .log-item { font-size: 0.6rem; margin-bottom: 1px; font-family: 'Share Tech Mono'; line-height: 1.1; }
         .log-normal { color: #0f0; } .log-warn { color: var(--hud-orange); } .log-crit { color: var(--hud-red); text-shadow: 0 0 2px red; }
 
-        /* Mixer Window */
+        /* Mixer */
         #mixer-window { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9); width: 95vw; max-width: 800px; height: 80vh; background: rgba(10, 12, 18, 0.65); border: 1px solid var(--hud-cyan); z-index: 2000; display: none; flex-direction: column; box-shadow: 0 0 50px rgba(0,0,0,0.8); border-radius: 8px; transition: 0.3s; opacity: 0; pointer-events: none; backdrop-filter: blur(5px); }
         #mixer-window.active { display: flex; opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
         .mixer-header { padding: 10px; border-bottom: 1px solid #333; display: flex; justify-content: center; align-items: center; position: relative; }
@@ -296,151 +243,58 @@
 </head>
 <body>
 
-    <!-- Loading Screen -->
     <div id="loading-screen">
         <div class="loader-container"><div class="loader"></div><img src="obr-logo.png" class="logo-center" onerror="this.style.display='none'"></div>
         <button id="btn-enter-system" onclick="startExperience()">INGRESAR AL SISTEMA</button>
     </div>
-
-    <!-- Video Intro -->
     <div id="intro-player"><video id="intro-vid" playsinline><source src="INTRO_1.mp4" type="video/mp4"></video><div id="intro-fallback-close" onclick="closeIntro()">CERRAR VIDEO</div></div>
+    <div id="ai-feedback-overlay"><div id="ai-feedback-text">ANALIZANDO...</div></div>
 
-    <!-- AI Feedback Overlay -->
-    <div id="ai-feedback-overlay">
-        <div id="ai-feedback-text">ANALIZANDO...</div>
-    </div>
-
-    <!-- UI Principal -->
     <div id="app-ui">
-        
-        <!-- Left Panel -->
         <div id="left-panel">
-            <div class="mb-2 text-center border-b border-cyan-900 pb-1">
-                <h1 class="hud-title text-sm text-cyan-400">DETECTOR<span class="text-white">-OBR</span></h1>
-            </div>
-
-            <!-- Sensors -->
-            <div class="sensor-box">
-                <div class="sensor-label">MAGNETOMETRO</div>
-                <div class="sensor-val-big text-yellow-400 flex items-end justify-center">
-                    <span id="emf-val">0.0</span> <span class="sensor-unit">µT</span>
-                </div>
-                <div class="h-1 bg-gray-800 mt-1 w-full"><div id="emf-bar" class="h-full bg-yellow-500 transition-all duration-100" style="width: 0%"></div></div>
-            </div>
-            <div class="sensor-box">
-                <div class="sensor-label">PROXIMIDAD <span id="prox-mode" class="text-[8px]">(CAM)</span></div>
-                <div class="sensor-val-big text-blue-400 flex items-end justify-center">
-                    <span id="prox-val">--</span> <span class="sensor-unit">%</span>
-                </div>
-                <div class="h-1 bg-gray-800 mt-1 w-full"><div id="prox-bar" class="h-full bg-blue-500 transition-all duration-100" style="width: 0%"></div></div>
-            </div>
-            <div class="sensor-box">
-                <div class="sensor-label">TEMPERATURA</div>
-                <div class="sensor-val-big font-bold flex items-end justify-center temp-val-text">
-                    <span id="temp-val">--</span> <span class="sensor-unit">°C</span>
-                </div>
-            </div>
-
-            <!-- Main Controls -->
+            <div class="mb-2 text-center border-b border-cyan-900 pb-1"><h1 class="hud-title text-sm text-cyan-400">DETECTOR<span class="text-white">-OBR</span></h1></div>
+            <div class="sensor-box"><div class="sensor-label">MAGNETOMETRO</div><div class="sensor-val-big text-yellow-400 flex items-end justify-center"><span id="emf-val">0.0</span> <span class="sensor-unit">µT</span></div><div class="h-1 bg-gray-800 mt-1 w-full"><div id="emf-bar" class="h-full bg-yellow-500 transition-all duration-100" style="width: 0%"></div></div></div>
+            <div class="sensor-box"><div class="sensor-label">PROXIMIDAD <span id="prox-mode" class="text-[8px]">(CAM)</span></div><div class="sensor-val-big text-blue-400 flex items-end justify-center"><span id="prox-val">--</span> <span class="sensor-unit">%</span></div><div class="h-1 bg-gray-800 mt-1 w-full"><div id="prox-bar" class="h-full bg-blue-500 transition-all duration-100" style="width: 0%"></div></div></div>
+            <div class="sensor-box"><div class="sensor-label">TEMPERATURA</div><div class="sensor-val-big font-bold flex items-end justify-center temp-val-text"><span id="temp-val">--</span> <span class="sensor-unit">°C</span></div></div>
             <div class="mt-2">
                 <button class="btn-hud" id="btn-night" onclick="setFilter('night', this)"><i class="fas fa-moon"></i> NOCTURNA</button>
                 <button class="btn-hud" id="btn-thermal" onclick="setFilter('thermal', this)"><i class="fas fa-fire"></i> TERMICO</button>
                 <button class="btn-hud" id="btn-bokeh" onclick="setFilter('bokeh', this)"><i class="fas fa-camera"></i> BOKEH</button>
                 <button class="btn-hud" id="btn-sls" onclick="setFilter('sls', this)"><i class="fas fa-running"></i> SLS (AI)</button>
             </div>
-
-            <!-- Mixer Link -->
-            <div class="mt-2 border-t border-gray-800 pt-2">
-                <button id="btn-mixer-open" class="btn-hud" style="color: #c084fc; border-color: #c084fc;" onclick="toggleMixerWindow()">
-                    <i class="fas fa-sliders-h"></i> MEZCLADOR
-                </button>
-            </div>
+            <div class="mt-2 border-t border-gray-800 pt-2"><button id="btn-mixer-open" class="btn-hud" style="color: #c084fc; border-color: #c084fc;" onclick="toggleMixerWindow()"><i class="fas fa-sliders-h"></i> MEZCLADOR</button></div>
         </div>
 
-        <!-- Camera Area -->
         <div id="main-view-area">
-            <div id="zoom-container">
-                <video id="video-feed" autoplay playsinline muted></video>
-                <canvas id="sls-canvas"></canvas>
-            </div>
-            
-            <!-- Touch Zones -->
-            <div id="touch-layer">
-                <div id="zone-zoom" title="Area Zoom"></div>
-                <div id="zone-menu" title="Area Menu"></div>
-            </div>
-
+            <div id="zoom-container"><video id="video-feed" autoplay playsinline muted></video><canvas id="sls-canvas"></canvas></div>
+            <div id="touch-layer"><div id="zone-zoom"></div><div id="zone-menu"></div></div>
             <div id="zoom-target-indicator"></div>
             <img id="top-right-logo" src="obr-logo.png" onerror="this.style.display='none'">
-
-            <!-- Right Menu -->
+            <div class="live-container"><div class="live-dot"></div><span class="live-text">LIVE</span></div>
             <div id="right-menu">
                 <div class="menu-btn-round" onclick="toggleFullscreenMode()"><i class="fas fa-expand-arrows-alt"></i></div>
                 <div class="menu-btn-round" onclick="togglePareidolia()" id="btn-pareidolia"><i class="fas fa-eye"></i></div>
                 <div class="menu-btn-round" onclick="toggleBanner()" id="btn-banner"><i class="fas fa-bullhorn"></i></div>
                 <div class="menu-btn-round" onclick="resetZoom()"><i class="fas fa-search-minus"></i></div>
             </div>
-
-            <!-- Follow Us Sequence -->
             <div id="follow-sequence">
                 <div class="seq-item" id="seq-text">SIGUENOS EN</div>
-                <div class="seq-item" id="seq-icons">
-                    <div class="flex gap-4">
-                        <i class="fab fa-tiktok text-pink-500"></i>
-                        <i class="fab fa-facebook text-blue-500"></i>
-                        <i class="fab fa-youtube text-red-500"></i>
-                    </div>
-                </div>
+                <div class="seq-item" id="seq-icons"><div class="flex gap-4"><i class="fab fa-tiktok text-pink-500"></i><i class="fab fa-facebook text-blue-500"></i><i class="fab fa-youtube text-red-500"></i></div></div>
                 <div class="seq-item" id="seq-handle">@EXPLORACIONES OBR</div>
             </div>
-
-            <!-- Banner Video -->
-            <div id="bottom-banner">
-                <video id="banner-vid" src="BANNER_1.mp4" loop muted playsinline></video>
-            </div>
-
-            <!-- Intro Button (Fixed) -->
-            <div id="btn-play-intro" onclick="playIntro()"><i class="fas fa-film"></i></div>
-
-            <!-- Stats Bar -->
-            <div id="stats-display">
-                <div class="stat-item" id="stats-timer-container"><span id="stats-timer-val">00:00:00</span></div>
-                <div class="stat-item"><span id="fps-val">--</span> FPS</div>
-                <div class="stat-item text-gray-300"><span id="res-val">--x--</span></div>
-            </div>
-
-            <!-- Live Indicator -->
-            <div class="absolute top-4 left-4 z-20 flex gap-2">
-                <div class="bg-red-600 text-white text-xs px-2 py-1 font-bold animate-pulse rounded flex items-center gap-2">
-                    <div class="w-2 h-2 bg-white rounded-full"></div> LIVE
-                </div>
-            </div>
+            <div id="bottom-banner"><video id="banner-vid" src="BANNER_1.mp4" loop muted playsinline></video></div>
+            <div id="btn-play-intro" class="pop-in" onclick="playIntro()"><i class="fas fa-film"></i></div>
+            <div id="stats-display"><div class="stat-item" id="stats-timer-container"><span id="stats-timer-val">00:00:00</span></div><div class="stat-item"><span id="fps-val">--</span> FPS</div><div class="stat-item text-gray-300"><span id="res-val">--x--</span></div></div>
+            <div class="absolute top-4 left-4 z-20 flex gap-2"><div class="bg-red-600 text-white text-xs px-2 py-1 font-bold animate-pulse rounded flex items-center gap-2"><div class="w-2 h-2 bg-white rounded-full"></div> LIVE</div></div>
         </div>
 
-        <!-- Bottom Panel -->
         <div id="bottom-panel">
-            <!-- Left: Logs -->
-            <div class="h-full overflow-hidden relative p-2 border-r border-gray-800 flex-grow">
-                <div class="text-[8px] text-green-900 absolute top-1 right-1">SYS.LOG</div>
-                <div id="log-content" class="h-full overflow-y-auto flex flex-col justify-end pb-2"></div>
-            </div>
-
-            <!-- Center: Timer -->
-            <div id="center-timer-container">
-                <div id="timer-label">TIEMPO ACTIVO</div>
-                <div id="timer-panel">00:00:00</div>
-            </div>
-
-            <!-- Right: Controls -->
-            <div class="h-full flex items-center justify-end" style="width: 5px;">
-                <div class="mobile-controls w-full flex justify-between gap-2 overflow-x-auto md:hidden">
-                    <!-- Mobile buttons handled by css class -->
-                </div>
-            </div>
+            <div class="h-full overflow-hidden relative p-2 border-r border-gray-800 flex-grow"><div class="text-[8px] text-green-900 absolute top-1 right-1">SYS.LOG</div><div id="log-content" class="h-full overflow-y-auto flex flex-col justify-end pb-2"></div></div>
+            <div id="center-timer-container"><div id="timer-label">TIEMPO ACTIVO</div><div id="timer-panel">00:00:00</div></div>
+            <div class="h-full flex items-center justify-end" style="width: 5px;"><div class="mobile-controls w-full flex justify-between gap-2 overflow-x-auto md:hidden"></div></div>
         </div>
     </div>
 
-    <!-- MEZCLADOR -->
     <div id="mixer-window">
         <div class="mixer-header">
             <div class="mixer-controls-left"><button onclick="showMixerQR()" class="text-xs bg-purple-900 hover:bg-purple-700 text-white px-3 py-1 rounded border border-purple-500"><i class="fas fa-qrcode"></i> QR</button></div>
@@ -448,9 +302,7 @@
             <i class="fas fa-times mixer-close" onclick="toggleMixerWindow()"></i>
         </div>
         <div id="mixer-content">
-            <!-- NO LOCAL STRIP -->
             <div id="remote-strips-container" class="flex gap-2"></div>
-            <!-- MASTER OUT -->
             <div class="channel-strip master-out"><div class="strip-title">🔊 MASTER</div><input type="number" class="vol-display" id="val-master" value="100" onchange="mixerSetVol('master', this.value)"><div class="fader-group"><input type="range" orient="vertical" id="fader-master" min="0" max="200" value="100" oninput="mixerSetVol('master', this.value, true)"><div class="vu-meter-wrap"><div class="vu-active" id="vu-master"></div></div></div><button class="btn-mute" id="mute-master" onclick="mixerToggleMute('master')">MUTE</button></div>
         </div>
         <div id="mixer-qr-modal" onclick="this.style.display='none'"><div class="bg-white p-4 rounded-lg text-center" onclick="event.stopPropagation()"><div id="mixer-qrcode"></div><p class="text-black font-mono text-xs mt-2">ESCANEAR CON DETECTOR</p><p class="text-gray-500 text-[10px] mt-1">Toca fuera para cerrar</p></div></div>
@@ -474,7 +326,6 @@
     let isTouching = false;
     let pareidoliaInterval;
     let smoothedProx = 0;
-    
     let mixerAudioCtx, mixerPeer, mixerMasterOut, mixerMonitorOut;
     let mixerNodes = {};
     let isMixerInitialized = false;
@@ -482,12 +333,16 @@
 
     async function startExperience() {
         document.getElementById('loading-screen').style.opacity = '0';
+        
+        // TRIGGER FULLSCREEN
+        if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen();
+        }
+
         try {
             await initSensors();
-            
-            // Forzar maxima resolucion posible
-            await startCamera({ width: { ideal: 4096 }, height: { ideal: 2160 } });
-            
+            // Force ideal resolutions for sharp mobile view
+            await startCamera({ width: { ideal: 1920 }, height: { ideal: 1080 } });
             await initMoveNet();
             seedInitialLogs();
             setTimeout(() => {
@@ -586,7 +441,7 @@
         }
     }
 
-    function seedInitialLogs() { ["Kernel... OK", "Sensores... OK", "Neural... OK", "Sistema OBR v21.6 activo"].forEach(msg => updateLog(msg)); }
+    function seedInitialLogs() { ["Kernel... OK", "Sensores... OK", "Neural... OK", "Sistema OBR v22.0 activo"].forEach(msg => updateLog(msg)); }
     function startFakeLogs() {
         const msgs = ["Escaneando espectro...", "Geometría: OK", "Red Peer: ESTABLE", "Buffer video: 100%", "Temp: NOMINAL", "Buscando E.V.P...", "Ciclo red: OK", "Fluctuación detectada", "IR: ACTIVO", "Analizando patrón...", "Ruido de fondo: -40dB", "Lectura magnética estable"];
         setInterval(() => { if(Math.random() > 0.5) { const isCrit = Math.random() > 0.8; const cls = isCrit ? 'log-crit' : (Math.random()>0.6 ? 'log-warn' : 'log-normal'); updateLog(msgs[Math.floor(Math.random() * msgs.length)], cls); } }, 1500);
@@ -605,30 +460,19 @@
     };
 
     function toggleFullscreenMode() { document.getElementById('app-ui').classList.toggle('full-mode'); }
-    
     function toggleBanner() {
         const ban = document.getElementById('bottom-banner'); const vid = document.getElementById('banner-vid'); const btn = document.getElementById('btn-banner');
         const introBtn = document.getElementById('btn-play-intro');
         const stats = document.getElementById('stats-display');
         isBannerActive = !isBannerActive;
-        
         if(isBannerActive) { 
-            ban.style.display = 'block'; 
-            // Add delay to allow display:block to render before transition
-            setTimeout(() => ban.classList.add('active'), 10);
-            vid.play(); 
-            btn.classList.add('active'); 
-            // Waterpop OUT (Hide with pop)
+            ban.style.display = 'block'; setTimeout(() => ban.classList.add('active'), 10);
+            vid.play(); btn.classList.add('active'); 
             introBtn.classList.add('pop-out'); introBtn.classList.remove('pop-in');
             stats.classList.add('pop-out'); stats.classList.remove('pop-in');
-        } 
-        else { 
-            ban.classList.remove('active'); 
-            // Wait for transition to end before hiding
-            setTimeout(() => ban.style.display = 'none', 600); 
-            vid.pause(); 
-            btn.classList.remove('active'); 
-            // Waterpop IN (Show with pop)
+        } else { 
+            ban.classList.remove('active'); setTimeout(() => ban.style.display = 'none', 600); 
+            vid.pause(); btn.classList.remove('active'); 
             introBtn.classList.add('pop-in'); introBtn.classList.remove('pop-out');
             stats.classList.add('pop-in'); stats.classList.remove('pop-out');
         }
@@ -668,50 +512,29 @@
             const delta = now - lastFrameTime; lastFrameTime = now;
             if (now % 20 < 1) document.getElementById('fps-val').innerText = Math.round(1000 / delta) || 0;
             ctxSLS.clearRect(0, 0, slsCanvas.width, slsCanvas.height);
-            
-            let personDetected = false;
-            let boxSize = 0;
-
+            let personDetected = false; let boxSize = 0;
             if (detector && video.readyState >= 2) { 
                 try { 
                     const p = await detector.estimatePoses(video, { maxPoses: 3, flipHorizontal: false }); 
                     if (p.length > 0) {
                         personDetected = true;
-                        const keypoints = p[0].keypoints;
-                        const xs = keypoints.map(k => k.x); const ys = keypoints.map(k => k.y);
-                        const w = Math.max(...xs) - Math.min(...xs);
-                        const h = Math.max(...ys) - Math.min(...ys);
-                        boxSize = (w * h) / (slsCanvas.width * slsCanvas.height); 
-                        
-                        if (currentFilter === 'sls') {
-                            drawSkeleton(p); 
-                        }
+                        const k = p[0].keypoints; const xs = k.map(k => k.x); const ys = k.map(k => k.y);
+                        boxSize = ((Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys))) / (slsCanvas.width * slsCanvas.height);
+                        if (currentFilter === 'sls') drawSkeleton(p);
                     }
                 } catch (e) {} 
             }
-            
             if (isPareidoliaActive && Math.random() > 0.95) {
-                const x = Math.random() * slsCanvas.width;
-                const y = Math.random() * slsCanvas.height;
-                const s = 50 + Math.random() * 100;
-                ctxSLS.strokeStyle = 'rgba(255, 0, 0, 0.8)'; 
-                ctxSLS.lineWidth = 4; 
-                ctxSLS.shadowBlur = 10;
-                ctxSLS.shadowColor = 'red';
-                ctxSLS.strokeRect(x, y, s, s);
-                ctxSLS.shadowBlur = 0; 
+                const x = Math.random() * slsCanvas.width; const y = Math.random() * slsCanvas.height; const s = 50 + Math.random() * 100;
+                ctxSLS.strokeStyle = 'rgba(255, 0, 0, 0.8)'; ctxSLS.lineWidth = 4; ctxSLS.shadowBlur = 10; ctxSLS.shadowColor = 'red';
+                ctxSLS.strokeRect(x, y, s, s); ctxSLS.shadowBlur = 0; 
             }
-
             if(!hasPhysicalProxSensor) {
                 let targetProx = personDetected ? Math.min(99, boxSize * 300) : 0;
-                if(!personDetected) targetProx = Math.random() * 2;
-                
                 smoothedProx += (targetProx - smoothedProx) * 0.1;
-                
                 document.getElementById('prox-val').innerText = Math.floor(smoothedProx);
                 document.getElementById('prox-bar').style.width = Math.floor(smoothedProx)+'%';
             }
-
             requestAnimationFrame(render);
         } render();
     }
@@ -720,7 +543,6 @@
 
     let emfValue = 0;
     let hasPhysicalProxSensor = false;
-
     async function initSensors() { 
         if ('Magnetometer' in window) { try { const m = new Magnetometer({frequency:10}); m.addEventListener('reading', () => { emfValue = Math.sqrt(m.x**2 + m.y**2 + m.z**2); updateSensorUI(); }); m.start(); } catch(e){ startSensorSim(); } } else { startSensorSim(); } 
         if ('ProximitySensor' in window) { 
@@ -737,7 +559,6 @@
             } catch(e){} 
         } 
     }
-    
     function fetchRealTemperature() {
         if(!navigator.geolocation) return fallbackTemp();
         const timeout = setTimeout(fallbackTemp, 3000); 
@@ -751,7 +572,6 @@
         }, (e)=>{ clearTimeout(timeout); fallbackTemp(); }); 
     }
     function fallbackTemp() { let t = 22; setInterval(() => { t += (Math.random()-0.5)*0.1; document.getElementById('temp-val').innerText = t.toFixed(1); }, 2000); }
-
     function startSensorSim() { setInterval(() => { emfValue = Math.max(0, Math.min(100, emfValue+(Math.random()-0.5)*2)); updateSensorUI(); }, 500); }
     function updateSensorUI() { document.getElementById('emf-val').innerText = emfValue.toFixed(1); const w = Math.min(100, (emfValue/60)*100); const b=document.getElementById('emf-bar'); b.style.width=w+'%'; if(emfValue>50) b.classList.add('bg-red-600'); else b.classList.remove('bg-red-600'); }
     function updateLog(m, cls='log-normal'){ const l=document.getElementById('log-content'); l.innerHTML+=`<div class="log-item ${cls}">[${new Date().toLocaleTimeString()}] ${m}</div>`; l.scrollTop=l.scrollHeight; }
@@ -761,53 +581,33 @@
 
     async function toggleMixerWindow() { const w=document.getElementById('mixer-window'); if(!w.classList.contains('active')){w.classList.add('active');if(!isMixerInitialized)await initMixerSystem();}else w.classList.remove('active'); }
     async function initMixerSystem() {
-        mixerAudioCtx = new (window.AudioContext||window.webkitAudioContext)(); 
-        await mixerAudioCtx.resume();
-        mixerMasterOut = mixerAudioCtx.createGain(); 
-        mixerMonitorOut = mixerAudioCtx.createGain(); 
-        mixerMasterOut.connect(mixerMonitorOut);
-        mixerMonitorOut.connect(mixerAudioCtx.destination);
-
+        mixerAudioCtx = new (window.AudioContext||window.webkitAudioContext)(); await mixerAudioCtx.resume();
+        mixerMasterOut = mixerAudioCtx.createGain(); mixerMonitorOut = mixerAudioCtx.createGain(); 
+        mixerMasterOut.connect(mixerMonitorOut); mixerMonitorOut.connect(mixerAudioCtx.destination);
         mixerPeer = new Peer(); 
         mixerPeer.on('open', id => {
             document.getElementById('host-id-display').innerText = id;
             new QRCode(document.getElementById('mixer-qrcode'), {text:id,width:150,height:150});
             document.getElementById('btn-mixer-open').classList.add('connected');
         });
-
         mixerPeer.on('connection', conn => { conn.on('open', () => {}); });
-
         mixerPeer.on('call', call => {
             call.answer(); 
-            setTimeout(() => {
-                call.on('stream', stream => handleRemoteStream(call.peer, stream));
-            }, 500);
+            setTimeout(() => { call.on('stream', stream => handleRemoteStream(call.peer, stream)); }, 500);
             call.on('close', () => removeRemoteChannel(call.peer));
             call.on('error', err => console.log("Call Err", err));
         });
-        
-        mixerPeer.on('error', err => console.log("Peer Err", err));
-
-        setupVuMeter(mixerMasterOut, 'vu-master');
-        isMixerInitialized = true;
+        setupVuMeter(mixerMasterOut, 'vu-master'); isMixerInitialized = true;
     }
-
     function handleRemoteStream(id, stream) {
         if(document.getElementById('ch-'+id)) return;
-        const audioEl = document.createElement('audio'); 
-        audioEl.srcObject = stream; audioEl.autoplay = true; audioEl.muted = true; 
+        const audioEl = document.createElement('audio'); audioEl.srcObject = stream; audioEl.autoplay = true; audioEl.muted = true; 
         document.getElementById('remote-audios-hidden').appendChild(audioEl);
-
-        const source = mixerAudioCtx.createMediaStreamSource(stream);
-        const gainNode = mixerAudioCtx.createGain();
-        source.connect(gainNode);
-        gainNode.connect(mixerMasterOut); 
-        
-        createChannelStripUI(id, gainNode);
-        mixerNodes[id] = { gain: gainNode, el: audioEl };
+        const source = mixerAudioCtx.createMediaStreamSource(stream); const gainNode = mixerAudioCtx.createGain();
+        source.connect(gainNode); gainNode.connect(mixerMasterOut); 
+        createChannelStripUI(id, gainNode); mixerNodes[id] = { gain: gainNode, el: audioEl };
         updateLog(`Dispositivo conectado: ${id.substring(0,4)}`, 'log-warn');
     }
-
     function createChannelStripUI(id, gainNode) {
         const d = document.createElement('div'); d.className='channel-strip'; d.id='ch-'+id;
         d.innerHTML = `<div class="strip-title" ondblclick="renameChannel('${id}')">📡 ${id.substring(0,4)}</div><input type="number" class="vol-display" id="v-${id}" value="100"><div class="fader-group"><input type="range" orient="vertical" id="f-${id}" max="200" value="100"><div class="vu-meter-wrap"><div class="vu-active" id="vu-${id}"></div></div></div><button class="btn-mute" id="m-${id}">MUTE</button>`;
@@ -816,31 +616,11 @@
         d.querySelector(`#m-${id}`).onclick = e => { if(gainNode.gain.value===0){ gainNode.gain.value=d.querySelector(`#v-${id}`).value/100; e.target.classList.remove('muted'); } else { gainNode.gain.value=0; e.target.classList.add('muted'); } };
         setupVuMeter(gainNode, `vu-${id}`);
     }
-
-    function removeRemoteChannel(id) {
-        document.getElementById('ch-'+id)?.remove();
-        mixerNodes[id]?.el.remove();
-        delete mixerNodes[id];
-        updateLog(`Dispositivo desconectado: ${id.substring(0,4)}`, 'log-crit');
-    }
-
-    window.renameChannel = function(id) {
-        const newName = prompt("Nuevo nombre:", "INVESTIGADOR");
-        if(newName) document.querySelector(`#ch-${id} .strip-title`).innerText = newName;
-    }
-
-    window.mixerSetVol = (t,v,f) => { 
-        const n = t==='local'?null:mixerMasterOut; 
-        if(n) { n.gain.value=v/100; if(f) document.getElementById(`val-${t}`).value=v; else document.getElementById(`fader-${t}`).value=v; }
-    }
-    window.mixerToggleMute = (t) => { 
-        const b=document.getElementById(`mute-${t}`); const n=t==='local'?null:mixerMasterOut; 
-        if(n) { if(n.gain.value===0){n.gain.value=document.getElementById(`val-${t}`).value/100;b.classList.remove('muted');} else{n.gain.value=0;b.classList.add('muted');} }
-    }
-    
-    function setupVuMeter(n,id){
-        if(!n) return;
-        const a=mixerAudioCtx.createAnalyser();a.fftSize=256;n.connect(a);const d=new Uint8Array(256);const e=document.getElementById(id);function l(){if(!e)return;requestAnimationFrame(l);a.getByteTimeDomainData(d);let s=0;for(let x of d)s+=(x-128)/128*(x-128)/128;e.style.height=Math.min(100,Math.sqrt(s/256)*400)+"%";}l();}
+    function removeRemoteChannel(id) { document.getElementById('ch-'+id)?.remove(); mixerNodes[id]?.el.remove(); delete mixerNodes[id]; updateLog(`Dispositivo desconectado`, 'log-crit'); }
+    window.renameChannel = function(id) { const newName = prompt("Nuevo nombre:"); if(newName) document.querySelector(`#ch-${id} .strip-title`).innerText = newName; }
+    window.mixerSetVol = (t,v,f) => { const n = t==='local'?null:mixerMasterOut; if(n) { n.gain.value=v/100; if(f) document.getElementById(`val-${t}`).value=v; else document.getElementById(`fader-${t}`).value=v; } }
+    window.mixerToggleMute = (t) => { const b=document.getElementById(`mute-${t}`); const n=t==='local'?null:mixerMasterOut; if(n) { if(n.gain.value===0){n.gain.value=document.getElementById(`val-${t}`).value/100;b.classList.remove('muted');} else{n.gain.value=0;b.classList.add('muted');} } }
+    function setupVuMeter(n,id){ if(!n) return; const a=mixerAudioCtx.createAnalyser();a.fftSize=256;n.connect(a);const d=new Uint8Array(256);const e=document.getElementById(id);function l(){if(!e)return;requestAnimationFrame(l);a.getByteTimeDomainData(d);let s=0;for(let x of d)s+=(x-128)/128*(x-128)/128;e.style.height=Math.min(100,Math.sqrt(s/256)*400)+"%";}l();}
     window.showMixerQR=()=>document.getElementById('mixer-qr-modal').style.display='flex';
 </script>
 </body>
