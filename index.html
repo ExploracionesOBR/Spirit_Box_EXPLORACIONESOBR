@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <!-- VIEWPORT OPTIMIZADO PARA JUEGOS (NO ZOOM, NO SCROLL) -->
+    <!-- VIEWPORT OPTIMIZADO -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#000000">
     
@@ -15,11 +15,11 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="format-detection" content="telephone=no">
     
-    <!-- MANIFIESTO VIRTUAL PARA INSTALACION COMO APP NATIVA -->
+    <!-- MANIFIESTO VIRTUAL -->
     <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiREVURUNUT1IgT0JSIiwic2hvcnRfbmFtZSI6Ik9CUiIs" />
     
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v30.26 (GAME MODE)</title> 
+    <title>DETECTOR-OBR v30.29 (FINAL POLISH)</title> 
     
     <!-- Iconos de App -->
     <link rel="apple-touch-icon" href="obr-logo.png">
@@ -48,7 +48,7 @@
             --left-panel-w: 240px; --bottom-panel-h: 110px;
         }
 
-        /* BLOQUEO TOTAL DE INTERACCIÓN NATIVA DEL NAVEGADOR */
+        /* BLOQUEO TOTAL DE INTERACCIÓN NATIVA */
         *, *::before, *::after {
             -webkit-user-select: none; -moz-user-select: none; user-select: none;
             -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
@@ -60,8 +60,6 @@
             width: 100%; height: 100%;
             background-color: #000; color: var(--hud-cyan);
             font-family: 'Share Tech Mono', monospace;
-            
-            /* FIX CRITICO PARA IOS/ANDROID FULLSCREEN */
             position: fixed; 
             overflow: hidden; 
             overscroll-behavior: none;
@@ -79,38 +77,28 @@
             position: relative; z-index: 10;
         }
 
-        /* --- LÓGICA DE FORZADO HORIZONTAL (FORCE LANDSCAPE) --- */
+        /* --- LÓGICA DE FORZADO HORIZONTAL --- */
         @media screen and (orientation: portrait) {
             #app-ui {
-                /* Truco para rotar toda la app 90 grados si el cel está vertical */
                 position: fixed;
                 top: 50%; left: 50%;
                 width: 100vh; height: 100vw; 
                 transform: translate(-50%, -50%) rotate(90deg); 
-                
-                /* Re-configuramos el grid para que se vea bien rotado */
                 grid-template-columns: var(--left-panel-w) 1fr; 
                 grid-template-rows: 1fr var(--bottom-panel-h);
                 grid-template-areas: "left cam" "left bottom";
             }
-            /* Forzamos mostrar el panel izquierdo incluso si el CSS responsivo lo ocultaría */
             #left-panel { display: flex !important; } 
-            /* Ocultamos controles móviles porque en rotación forzada usamos layout desktop */
-            .mobile-controls { display: none !important; }
-            .desktop-only { display: block !important; }
         }
 
-        /* Modos Fullscreen dentro de la app (ocultar UI) */
         #app-ui.full-mode { grid-template-columns: 0px 1fr; grid-template-rows: 1fr 0px; }
         #app-ui.full-mode #left-panel { transform: translateX(-100%); opacity: 0; }
         #app-ui.full-mode #bottom-panel { transform: translateY(100%); opacity: 0; }
 
-        /* Responsivo Normal (Solo si está en landscape real en dispositivos pequeños) */
         @media (max-width: 768px) {
             #app-ui:not([style*="rotate"]) { 
                  grid-template-columns: 0px 1fr; grid-template-rows: 1fr 140px; grid-template-areas: "left cam" "bottom bottom"; 
             }
-            /* Si no está rotado (landscape nativo pequeño), ocultamos panel izq */
             .desktop-only { display: none; } .mobile-controls { display: flex; }
         }
 
@@ -120,12 +108,14 @@
             overflow-y: auto; background: var(--glass-panel);
             display: flex; flex-direction: column; gap: 4px; padding: 8px;
             backdrop-filter: blur(5px); transition: inherit; white-space: nowrap;
+            z-index: 20;
         }
         #bottom-panel { 
             grid-area: bottom; border-top: 2px solid var(--hud-cyan); 
             background: var(--glass-panel); display: flex; 
             align-items: center; padding: 0;
             backdrop-filter: blur(5px); transition: inherit;
+            z-index: 20;
         }
 
         /* Vista Principal */
@@ -138,10 +128,11 @@
             transition: transform 1s cubic-bezier(0.25, 0.46, 0.45, 0.94); will-change: transform;
         }
         
-        /* VIDEO CUBRIENDO TODA LA PANTALLA */
+        /* VIDEO AJUSTADO */
         #video-feed { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             object-fit: cover; object-position: center;
+            z-index: 1;
         }
         #sls-canvas { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
@@ -201,7 +192,7 @@
             position: absolute; top: 10px; right: 10px;
             font-size: 1.8rem; color: #555; cursor: pointer; z-index: 5000;
             transition: color 0.3s, transform 0.3s;
-            display: none; /* Oculto hasta cargar sistema */
+            display: none; 
         }
         #btn-settings-gear:hover { color: var(--hud-cyan); transform: rotate(90deg); }
 
@@ -214,11 +205,16 @@
         }
         #btn-enter-system:hover { background: var(--hud-cyan); color: #000; box-shadow: 0 0 40px var(--hud-cyan); }
         #btn-enter-system:disabled { opacity: 0.7; cursor: wait; background: #111; border-color: #555; color: #aaa; box-shadow: none; }
-        /* Estilo para cuando ya está listo para entrar */
         #btn-enter-system.ready { background: var(--hud-green); color: black; box-shadow: 0 0 30px var(--hud-green); border-color: white; }
 
-        #right-menu { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 20px; z-index: 50; padding: 10px; transition: opacity 0.5s, transform 0.5s; opacity: 1; }
+        /* MENU DERECHO - REPARADO */
+        #right-menu { 
+            position: absolute; right: 20px; top: 50%; transform: translateY(-50%); 
+            display: flex; flex-direction: column; gap: 20px; z-index: 100; padding: 10px; 
+            transition: opacity 0.5s, transform 0.5s; opacity: 1; pointer-events: auto; 
+        }
         #right-menu.hidden-menu { opacity: 0; transform: translateY(-50%) translateX(50px); pointer-events: none; }
+        
         .menu-btn-round {
             width: 45px; height: 45px; border-radius: 50%; background: rgba(0,0,0,0.6); border: 2px solid var(--hud-cyan); color: var(--hud-cyan);
             display: flex; align-items: center; justify-content: center; font-size: 1.1rem; cursor: pointer; transition: 0.3s; backdrop-filter: blur(4px);
@@ -284,7 +280,8 @@
             letter-spacing: 1px; text-transform: uppercase; line-height: 1.1; white-space: nowrap;
         }
 
-        .live-container { position: absolute; top: 4px; left: 4px; z-index: 45; display: flex; align-items: center; gap: 4px; }
+        /* LIVE CONTAINER CON DOBLE CLICK */
+        .live-container { position: absolute; top: 4px; left: 4px; z-index: 80; display: flex; align-items: center; gap: 4px; cursor: pointer; pointer-events: auto; }
         .live-dot { width: 8px; height: 8px; background: red; border-radius: 50%; box-shadow: 0 0 10px red; animation: livePulse 1s infinite; }
         .live-text { color: white; font-family: 'Orbitron'; font-size: 0.7rem; font-weight: bold; text-shadow: 0 0 5px red; }
         @keyframes livePulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
@@ -303,10 +300,11 @@
             font-family: 'Orbitron'; font-size: 0.7rem; padding: 2px 8px;
             display: none; animation: pulseRed 0.5s infinite; z-index: 60;
         }
+        /* SLS STATUS PIP MOVIDO Y BAJADO */
         #sls-status-pip {
-            position: absolute; top: 5px; left: 50px; 
+            position: absolute; top: 30px; left: 5px; 
             font-family: 'Share Tech Mono'; font-size: 0.6rem; color: var(--hud-green);
-            z-index: 60; display: none;
+            z-index: 60; display: none; text-shadow: 0 0 5px #0f0;
         }
 
         #top-right-logo { position: absolute; top: 15px; right: 70px; z-index: 40; width: 50px; opacity: 0.8; transition: 0.3s; }
@@ -542,9 +540,9 @@
             <div id="sls-status-pip">🟢 SLS ACTIVO</div>
             <img id="top-right-logo" src="obr-logo.png" onerror="this.style.display='none'">
 
-            <!-- LIVE Indicator & AI Text (NESTED) -->
-            <div class="live-container">
-                <div class="live-dot" id="live-dot"></div><span class="live-text">LIVE</span>
+            <!-- LIVE Indicator & AI Text (NESTED) - NOW CLICKABLE FOR EXIT -->
+            <div class="live-container" id="live-header-container">
+                <div class="live-dot" id="live-dot"></div><span class="live-text hud-title">DETECTOR-OBR</span>
             </div>
             <div id="ai-feedback-overlay">
                 <div id="ai-feedback-text"></div>
@@ -709,15 +707,12 @@
     async function loadCoreSystems() {
         const btn = document.getElementById('btn-enter-system');
         
-        // 1. TF
         btn.innerText = "DESCARGANDO CEREBRO...";
         await loadScript(LIB_URLS.tf);
         
-        // 2. Pose
         btn.innerText = "CARGANDO VISION...";
         await loadScript(LIB_URLS.pose);
         
-        // 3. Comms (Parallel)
         btn.innerText = "CONECTANDO RED...";
         await Promise.all([
             loadScript(LIB_URLS.peer),
@@ -739,6 +734,20 @@
         btn.innerText = "CARGAR SISTEMA"; // Step 1
         btn.style.opacity = "1"; 
         btn.style.cursor = "pointer";
+        
+        // INIT DOUBLE TAP HANDLER FOR EXIT
+        const titleHeader = document.getElementById('live-header-container');
+        let lastTitleTap = 0;
+        const handleDoubleTap = (e) => {
+            e.preventDefault();
+            const now = Date.now();
+            if (now - lastTitleTap < 500) { 
+                exitToMain();
+            }
+            lastTitleTap = now;
+        };
+        titleHeader.addEventListener('click', handleDoubleTap); 
+        titleHeader.addEventListener('touchend', handleDoubleTap);
     };
 
     function checkApiKeyAndTogglePareidolia() {
@@ -800,7 +809,6 @@
                 detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING });
             } catch(e) {
                 console.warn("AI Load Issue", e);
-                // Continue anyway, maybe non-AI features work
             }
         }
     }
@@ -953,14 +961,16 @@
                 else {
                     if(slsMemories.length === 0) createFakeNoiseMemory(); 
 
-                    if(!activeGhostMemory && (Date.now() - lastGhostEndTime > 3000)) {
-                        if(Math.random() > 0.98) { 
+                    // RANDOM INTERVAL: 6s to 15s
+                    if(!activeGhostMemory && (Date.now() - lastGhostEndTime > (6000 + Math.random() * 9000))) {
+                         // 50% chance to trigger if interval passed
+                         if(Math.random() > 0.5) {
                             activeGhostMemory = slsMemories[Math.floor(Math.random() * slsMemories.length)];
                             currentGhostFrame = 0;
-                            let maxFootY = 0;
-                            let minX = 1;
-                            let maxX = 0;
-                            if(activeGhostMemory.length > 0) {
+                            
+                            // ANCHOR TO FLOOR (0.9 = 90% height)
+                            let maxFootY = 0; let minX = 1; let maxX = 0;
+                            if(activeGhostMemory.length > 0 && activeGhostMemory[0].length > 0) {
                                 activeGhostMemory[0].forEach(p => {
                                     p.keypoints.forEach(kp => {
                                         if(kp.y > maxFootY) maxFootY = kp.y;
@@ -972,9 +982,9 @@
                             let currentCenterX = (minX + maxX) / 2;
                             activeGhostOffsets = {
                                 x: 0.5 - currentCenterX,
-                                y: 0.95 - maxFootY
+                                y: 0.90 - maxFootY // Force feet to 90% screen height
                             };
-                        }
+                         }
                     }
 
                     if(activeGhostMemory) {
@@ -1015,10 +1025,8 @@
     
     function drawSkeleton(poses, ctx, offset = {x:0, y:0}) { 
         if(!ctx) return;
-        
         try {
             if(!Array.isArray(poses)) poses = [poses];
-            
             const w = ctx.canvas.width;
             const h = ctx.canvas.height;
 
@@ -1031,34 +1039,34 @@
                 pose.keypoints.forEach(kp => {
                     let x, y;
                     if(kp.x <= 1.0 && kp.y <= 1.0) {
-                        x = (kp.x + offset.x) * w;
-                        y = (kp.y + offset.y) * h;
+                        // Apply offset normalized
+                        let ox = kp.x + offset.x;
+                        let oy = kp.y + offset.y;
+                        x = ox * w;
+                        y = oy * h;
                     } else {
                         x = kp.x; 
                         y = kp.y;
                     }
-                    
                     kpMap[kp.name] = { x: x, y: y, score: kp.score };
                 }); 
 
                 ctx.beginPath(); 
                 CONNECTIONS.forEach(([a, b]) => { 
                     const p1 = kpMap[a]; const p2 = kpMap[b]; 
-                    if (p1 && p2 && p1.score > 0.3 && p2.score > 0.3) { 
+                    if (p1 && p2 && (p1.score > 0.2 && p2.score > 0.2)) { 
                         ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); 
                     } 
                 }); 
                 ctx.stroke(); 
                 
                 Object.values(kpMap).forEach(kp => { 
-                    if (kp.score > 0.3) { 
+                    if (kp.score > 0.2) { 
                         ctx.beginPath(); ctx.arc(kp.x, kp.y, 8, 0, 2 * Math.PI); ctx.fill(); 
                     } 
                 }); 
             }); 
-        } catch(e) {
-            console.log("Frame drop error", e);
-        }
+        } catch(e) {}
     }
 
     let emfValue = 0; let hasPhysicalProxSensor = false;
@@ -1265,7 +1273,6 @@
     }
     function exitToMain() {
         closeSettings();
-        // Do NOT reload, just reset UI
         window.isLoopRunning = false;
         isSystemInitialized = false; 
         isSystemLoaded = false;
@@ -1277,7 +1284,7 @@
         
         const btn = document.getElementById('btn-enter-system');
         btn.disabled = false;
-        btn.innerText = "CARGAR SISTEMA"; // Reset to Step 1
+        btn.innerText = "CARGAR SISTEMA"; 
         btn.classList.remove('ready');
         btn.style.opacity = "1";
         btn.style.cursor = "pointer";
@@ -1575,6 +1582,13 @@
             han.style.display = 'block'; await wait(3500); han.style.display = 'none';
             await wait(8000);
         }
+    }
+    
+    function seedInitialLogs() { ["Kernel... OK", "Sensores... OK", "Neural... OK", "Sistema OBR v30.29 activo"].forEach(msg => updateLog(msg)); }
+    function startFakeLogs() {
+        if(fakeLogInterval) return;
+        const msgs = ["Escaneando espectro...", "Geometría: OK", "Red Peer: ESTABLE", "Buffer video: 100%", "Temp: NOMINAL", "Buscando E.V.P...", "Ciclo red: OK", "Fluctuación detectada", "IR: ACTIVO", "Analizando patrón...", "Ruido de fondo: -40dB", "Lectura magnética estable"];
+        fakeLogInterval = setInterval(() => { if(Math.random() > 0.5) { const isCrit = Math.random() > 0.8; const cls = isCrit ? 'log-crit' : (Math.random()>0.6 ? 'log-warn' : 'log-normal'); updateLog(msgs[Math.floor(Math.random() * msgs.length)], cls); } }, 1500);
     }
 </script>
 </body>
