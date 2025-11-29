@@ -9,7 +9,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v30.15 (FINAL FIX)</title> 
+    <title>DETECTOR-OBR v30.17 (FORCE LANDSCAPE)</title> 
     
     <!-- Iconos de App -->
     <link rel="apple-touch-icon" href="obr-logo.png">
@@ -17,14 +17,14 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- TensorFlow JS -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+    <!-- TensorFlow JS - CARGA DIFERIDA -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection" defer></script>
     
-    <!-- PeerJS (v1.5.4) & QR -->
-    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script> 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- PeerJS & QR -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js" defer></script> 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&family=Creepster&family=VT323&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -51,7 +51,7 @@
             touch-action: none;
         }
 
-        /* Layout */
+        /* Layout Principal */
         #app-ui { 
             width: 100%; height: 100%; display: grid;
             grid-template-columns: var(--left-panel-w) 1fr; 
@@ -60,14 +60,55 @@
             transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative; z-index: 10;
         }
+
+        /* --- LÓGICA DE FORZADO HORIZONTAL (CSS FORCE) --- */
+        @media screen and (orientation: portrait) {
+            #app-ui {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                width: 100vh;  /* Intercambiamos ancho por alto de ventana */
+                height: 100vw; /* Intercambiamos alto por ancho de ventana */
+                transform: translate(-50%, -50%) rotate(90deg); /* Rotamos 90 grados desde el centro */
+                /* Ajuste de Grid para modo vertical forzado */
+                grid-template-columns: var(--left-panel-w) 1fr; 
+                grid-template-rows: 1fr var(--bottom-panel-h);
+                grid-template-areas: "left cam" "left bottom";
+            }
+            
+            /* Ajustes específicos para que los controles móviles no se rompan al rotar */
+            .mobile-controls { 
+                /* En portrait forzado, el panel izquierdo se oculta por la media query original, 
+                   necesitamos asegurarnos de que el layout sea usable o forzar el panel izquierdo si es tablet */
+            }
+
+            /* En celulares pequeños, al rotar, el panel izquierdo puede ocupar mucho espacio. 
+               Aseguramos que en 'falso landscape' se vea bien */
+        }
+
+        /* Modos Fullscreen */
         #app-ui.full-mode { grid-template-columns: 0px 1fr; grid-template-rows: 1fr 0px; }
         #app-ui.full-mode #left-panel { transform: translateX(-100%); opacity: 0; }
         #app-ui.full-mode #bottom-panel { transform: translateY(100%); opacity: 0; }
 
         @media (max-width: 768px) {
+            /* Estilo normal responsivo (cuando NO estamos forzando la rotación o pantalla pequeña landscape nativa) */
             #app-ui { grid-template-columns: 0px 1fr; grid-template-rows: 1fr 140px; grid-template-areas: "left cam" "bottom bottom"; }
             #left-panel { display: none !important; } 
             .desktop-only { display: none; } .mobile-controls { display: flex; }
+        }
+        
+        /* SOBREESCRIBIMOS LA MEDIA QUERY ANTERIOR SI ESTAMOS EN PORTRAIT ROTADO */
+        @media screen and (orientation: portrait) {
+             /* Al forzar rotación, el ancho efectivo pasa a ser el alto del dispositivo (> 768px usualmente).
+                Reactivamos el panel izquierdo si cabe */
+             #app-ui {
+                 /* Si el alto del cel (ahora ancho) es suficiente, mostramos panel izquierdo */
+                 grid-template-columns: var(--left-panel-w) 1fr; 
+                 grid-template-rows: 1fr var(--bottom-panel-h);
+                 grid-template-areas: "left cam" "left bottom";
+             }
+             #left-panel { display: flex !important; } 
         }
 
         /* Paneles */
@@ -623,10 +664,15 @@
         checkApiKeyAndTogglePareidolia();
         loadMemoriesFromStorage();
 
-        try { await tf.ready(); detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING }); } catch(e){}
+        // Lazy load TF/Detector in background
+        // Don't block UI
+        setTimeout(initMoveNet, 100);
 
         const btn = document.getElementById('btn-enter-system');
-        btn.disabled = false; btn.innerText = "INGRESAR AL SISTEMA"; btn.style.opacity = "1"; btn.style.cursor = "pointer";
+        btn.disabled = false; 
+        btn.innerText = "INGRESAR AL SISTEMA";
+        btn.style.opacity = "1"; 
+        btn.style.cursor = "pointer";
     };
 
     function checkApiKeyAndTogglePareidolia() {
@@ -641,22 +687,30 @@
     async function startExperience() {
         const btn = document.getElementById('btn-enter-system');
         btn.disabled = true;
-        btn.innerText = "INICIANDO...";
+        btn.innerText = "CARGANDO MOTORES...";
 
         const docEl = document.documentElement;
         if(docEl.requestFullscreen) { docEl.requestFullscreen().catch(e=>{}); }
         else if(docEl.webkitRequestFullscreen) { docEl.webkitRequestFullscreen(); }
+        else if(screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(e=>{});
+        }
         
         try {
+            // Ensure AI is ready before camera (better UX)
+            if(!detector) {
+                 await initMoveNet();
+            }
+
             if (!isSystemInitialized) {
                 // Audio
                 try { await initAudioEngine(); } catch(e) { console.log("Audio init warning", e); }
                 
-                // Camera - TIMEOUT SAFEGUARD (20s for mobile prompts)
+                // Camera - Mobile Optimized: Start with 720p
                 const camPromise = startCamera({ 
-                    width: { ideal: 1920 },  // 1080p for stability on mobile
-                    height: { ideal: 1080 },
-                    frameRate: { ideal: 60 } 
+                    width: { ideal: 1280 },  
+                    height: { ideal: 720 },
+                    frameRate: { ideal: 30 } 
                 });
                 
                 // Race against a 20s timeout
@@ -722,12 +776,12 @@
 
     // UPDATED CAMERA INIT WITH FALLBACK
     async function startCamera(constraints) { 
-        // 1080p is safer default for Mobile
+        // Safe defaults for Mobile
         const defaults = { 
             video: { 
                 facingMode: 'environment', 
-                width: { ideal: 1920 },  
-                height: { ideal: 1080 },
+                width: { ideal: 1280 },  
+                height: { ideal: 720 },
                 frameRate: { ideal: 30 }
             }, 
             audio: false 
@@ -765,6 +819,7 @@
 
             let personDetected = false; let boxSize = 0;
             
+            // OPTIMIZED DETECTION: Removed throttle, runs every frame for fluidity
             if (detector && video.readyState >= 2) { 
                 lastAIDetection = now;
                 try { 
@@ -951,13 +1006,14 @@
     function setupVuMeter(n,id){ if(!n) return; const a=mixerAudioCtx.createAnalyser();a.fftSize=256;n.connect(a);const d=new Uint8Array(256);const e=document.getElementById(id);function l(){if(!e)return;requestAnimationFrame(l);a.getByteTimeDomainData(d);let s=0;for(let x of d)s+=(x-128)/128*(x-128)/128;e.style.height=Math.min(100,Math.sqrt(s/256)*400)+"%";}l();}
     window.showMixerQR=()=>document.getElementById('mixer-qr-modal').style.display='flex';
 
-    function seedInitialLogs() { ["Kernel... OK", "Sensores... OK", "Neural... OK", "Sistema OBR v30.15 activo"].forEach(msg => updateLog(msg)); }
+    function seedInitialLogs() { ["Kernel... OK", "Sensores... OK", "Neural... OK", "Sistema OBR v30.16 activo"].forEach(msg => updateLog(msg)); }
     function startFakeLogs() {
         if(fakeLogInterval) return;
         const msgs = ["Escaneando espectro...", "Geometría: OK", "Red Peer: ESTABLE", "Buffer video: 100%", "Temp: NOMINAL", "Buscando E.V.P...", "Ciclo red: OK", "Fluctuación detectada", "IR: ACTIVO", "Analizando patrón...", "Ruido de fondo: -40dB", "Lectura magnética estable"];
         fakeLogInterval = setInterval(() => { if(Math.random() > 0.5) { const isCrit = Math.random() > 0.8; const cls = isCrit ? 'log-crit' : (Math.random()>0.6 ? 'log-warn' : 'log-normal'); updateLog(msgs[Math.floor(Math.random() * msgs.length)], cls); } }, 1500);
     }
 
+    // --- RE-INSERTED SETFILTER FUNCTION ---
     window.setFilter = function(f, b) {
         if(currentFilter === f) { f = 'normal'; b = null; }
         currentFilter = f; document.body.className = ''; 
@@ -1296,7 +1352,7 @@
         reader.readAsText(file);
     }
 
-    // MISSING FUNCTIONS FROM v30.14 ADDED HERE
+    // MISSING FUNCTIONS RESTORED
     function setupZones() {
         const zZoom = document.getElementById('zone-zoom');
         zZoom.addEventListener('pointerdown', (e) => { isTouching = true; const rect = video.getBoundingClientRect(); const x = e.clientX - rect.left; const y = e.clientY - rect.top; zoomLongPressTimer = setTimeout(() => { if(isTouching) executeZoomAt(x, y, rect.width, rect.height); }, 600); });
