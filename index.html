@@ -9,7 +9,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v30.8 (NATIVE)</title> 
+    <title>DETECTOR-OBR v30.9 (SMART ANCHOR)</title> 
     
     <!-- Iconos de App -->
     <link rel="apple-touch-icon" href="obr-logo.png">
@@ -99,9 +99,7 @@
         #zone-zoom { width: 75%; height: 100%; pointer-events: auto; }
         #zone-menu { width: 25%; height: 100%; pointer-events: auto; }
 
-        /* --- FILTROS ORIGINALES (RESTORED v29) --- */
-        
-        /* NOCTURNA: Grayscale + Sepia + Tint Green */
+        /* --- FILTROS --- */
         .filter-night-vision #video-feed { 
             filter: grayscale(100%) sepia(100%) hue-rotate(70deg) brightness(1.1) contrast(1.4) saturate(300%); 
         }
@@ -111,20 +109,12 @@
             background-image: radial-gradient(circle, rgba(0, 255, 0, 0.05) 40%, rgba(0,0,0,0.9) 100%), repeating-linear-gradient(0deg, rgba(0,255,0,0.05), rgba(0,255,0,0.05) 1px, transparent 1px, transparent 3px);
             z-index: 5; mix-blend-mode: hard-light;
         }
-
-        /* TERMICO (Invertido/Negativo) */
-        .filter-negative #video-feed { 
-            filter: invert(1) hue-rotate(180deg) contrast(1.5); 
-        }
-
-        /* BOKEH */
+        .filter-negative #video-feed { filter: invert(1) hue-rotate(180deg) contrast(1.5); }
         .filter-bokeh #main-view-area::after {
             content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 5;
             backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
             mask-image: radial-gradient(circle at center, transparent 30%, black 90%); -webkit-mask-image: radial-gradient(circle at center, transparent 30%, black 90%);
         }
-        
-        /* PAREIDOLIA */
         .filter-pareidolia #main-view-area { border: 2px solid var(--hud-red); }
 
         .btn-hud {
@@ -154,7 +144,6 @@
         .logo-center { width: 50px; height: 50px; object-fit: contain; filter: drop-shadow(0 0 10px var(--hud-cyan)); }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* BOTÓN DE CONFIGURACIÓN - ARRIBA A LA DERECHA */
         #btn-settings-gear {
             position: absolute; top: 10px; right: 10px;
             font-size: 1.8rem; color: #555; cursor: pointer; z-index: 5000;
@@ -182,7 +171,6 @@
         .menu-btn-round:hover { transform: scale(1.1); box-shadow: 0 0 20px var(--hud-cyan); background: var(--hud-cyan); color: #000; }
         .menu-btn-round.active { background: var(--hud-red); border-color: var(--hud-red); color: white; animation: pulseRed 2s infinite; }
         
-        /* OCULTAR PAREIDOLIA SI NO HAY API KEY */
         #btn-pareidolia.disabled-btn { display: none !important; }
 
         #stats-display {
@@ -253,7 +241,6 @@
             to { transform: scaleX(1.8); box-shadow: 3px 0 10px var(--hud-orange), -3px 0 10px var(--hud-orange); }
         }
 
-        /* MEMORY PIP ALERT */
         #anomaly-pip {
             position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
             background: rgba(255, 0, 0, 0.2); border: 1px solid red; color: red;
@@ -261,7 +248,6 @@
             display: none; animation: pulseRed 0.5s infinite; z-index: 60;
         }
 
-        /* LOGO MOVIDO PARA DAR ESPACIO AL ENGRANAJE */
         #top-right-logo { position: absolute; top: 15px; right: 70px; z-index: 40; width: 50px; opacity: 0.8; transition: 0.3s; }
         .pop-out { transform: scale(0) !important; opacity: 0 !important; pointer-events: none; }
         .pop-in { transform: scale(1) !important; opacity: 1 !important; pointer-events: auto; }
@@ -289,7 +275,6 @@
         #mixer-qrcode img { border: 5px solid white; border-radius: 4px; }
         #remote-audios-hidden { display: none; }
 
-        /* SETTINGS OVERLAY */
         #settings-modal {
             position: fixed; inset: 0; z-index: 4000; background: rgba(0,0,0,0.95);
             display: none; flex-direction: column; align-items: center; justify-content: center;
@@ -328,7 +313,6 @@
         .memory-item:hover { background: #222; }
         .memory-item span:first-child:hover { color: var(--hud-green); }
 
-        /* CALIBRATION MINI STUDIO */
         #calibration-preview-container {
             width: 100%; height: 200px; background: #000; border: 1px solid #333;
             position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;
@@ -390,7 +374,6 @@
                 <input type="password" id="api-key-internal" class="settings-input" placeholder="PEGAR KEY AQUI">
                 <button class="btn-action" id="btn-save-key" onclick="validateAndSaveKey()">VALIDAR Y GUARDAR</button>
                 <div id="api-msg" class="text-xs text-center mt-2 font-bold"></div>
-                <!-- ADDED LINK HERE -->
                 <div class="text-[9px] text-gray-500 text-center mt-2">
                     <a href="https://aistudio.google.com/api-keys" target="_blank" class="text-cyan-400 hover:text-white underline">CREAR NUEVA API KEY</a>
                 </div>
@@ -620,29 +603,24 @@
     let currentMemoryBuffer = [];
     let currentGhostFrame = 0;
     let activeGhostMemory = null; 
+    let activeGhostOffsets = {x: 0, y: 0};
     let recordingFrameCount = 0;
-    let lastGhostEndTime = 0; // Cooldown timer
+    let lastGhostEndTime = 0; 
     
-    // SLS PERSISTENCE (ANTI-FLICKER)
+    // SLS PERSISTENCE
     let lastKnownPoses = [];
     let persistenceCounter = 0;
-    const MAX_PERSISTENCE_FRAMES = 15; // Tuned for fluid mode
+    const MAX_PERSISTENCE_FRAMES = 15;
 
     // STUDIO VARS
     let studioVideo, studioCanvas, studioCtx;
     let studioLoopId;
 
-    // 1. LÓGICA DE PRE-CARGA REAL
     window.onload = async () => {
-        // Cargar API Key guardada
         const savedKey = localStorage.getItem("obr_gemini_key");
-        if(savedKey) {
-            GEMINI_API_KEY = savedKey;
-        } 
+        if(savedKey) GEMINI_API_KEY = savedKey;
         
-        // CHECK PAREIDOLIA BTN
         checkApiKeyAndTogglePareidolia();
-
         loadMemoriesFromStorage();
 
         try { await tf.ready(); detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING }); } catch(e){}
@@ -661,12 +639,10 @@
     }
 
     async function startExperience() {
-        // REQUEST FULLSCREEN - FORCE
         const docEl = document.documentElement;
         if(docEl.requestFullscreen) { docEl.requestFullscreen().catch(e=>{}); }
-        else if(docEl.webkitRequestFullscreen) { docEl.webkitRequestFullscreen(); } // iOS Safari legacy
+        else if(docEl.webkitRequestFullscreen) { docEl.webkitRequestFullscreen(); }
         
-        // PREPARE SENSORS IF NOT READY
         try {
             if (!isSystemInitialized) {
                 await initAudioEngine();
@@ -674,7 +650,6 @@
                 await initSensors();
                 isSystemInitialized = true;
                 
-                // Monitor visibilidad para reactivar camara si se minimiza
                 document.addEventListener("visibilitychange", () => {
                     if (document.visibilityState === "visible") {
                         if(video && video.paused) video.play().catch(e=>console.log("Resume cam fail"));
@@ -683,26 +658,19 @@
                 });
             }
             
-            // RESET UI
             document.getElementById('loading-screen').style.opacity = '0';
             document.getElementById('loading-screen').style.pointerEvents = 'none';
             
-            // RE-INIT LOGS/TIMERS
             seedInitialLogs();
             if(!timerInterval) startTimer();
             if(!fakeLogInterval) startFakeLogs();
             
             setTimeout(() => {
                 document.getElementById('loading-screen').style.display = 'none';
-                
-                // ENSURE LOOP IS RUNNING
                 if (!window.isLoopRunning) startLoop();
-                
                 setupZones(); 
                 runFollowSequence(); 
                 fetchRealTemperature();
-                
-                // BANNER LOGIC SETUP
                 const banVid = document.getElementById('banner-vid');
                 banVid.onended = () => toggleBanner();
                 banVid.onerror = () => toggleBanner();
@@ -722,7 +690,6 @@
         }
     }
 
-    // --- SETTINGS & MEMORIES LOGIC ---
     function openSettings() {
         document.getElementById('settings-modal').style.display = 'flex';
         document.getElementById('settings-gate').style.display = 'block';
@@ -732,7 +699,7 @@
     function closeSettings() { 
         document.getElementById('settings-modal').style.display = 'none';
         stopStudioMode();
-        checkApiKeyAndTogglePareidolia(); // Re-check in case key was saved
+        checkApiKeyAndTogglePareidolia();
     }
     
     function checkAdminPass() {
@@ -793,21 +760,15 @@
     }
 
     function exitToMain() {
-        // CLOSE MODAL
         closeSettings();
-        
-        // PAUSE LOOP
         window.isLoopRunning = false;
         
-        // SHOW LOADING SCREEN
         const ls = document.getElementById('loading-screen');
         ls.style.display = 'flex';
-        // force redraw
         void ls.offsetWidth; 
         ls.style.opacity = '1';
         ls.style.pointerEvents = 'auto';
         
-        // RESET BUTTON
         const btn = document.getElementById('btn-enter-system');
         btn.disabled = false;
         btn.innerText = "INGRESAR AL SISTEMA";
@@ -815,7 +776,6 @@
         btn.style.cursor = "pointer";
     }
 
-    // --- STUDIO MODE (ADMIN RECORDING) ---
     async function initStudioMode() {
         studioVideo = document.getElementById('calibration-video');
         studioCanvas = document.getElementById('calibration-canvas');
@@ -825,7 +785,6 @@
         studioVideo.style.display = 'block';
         studioCanvas.style.display = 'block';
 
-        // REUSE MAIN STREAM IF ACTIVE TO PREVENT BLACKOUT
         if(video.srcObject) {
             studioVideo.srcObject = video.srcObject;
         } else {
@@ -841,8 +800,6 @@
 
     function stopStudioMode() {
         cancelAnimationFrame(studioLoopId);
-        // DO NOT stop stream here, or main view dies
-        // Just clear ref
         studioVideo = null; 
     }
 
@@ -909,7 +866,16 @@
                     if(poses.length > 0) {
                         drawSkeleton(poses, studioCtx);
                         if(isRecordingMemoryMode) {
-                            currentMemoryBuffer.push(poses);
+                            // NORMALIZE BEFORE SAVE
+                            const normalizedPoses = poses.map(p => ({
+                                ...p,
+                                keypoints: p.keypoints.map(kp => ({
+                                    ...kp,
+                                    x: kp.x / studioVideo.videoWidth,
+                                    y: kp.y / studioVideo.videoHeight
+                                }))
+                            }));
+                            currentMemoryBuffer.push(normalizedPoses);
                             recordingFrameCount++;
                             document.getElementById('calib-frames').innerText = recordingFrameCount;
                         }
@@ -927,7 +893,6 @@
         isPlayingMemoryMode = true;
     }
 
-    // MEMORIES SYSTEM STORAGE
     function loadMemoriesFromStorage() {
         const data = localStorage.getItem("obr_sls_memories");
         if(data) {
@@ -1099,7 +1064,7 @@
         }
     }
 
-    function seedInitialLogs() { ["Kernel... OK", "Sensores... OK", "Neural... OK", "Sistema OBR v30.8 activo"].forEach(msg => updateLog(msg)); }
+    function seedInitialLogs() { ["Kernel... OK", "Sensores... OK", "Neural... OK", "Sistema OBR v30.9 activo"].forEach(msg => updateLog(msg)); }
     function startFakeLogs() {
         if(fakeLogInterval) return;
         const msgs = ["Escaneando espectro...", "Geometría: OK", "Red Peer: ESTABLE", "Buffer video: 100%", "Temp: NOMINAL", "Buscando E.V.P...", "Ciclo red: OK", "Fluctuación detectada", "IR: ACTIVO", "Analizando patrón...", "Ruido de fondo: -40dB", "Lectura magnética estable"];
@@ -1156,17 +1121,15 @@
             mixerMasterOut.gain.value = 0; 
         }
         
-        // --- SAFE PLAY LOGIC ---
         const playPromise = v.play();
         
         if (playPromise !== undefined) {
             playPromise.catch(error => {
                 console.log("Auto-play prevented or failed:", error);
-                closeIntro(); // Fail-safe: Close if blocked
+                closeIntro(); // Fail-safe
             });
         }
         
-        // Timeout Safety: if not playing after 2.5s, close
         setTimeout(() => {
             if(v.paused || v.currentTime < 0.1) {
                 console.log("Intro timeout");
@@ -1209,7 +1172,6 @@
 
             let personDetected = false; let boxSize = 0;
             
-            // OPTIMIZED DETECTION: Removed throttle, runs every frame for fluidity
             if (detector && video.readyState >= 2) { 
                 lastAIDetection = now;
                 try { 
@@ -1217,21 +1179,19 @@
                     
                     if (p.length > 0) {
                         personDetected = true; 
-                        lastKnownPoses = p; // Update valid data
-                        persistenceCounter = MAX_PERSISTENCE_FRAMES; // Reset counter
+                        lastKnownPoses = p; 
+                        persistenceCounter = MAX_PERSISTENCE_FRAMES; 
                         
                         const k = p[0].keypoints; const xs = k.map(v => v.x); const ys = k.map(v => v.y);
                         boxSize = ((Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys))) / (slsCanvas.width * slsCanvas.height);
                         window.lastPersonDetected = true; window.lastBoxSize = boxSize;
                     } else { 
-                        // No detection this frame
                         if(persistenceCounter > 0) {
-                            // FAKE POSITIVE: Use retained data
                             personDetected = true; 
                             persistenceCounter--;
                         } else {
                             window.lastPersonDetected = false; 
-                            lastKnownPoses = []; // Clear old data
+                            lastKnownPoses = []; 
                         }
                     }
                 } catch (e) {} 
@@ -1240,31 +1200,54 @@
             // DRAW LIVE SKELETON
             if(currentFilter === 'sls') {
                 if(personDetected && lastKnownPoses.length > 0) {
-                    // Draw Real/Persisted Skeleton
+                    // Draw Real/Persisted Skeleton (Pixel Coords)
                     drawSkeleton(lastKnownPoses, ctxSLS);
                     activeGhostMemory = null;
                     document.getElementById('anomaly-pip').style.display = 'none';
                 } 
                 else if (!personDetected && slsMemories.length > 0) {
-                    // RANDOM GHOST INJECTION LOGIC WITH COOLDOWN
+                    // GHOST INJECTION
                     if(!activeGhostMemory && (Date.now() - lastGhostEndTime > 10000)) {
-                        // Increase probability for activity
                         if(Math.random() > 0.992) { 
+                            // START NEW GHOST
                             activeGhostMemory = slsMemories[Math.floor(Math.random() * slsMemories.length)];
                             currentGhostFrame = 0;
+                            
+                            // CALCULATE ANCHORING OFFSET
+                            let maxFootY = 0;
+                            let minX = 1;
+                            let maxX = 0;
+                            // Find bounds of first frame to anchor
+                            if(activeGhostMemory.length > 0) {
+                                activeGhostMemory[0].forEach(p => {
+                                    p.keypoints.forEach(kp => {
+                                        if(kp.y > maxFootY) maxFootY = kp.y;
+                                        if(kp.x < minX) minX = kp.x;
+                                        if(kp.x > maxX) maxX = kp.x;
+                                    });
+                                });
+                            }
+                            
+                            // Target: Center of screen (0.5), Floor (0.95)
+                            // Offset = Target - Current
+                            let currentCenterX = (minX + maxX) / 2;
+                            activeGhostOffsets = {
+                                x: 0.5 - currentCenterX,
+                                y: 0.95 - maxFootY
+                            };
                         }
                     }
 
                     if(activeGhostMemory) {
-                        // PIP Alert
                         document.getElementById('anomaly-pip').style.display = 'block';
                         
                         if(currentGhostFrame < activeGhostMemory.length) {
-                             drawSkeleton(activeGhostMemory[currentGhostFrame], ctxSLS);
+                             // Draw with offsets
+                             drawSkeleton(activeGhostMemory[currentGhostFrame], ctxSLS, activeGhostOffsets);
                              currentGhostFrame++;
                         } else {
                             activeGhostMemory = null;
-                            lastGhostEndTime = Date.now(); // SET COOLDOWN
+                            lastGhostEndTime = Date.now(); 
                             document.getElementById('anomaly-pip').style.display = 'none';
                         }
                     }
@@ -1275,7 +1258,6 @@
                 document.getElementById('anomaly-pip').style.display = 'none';
             }
             
-            // Pareidolia Visuals
             if (isPareidoliaActive && Math.random() > 0.95) {
                 const x = Math.random() * slsCanvas.width; const y = Math.random() * slsCanvas.height; const s = 50 + Math.random() * 100;
                 ctxSLS.strokeStyle = 'rgba(255, 0, 0, 0.8)'; ctxSLS.lineWidth = 4; ctxSLS.shadowBlur = 10; ctxSLS.shadowColor = 'red';
@@ -1293,19 +1275,53 @@
         } render();
     }
     
-    // UPDATED SLS STYLE
+    // UPDATED SLS STYLE WITH SMART SCALING/ANCHORING
     const CONNECTIONS = [['left_shoulder','right_shoulder'],['left_shoulder','left_hip'],['right_shoulder','right_hip'],['left_hip','right_hip'],['left_shoulder','left_elbow'],['left_elbow','left_wrist'],['right_shoulder','right_elbow'],['right_elbow','right_wrist'],['left_hip','left_knee'],['left_knee','left_ankle'],['right_hip','right_knee'],['right_knee','right_ankle'],['nose','left_eye'],['nose','right_eye'],['left_eye','left_ear'],['right_eye','right_ear']];
-    function drawSkeleton(poses, ctx) { 
+    
+    function drawSkeleton(poses, ctx, offset = {x:0, y:0}) { 
         if(!ctx) return;
         if(!Array.isArray(poses)) poses = [poses];
+        
+        const w = ctx.canvas.width;
+        const h = ctx.canvas.height;
+
         ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = 6; ctx.strokeStyle = '#00ff41'; ctx.fillStyle = '#ff0055'; 
+        
         poses.forEach(pose => { 
             if(!pose.keypoints) return;
-            const kpMap = {}; pose.keypoints.forEach(kp => kpMap[kp.name] = kp); 
+            const kpMap = {}; 
+            
+            // MAP & TRANSFORM
+            pose.keypoints.forEach(kp => {
+                let x, y;
+                // Check if normalized (<= 1.0)
+                if(kp.x <= 1.0 && kp.y <= 1.0) {
+                    // Apply offset (0-1 space)
+                    x = (kp.x + offset.x) * w;
+                    y = (kp.y + offset.y) * h;
+                } else {
+                    // Raw pixels (Live) - No offset needed usually
+                    x = kp.x; 
+                    y = kp.y;
+                }
+                
+                kpMap[kp.name] = { x: x, y: y, score: kp.score };
+            }); 
+
             ctx.beginPath(); 
-            CONNECTIONS.forEach(([a, b]) => { const p1 = kpMap[a]; const p2 = kpMap[b]; if (p1 && p2 && p1.score > 0.3 && p2.score > 0.3) { ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); } }); 
+            CONNECTIONS.forEach(([a, b]) => { 
+                const p1 = kpMap[a]; const p2 = kpMap[b]; 
+                if (p1 && p2 && p1.score > 0.3 && p2.score > 0.3) { 
+                    ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); 
+                } 
+            }); 
             ctx.stroke(); 
-            pose.keypoints.forEach(kp => { if (kp.score > 0.3) { ctx.beginPath(); ctx.arc(kp.x, kp.y, 8, 0, 2 * Math.PI); ctx.fill(); } }); 
+            
+            Object.values(kpMap).forEach(kp => { 
+                if (kp.score > 0.3) { 
+                    ctx.beginPath(); ctx.arc(kp.x, kp.y, 8, 0, 2 * Math.PI); ctx.fill(); 
+                } 
+            }); 
         }); 
     }
 
