@@ -2,17 +2,24 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <!-- META TAG OPTIMIZADO PARA PWA Y NOTCH -->
+    <!-- VIEWPORT OPTIMIZADO PARA JUEGOS (NO ZOOM, NO SCROLL) -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#000000">
     
-    <!-- MODO PWA IOS/ANDROID -->
+    <!-- IOS WEB APP CONFIG -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Detector OBR">
+    
+    <!-- ANDROID CHROME CONFIG -->
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    
+    <!-- MANIFIESTO VIRTUAL PARA INSTALACION COMO APP NATIVA -->
+    <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiREVURUNUT1IgT0JSIiwic2hvcnRfbmFtZSI6Ik9CUiIs" />
     
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v30.24 (NATIVE FS)</title> 
+    <title>DETECTOR-OBR v30.26 (GAME MODE)</title> 
     
     <!-- Iconos de App -->
     <link rel="apple-touch-icon" href="obr-logo.png">
@@ -41,26 +48,25 @@
             --left-panel-w: 240px; --bottom-panel-h: 110px;
         }
 
-        /* BLOQUEO DE INTERACCIÓN NATIVA */
+        /* BLOQUEO TOTAL DE INTERACCIÓN NATIVA DEL NAVEGADOR */
         *, *::before, *::after {
             -webkit-user-select: none; -moz-user-select: none; user-select: none;
             -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
         }
 
-        body {
-            font-family: 'Share Tech Mono', monospace;
+        html, body {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
             background-color: #000; color: var(--hud-cyan);
+            font-family: 'Share Tech Mono', monospace;
             
-            /* AJUSTES PARA PANTALLA COMPLETA NATIVA */
+            /* FIX CRITICO PARA IOS/ANDROID FULLSCREEN */
+            position: fixed; 
             overflow: hidden; 
-            width: 100vw; 
-            height: 100dvh; /* Dynamic Viewport Height */
-            margin: 0;
-            padding: 0;
+            overscroll-behavior: none;
             touch-action: none;
-            overscroll-behavior: none; /* Evita rebote elástico en iOS */
-            position: fixed; /* Fija el body para evitar scroll del navegador */
-            top: 0; left: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
         }
 
         /* Layout Principal */
@@ -73,31 +79,38 @@
             position: relative; z-index: 10;
         }
 
-        /* --- LÓGICA DE FORZADO HORIZONTAL (CSS FORCE v30.17) --- */
+        /* --- LÓGICA DE FORZADO HORIZONTAL (FORCE LANDSCAPE) --- */
         @media screen and (orientation: portrait) {
             #app-ui {
+                /* Truco para rotar toda la app 90 grados si el cel está vertical */
                 position: fixed;
-                top: 50%;
-                left: 50%;
-                width: 100vh;  /* Intercambiamos ancho por alto */
-                height: 100vw; /* Intercambiamos alto por ancho */
+                top: 50%; left: 50%;
+                width: 100vh; height: 100vw; 
                 transform: translate(-50%, -50%) rotate(90deg); 
+                
+                /* Re-configuramos el grid para que se vea bien rotado */
                 grid-template-columns: var(--left-panel-w) 1fr; 
                 grid-template-rows: 1fr var(--bottom-panel-h);
                 grid-template-areas: "left cam" "left bottom";
             }
+            /* Forzamos mostrar el panel izquierdo incluso si el CSS responsivo lo ocultaría */
             #left-panel { display: flex !important; } 
+            /* Ocultamos controles móviles porque en rotación forzada usamos layout desktop */
+            .mobile-controls { display: none !important; }
+            .desktop-only { display: block !important; }
         }
 
-        /* Modos Fullscreen */
+        /* Modos Fullscreen dentro de la app (ocultar UI) */
         #app-ui.full-mode { grid-template-columns: 0px 1fr; grid-template-rows: 1fr 0px; }
         #app-ui.full-mode #left-panel { transform: translateX(-100%); opacity: 0; }
         #app-ui.full-mode #bottom-panel { transform: translateY(100%); opacity: 0; }
 
+        /* Responsivo Normal (Solo si está en landscape real en dispositivos pequeños) */
         @media (max-width: 768px) {
             #app-ui:not([style*="rotate"]) { 
                  grid-template-columns: 0px 1fr; grid-template-rows: 1fr 140px; grid-template-areas: "left cam" "bottom bottom"; 
             }
+            /* Si no está rotado (landscape nativo pequeño), ocultamos panel izq */
             .desktop-only { display: none; } .mobile-controls { display: flex; }
         }
 
@@ -124,9 +137,18 @@
             width: 100%; height: 100%; transform-origin: center center;
             transition: transform 1s cubic-bezier(0.25, 0.46, 0.45, 0.94); will-change: transform;
         }
-        #video-feed { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: fill; }
-        #sls-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        #touch-layer { position: absolute; inset: 0; z-index: 45; display: flex; pointer-events: none; }
+        
+        /* VIDEO CUBRIENDO TODA LA PANTALLA */
+        #video-feed { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            object-fit: cover; object-position: center;
+        }
+        #sls-canvas { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            pointer-events: none; object-fit: cover; z-index: 50;
+        }
+        
+        #touch-layer { position: absolute; inset: 0; z-index: 60; display: flex; pointer-events: none; }
         #zone-zoom { width: 75%; height: 100%; pointer-events: auto; }
         #zone-menu { width: 25%; height: 100%; pointer-events: auto; }
 
@@ -175,7 +197,6 @@
         .logo-center { width: 50px; height: 50px; object-fit: contain; filter: drop-shadow(0 0 10px var(--hud-cyan)); }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* BOTÓN DE CONFIGURACIÓN - INICIALMENTE OCULTO */
         #btn-settings-gear {
             position: absolute; top: 10px; right: 10px;
             font-size: 1.8rem; color: #555; cursor: pointer; z-index: 5000;
