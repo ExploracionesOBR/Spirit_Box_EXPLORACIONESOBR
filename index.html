@@ -9,7 +9,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v30.17 (FORCE LANDSCAPE)</title> 
+    <title>DETECTOR-OBR v30.13 (FULL RESTORE)</title> 
     
     <!-- Iconos de App -->
     <link rel="apple-touch-icon" href="obr-logo.png">
@@ -17,14 +17,14 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- TensorFlow JS - CARGA DIFERIDA -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection" defer></script>
+    <!-- TensorFlow JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
     
-    <!-- PeerJS & QR -->
-    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js" defer></script> 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+    <!-- PeerJS (v1.5.4) & QR -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script> 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&family=Creepster&family=VT323&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -51,7 +51,7 @@
             touch-action: none;
         }
 
-        /* Layout Principal */
+        /* Layout */
         #app-ui { 
             width: 100%; height: 100%; display: grid;
             grid-template-columns: var(--left-panel-w) 1fr; 
@@ -60,55 +60,14 @@
             transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative; z-index: 10;
         }
-
-        /* --- LÓGICA DE FORZADO HORIZONTAL (CSS FORCE) --- */
-        @media screen and (orientation: portrait) {
-            #app-ui {
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                width: 100vh;  /* Intercambiamos ancho por alto de ventana */
-                height: 100vw; /* Intercambiamos alto por ancho de ventana */
-                transform: translate(-50%, -50%) rotate(90deg); /* Rotamos 90 grados desde el centro */
-                /* Ajuste de Grid para modo vertical forzado */
-                grid-template-columns: var(--left-panel-w) 1fr; 
-                grid-template-rows: 1fr var(--bottom-panel-h);
-                grid-template-areas: "left cam" "left bottom";
-            }
-            
-            /* Ajustes específicos para que los controles móviles no se rompan al rotar */
-            .mobile-controls { 
-                /* En portrait forzado, el panel izquierdo se oculta por la media query original, 
-                   necesitamos asegurarnos de que el layout sea usable o forzar el panel izquierdo si es tablet */
-            }
-
-            /* En celulares pequeños, al rotar, el panel izquierdo puede ocupar mucho espacio. 
-               Aseguramos que en 'falso landscape' se vea bien */
-        }
-
-        /* Modos Fullscreen */
         #app-ui.full-mode { grid-template-columns: 0px 1fr; grid-template-rows: 1fr 0px; }
         #app-ui.full-mode #left-panel { transform: translateX(-100%); opacity: 0; }
         #app-ui.full-mode #bottom-panel { transform: translateY(100%); opacity: 0; }
 
         @media (max-width: 768px) {
-            /* Estilo normal responsivo (cuando NO estamos forzando la rotación o pantalla pequeña landscape nativa) */
             #app-ui { grid-template-columns: 0px 1fr; grid-template-rows: 1fr 140px; grid-template-areas: "left cam" "bottom bottom"; }
             #left-panel { display: none !important; } 
             .desktop-only { display: none; } .mobile-controls { display: flex; }
-        }
-        
-        /* SOBREESCRIBIMOS LA MEDIA QUERY ANTERIOR SI ESTAMOS EN PORTRAIT ROTADO */
-        @media screen and (orientation: portrait) {
-             /* Al forzar rotación, el ancho efectivo pasa a ser el alto del dispositivo (> 768px usualmente).
-                Reactivamos el panel izquierdo si cabe */
-             #app-ui {
-                 /* Si el alto del cel (ahora ancho) es suficiente, mostramos panel izquierdo */
-                 grid-template-columns: var(--left-panel-w) 1fr; 
-                 grid-template-rows: 1fr var(--bottom-panel-h);
-                 grid-template-areas: "left cam" "left bottom";
-             }
-             #left-panel { display: flex !important; } 
         }
 
         /* Paneles */
@@ -664,15 +623,10 @@
         checkApiKeyAndTogglePareidolia();
         loadMemoriesFromStorage();
 
-        // Lazy load TF/Detector in background
-        // Don't block UI
-        setTimeout(initMoveNet, 100);
+        try { await tf.ready(); detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING }); } catch(e){}
 
         const btn = document.getElementById('btn-enter-system');
-        btn.disabled = false; 
-        btn.innerText = "INGRESAR AL SISTEMA";
-        btn.style.opacity = "1"; 
-        btn.style.cursor = "pointer";
+        btn.disabled = false; btn.innerText = "INGRESAR AL SISTEMA"; btn.style.opacity = "1"; btn.style.cursor = "pointer";
     };
 
     function checkApiKeyAndTogglePareidolia() {
@@ -685,46 +639,20 @@
     }
 
     async function startExperience() {
-        const btn = document.getElementById('btn-enter-system');
-        btn.disabled = true;
-        btn.innerText = "CARGANDO MOTORES...";
-
         const docEl = document.documentElement;
         if(docEl.requestFullscreen) { docEl.requestFullscreen().catch(e=>{}); }
         else if(docEl.webkitRequestFullscreen) { docEl.webkitRequestFullscreen(); }
-        else if(screen.orientation && screen.orientation.lock) {
-            screen.orientation.lock('landscape').catch(e=>{});
-        }
         
         try {
-            // Ensure AI is ready before camera (better UX)
-            if(!detector) {
-                 await initMoveNet();
-            }
-
             if (!isSystemInitialized) {
-                // Audio
-                try { await initAudioEngine(); } catch(e) { console.log("Audio init warning", e); }
-                
-                // Camera - Mobile Optimized: Start with 720p
-                const camPromise = startCamera({ 
-                    width: { ideal: 1280 },  
-                    height: { ideal: 720 },
-                    frameRate: { ideal: 30 } 
+                await initAudioEngine();
+                // MAX PERFORMANCE
+                await startCamera({ 
+                    width: { ideal: 3840 }, 
+                    height: { ideal: 2160 },
+                    frameRate: { ideal: 60 } 
                 });
-                
-                // Race against a 20s timeout
-                const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout Cámara")), 20000));
-                
-                try {
-                    await Promise.race([camPromise, timeoutPromise]);
-                } catch(e) {
-                    console.log("Camera init failed or timed out:", e);
-                    updateLog("CAMARA NO DISPONIBLE", "log-crit");
-                }
-
-                // Sensors
-                await initSensors(); 
+                await initSensors();
                 isSystemInitialized = true;
                 
                 document.addEventListener("visibilitychange", () => {
@@ -735,7 +663,6 @@
                 });
             }
             
-            // UNBLOCK UI REGARDLESS OF ERRORS
             document.getElementById('loading-screen').style.opacity = '0';
             document.getElementById('loading-screen').style.pointerEvents = 'none';
             
@@ -753,13 +680,7 @@
                 banVid.onended = () => toggleBanner();
                 banVid.onerror = () => toggleBanner();
             }, 500);
-
-        } catch (e) { 
-            // EMERGENCY UNBLOCK
-            alert("Error de sistema (Modo Seguro): " + e.message);
-            btn.disabled = false;
-            btn.innerText = "REINTENTAR (MODO SEGURO)";
-        }
+        } catch (e) { document.getElementById('loading-screen').style.opacity = '1'; alert("Error de sistema: " + e.message); }
     }
 
     async function initAudioEngine() {
@@ -776,13 +697,13 @@
 
     // UPDATED CAMERA INIT WITH FALLBACK
     async function startCamera(constraints) { 
-        // Safe defaults for Mobile
+        // Default to Max Capabilities
         const defaults = { 
             video: { 
                 facingMode: 'environment', 
-                width: { ideal: 1280 },  
-                height: { ideal: 720 },
-                frameRate: { ideal: 30 }
+                width: { ideal: 3840 }, // 4K 
+                height: { ideal: 2160 },
+                frameRate: { ideal: 60, min: 30 } // Force high FPS
             }, 
             audio: false 
         };
@@ -792,10 +713,16 @@
         try {
             const s = await navigator.mediaDevices.getUserMedia(defaults); 
             video.srcObject = s; 
+            
+            // Debug info
+            const t = s.getVideoTracks()[0].getSettings();
+            console.log(`CAM: ${t.width}x${t.height} @ ${t.frameRate}FPS`);
+
             return new Promise(r => video.onloadedmetadata = () => { video.play(); resizeCanvas(); r(); }); 
         } catch(e) {
-            console.warn("HD failed, rolling back to SD");
-            const fallback = { video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false };
+            console.warn("Max res failed, rolling back to HD");
+            // Fallback
+            const fallback = { video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false };
             const s = await navigator.mediaDevices.getUserMedia(fallback); 
             video.srcObject = s;
             return new Promise(r => video.onloadedmetadata = () => { video.play(); resizeCanvas(); r(); }); 
@@ -810,7 +737,7 @@
     async function startLoop() {
         window.isLoopRunning = true;
         async function render(now) {
-            if(!window.isLoopRunning) return; 
+            if(!window.isLoopRunning) return; // Exit loop if stopped
 
             const delta = now - lastFrameTime; lastFrameTime = now;
             if (now % 20 < 1) document.getElementById('fps-val').innerText = Math.round(1000 / delta) || 0;
@@ -845,20 +772,27 @@
                 } catch (e) {} 
             }
 
+            // DRAW LIVE SKELETON
             if(currentFilter === 'sls') {
                 if(personDetected && lastKnownPoses.length > 0) {
+                    // Draw Real/Persisted Skeleton (Pixel Coords)
                     drawSkeleton(lastKnownPoses, ctxSLS);
                     activeGhostMemory = null;
                     document.getElementById('anomaly-pip').style.display = 'none';
                 } 
                 else if (!personDetected && slsMemories.length > 0) {
+                    // GHOST INJECTION
                     if(!activeGhostMemory && (Date.now() - lastGhostEndTime > 10000)) {
                         if(Math.random() > 0.992) { 
+                            // START NEW GHOST
                             activeGhostMemory = slsMemories[Math.floor(Math.random() * slsMemories.length)];
                             currentGhostFrame = 0;
+                            
+                            // CALCULATE ANCHORING OFFSET
                             let maxFootY = 0;
                             let minX = 1;
                             let maxX = 0;
+                            // Find bounds of first frame to anchor
                             if(activeGhostMemory.length > 0) {
                                 activeGhostMemory[0].forEach(p => {
                                     p.keypoints.forEach(kp => {
@@ -868,6 +802,9 @@
                                     });
                                 });
                             }
+                            
+                            // Target: Center of screen (0.5), Floor (0.95)
+                            // Offset = Target - Current
                             let currentCenterX = (minX + maxX) / 2;
                             activeGhostOffsets = {
                                 x: 0.5 - currentCenterX,
@@ -880,6 +817,7 @@
                         document.getElementById('anomaly-pip').style.display = 'block';
                         
                         if(currentGhostFrame < activeGhostMemory.length) {
+                             // Draw with offsets
                              drawSkeleton(activeGhostMemory[currentGhostFrame], ctxSLS, activeGhostOffsets);
                              currentGhostFrame++;
                         } else {
@@ -912,6 +850,7 @@
         } render();
     }
     
+    // UPDATED SLS STYLE WITH SMART SCALING/ANCHORING
     const CONNECTIONS = [['left_shoulder','right_shoulder'],['left_shoulder','left_hip'],['right_shoulder','right_hip'],['left_hip','right_hip'],['left_shoulder','left_elbow'],['left_elbow','left_wrist'],['right_shoulder','right_elbow'],['right_elbow','right_wrist'],['left_hip','left_knee'],['left_knee','left_ankle'],['right_hip','right_knee'],['right_knee','right_ankle'],['nose','left_eye'],['nose','right_eye'],['left_eye','left_ear'],['right_eye','right_ear']];
     
     function drawSkeleton(poses, ctx, offset = {x:0, y:0}) { 
@@ -926,15 +865,21 @@
         poses.forEach(pose => { 
             if(!pose.keypoints) return;
             const kpMap = {}; 
+            
+            // MAP & TRANSFORM
             pose.keypoints.forEach(kp => {
                 let x, y;
+                // Check if normalized (<= 1.0)
                 if(kp.x <= 1.0 && kp.y <= 1.0) {
+                    // Apply offset (0-1 space)
                     x = (kp.x + offset.x) * w;
                     y = (kp.y + offset.y) * h;
                 } else {
+                    // Raw pixels (Live) - No offset needed usually
                     x = kp.x; 
                     y = kp.y;
                 }
+                
                 kpMap[kp.name] = { x: x, y: y, score: kp.score };
             }); 
 
@@ -1006,7 +951,7 @@
     function setupVuMeter(n,id){ if(!n) return; const a=mixerAudioCtx.createAnalyser();a.fftSize=256;n.connect(a);const d=new Uint8Array(256);const e=document.getElementById(id);function l(){if(!e)return;requestAnimationFrame(l);a.getByteTimeDomainData(d);let s=0;for(let x of d)s+=(x-128)/128*(x-128)/128;e.style.height=Math.min(100,Math.sqrt(s/256)*400)+"%";}l();}
     window.showMixerQR=()=>document.getElementById('mixer-qr-modal').style.display='flex';
 
-    function seedInitialLogs() { ["Kernel... OK", "Sensores... OK", "Neural... OK", "Sistema OBR v30.16 activo"].forEach(msg => updateLog(msg)); }
+    function seedInitialLogs() { ["Kernel... OK", "Sensores... OK", "Neural... OK", "Sistema OBR v30.12 activo"].forEach(msg => updateLog(msg)); }
     function startFakeLogs() {
         if(fakeLogInterval) return;
         const msgs = ["Escaneando espectro...", "Geometría: OK", "Red Peer: ESTABLE", "Buffer video: 100%", "Temp: NOMINAL", "Buscando E.V.P...", "Ciclo red: OK", "Fluctuación detectada", "IR: ACTIVO", "Analizando patrón...", "Ruido de fondo: -40dB", "Lectura magnética estable"];
@@ -1091,6 +1036,7 @@
         if(mixerMasterOut) mixerMasterOut.gain.value = savedMasterVol; 
     }
     
+    // ... rest of the script (startCamera, resizeCanvas, etc. which were fine) ...
     // --- SETTINGS MODAL FUNCTIONS ---
     function openSettings() {
         document.getElementById('settings-modal').style.display = 'flex';
@@ -1350,106 +1296,6 @@
             } catch(e) { alert("Error en archivo"); }
         };
         reader.readAsText(file);
-    }
-
-    // MISSING FUNCTIONS RESTORED
-    function setupZones() {
-        const zZoom = document.getElementById('zone-zoom');
-        zZoom.addEventListener('pointerdown', (e) => { isTouching = true; const rect = video.getBoundingClientRect(); const x = e.clientX - rect.left; const y = e.clientY - rect.top; zoomLongPressTimer = setTimeout(() => { if(isTouching) executeZoomAt(x, y, rect.width, rect.height); }, 600); });
-        zZoom.addEventListener('pointerup', () => { isTouching = false; clearTimeout(zoomLongPressTimer); });
-        document.getElementById('zone-menu').addEventListener('click', showMenu);
-        hideMenu();
-    }
-
-    function showMenu() { document.getElementById('right-menu').classList.remove('hidden-menu'); setFloatingElementsVisibility(false); clearTimeout(menuHideTimeout); menuHideTimeout = setTimeout(hideMenu, 3000); }
-    function hideMenu() { document.getElementById('right-menu').classList.add('hidden-menu'); setFloatingElementsVisibility(true); }
-    function setFloatingElementsVisibility(visible) {
-        const logo = document.getElementById('top-right-logo'); const follow = document.getElementById('follow-sequence');
-        if (visible) { logo.classList.remove('hidden-element'); follow.style.opacity = '1'; } else { logo.classList.add('hidden-element'); follow.style.opacity = '0'; }
-    }
-
-    function executeZoomAt(x, y, w, h) {
-        const xPct = (x / w) * 100; const yPct = (y / h) * 100;
-        if(currentZoomLevel === 1) currentZoomLevel = 3; else if(currentZoomLevel === 3) currentZoomLevel = 5;
-        zoomContainer.style.transformOrigin = `${xPct}% ${yPct}%`; zoomContainer.style.transform = `scale(${currentZoomLevel})`;
-        const ind = document.getElementById('zoom-target-indicator'); ind.style.left = (video.offsetLeft + x) + 'px'; ind.style.top = (video.offsetTop + y) + 'px'; ind.style.opacity = 1; setTimeout(() => ind.style.opacity = 0, 500);
-        updateLog(`ZOOM DIGITAL x${currentZoomLevel}`);
-    }
-    function resetZoom() { currentZoomLevel = 1; zoomContainer.style.transform = `scale(1)`; setTimeout(() => zoomContainer.style.transformOrigin = 'center center', 1000); updateLog("ZOOM REESTABLECIDO"); }
-
-    function togglePareidolia() {
-        const btn = document.getElementById('btn-pareidolia'); isPareidoliaActive = !isPareidoliaActive;
-        const overlay = document.getElementById('ai-feedback-overlay');
-        const txt = document.getElementById('ai-feedback-text');
-        
-        if(isPareidoliaActive) { 
-            btn.classList.add('active'); document.body.classList.add('filter-pareidolia'); 
-            speakText("Visión activada"); 
-            txt.innerText = "ANALIZANDO...";
-            txt.style.color = "var(--hud-red)"; 
-            overlay.style.display = 'block';
-            analyzeFrameWithGemini(); 
-            pareidoliaInterval = setInterval(analyzeFrameWithGemini, 10000); 
-        }
-        else { 
-            btn.classList.remove('active'); document.body.classList.remove('filter-pareidolia'); 
-            speakText("Visión desactivada"); 
-            clearInterval(pareidoliaInterval); 
-            overlay.style.display = 'none'; 
-            document.getElementById('live-dot').classList.remove('warning');
-        }
-    }
-
-    async function analyzeFrameWithGemini() {
-        if(!video || video.paused || video.ended) return;
-        if(!GEMINI_API_KEY) {
-             updateLog("ERROR: API KEY FALTANTE", "log-crit");
-             return;
-        }
-        const liveDot = document.getElementById('live-dot');
-        const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 360; 
-        const ctx = canvas.getContext('2d'); ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const base64Data = canvas.toDataURL('image/jpeg', 0.6).split(',')[1]; 
-
-        try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`, {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    contents: [{ role: "user", parts: [{text: "Actúa como un médium digital. Describe en primera persona lo que ves. Usa frases como 'Veo...', 'Hay algo en...', 'Está...'. Busca caras en las sombras. Sé siniestro. Max 8 palabras."}, {inlineData: {mimeType: "image/jpeg", data: base64Data}}] }],
-                    safetySettings: [{ category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" }, { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" }, { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" }, { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }]
-                })
-            });
-            if (!response.ok) throw new Error("API Error: " + response.status);
-            const data = await response.json();
-            let text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-            
-            if(text) {
-                liveDot.classList.remove('warning');
-                updateLog("IA: " + text, 'log-crit');
-                speakText(text);
-                const overlay = document.getElementById('ai-feedback-overlay');
-                const txtEl = document.getElementById('ai-feedback-text');
-                txtEl.innerText = text.toUpperCase();
-                txtEl.style.color = "var(--hud-red)"; 
-                overlay.style.display = 'block'; 
-                setTimeout(() => overlay.style.display = 'none', 8000);
-            }
-        } catch(e) { 
-            console.error(e); 
-            liveDot.classList.add('warning'); 
-            updateLog("ERROR IA DEPURACION", "log-warn");
-        }
-    }
-
-    async function runFollowSequence() {
-        const txt = document.getElementById('seq-text'); const icons = document.getElementById('seq-icons'); const han = document.getElementById('seq-handle'); const container = document.getElementById('follow-sequence');
-        while(true) {
-            if(isBannerActive) { container.style.display = 'none'; await wait(5000); continue; } else container.style.display = 'flex';
-            txt.style.display = 'block'; await wait(2500); txt.style.display = 'none';
-            icons.style.display = 'block'; await wait(2500); icons.style.display = 'none';
-            han.style.display = 'block'; await wait(3500); han.style.display = 'none';
-            await wait(8000);
-        }
     }
 </script>
 </body>
