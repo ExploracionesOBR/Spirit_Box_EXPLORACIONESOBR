@@ -2,14 +2,17 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <!-- META TAG OPTIMIZADO PARA PWA Y NOTCH -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#000000">
+    
+    <!-- MODO PWA IOS/ANDROID -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
     
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>DETECTOR-OBR v30.13 (FULL RESTORE)</title> 
+    <title>DETECTOR-OBR v30.24 (NATIVE FS)</title> 
     
     <!-- Iconos de App -->
     <link rel="apple-touch-icon" href="obr-logo.png">
@@ -17,14 +20,14 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- TensorFlow JS -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+    <!-- TensorFlow JS - CARGA DIFERIDA -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection" defer></script>
     
-    <!-- PeerJS (v1.5.4) & QR -->
-    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script> 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- PeerJS & QR -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js" defer></script> 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&family=Creepster&family=VT323&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -47,11 +50,20 @@
         body {
             font-family: 'Share Tech Mono', monospace;
             background-color: #000; color: var(--hud-cyan);
-            overflow: hidden; width: 100vw; height: 100vh; margin: 0;
+            
+            /* AJUSTES PARA PANTALLA COMPLETA NATIVA */
+            overflow: hidden; 
+            width: 100vw; 
+            height: 100dvh; /* Dynamic Viewport Height */
+            margin: 0;
+            padding: 0;
             touch-action: none;
+            overscroll-behavior: none; /* Evita rebote elástico en iOS */
+            position: fixed; /* Fija el body para evitar scroll del navegador */
+            top: 0; left: 0;
         }
 
-        /* Layout */
+        /* Layout Principal */
         #app-ui { 
             width: 100%; height: 100%; display: grid;
             grid-template-columns: var(--left-panel-w) 1fr; 
@@ -60,13 +72,32 @@
             transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative; z-index: 10;
         }
+
+        /* --- LÓGICA DE FORZADO HORIZONTAL (CSS FORCE v30.17) --- */
+        @media screen and (orientation: portrait) {
+            #app-ui {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                width: 100vh;  /* Intercambiamos ancho por alto */
+                height: 100vw; /* Intercambiamos alto por ancho */
+                transform: translate(-50%, -50%) rotate(90deg); 
+                grid-template-columns: var(--left-panel-w) 1fr; 
+                grid-template-rows: 1fr var(--bottom-panel-h);
+                grid-template-areas: "left cam" "left bottom";
+            }
+            #left-panel { display: flex !important; } 
+        }
+
+        /* Modos Fullscreen */
         #app-ui.full-mode { grid-template-columns: 0px 1fr; grid-template-rows: 1fr 0px; }
         #app-ui.full-mode #left-panel { transform: translateX(-100%); opacity: 0; }
         #app-ui.full-mode #bottom-panel { transform: translateY(100%); opacity: 0; }
 
         @media (max-width: 768px) {
-            #app-ui { grid-template-columns: 0px 1fr; grid-template-rows: 1fr 140px; grid-template-areas: "left cam" "bottom bottom"; }
-            #left-panel { display: none !important; } 
+            #app-ui:not([style*="rotate"]) { 
+                 grid-template-columns: 0px 1fr; grid-template-rows: 1fr 140px; grid-template-areas: "left cam" "bottom bottom"; 
+            }
             .desktop-only { display: none; } .mobile-controls { display: flex; }
         }
 
@@ -144,10 +175,12 @@
         .logo-center { width: 50px; height: 50px; object-fit: contain; filter: drop-shadow(0 0 10px var(--hud-cyan)); }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
+        /* BOTÓN DE CONFIGURACIÓN - INICIALMENTE OCULTO */
         #btn-settings-gear {
             position: absolute; top: 10px; right: 10px;
             font-size: 1.8rem; color: #555; cursor: pointer; z-index: 5000;
             transition: color 0.3s, transform 0.3s;
+            display: none; /* Oculto hasta cargar sistema */
         }
         #btn-settings-gear:hover { color: var(--hud-cyan); transform: rotate(90deg); }
 
@@ -159,7 +192,9 @@
             opacity: 1; pointer-events: auto; 
         }
         #btn-enter-system:hover { background: var(--hud-cyan); color: #000; box-shadow: 0 0 40px var(--hud-cyan); }
-        #btn-enter-system:disabled { opacity: 0.5; cursor: wait; background: #333; border-color: #555; color: #888; }
+        #btn-enter-system:disabled { opacity: 0.7; cursor: wait; background: #111; border-color: #555; color: #aaa; box-shadow: none; }
+        /* Estilo para cuando ya está listo para entrar */
+        #btn-enter-system.ready { background: var(--hud-green); color: black; box-shadow: 0 0 30px var(--hud-green); border-color: white; }
 
         #right-menu { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 20px; z-index: 50; padding: 10px; transition: opacity 0.5s, transform 0.5s; opacity: 1; }
         #right-menu.hidden-menu { opacity: 0; transform: translateY(-50%) translateX(50px); pointer-events: none; }
@@ -246,6 +281,11 @@
             background: rgba(255, 0, 0, 0.2); border: 1px solid red; color: red;
             font-family: 'Orbitron'; font-size: 0.7rem; padding: 2px 8px;
             display: none; animation: pulseRed 0.5s infinite; z-index: 60;
+        }
+        #sls-status-pip {
+            position: absolute; top: 5px; left: 50px; 
+            font-family: 'Share Tech Mono'; font-size: 0.6rem; color: var(--hud-green);
+            z-index: 60; display: none;
         }
 
         #top-right-logo { position: absolute; top: 15px; right: 70px; z-index: 40; width: 50px; opacity: 0.8; transition: 0.3s; }
@@ -341,9 +381,10 @@
     <div id="loading-screen">
         <div class="loader-container"><div class="loader"></div><img src="obr-logo.png" class="logo-center" onerror="this.style.display='none'"></div>
         
-        <button id="btn-enter-system" onclick="startExperience()">INGRESAR AL SISTEMA</button>
+        <!-- LOGICA 2 PASOS -->
+        <button id="btn-enter-system" onclick="handleInitialLoad()">CARGAR SISTEMA</button>
 
-        <!-- GEAR ICON -->
+        <!-- GEAR ICON (Oculto inicialmente) -->
         <div id="btn-settings-gear" onclick="openSettings()"><i class="fas fa-cog"></i></div>
     </div>
 
@@ -477,6 +518,7 @@
 
             <div id="zoom-target-indicator"></div>
             <div id="anomaly-pip">⚠ ANOMALY: REPLAY</div>
+            <div id="sls-status-pip">🟢 SLS ACTIVO</div>
             <img id="top-right-logo" src="obr-logo.png" onerror="this.style.display='none'">
 
             <!-- LIVE Indicator & AI Text (NESTED) -->
@@ -586,7 +628,8 @@
     let lastAIDetection = 0;
     
     // SYSTEM FLAGS
-    let isSystemInitialized = false;
+    let isSystemLoaded = false; // For 2-step process
+    let isSystemInitialized = false; // For internal logic
     let timerInterval, fakeLogInterval;
 
     // MIXER VARS
@@ -616,6 +659,52 @@
     let studioVideo, studioCanvas, studioCtx;
     let studioLoopId;
 
+    // ERROR HANDLER FOR MOBILE DEBUGGING
+    window.onerror = function(msg, url, line, col, error) {
+        console.log("Global Error: " + msg);
+        return false; 
+    };
+    
+    // LIB DYNAMIC LOADER
+    const LIB_URLS = {
+        tf: "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs",
+        pose: "https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection",
+        peer: "https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js",
+        jsqr: "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js",
+        qrcode: "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+    };
+
+    async function loadScript(url) {
+        return new Promise((resolve, reject) => {
+            if(document.querySelector(`script[src="${url}"]`)) { resolve(); return; }
+            const script = document.createElement('script');
+            script.src = url;
+            script.onload = resolve;
+            script.onerror = reject;
+            document.body.appendChild(script);
+        });
+    }
+
+    async function loadCoreSystems() {
+        const btn = document.getElementById('btn-enter-system');
+        
+        // 1. TF
+        btn.innerText = "DESCARGANDO CEREBRO...";
+        await loadScript(LIB_URLS.tf);
+        
+        // 2. Pose
+        btn.innerText = "CARGANDO VISION...";
+        await loadScript(LIB_URLS.pose);
+        
+        // 3. Comms (Parallel)
+        btn.innerText = "CONECTANDO RED...";
+        await Promise.all([
+            loadScript(LIB_URLS.peer),
+            loadScript(LIB_URLS.jsqr),
+            loadScript(LIB_URLS.qrcode)
+        ]);
+    }
+
     window.onload = async () => {
         const savedKey = localStorage.getItem("obr_gemini_key");
         if(savedKey) GEMINI_API_KEY = savedKey;
@@ -623,10 +712,12 @@
         checkApiKeyAndTogglePareidolia();
         loadMemoriesFromStorage();
 
-        try { await tf.ready(); detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING }); } catch(e){}
-
+        // Clean start - No heavy loads
         const btn = document.getElementById('btn-enter-system');
-        btn.disabled = false; btn.innerText = "INGRESAR AL SISTEMA"; btn.style.opacity = "1"; btn.style.cursor = "pointer";
+        btn.disabled = false; 
+        btn.innerText = "CARGAR SISTEMA"; // Step 1
+        btn.style.opacity = "1"; 
+        btn.style.cursor = "pointer";
     };
 
     function checkApiKeyAndTogglePareidolia() {
@@ -638,49 +729,116 @@
         }
     }
 
-    async function startExperience() {
+    // --- NEW 2-STEP HANDLER ---
+    async function handleInitialLoad() {
+        const btn = document.getElementById('btn-enter-system');
+        
+        if (!isSystemLoaded) {
+            // STEP 1: LOAD RESOURCES
+            btn.disabled = true;
+            btn.innerText = "CARGANDO MOTORES...";
+            
+            try {
+                // 1. Load Libs
+                if(!window.tf) await loadCoreSystems();
+
+                // 2. Init AI
+                await initAI();
+                btn.innerText = "INICIANDO SENSORES...";
+                
+                // 3. Init Audio & Camera (Permissions)
+                await initAudioEngine();
+                await initCameraAndSensors();
+                
+                // 4. Success State
+                isSystemLoaded = true;
+                btn.disabled = false;
+                btn.innerText = "INGRESAR AL SISTEMA";
+                btn.classList.add('ready'); // Visual cue green
+                
+                // Enable Settings Button
+                document.getElementById('btn-settings-gear').style.display = 'block';
+                
+            } catch(e) {
+                console.error("Load Fail", e);
+                btn.disabled = false;
+                btn.innerText = "REINTENTAR CARGA";
+                alert("Error cargando recursos: " + e.message);
+            }
+        } else {
+            // STEP 2: ENTER SYSTEM
+            enterSystemView();
+        }
+    }
+
+    async function initAI() {
+        if(!detector) {
+            try {
+                await tf.setBackend('webgl');
+                await tf.ready();
+                detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING });
+            } catch(e) {
+                console.warn("AI Load Issue", e);
+                // Continue anyway, maybe non-AI features work
+            }
+        }
+    }
+
+    async function initCameraAndSensors() {
+        // Mobile Optimized Camera Config (720p start)
+        const camPromise = startCamera({ 
+            width: { ideal: 1280 },  
+            height: { ideal: 720 },
+            frameRate: { ideal: 30 } 
+        });
+        
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout Cámara")), 15000));
+        
+        try {
+            await Promise.race([camPromise, timeoutPromise]);
+        } catch(e) {
+            console.log("Camera init failed:", e);
+            updateLog("CAMARA NO DISPONIBLE", "log-crit");
+        }
+
+        await initSensors();
+    }
+
+    function enterSystemView() {
+        // Fullscreen request - Force Landscape
         const docEl = document.documentElement;
         if(docEl.requestFullscreen) { docEl.requestFullscreen().catch(e=>{}); }
         else if(docEl.webkitRequestFullscreen) { docEl.webkitRequestFullscreen(); }
         
-        try {
-            if (!isSystemInitialized) {
-                await initAudioEngine();
-                // MAX PERFORMANCE
-                await startCamera({ 
-                    width: { ideal: 3840 }, 
-                    height: { ideal: 2160 },
-                    frameRate: { ideal: 60 } 
-                });
-                await initSensors();
-                isSystemInitialized = true;
-                
-                document.addEventListener("visibilitychange", () => {
-                    if (document.visibilityState === "visible") {
-                        if(video && video.paused) video.play().catch(e=>console.log("Resume cam fail"));
-                        if(studioVideo && studioVideo.paused) studioVideo.play().catch(e=>console.log("Resume studio fail"));
-                    }
-                });
+        if(screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(e=>{});
+        }
+
+        // Transition UI
+        document.getElementById('loading-screen').style.opacity = '0';
+        document.getElementById('loading-screen').style.pointerEvents = 'none';
+        
+        // Start Loops
+        seedInitialLogs();
+        if(!timerInterval) startTimer();
+        if(!fakeLogInterval) startFakeLogs();
+        
+        document.getElementById('loading-screen').style.display = 'none';
+        if (!window.isLoopRunning) startLoop();
+        setupZones(); 
+        runFollowSequence(); 
+        fetchRealTemperature();
+        
+        const banVid = document.getElementById('banner-vid');
+        banVid.onended = () => toggleBanner();
+        banVid.onerror = () => toggleBanner();
+        
+        // Visibility handler for resume
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") {
+                if(video && video.paused) video.play().catch(e=>console.log("Resume cam fail"));
             }
-            
-            document.getElementById('loading-screen').style.opacity = '0';
-            document.getElementById('loading-screen').style.pointerEvents = 'none';
-            
-            seedInitialLogs();
-            if(!timerInterval) startTimer();
-            if(!fakeLogInterval) startFakeLogs();
-            
-            setTimeout(() => {
-                document.getElementById('loading-screen').style.display = 'none';
-                if (!window.isLoopRunning) startLoop();
-                setupZones(); 
-                runFollowSequence(); 
-                fetchRealTemperature();
-                const banVid = document.getElementById('banner-vid');
-                banVid.onended = () => toggleBanner();
-                banVid.onerror = () => toggleBanner();
-            }, 500);
-        } catch (e) { document.getElementById('loading-screen').style.opacity = '1'; alert("Error de sistema: " + e.message); }
+        });
     }
 
     async function initAudioEngine() {
@@ -697,13 +855,13 @@
 
     // UPDATED CAMERA INIT WITH FALLBACK
     async function startCamera(constraints) { 
-        // Default to Max Capabilities
+        // Safe defaults for Mobile
         const defaults = { 
             video: { 
                 facingMode: 'environment', 
-                width: { ideal: 3840 }, // 4K 
-                height: { ideal: 2160 },
-                frameRate: { ideal: 60, min: 30 } // Force high FPS
+                width: { ideal: 1280 },  
+                height: { ideal: 720 },
+                frameRate: { ideal: 30 }
             }, 
             audio: false 
         };
@@ -713,16 +871,10 @@
         try {
             const s = await navigator.mediaDevices.getUserMedia(defaults); 
             video.srcObject = s; 
-            
-            // Debug info
-            const t = s.getVideoTracks()[0].getSettings();
-            console.log(`CAM: ${t.width}x${t.height} @ ${t.frameRate}FPS`);
-
             return new Promise(r => video.onloadedmetadata = () => { video.play(); resizeCanvas(); r(); }); 
         } catch(e) {
-            console.warn("Max res failed, rolling back to HD");
-            // Fallback
-            const fallback = { video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false };
+            console.warn("HD failed, rolling back to SD");
+            const fallback = { video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false };
             const s = await navigator.mediaDevices.getUserMedia(fallback); 
             video.srcObject = s;
             return new Promise(r => video.onloadedmetadata = () => { video.play(); resizeCanvas(); r(); }); 
@@ -731,13 +883,12 @@
     
     function resizeCanvas() { slsCanvas.width = video.videoWidth; slsCanvas.height = video.videoHeight; document.getElementById('res-val').innerText = `${video.videoWidth}x${video.videoHeight}`; }
     window.addEventListener('resize', resizeCanvas);
-    async function initMoveNet() { if(!detector) { await tf.ready(); detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING }); } }
     
     window.isLoopRunning = false;
     async function startLoop() {
         window.isLoopRunning = true;
         async function render(now) {
-            if(!window.isLoopRunning) return; // Exit loop if stopped
+            if(!window.isLoopRunning) return; 
 
             const delta = now - lastFrameTime; lastFrameTime = now;
             if (now % 20 < 1) document.getElementById('fps-val').innerText = Math.round(1000 / delta) || 0;
@@ -772,27 +923,22 @@
                 } catch (e) {} 
             }
 
-            // DRAW LIVE SKELETON
             if(currentFilter === 'sls') {
                 if(personDetected && lastKnownPoses.length > 0) {
-                    // Draw Real/Persisted Skeleton (Pixel Coords)
                     drawSkeleton(lastKnownPoses, ctxSLS);
                     activeGhostMemory = null;
                     document.getElementById('anomaly-pip').style.display = 'none';
                 } 
-                else if (!personDetected && slsMemories.length > 0) {
-                    // GHOST INJECTION
-                    if(!activeGhostMemory && (Date.now() - lastGhostEndTime > 10000)) {
-                        if(Math.random() > 0.992) { 
-                            // START NEW GHOST
+                else {
+                    if(slsMemories.length === 0) createFakeNoiseMemory(); 
+
+                    if(!activeGhostMemory && (Date.now() - lastGhostEndTime > 3000)) {
+                        if(Math.random() > 0.98) { 
                             activeGhostMemory = slsMemories[Math.floor(Math.random() * slsMemories.length)];
                             currentGhostFrame = 0;
-                            
-                            // CALCULATE ANCHORING OFFSET
                             let maxFootY = 0;
                             let minX = 1;
                             let maxX = 0;
-                            // Find bounds of first frame to anchor
                             if(activeGhostMemory.length > 0) {
                                 activeGhostMemory[0].forEach(p => {
                                     p.keypoints.forEach(kp => {
@@ -802,9 +948,6 @@
                                     });
                                 });
                             }
-                            
-                            // Target: Center of screen (0.5), Floor (0.95)
-                            // Offset = Target - Current
                             let currentCenterX = (minX + maxX) / 2;
                             activeGhostOffsets = {
                                 x: 0.5 - currentCenterX,
@@ -817,7 +960,6 @@
                         document.getElementById('anomaly-pip').style.display = 'block';
                         
                         if(currentGhostFrame < activeGhostMemory.length) {
-                             // Draw with offsets
                              drawSkeleton(activeGhostMemory[currentGhostFrame], ctxSLS, activeGhostOffsets);
                              currentGhostFrame++;
                         } else {
@@ -826,8 +968,6 @@
                             document.getElementById('anomaly-pip').style.display = 'none';
                         }
                     }
-                } else {
-                    document.getElementById('anomaly-pip').style.display = 'none';
                 }
             } else {
                 document.getElementById('anomaly-pip').style.display = 'none';
@@ -850,54 +990,54 @@
         } render();
     }
     
-    // UPDATED SLS STYLE WITH SMART SCALING/ANCHORING
     const CONNECTIONS = [['left_shoulder','right_shoulder'],['left_shoulder','left_hip'],['right_shoulder','right_hip'],['left_hip','right_hip'],['left_shoulder','left_elbow'],['left_elbow','left_wrist'],['right_shoulder','right_elbow'],['right_elbow','right_wrist'],['left_hip','left_knee'],['left_knee','left_ankle'],['right_hip','right_knee'],['right_knee','right_ankle'],['nose','left_eye'],['nose','right_eye'],['left_eye','left_ear'],['right_eye','right_ear']];
     
     function drawSkeleton(poses, ctx, offset = {x:0, y:0}) { 
         if(!ctx) return;
-        if(!Array.isArray(poses)) poses = [poses];
         
-        const w = ctx.canvas.width;
-        const h = ctx.canvas.height;
-
-        ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = 6; ctx.strokeStyle = '#00ff41'; ctx.fillStyle = '#ff0055'; 
-        
-        poses.forEach(pose => { 
-            if(!pose.keypoints) return;
-            const kpMap = {}; 
+        try {
+            if(!Array.isArray(poses)) poses = [poses];
             
-            // MAP & TRANSFORM
-            pose.keypoints.forEach(kp => {
-                let x, y;
-                // Check if normalized (<= 1.0)
-                if(kp.x <= 1.0 && kp.y <= 1.0) {
-                    // Apply offset (0-1 space)
-                    x = (kp.x + offset.x) * w;
-                    y = (kp.y + offset.y) * h;
-                } else {
-                    // Raw pixels (Live) - No offset needed usually
-                    x = kp.x; 
-                    y = kp.y;
-                }
+            const w = ctx.canvas.width;
+            const h = ctx.canvas.height;
+
+            ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = 6; ctx.strokeStyle = '#00ff41'; ctx.fillStyle = '#ff0055'; 
+            
+            poses.forEach(pose => { 
+                if(!pose.keypoints) return;
+                const kpMap = {}; 
                 
-                kpMap[kp.name] = { x: x, y: y, score: kp.score };
-            }); 
+                pose.keypoints.forEach(kp => {
+                    let x, y;
+                    if(kp.x <= 1.0 && kp.y <= 1.0) {
+                        x = (kp.x + offset.x) * w;
+                        y = (kp.y + offset.y) * h;
+                    } else {
+                        x = kp.x; 
+                        y = kp.y;
+                    }
+                    
+                    kpMap[kp.name] = { x: x, y: y, score: kp.score };
+                }); 
 
-            ctx.beginPath(); 
-            CONNECTIONS.forEach(([a, b]) => { 
-                const p1 = kpMap[a]; const p2 = kpMap[b]; 
-                if (p1 && p2 && p1.score > 0.3 && p2.score > 0.3) { 
-                    ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); 
-                } 
+                ctx.beginPath(); 
+                CONNECTIONS.forEach(([a, b]) => { 
+                    const p1 = kpMap[a]; const p2 = kpMap[b]; 
+                    if (p1 && p2 && p1.score > 0.3 && p2.score > 0.3) { 
+                        ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); 
+                    } 
+                }); 
+                ctx.stroke(); 
+                
+                Object.values(kpMap).forEach(kp => { 
+                    if (kp.score > 0.3) { 
+                        ctx.beginPath(); ctx.arc(kp.x, kp.y, 8, 0, 2 * Math.PI); ctx.fill(); 
+                    } 
+                }); 
             }); 
-            ctx.stroke(); 
-            
-            Object.values(kpMap).forEach(kp => { 
-                if (kp.score > 0.3) { 
-                    ctx.beginPath(); ctx.arc(kp.x, kp.y, 8, 0, 2 * Math.PI); ctx.fill(); 
-                } 
-            }); 
-        }); 
+        } catch(e) {
+            console.log("Frame drop error", e);
+        }
     }
 
     let emfValue = 0; let hasPhysicalProxSensor = false;
@@ -943,7 +1083,7 @@
     }
     
     function handleRemoteStream(id, stream) { if(document.getElementById('ch-'+id)) return; const audioEl = document.createElement('audio'); audioEl.srcObject = stream; audioEl.autoplay = true; audioEl.muted = true; document.getElementById('remote-audios-hidden').appendChild(audioEl); audioEl.play().catch(e => console.log("Playback failed", e)); const source = mixerAudioCtx.createMediaStreamSource(stream); const gainNode = mixerAudioCtx.createGain(); source.connect(gainNode); gainNode.connect(mixerMasterOut); mixerNodes[id] = { gain: gainNode, el: audioEl }; createChannelStripUI(id, gainNode); updateLog(`Audio recibido: ${id.substring(0,4)}`, 'log-warn'); }
-    function createChannelStripUI(id, gainNode) { const d = document.createElement('div'); d.className='channel-strip'; d.id='ch-'+id; d.innerHTML = `<div class="strip-title" ondblclick="renameChannel('${id}')">📡 ${id.substring(0,4)}</div><input type="number" class="vol-display" id="v-${id}" value="100"><div class="fader-group"><input type="range" orient="vertical" id="f-${id}" max="200" value="100"><div class="vu-meter-wrap"><div class="vu-active" id="vu-${id}"></div></div></div><button class="btn-mute" id="m-${id}">MUTE</button>`; document.getElementById('remote-strips-container').appendChild(d); d.querySelector(`#f-${id}`).oninput = e => { gainNode.gain.value=e.target.value/100; d.querySelector(`#v-${id}`).value=e.target.value; }; d.querySelector(`#m-${id}`).onclick = e => { if(gainNode.gain.value===0){ gainNode.gain.value=d.querySelector(`#v-${id}`).value/100; e.target.classList.remove('muted'); } else { gainNode.gain.value=0; e.target.classList.add('muted'); } }; setupVuMeter(gainNode, `vu-${id}`); }
+    function createChannelStripUI(id, gainNode) { const d = document.createElement('div'); d.className='channel-strip'; d.id='ch-'+id; d.innerHTML = `<div class="strip-title" ondblclick="renameChannel('${id}')">📡 ${id.substring(0,4)}</div><input type="number" class="vol-display" id="v-${id}" value="100"><div class="fader-group"><input type="range" orient="vertical" id="f-${id}" max="200" value="100"><div class="vu-meter-wrap"><div class="vu-active" id="vu-master"></div></div></div><button class="btn-mute" id="m-${id}">MUTE</button>`; document.getElementById('remote-strips-container').appendChild(d); d.querySelector(`#f-${id}`).oninput = e => { gainNode.gain.value=e.target.value/100; d.querySelector(`#v-${id}`).value=e.target.value; }; d.querySelector(`#m-${id}`).onclick = e => { if(gainNode.gain.value===0){ gainNode.gain.value=d.querySelector(`#v-${id}`).value/100; e.target.classList.remove('muted'); } else { gainNode.gain.value=0; e.target.classList.add('muted'); } }; setupVuMeter(gainNode, `vu-${id}`); }
     function removeRemoteChannel(id) { document.getElementById('ch-'+id)?.remove(); mixerNodes[id]?.el.remove(); delete mixerNodes[id]; updateLog(`Dispositivo desconectado`, 'log-crit'); }
     window.renameChannel = function(id) { const newName = prompt("Nuevo nombre:", "INVESTIGADOR"); if(newName) document.querySelector(`#ch-${id} .strip-title`).innerText = newName; }
     window.mixerSetVol = (t,v,f) => { const n = t==='local'?null:mixerMasterOut; if(n) { n.gain.value=v/100; if(f) document.getElementById(`val-${t}`).value=v; else document.getElementById(`fader-${t}`).value=v; } }
@@ -951,22 +1091,22 @@
     function setupVuMeter(n,id){ if(!n) return; const a=mixerAudioCtx.createAnalyser();a.fftSize=256;n.connect(a);const d=new Uint8Array(256);const e=document.getElementById(id);function l(){if(!e)return;requestAnimationFrame(l);a.getByteTimeDomainData(d);let s=0;for(let x of d)s+=(x-128)/128*(x-128)/128;e.style.height=Math.min(100,Math.sqrt(s/256)*400)+"%";}l();}
     window.showMixerQR=()=>document.getElementById('mixer-qr-modal').style.display='flex';
 
-    function seedInitialLogs() { ["Kernel... OK", "Sensores... OK", "Neural... OK", "Sistema OBR v30.12 activo"].forEach(msg => updateLog(msg)); }
-    function startFakeLogs() {
-        if(fakeLogInterval) return;
-        const msgs = ["Escaneando espectro...", "Geometría: OK", "Red Peer: ESTABLE", "Buffer video: 100%", "Temp: NOMINAL", "Buscando E.V.P...", "Ciclo red: OK", "Fluctuación detectada", "IR: ACTIVO", "Analizando patrón...", "Ruido de fondo: -40dB", "Lectura magnética estable"];
-        fakeLogInterval = setInterval(() => { if(Math.random() > 0.5) { const isCrit = Math.random() > 0.8; const cls = isCrit ? 'log-crit' : (Math.random()>0.6 ? 'log-warn' : 'log-normal'); updateLog(msgs[Math.floor(Math.random() * msgs.length)], cls); } }, 1500);
-    }
-
     // --- RE-INSERTED SETFILTER FUNCTION ---
     window.setFilter = function(f, b) {
         if(currentFilter === f) { f = 'normal'; b = null; }
         currentFilter = f; document.body.className = ''; 
+        
         document.querySelectorAll('.btn-hud').forEach(btn => btn.classList.remove('active'));
         if(f !== 'normal' && b) b.classList.add('active');
+        
         if(f === 'night') { document.body.classList.add('filter-night-vision'); toggleTorch(true); } else { toggleTorch(false); }
         if(f === 'thermal') document.body.classList.add('filter-negative');
-        if(f === 'sls') document.body.classList.add('filter-sls');
+        if(f === 'sls') {
+             document.body.classList.add('filter-sls');
+             document.getElementById('sls-status-pip').style.display = 'block';
+        } else {
+             document.getElementById('sls-status-pip').style.display = 'none';
+        }
         if(f === 'bokeh') document.body.classList.add('filter-bokeh');
         if(isPareidoliaActive) document.body.classList.add('filter-pareidolia');
     };
@@ -1036,7 +1176,6 @@
         if(mixerMasterOut) mixerMasterOut.gain.value = savedMasterVol; 
     }
     
-    // ... rest of the script (startCamera, resizeCanvas, etc. which were fine) ...
     // --- SETTINGS MODAL FUNCTIONS ---
     function openSettings() {
         document.getElementById('settings-modal').style.display = 'flex';
@@ -1105,19 +1244,24 @@
     }
     function exitToMain() {
         closeSettings();
+        // Do NOT reload, just reset UI
         window.isLoopRunning = false;
+        isSystemInitialized = false; 
+        isSystemLoaded = false;
         
         const ls = document.getElementById('loading-screen');
         ls.style.display = 'flex';
-        void ls.offsetWidth; 
         ls.style.opacity = '1';
         ls.style.pointerEvents = 'auto';
         
         const btn = document.getElementById('btn-enter-system');
         btn.disabled = false;
-        btn.innerText = "INGRESAR AL SISTEMA";
+        btn.innerText = "CARGAR SISTEMA"; // Reset to Step 1
+        btn.classList.remove('ready');
         btn.style.opacity = "1";
         btn.style.cursor = "pointer";
+
+        document.getElementById('btn-settings-gear').style.display = 'none';
     }
     
     // --- STUDIO MODE FUNCTIONS ---
@@ -1296,6 +1440,120 @@
             } catch(e) { alert("Error en archivo"); }
         };
         reader.readAsText(file);
+    }
+
+    // --- FAKE MEMORY GENERATOR (FALLBACK) ---
+    function createFakeNoiseMemory() {
+        const fakeMem = [];
+        for(let i=0; i<60; i++) { // 2 seconds
+             fakeMem.push([{
+                 keypoints: [
+                     {name:'nose', x: 0.5, y: 0.3, score: 1},
+                     {name:'left_eye', x: 0.48, y: 0.28, score: 1},
+                     {name:'right_eye', x: 0.52, y: 0.28, score: 1}
+                 ]
+             }]);
+        }
+        slsMemories.push(fakeMem);
+    }
+
+    function setupZones() {
+        const zZoom = document.getElementById('zone-zoom');
+        zZoom.addEventListener('pointerdown', (e) => { isTouching = true; const rect = video.getBoundingClientRect(); const x = e.clientX - rect.left; const y = e.clientY - rect.top; zoomLongPressTimer = setTimeout(() => { if(isTouching) executeZoomAt(x, y, rect.width, rect.height); }, 600); });
+        zZoom.addEventListener('pointerup', () => { isTouching = false; clearTimeout(zoomLongPressTimer); });
+        document.getElementById('zone-menu').addEventListener('click', showMenu);
+        hideMenu();
+    }
+
+    function showMenu() { document.getElementById('right-menu').classList.remove('hidden-menu'); setFloatingElementsVisibility(false); clearTimeout(menuHideTimeout); menuHideTimeout = setTimeout(hideMenu, 3000); }
+    function hideMenu() { document.getElementById('right-menu').classList.add('hidden-menu'); setFloatingElementsVisibility(true); }
+    function setFloatingElementsVisibility(visible) {
+        const logo = document.getElementById('top-right-logo'); const follow = document.getElementById('follow-sequence');
+        if (visible) { logo.classList.remove('hidden-element'); follow.style.opacity = '1'; } else { logo.classList.add('hidden-element'); follow.style.opacity = '0'; }
+    }
+
+    function executeZoomAt(x, y, w, h) {
+        const xPct = (x / w) * 100; const yPct = (y / h) * 100;
+        if(currentZoomLevel === 1) currentZoomLevel = 3; else if(currentZoomLevel === 3) currentZoomLevel = 5;
+        zoomContainer.style.transformOrigin = `${xPct}% ${yPct}%`; zoomContainer.style.transform = `scale(${currentZoomLevel})`;
+        const ind = document.getElementById('zoom-target-indicator'); ind.style.left = (video.offsetLeft + x) + 'px'; ind.style.top = (video.offsetTop + y) + 'px'; ind.style.opacity = 1; setTimeout(() => ind.style.opacity = 0, 500);
+        updateLog(`ZOOM DIGITAL x${currentZoomLevel}`);
+    }
+    function resetZoom() { currentZoomLevel = 1; zoomContainer.style.transform = `scale(1)`; setTimeout(() => zoomContainer.style.transformOrigin = 'center center', 1000); updateLog("ZOOM REESTABLECIDO"); }
+
+    function togglePareidolia() {
+        const btn = document.getElementById('btn-pareidolia'); isPareidoliaActive = !isPareidoliaActive;
+        const overlay = document.getElementById('ai-feedback-overlay');
+        const txt = document.getElementById('ai-feedback-text');
+        
+        if(isPareidoliaActive) { 
+            btn.classList.add('active'); document.body.classList.add('filter-pareidolia'); 
+            speakText("Visión activada"); 
+            txt.innerText = "ANALIZANDO...";
+            txt.style.color = "var(--hud-red)"; 
+            overlay.style.display = 'block';
+            analyzeFrameWithGemini(); 
+            pareidoliaInterval = setInterval(analyzeFrameWithGemini, 10000); 
+        }
+        else { 
+            btn.classList.remove('active'); document.body.classList.remove('filter-pareidolia'); 
+            speakText("Visión desactivada"); 
+            clearInterval(pareidoliaInterval); 
+            overlay.style.display = 'none'; 
+            document.getElementById('live-dot').classList.remove('warning');
+        }
+    }
+
+    async function analyzeFrameWithGemini() {
+        if(!video || video.paused || video.ended) return;
+        if(!GEMINI_API_KEY) {
+             updateLog("ERROR: API KEY FALTANTE", "log-crit");
+             return;
+        }
+        const liveDot = document.getElementById('live-dot');
+        const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 360; 
+        const ctx = canvas.getContext('2d'); ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const base64Data = canvas.toDataURL('image/jpeg', 0.6).split(',')[1]; 
+
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    contents: [{ role: "user", parts: [{text: "Actúa como un médium digital. Describe en primera persona lo que ves. Usa frases como 'Veo...', 'Hay algo en...', 'Está...'. Busca caras en las sombras. Sé siniestro. Max 8 palabras."}, {inlineData: {mimeType: "image/jpeg", data: base64Data}}] }],
+                    safetySettings: [{ category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" }, { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" }, { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" }, { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }]
+                })
+            });
+            if (!response.ok) throw new Error("API Error: " + response.status);
+            const data = await response.json();
+            let text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+            
+            if(text) {
+                liveDot.classList.remove('warning');
+                updateLog("IA: " + text, 'log-crit');
+                speakText(text);
+                const overlay = document.getElementById('ai-feedback-overlay');
+                const txtEl = document.getElementById('ai-feedback-text');
+                txtEl.innerText = text.toUpperCase();
+                txtEl.style.color = "var(--hud-red)"; 
+                overlay.style.display = 'block'; 
+                setTimeout(() => overlay.style.display = 'none', 8000);
+            }
+        } catch(e) { 
+            console.error(e); 
+            liveDot.classList.add('warning'); 
+            updateLog("ERROR IA DEPURACION", "log-warn");
+        }
+    }
+
+    async function runFollowSequence() {
+        const txt = document.getElementById('seq-text'); const icons = document.getElementById('seq-icons'); const han = document.getElementById('seq-handle'); const container = document.getElementById('follow-sequence');
+        while(true) {
+            if(isBannerActive) { container.style.display = 'none'; await wait(5000); continue; } else container.style.display = 'flex';
+            txt.style.display = 'block'; await wait(2500); txt.style.display = 'none';
+            icons.style.display = 'block'; await wait(2500); icons.style.display = 'none';
+            han.style.display = 'block'; await wait(3500); han.style.display = 'none';
+            await wait(8000);
+        }
     }
 </script>
 </body>
